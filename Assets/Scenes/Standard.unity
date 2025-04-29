@@ -722,6 +722,7 @@ MonoBehaviour:
   availablePartPrefabs:
   - {fileID: 6498332367155858780, guid: 22b74929c57c92f4c80cecd2a62fd2b5, type: 3}
   - {fileID: 3109404308065059121, guid: 6bfc76e9a18a68749bb3806c2693d715, type: 3}
+  - {fileID: 1184805537469264660, guid: ecd41a355c9e28e438196348fbc8533d, type: 3}
   maxBuildDistance: 100
   placementRotationOffset: {x: 0, y: 0, z: 0}
   ghostMaterial: {fileID: 2100000, guid: 87b39b4e79fd27c4699c7e6850a4af8a, type: 2}
@@ -1926,7 +1927,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: fangzhi yuanzhu
+  m_text: CannonPart
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

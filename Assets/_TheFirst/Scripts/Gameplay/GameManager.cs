@@ -30,6 +30,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject buildCameraObject; // 包含建造摄像机和 BuildCameraController 的对象
     [SerializeField] private GameObject combatCameraObject; // 包含战斗摄像机(及跟随脚本/Cinemachine)的对象
     // -----------------------
+    [Header("系统引用")]
+    // ... (其他引用) ...
+    [SerializeField] private EnemySpawner enemySpawner; // *** 新增 ***
+    public Transform playerTransform { get; private set; } // 对外只读属性
 
     // (可选) 事件，用于通知其他脚本状态已改变
     public UnityEvent OnEnterBuildMode;
@@ -59,6 +63,12 @@ public class GameManager : MonoBehaviour
         if (buildCameraObject == null || combatCameraObject == null)
         {
             Debug.LogError("GameManager: 建造或战斗摄像机对象未设置!", this);
+            enabled = false;
+            return;
+        }
+        if (enemySpawner == null)
+        {
+            Debug.LogError("GameManager: Enemy Spawner 未设置!", this);
             enabled = false;
             return;
         }
@@ -97,98 +107,134 @@ public class GameManager : MonoBehaviour
         if (buildCamController != null) buildCamController.enabled = true;
         // ------------------
 
+        // --- *** 新增：停止敌人生成 *** ---
+        if (enemySpawner != null) enemySpawner.enabled = false; // 或者调用 enemySpawner.StopSpawning();
+
+        playerTransform = null; // <--- 清除引用
+
         OnEnterBuildMode?.Invoke();
     }
 
     // 进入战斗模式的逻辑
     public void EnterCombatMode()
     {
-        Debug.Log("EnterCombatMode: --- Start ---"); // 日志 1
+        Debug.Log("EnterCombatMode: --- Start ---");
+
+        // --- 显式日志记录 Inspector 引用 ---
+        Debug.Log($"EnterCombatMode: Checking references - chassisCoreTransform is {(chassisCoreTransform == null ? "!!! NULL !!!" : chassisCoreTransform.name)}");
+        Debug.Log($"EnterCombatMode: Checking references - mechRootPrefabOrObject is {(mechRootPrefabOrObject == null ? "!!! NULL !!!" : mechRootPrefabOrObject.name)}");
+        // ---------------------------------
 
         // 安全检查
         if (chassisCoreTransform == null || mechRootPrefabOrObject == null)
         {
-            Debug.LogError("无法进入战斗模式：Chassis Core Transform 或 Mech Root 未设置！");
-            return;
+            Debug.LogError("无法进入战斗模式：Chassis Core Transform 或 Mech Root 未设置！请在 GameManager Inspector 中检查赋值！");
+            return; // 阻止后续执行
         }
-        Debug.Log("EnterCombatMode: Safety checks passed."); // 日志 2
+        Debug.Log("EnterCombatMode: Initial reference checks passed.");
 
         currentState = GameState.Combat;
-        Debug.Log("EnterCombatMode: State set to Combat."); // 日志 3
+        Debug.Log("EnterCombatMode: State set to Combat.");
 
         // 禁用建造系统
-        Debug.Log("EnterCombatMode: Disabling Build Systems..."); // 日志 4
+        Debug.Log("EnterCombatMode: Disabling Build Systems...");
         if (mechBuilder != null) mechBuilder.enabled = false;
         var buildCamController = buildCameraObject?.GetComponent<BuildCameraController>();
         if (buildCamController != null) buildCamController.enabled = false;
         mechBuilder?.ClearSelection();
-        Debug.Log("EnterCombatMode: Build Systems Disabled."); // 日志 5
+        Debug.Log("EnterCombatMode: Build Systems Disabled.");
 
         // 创建/启用 MechRoot
-        Debug.Log("EnterCombatMode: Creating/Enabling MechRoot..."); // 日志 6
+        Debug.Log("EnterCombatMode: Creating/Enabling MechRoot...");
         if (currentMechRootInstance == null)
         {
             if (mechRootPrefabOrObject.scene.IsValid())
-            {
+            { // 场景对象
                 currentMechRootInstance = mechRootPrefabOrObject;
                 currentMechRootInstance.SetActive(true);
-                Debug.Log("EnterCombatMode: Activated existing MechRoot from scene."); // 日志 6a
+                Debug.Log($"EnterCombatMode: Activated existing MechRoot from scene: {currentMechRootInstance.name}");
             }
             else
-            {
+            { // Prefab
+                Debug.Log($"EnterCombatMode: Attempting to Instantiate prefab: {mechRootPrefabOrObject.name}");
                 currentMechRootInstance = Instantiate(mechRootPrefabOrObject);
-                Debug.Log("EnterCombatMode: Instantiated MechRoot from prefab."); // 日志 6b
+                // --- 在 Instantiate 后立刻检查 ---
+                if (currentMechRootInstance == null)
+                {
+                    Debug.LogError("!!! FATAL: Instantiate(mechRootPrefabOrObject) 返回了 NULL! 请检查预设文件是否存在且有效！", mechRootPrefabOrObject);
+                    EnterBuildMode(); // 尝试恢复
+                    return; // 阻止后续执行
+                }
+                Debug.Log($"EnterCombatMode: Instantiated MechRoot from prefab: {currentMechRootInstance.name}");
+                // -------------------------------
             }
             currentMechRootInstance.name = "MechRoot_ActiveInstance";
-            currentMechRootInstance.transform.position = chassisCoreTransform.position;
-            currentMechRootInstance.transform.rotation = chassisCoreTransform.rotation;
+            if (enemySpawner != null) enemySpawner.enabled = true;
 
-            rootMechController = currentMechRootInstance.GetComponent<MechController>();
-            if (rootMechController == null)
+            // --- 在访问 Transform 前再次进行严格检查 ---
+            if (currentMechRootInstance == null)
             {
-                Debug.LogError("MechRoot 对象上没有找到 MechController 脚本!", currentMechRootInstance);
-                EnterBuildMode(); // 切回去
-                return;
+                Debug.LogError("!!! FATAL: currentMechRootInstance 在设置 Transform 前意外变为 NULL!", this); EnterBuildMode(); return;
             }
-            Debug.Log("EnterCombatMode: Found MechController on MechRoot."); // 日志 6c
+            if (currentMechRootInstance.transform == null)
+            {
+                Debug.LogError("!!! FATAL: currentMechRootInstance.transform 是 NULL!", currentMechRootInstance); EnterBuildMode(); return;
+            }
+            if (chassisCoreTransform == null)
+            { // 再次检查 ChassisCore
+                Debug.LogError("!!! FATAL: chassisCoreTransform 在设置 Transform 前意外变为 NULL!", this); EnterBuildMode(); return;
+            }
+            Debug.Log($"EnterCombatMode: 即将设置位置/旋转. MechRoot: {currentMechRootInstance.name}, Chassis: {chassisCoreTransform.name}");
+            // ---------------------------------------
+
+            // 设置位置和旋转 (大约在原来的 Line 147 附近)
+            currentMechRootInstance.transform.position = chassisCoreTransform.position; // <-- 错误可能在这里
+            currentMechRootInstance.transform.rotation = chassisCoreTransform.rotation; // <-- 或者这里
+
+            Debug.Log("EnterCombatMode: MechRoot Transform set."); // 如果能执行到这里，说明上面两行没问题
+
+            // 获取控制器
+            rootMechController = currentMechRootInstance.GetComponent<MechController>();
+            if (rootMechController == null) { /* ... */ return; }
+            playerTransform = currentMechRootInstance.transform; // 设置玩家引用
         }
         else
         {
-            Debug.Log("EnterCombatMode: Using existing MechRoot instance."); // 日志 6d
+            Debug.Log("EnterCombatMode: Using existing MechRoot instance.");
         }
 
         // 设置父子关系
-        Debug.Log("EnterCombatMode: Parenting..."); // 日志 7
+        Debug.Log("EnterCombatMode: Parenting...");
         chassisCoreTransform.SetParent(currentMechRootInstance.transform, true);
-        Debug.Log("EnterCombatMode: Parenting Done."); // 日志 8
+        Debug.Log("EnterCombatMode: Parenting Done.");
 
         // 设置物理状态
-        Debug.Log("EnterCombatMode: Setting Physics State (Kinematic)..."); // 日志 9
+        Debug.Log("EnterCombatMode: Setting Physics State (Kinematic)...");
         if (chassisRigidbody != null) chassisRigidbody.isKinematic = true;
-        Debug.Log("EnterCombatMode: Physics State Set."); // 日志 10
+        Debug.Log("EnterCombatMode: Physics State Set.");
 
         // 启用战斗控制器
-        Debug.Log("EnterCombatMode: Enabling Combat Controller..."); // 日志 11
-        if (rootMechController != null) rootMechController.enabled = true; // 这会触发 MechController 的 OnEnable 和 Start (如果第一次启用)
-        Debug.Log("EnterCombatMode: Combat Controller Enabled."); // 日志 12
+        Debug.Log("EnterCombatMode: Enabling Combat Controller...");
+        if (rootMechController != null) rootMechController.enabled = true;
+        Debug.Log("EnterCombatMode: Combat Controller Enabled.");
 
         // 切换 UI
-        Debug.Log("EnterCombatMode: Switching UI..."); // 日志 13
+        Debug.Log("EnterCombatMode: Switching UI...");
         if (buildUIContainer != null) buildUIContainer.SetActive(false);
         if (combatUIContainer != null) combatUIContainer.SetActive(true);
-        Debug.Log("EnterCombatMode: UI Switched."); // 日志 14
+        Debug.Log("EnterCombatMode: UI Switched.");
 
         // 切换摄像机
-        Debug.Log("EnterCombatMode: Switching Cameras..."); // 日志 15
+        Debug.Log("EnterCombatMode: Switching Cameras...");
         if (buildCameraObject != null) buildCameraObject.SetActive(false);
         if (combatCameraObject != null) combatCameraObject.SetActive(true);
-        if (combatCameraObject != null && !combatCameraObject.CompareTag("MainCamera")) { /* Warning */ }
-        Debug.Log("EnterCombatMode: Cameras Switched."); // 日志 16
+        if (combatCameraObject != null && !combatCameraObject.CompareTag("MainCamera")) { /* ... */ }
+        Debug.Log("EnterCombatMode: Cameras Switched.");
 
         // 触发事件
-        Debug.Log("EnterCombatMode: Invoking Event..."); // 日志 17
+        Debug.Log("EnterCombatMode: Invoking Event...");
         OnEnterCombatMode?.Invoke();
-        Debug.Log("EnterCombatMode: --- Finished Successfully ---"); // 日志 18
+        Debug.Log("EnterCombatMode: --- Finished Successfully ---");
     }
 
 

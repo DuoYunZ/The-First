@@ -10,9 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 4706166821386728305}
   - component: {fileID: 6825737601165824488}
+  - component: {fileID: 4733538027583567377}
   m_Layer: 0
   m_Name: MechRootController
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -39,10 +40,23 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 553507291385842186}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 508ee308c4e85114292f3191526b93b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  turnSpeed: 180
+  rotationSpeed: 15
+--- !u!114 &4733538027583567377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 553507291385842186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a92b11440d77994fabec12fda8be54d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoFire: 1
