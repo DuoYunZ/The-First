@@ -9,6 +9,8 @@ TagManager:
   - PartContactPoint
   - PlacedPart
   - BuildCamera
+  - Enemy
+  - Wall
   layers:
   - Default
   - TransparentFX

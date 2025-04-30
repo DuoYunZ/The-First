@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4706166821386728305}
   - component: {fileID: 6825737601165824488}
   - component: {fileID: 4733538027583567377}
+  - component: {fileID: -6785027566060298552}
   m_Layer: 0
   m_Name: MechRootController
   m_TagString: Player
@@ -60,3 +61,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoFire: 1
+--- !u!114 &-6785027566060298552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 553507291385842186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c21ea5f77fe2d245a822fa481149373, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []

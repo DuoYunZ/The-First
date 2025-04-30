@@ -5,6 +5,7 @@ public class Projectile : MonoBehaviour
     public float speed = 20f;     // 子弹飞行速度
     public float lifetime = 3f;     // 子弹存活时间
     public Vector3 direction = Vector3.forward; // 子弹飞行方向 (世界空间)
+    public int damage = 10; // *** 新增：子弹伤害值 ***
 
     void Start()
     {
@@ -23,32 +24,53 @@ public class Projectile : MonoBehaviour
     // 如果 Collider 的 Is Trigger 勾选了:
     void OnTriggerEnter(Collider other)
     {
-        // 检查是否碰撞到了敌人 (例如通过 Tag 或 Layer)
-        if (other.CompareTag("Enemy")) // 假设敌人 Tag 为 "Enemy"
+        Debug.Log($"Projectile OnTriggerEnter with: {other.name} (Tag: {other.tag})"); // 1. 记录碰撞对象信息
+
+        if (other.CompareTag("Enemy")) // 2. 检查 Tag 是否匹配
         {
-            Debug.Log($"子弹击中了敌人: {other.name}");
-            // 在这里处理伤害逻辑...
-            // 销毁敌人? other.GetComponent<EnemyHealth>()?.TakeDamage(10);
-            Destroy(gameObject); // 击中后销毁子弹
+            Debug.Log($"Tag 'Enemy' MATCHED on {other.name}!"); // 3. 确认 Tag 匹配成功
+
+            // --- 修改这里：尝试用 GetComponentInParent ---
+            // Health enemyHealth = other.GetComponent<Health>(); // 原来的代码
+            Health enemyHealth = other.GetComponentInParent<Health>(); // 尝试向上查找 Health
+                                                                       // --------------------------------------
+
+            if (enemyHealth != null) // 4. 检查是否找到了 Health 组件
+            {
+                Debug.Log($"Health component FOUND on {other.name} or its parent. Attempting TakeDamage({damage})."); // 5. 确认找到 Health
+                enemyHealth.TakeDamage(damage); // 6. 调用 TakeDamage
+                Debug.Log($"Called TakeDamage on {other.name}."); // 7. 确认调用完成
+            }
+            else
+            {
+                // 8. 如果没找到 Health 组件，打印明确警告
+                Debug.LogError($"Health component NOT FOUND on {other.name} or its parents!", other.gameObject);
+            }
+
+            // 销毁子弹
+            Debug.Log($"Destroying projectile {this.gameObject.name}"); // 9. 确认销毁子弹
+            Destroy(gameObject);
         }
-        // 可以添加对墙壁或其他障碍物的处理
         else if (other.CompareTag("Wall"))
         {
+            Debug.Log($"Projectile hit Wall: {other.name}. Destroying projectile.");
             Destroy(gameObject);
         }
+        // 可以添加 else 分支来查看撞到了其他什么东西
+        // else { Debug.Log($"Projectile hit something else: {other.name} (Tag: {other.tag})"); }
     }
 
-    // 如果 Collider 的 Is Trigger 没有勾选 (物理碰撞):
+
+    // 如果你的碰撞体不是 Trigger，则修改 OnCollisionEnter
     /*
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            Debug.Log($"子弹击中了敌人: {collision.gameObject.name}");
-            // 处理伤害...
+    void OnCollisionEnter(Collision collision) {
+        if (collision.gameObject.CompareTag("Enemy")) {
+            Health enemyHealth = collision.gameObject.GetComponent<Health>();
+            if (enemyHealth != null) {
+                enemyHealth.TakeDamage(damage);
+            }
             Destroy(gameObject);
-        }
-        else if (collision.gameObject.CompareTag("Wall")) {
+        } else if (collision.gameObject.CompareTag("Wall")) {
              Destroy(gameObject);
         }
     }

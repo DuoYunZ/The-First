@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 // (GameState 枚举定义) ...
-public enum GameState { Building, Combat }
+public enum GameState { Building, Combat, GameOver } // *** 新增 GameOver 状态 ***
+
 
 public class GameManager : MonoBehaviour
 {
@@ -41,6 +43,12 @@ public class GameManager : MonoBehaviour
 
     // ---- 单例模式 (可选，方便全局访问 GameManager) ----
     public static GameManager Instance { get; private set; }
+
+    [Header("游戏状态 UI")]
+    [SerializeField] private GameObject gameOverPanel; // *** 新增：游戏结束面板 UI ***
+
+    private Health playerHealthComponent = null; // *** 新增：存储玩家 Health 组件引用 ***
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -113,6 +121,21 @@ public class GameManager : MonoBehaviour
         playerTransform = null; // <--- 清除引用
 
         OnEnterBuildMode?.Invoke();
+
+        // --- *** 新增：取消订阅死亡事件 *** ---
+        if (playerHealthComponent != null)
+        {
+            playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
+            playerHealthComponent = null; // 清除引用
+            Debug.Log("Removed listener from player death event.");
+        }
+        // ------------------------------
+
+        // --- 确保 Game Over 面板隐藏 ---
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        // ... (切换 UI, 切换相机) ...
+        OnEnterBuildMode?.Invoke();
     }
 
     // 进入战斗模式的逻辑
@@ -140,7 +163,15 @@ public class GameManager : MonoBehaviour
         Debug.Log("EnterCombatMode: Disabling Build Systems...");
         if (mechBuilder != null) mechBuilder.enabled = false;
         var buildCamController = buildCameraObject?.GetComponent<BuildCameraController>();
-        if (buildCamController != null) buildCamController.enabled = false;
+        if (buildUIContainer != null) buildUIContainer.SetActive(false);
+        // --- 添加日志检查 ---
+        Debug.Log($"CombatUIContainer is currently {(combatUIContainer == null ? "NULL" : combatUIContainer.name)}. Active before set: {combatUIContainer?.activeSelf}");
+        if (combatUIContainer != null) combatUIContainer.SetActive(true);
+        Debug.Log($"CombatUIContainer active state AFTER set: {combatUIContainer?.activeSelf}");
+        // --------------------
+
+        Debug.Log("EnterCombatMode: UI Switched.");
+
         mechBuilder?.ClearSelection();
         Debug.Log("EnterCombatMode: Build Systems Disabled.");
 
@@ -202,6 +233,21 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("EnterCombatMode: Using existing MechRoot instance.");
         }
+        // --- *** 修改：获取 Health 组件并订阅事件 *** ---
+        if (currentMechRootInstance != null)
+        {
+            playerHealthComponent = currentMechRootInstance.GetComponent<Health>();
+            if (playerHealthComponent != null)
+            {
+                playerHealthComponent.OnDeath.AddListener(HandlePlayerDeath); // 订阅死亡事件
+                Debug.Log("Added listener to player death event.");
+            }
+            else
+            {
+                Debug.LogError("在 MechRoot 上未找到 Health 组件!", currentMechRootInstance);
+            }
+            playerTransform = currentMechRootInstance.transform; // 设置玩家引用
+        }
 
         // 设置父子关系
         Debug.Log("EnterCombatMode: Parenting...");
@@ -235,7 +281,17 @@ public class GameManager : MonoBehaviour
         Debug.Log("EnterCombatMode: Invoking Event...");
         OnEnterCombatMode?.Invoke();
         Debug.Log("EnterCombatMode: --- Finished Successfully ---");
-    }
+        // --- 确保 Game Over 面板隐藏 ---
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        // --- 启动敌人生成 ---
+        if (enemySpawner != null) enemySpawner.enabled = true;
+
+        OnEnterCombatMode?.Invoke();
+    
+}
+
+
 
 
     // 提供一个公共方法供 UI 按钮调用
@@ -272,4 +328,44 @@ public class GameManager : MonoBehaviour
     {
         return currentState;
     }
+    // --- *** 新增：处理玩家死亡的函数 *** ---
+    void HandlePlayerDeath()
+    {
+        Debug.Log("GAME OVER!");
+        if (currentState == GameState.GameOver) return; // 防止重复执行
+
+        currentState = GameState.GameOver; // 设置游戏结束状态
+
+        // 停止时间 (可选)
+        Time.timeScale = 0f; // 注意：这会停止所有基于 Time.deltaTime 的动画和物理！UI 动画可能也需要特殊处理。
+
+        // 禁用玩家控制器和敌人生成器
+        if (rootMechController != null) rootMechController.enabled = false;
+        if (enemySpawner != null) enemySpawner.enabled = false;
+
+        // 显示 Game Over 面板
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+
+        // 取消订阅事件，避免内存泄漏或重复调用
+        if (playerHealthComponent != null)
+        {
+            playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
+        }
+
+        // (可选) 添加按钮用于重新开始或返回主菜单
+        // 例如，在 gameOverPanel 上添加按钮，调用 RestartGame() 或 GoToMainMenu()
+    }
+    // -----------------------------------
+
+    // (可选) 重启游戏的方法
+    public void RestartGame()
+    {
+        Time.timeScale = 1f; // 恢复时间
+                             // 重新加载当前场景
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+
+    // ... (SwitchToCombatMode, SwitchToBuildMode, GetCurrentState 不变) ...
+    // 注意：可能需要在 SwitchToBuildMode 中也加入恢复 Time.timeScale = 1f 的逻辑
 }

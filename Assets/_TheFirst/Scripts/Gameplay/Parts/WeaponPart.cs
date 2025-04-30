@@ -14,6 +14,9 @@ public class WeaponPart : MonoBehaviour
     public float projectileSpeed = 20f;
     [Tooltip("子弹存活时间")]
     public float projectileLifetime = 3f;
+    public int projectileDamage = 10; // *** 新增：武器造成的伤害 ***
+
+
 
     // (可以添加伤害、特效等其他属性)
     // public int damage = 10;
@@ -62,6 +65,7 @@ public class WeaponPart : MonoBehaviour
             projectileScript.lifetime = this.projectileLifetime;
             // 子弹脚本现在使用自身的 forward 方向飞行，我们已经设置好了旋转
             projectileScript.direction = bullet.transform.forward; // 或者直接用 targetDirection 也可以
+            projectileScript.damage = this.projectileDamage; // *** 新增：设置子弹伤害 ***
         }
         else
         {

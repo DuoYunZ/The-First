@@ -1,56 +1,72 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))] // 确保有 Rigidbody
+[RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
     [Header("AI 设置")]
     [Tooltip("敌人移动速度")]
     public float moveSpeed = 3f;
+    public int touchDamage = 5;
+
     private Transform playerTransform = null;
     private Rigidbody rb;
-    private bool canMove = false; // 是否可以开始移动 (防止 Start 时玩家还没找到)
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezePositionY;
-        // 不再这里查找玩家
+        // 不查找玩家
     }
 
-    void FixedUpdate() // 在 FixedUpdate 中移动 Rigidbody
+    void FixedUpdate() // 只处理物理移动
     {
-        // 如果还没有玩家引用，尝试从 GameManager 获取
+        // 获取或等待玩家引用
         if (playerTransform == null)
         {
-            if (GameManager.Instance != null && GameManager.Instance.GetCurrentState() == GameState.Combat) // 只在战斗模式查找
+            if (GameManager.Instance != null && GameManager.Instance.GetCurrentState() == GameState.Combat)
             {
                 playerTransform = GameManager.Instance.playerTransform;
-                if (playerTransform == null)
-                {
-                    // 等待 GameManager 准备好
-                    return; // 退出 FixedUpdate
-                }
+                if (playerTransform == null) { return; }
             }
-            else
-            {
-                // GameManager 不可用或不是战斗状态
-                return; // 退出 FixedUpdate
-            }
+            else { return; }
         }
 
-            // --- 计算朝向玩家的方向 ---
-            Vector3 directionToPlayer = (playerTransform.position - rb.position); // 使用 rb.position 更准确
-        directionToPlayer.y = 0; // 忽略 Y 轴差异，只在水平面移动
-        directionToPlayer.Normalize(); // 获取单位方向向量
-
-        // --- 移动敌人 ---
-        // 使用 MovePosition 通常比直接设置 velocity 更稳定，尤其是在有碰撞时
+        // 计算方向并移动
+        Vector3 directionToPlayer = (playerTransform.position - rb.position);
+        directionToPlayer.y = 0;
+        directionToPlayer.Normalize();
         Vector3 nextPosition = rb.position + directionToPlayer * moveSpeed * Time.fixedDeltaTime;
         rb.MovePosition(nextPosition);
+    } // <--- FixedUpdate() 函数到此结束
 
-        // (可选) 让敌人视觉上朝向玩家 (如果需要的话)
-        // transform.LookAt(playerTransform.position); // 这可能会导致因旋转约束产生的抖动，如果冻结了旋转，这行就没用
 
+    // vvv--- OnTriggerEnter 必须放在类级别，不能在 FixedUpdate 内部 ---vvv
+    void OnTriggerEnter(Collider other)
+    {
+        Debug.Log($"Enemy OnTriggerEnter with: {other.name} (Tag: {other.tag})"); // 1. 碰撞日志
+
+        // 2. 查找 Health 组件 (向上查找)
+        Health playerHealth = other.GetComponentInParent<Health>();
+
+        // 3. 检查 Health 组件是否存在，并且 Health 组件所在的 GameObject 的 Tag 是 "Player"
+        if (playerHealth != null && playerHealth.CompareTag("Player")) // <-- 检查 playerHealth 的 Tag
+        {
+            Debug.Log($"Player Health component found on {playerHealth.gameObject.name}! Dealing {touchDamage} damage."); // 4. 成功日志
+            playerHealth.TakeDamage(touchDamage); // 5. 造成伤害
+            Debug.Log($"Destroying enemy {gameObject.name} after dealing damage."); // 6. 销毁日志
+            Destroy(gameObject); // 7. 销毁自己
+        }
+        // 可以保留之前的 else if / else 日志用于调试
+        else if (playerHealth != null)
+        {
+            Debug.LogWarning($"Found Health on {playerHealth.gameObject.name} but tag is '{playerHealth.tag}', not 'Player'.");
+        }
+        else
+        {
+            Debug.Log($"No Health component found in parents of {other.name}.");
+        }
     }
-}
+    // ^^^--- OnTriggerEnter 结束 ---^^^
+
+} // <--- EnemyAI 类结束
