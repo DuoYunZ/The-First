@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6825737601165824488}
   - component: {fileID: 4733538027583567377}
   - component: {fileID: -6785027566060298552}
+  - component: {fileID: -3167515495787514290}
   m_Layer: 0
   m_Name: MechRootController
   m_TagString: Player
@@ -27,7 +28,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 553507291385842186}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.65758127, y: 0.58699757, z: -0.599986}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -75,5 +76,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  experienceGemPrefab: {fileID: 0}
+--- !u!114 &-3167515495787514290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 553507291385842186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0af81d8a6af487e4aac3bd02b10bd106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentLevel: 1
+  currentExperience: 0
+  experienceToNextLevel: 10
+  OnLevelUp:
     m_PersistentCalls:
       m_Calls: []

@@ -146,3 +146,5 @@ MonoBehaviour:
   OnDeath:
     m_PersistentCalls:
       m_Calls: []
+  experienceGemPrefab: {fileID: 1554431757866191418, guid: 55dae27dec0e9b24f81b729cb8d9d4b3,
+    type: 3}

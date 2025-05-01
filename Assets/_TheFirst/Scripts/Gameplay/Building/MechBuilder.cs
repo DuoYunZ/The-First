@@ -28,6 +28,12 @@ public class MechBuilder : MonoBehaviour
     [Tooltip("幽灵处于不可放置状态时的材质")]
     public Material ghostMaterialInvalid;
 
+    [Header("幽灵轴向可视化")]
+    public GameObject ghostAxisYPrefab; // 拖拽 AxisMarker_Y.prefab
+    public GameObject ghostAxisXPrefab; // 拖拽 AxisMarker_X.prefab
+    private GameObject currentGhostAxisY = null; // 存储当前实例
+    private GameObject currentGhostAxisX = null;
+
     [Header("吸附与有效性设置 (Snapping & Validity)")]
     [Tooltip("检测附近连接点 (底盘安装点 & 零件接触点) 的半径")]
     public float snapCheckRadius = 0.5f;
@@ -166,6 +172,8 @@ public class MechBuilder : MonoBehaviour
         }
         selectedPartPrefab = null;
         currentGhostInstance = null;
+        currentGhostAxisY = null; // 清空引用 (子对象会被一起销毁)
+        currentGhostAxisX = null; // 清空引用
         currentGhostContactPoints.Clear();
         isGhostPlacementValid = false;
         potentialSnapTargetPoint = null;
@@ -196,6 +204,28 @@ public class MechBuilder : MonoBehaviour
 
         // 3. 设置初始幽灵材质 (无效状态)
         UpdateGhostAppearance(); // 使用通用函数更新外观
+
+        // ---添加轴向可视化-- -
+    // 先清除旧的 (以防万一)
+    if (currentGhostAxisY != null) Destroy(currentGhostAxisY);
+        if (currentGhostAxisX != null) Destroy(currentGhostAxisX);
+
+        if (ghostAxisYPrefab != null)
+        {
+            // 实例化为 ghost 的子对象
+            currentGhostAxisY = Instantiate(ghostAxisYPrefab, ghost.transform);
+            currentGhostAxisY.name = "GhostAxis_Y_Vis";
+            // 确保相对位置和旋转是初始状态 (如果预设本身就是对齐好的)
+            // currentGhostAxisY.transform.localPosition = Vector3.zero;
+            // currentGhostAxisY.transform.localRotation = Quaternion.identity;
+        }
+        if (ghostAxisXPrefab != null)
+        {
+            currentGhostAxisX = Instantiate(ghostAxisXPrefab, ghost.transform);
+            currentGhostAxisX.name = "GhostAxis_X_Vis";
+            // currentGhostAxisX.transform.localPosition = Vector3.zero;
+            // currentGhostAxisX.transform.localRotation = Quaternion.identity;
+        }
 
         // 4. (可选) 设置层级，避免干扰射线检测
         // ghost.layer = LayerMask.NameToLayer("Ignore Raycast");
@@ -495,22 +525,43 @@ public class MechBuilder : MonoBehaviour
     {
         if (currentGhostInstance == null) return;
 
-        Material materialToApply = isGhostPlacementValid ? ghostMaterialValid : ghostMaterialInvalid;
+        Material materialToApply = null;
+        if (isGhostPlacementValid)
+        {
+            materialToApply = ghostMaterialValid; // 有效材质
+        }
+        else
+        {
+            materialToApply = ghostMaterialInvalid; // 无效材质
+        }
 
-        // 如果没有设置有效/无效材质，则退回使用基础幽灵材质
+        // 如果没有设置有效/无效材质，可以回退到基础幽灵材质
         if (materialToApply == null) materialToApply = ghostMaterial;
-        if (materialToApply == null) return; // 如果连基础材质都没有，就无法更新
+        // 如果连基础幽灵材质都没有，则无法更新
+        if (materialToApply == null) return;
 
-        Renderer[] renderers = currentGhostInstance.GetComponentsInChildren<Renderer>(true);
+        // 获取幽灵对象及其所有子对象的 Renderer
+        Renderer[] renderers = currentGhostInstance.GetComponentsInChildren<Renderer>(true); // true 包含非激活的
+
         foreach (Renderer rend in renderers)
         {
-            // 为每个 Renderer 的所有材质槽设置新材质
-            Material[] mats = new Material[rend.sharedMaterials.Length]; // 使用 sharedMaterials 获取槽位数量
+            // --- *** 关键修改：跳过轴指示器的 Renderer *** ---
+            // 方法1：直接比较 GameObject 实例 (如果引用有效)
+            if (currentGhostAxisY != null && rend.gameObject == currentGhostAxisY.gameObject) continue;
+            if (currentGhostAxisX != null && rend.gameObject == currentGhostAxisX.gameObject) continue;
+            // 方法2：通过名字判断 (更通用，以防实例引用丢失)
+            // 假设轴指示器的名字以 "GhostAxis_" 开头
+            if (rend.gameObject.name.StartsWith("GhostAxis_")) continue;
+            // --- 修改结束 ---
+
+            // 只对幽灵零件本身的 Renderer 应用材质
+            // 注意：如果原零件有多种材质，这里简单处理会丢失细节
+            Material[] mats = new Material[rend.sharedMaterials.Length];
             for (int i = 0; i < mats.Length; i++)
             {
                 mats[i] = materialToApply;
             }
-            rend.materials = mats; // 使用 materials 会为每个 Renderer 创建材质实例
+            rend.materials = mats; // 应用材质 (会创建实例)
         }
     }
 
@@ -601,6 +652,11 @@ public class MechBuilder : MonoBehaviour
             // ... (找到并禁用新零件上的源点) ...
         }
 
+        // --- 清理幽灵 ---
+        if (currentGhostInstance != null) Destroy(currentGhostInstance); // 销毁幽灵及其子对象(轴指示器)
+        currentGhostInstance = null;
+        currentGhostAxisY = null;
+        currentGhostAxisX = null;
 
         Debug.Log($"成功将 {newPart.name} 连接到 {targetRigidbody.name}");
 

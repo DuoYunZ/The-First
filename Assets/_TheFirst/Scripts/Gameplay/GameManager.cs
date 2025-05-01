@@ -1,371 +1,368 @@
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic; // 需要 List
+using System.Linq; // 可能需要 Linq
 
-// (GameState 枚举定义) ...
-public enum GameState { Building, Combat, GameOver } // *** 新增 GameOver 状态 ***
-
+// 游戏状态枚举
+public enum GameState { Building, Combat, GameOver }
 
 public class GameManager : MonoBehaviour
 {
     [Header("当前状态")]
-    [SerializeField] // 在 Inspector 中可见，但不能直接修改
-    private GameState currentState = GameState.Building; // 初始状态为建造
+    [SerializeField] private GameState currentState = GameState.Building;
 
     [Header("系统引用")]
-    [SerializeField] private MechBuilder mechBuilder; // 还是需要启用/禁用
-    // BuildCameraController 现在应该在 buildCameraObject 上，不再需要单独引用
+    [SerializeField] private MechBuilder mechBuilder;
     [SerializeField] private Rigidbody chassisRigidbody;
-    [SerializeField] private Transform chassisCoreTransform;
+    [SerializeField] private Transform chassisCoreTransform; // 需要 ChassisCore 的 Transform 引用
+    [SerializeField] private EnemySpawner enemySpawner;
 
     [Header("UI 引用")]
     [SerializeField] private GameObject buildUIContainer;
     [SerializeField] private GameObject combatUIContainer;
+    [SerializeField] private GameObject gameOverPanel;
 
     [Header("战斗模式设置")]
-    [SerializeField] private GameObject mechRootPrefabOrObject;
+    [SerializeField] private GameObject mechRootPrefabOrObject; // 父级控制器预设或对象
     private GameObject currentMechRootInstance = null;
-    private MechController rootMechController = null; // 父级上的控制器脚本
+    private MechController rootMechController = null;
+    private Health playerHealthComponent = null;
+    public Transform playerTransform { get; private set; } // 供其他脚本访问玩家 (MechRoot) 的 Transform
 
-    // --- 新增：摄像机引用 ---
-    [Header("摄像机引用 (拖拽场景中的对象)")]
-    [SerializeField] private GameObject buildCameraObject; // 包含建造摄像机和 BuildCameraController 的对象
-    [SerializeField] private GameObject combatCameraObject; // 包含战斗摄像机(及跟随脚本/Cinemachine)的对象
-    // -----------------------
-    [Header("系统引用")]
-    // ... (其他引用) ...
-    [SerializeField] private EnemySpawner enemySpawner; // *** 新增 ***
-    public Transform playerTransform { get; private set; } // 对外只读属性
+    [Header("摄像机引用")]
+    [SerializeField] private GameObject buildCameraObject;
+    [SerializeField] private GameObject combatCameraObject;
 
-    // (可选) 事件，用于通知其他脚本状态已改变
+    // --- vvv 新增：落地设置 vvv ---
+    [Header("落地设置 (Ground Drop Settings)")]
+    [Tooltip("向下检测地面的最大距离")]
+    public float groundCheckDistance = 10f;
+    [Tooltip("机甲基准点(通常是MechRoot的Pivot)距离下方最高地面点的期望高度")]
+    public float pivotHeightAboveGround = 0.1f; // 需要根据模型和Pivot仔细调整
+    [Tooltip("用于检测地面的层 (在 Inspector 中选择，例如 Default, Ground)")]
+    public LayerMask groundLayerMask = 1; // 默认只检测 Default 层, **请务必在 Inspector 中修改!**
+    [Tooltip("用于向下射线检测的机甲底部采样点 (相对于 ChassisCore 的局部坐标)")]
+    public List<Vector3> groundCheckOffsets = new List<Vector3>() {
+        Vector3.zero, // 中心点
+        new Vector3(0.5f, 0, 0.5f), // 右前方 (这些值需要根据你的机甲大概尺寸调整)
+        new Vector3(-0.5f, 0, 0.5f), // 左前方
+        new Vector3(0.5f, 0, -0.5f), // 右后方
+        new Vector3(-0.5f, 0, -0.5f)  // 左后方
+    };
+    // --- ^^^ 新增：落地设置 ^^^ ---
+
+    [Header("事件")]
     public UnityEvent OnEnterBuildMode;
     public UnityEvent OnEnterCombatMode;
 
-    // ---- 单例模式 (可选，方便全局访问 GameManager) ----
+    // --- 单例模式 ---
     public static GameManager Instance { get; private set; }
-
-    [Header("游戏状态 UI")]
-    [SerializeField] private GameObject gameOverPanel; // *** 新增：游戏结束面板 UI ***
-
-    private Health playerHealthComponent = null; // *** 新增：存储玩家 Health 组件引用 ***
-
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-        }
-        else
-        {
-            Instance = this;
-            // DontDestroyOnLoad(gameObject); // 如果需要跨场景保留 GameManager
-        }
+        if (Instance != null && Instance != this) { Destroy(gameObject); }
+        else { Instance = this; /* DontDestroyOnLoad(gameObject); */ }
     }
-    // ---- 单例模式结束 ----
-
+    // ---------------
 
     void Start()
     {
-        // ... (检查 chassisCoreTransform, mechRootPrefabOrObject) ...
-        // --- 新增：检查相机引用 ---
-        if (buildCameraObject == null || combatCameraObject == null)
+        // --- 执行必要的空值检查 ---
+        if (chassisCoreTransform == null && chassisRigidbody != null) chassisCoreTransform = chassisRigidbody.transform;
+        bool checkFailed = false;
+        if (CheckNull(chassisCoreTransform, "Chassis Core Transform")) checkFailed = true;
+        if (CheckNull(mechRootPrefabOrObject, "Mech Root Prefab Or Object")) checkFailed = true;
+        if (CheckNull(buildCameraObject, "Build Camera Object")) checkFailed = true;
+        if (CheckNull(combatCameraObject, "Combat Camera Object")) checkFailed = true;
+        if (CheckNull(enemySpawner, "Enemy Spawner")) checkFailed = true;
+        if (CheckNull(buildUIContainer, "Build UI Container")) checkFailed = true;
+        if (CheckNull(combatUIContainer, "Combat UI Container")) checkFailed = true;
+        if (CheckNull(gameOverPanel, "Game Over Panel")) checkFailed = true;
+        if (CheckNull(mechBuilder, "Mech Builder")) checkFailed = true;
+        if (CheckNull(chassisRigidbody, "Chassis Rigidbody")) checkFailed = true; // 也检查一下 Rigidbody
+
+        if (checkFailed)
         {
-            Debug.LogError("GameManager: 建造或战斗摄像机对象未设置!", this);
-            enabled = false;
-            return;
-        }
-        if (enemySpawner == null)
-        {
-            Debug.LogError("GameManager: Enemy Spawner 未设置!", this);
+            Debug.LogError("GameManager Start: 一个或多个必要的引用未在 Inspector 中设置！脚本已禁用。", this);
             enabled = false;
             return;
         }
         // -----------------------
 
-        EnterBuildMode();
+        EnterBuildMode(); // 游戏开始时进入建造模式
     }
 
-    // 进入建造模式的逻辑
+    // 辅助函数，用于检查引用是否为空并打印错误
+    private bool CheckNull(object obj, string fieldName)
+    {
+        if (obj == null || obj.Equals(null))
+        { // Unity 对象重载了 == null
+            Debug.LogError($"GameManager Error: '{fieldName}' 未在 Inspector 中设置!", this);
+            return true;
+        }
+        return false;
+    }
+
+
     public void EnterBuildMode()
     {
         Debug.Log("Entering Build Mode...");
         currentState = GameState.Building;
+        Time.timeScale = 1f; // 恢复时间
 
-        // --- 解除父子关系 & 销毁/禁用 MechRoot ---
-        if (currentMechRootInstance != null && chassisCoreTransform != null) { /* ... */ }
-        if (currentMechRootInstance != null) { /* ... */ }
-        // ------------------------------------
-
-        // --- 启用/禁用脚本和对象 ---
-        if (mechBuilder != null) mechBuilder.enabled = true;
-        if (rootMechController != null) rootMechController.enabled = false; // 禁用战斗控制器
-        if (chassisRigidbody != null) chassisRigidbody.isKinematic = true;
-        // -------------------------
-
-        // --- 切换 UI ---
-        if (buildUIContainer != null) buildUIContainer.SetActive(true);
-        if (combatUIContainer != null) combatUIContainer.SetActive(false);
-        // ---------------
-
-        // --- 切换摄像机 ---
-        if (combatCameraObject != null) combatCameraObject.SetActive(false); // 禁用战斗相机
-        if (buildCameraObject != null) buildCameraObject.SetActive(true);  // 启用建造相机
-        // 确保 BuildCameraController (如果它是 BuildCameraObject 上的组件) 也被启用
-        var buildCamController = buildCameraObject?.GetComponent<BuildCameraController>();
-        if (buildCamController != null) buildCamController.enabled = true;
-        // ------------------
-
-        // --- *** 新增：停止敌人生成 *** ---
-        if (enemySpawner != null) enemySpawner.enabled = false; // 或者调用 enemySpawner.StopSpawning();
-
-        playerTransform = null; // <--- 清除引用
-
-        OnEnterBuildMode?.Invoke();
-
-        // --- *** 新增：取消订阅死亡事件 *** ---
-        if (playerHealthComponent != null)
+        // 解除父子关系 & 清理 MechRoot
+        if (currentMechRootInstance != null)
         {
-            playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
-            playerHealthComponent = null; // 清除引用
-            Debug.Log("Removed listener from player death event.");
+            if (playerHealthComponent != null)
+            {
+                playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
+                playerHealthComponent = null;
+            }
+            if (chassisCoreTransform != null)
+            {
+                chassisCoreTransform.SetParent(null, true);
+            }
+
+            // 根据是场景对象还是 Prefab 实例来处理
+            if (mechRootPrefabOrObject != null && mechRootPrefabOrObject.scene.IsValid() && currentMechRootInstance == mechRootPrefabOrObject)
+            {
+                currentMechRootInstance.SetActive(false);
+            }
+            else
+            {
+                Destroy(currentMechRootInstance);
+            }
+            currentMechRootInstance = null;
+            rootMechController = null;
+            playerTransform = null;
         }
-        // ------------------------------
 
-        // --- 确保 Game Over 面板隐藏 ---
+        // 启用建造系统
+        if (mechBuilder != null) mechBuilder.enabled = true;
+        if (chassisRigidbody != null) chassisRigidbody.isKinematic = true;
+
+        // 禁用战斗系统
+        if (enemySpawner != null) enemySpawner.enabled = false;
+
+        // 切换 UI
+        if (combatUIContainer != null) combatUIContainer.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        if (buildUIContainer != null) buildUIContainer.SetActive(true);
 
-        // ... (切换 UI, 切换相机) ...
+        // 切换摄像机
+        if (combatCameraObject != null) combatCameraObject.SetActive(false);
+        if (buildCameraObject != null)
+        {
+            buildCameraObject.SetActive(true);
+            var buildCamController = buildCameraObject.GetComponent<BuildCameraController>();
+            if (buildCamController != null) buildCamController.enabled = true;
+        }
+
         OnEnterBuildMode?.Invoke();
+        Debug.Log("Entered Build Mode setup complete.");
     }
 
-    // 进入战斗模式的逻辑
+
     public void EnterCombatMode()
     {
         Debug.Log("EnterCombatMode: --- Start ---");
+        if (currentState != GameState.Building) { Debug.LogWarning("Already in Combat/GameOver, cannot re-enter Combat."); return; } // 防止重入
 
-        // --- 显式日志记录 Inspector 引用 ---
-        Debug.Log($"EnterCombatMode: Checking references - chassisCoreTransform is {(chassisCoreTransform == null ? "!!! NULL !!!" : chassisCoreTransform.name)}");
-        Debug.Log($"EnterCombatMode: Checking references - mechRootPrefabOrObject is {(mechRootPrefabOrObject == null ? "!!! NULL !!!" : mechRootPrefabOrObject.name)}");
-        // ---------------------------------
-
-        // 安全检查
-        if (chassisCoreTransform == null || mechRootPrefabOrObject == null)
-        {
-            Debug.LogError("无法进入战斗模式：Chassis Core Transform 或 Mech Root 未设置！请在 GameManager Inspector 中检查赋值！");
-            return; // 阻止后续执行
-        }
-        Debug.Log("EnterCombatMode: Initial reference checks passed.");
+        // 安全检查 (Start 时已检查，这里再确认一次)
+        if (chassisCoreTransform == null || mechRootPrefabOrObject == null) { Debug.LogError("Cannot enter Combat Mode: References missing!"); return; }
 
         currentState = GameState.Combat;
+        Time.timeScale = 1f;
         Debug.Log("EnterCombatMode: State set to Combat.");
 
-        // 禁用建造系统
+        // --- 禁用建造系统 ---
         Debug.Log("EnterCombatMode: Disabling Build Systems...");
         if (mechBuilder != null) mechBuilder.enabled = false;
         var buildCamController = buildCameraObject?.GetComponent<BuildCameraController>();
-        if (buildUIContainer != null) buildUIContainer.SetActive(false);
-        // --- 添加日志检查 ---
-        Debug.Log($"CombatUIContainer is currently {(combatUIContainer == null ? "NULL" : combatUIContainer.name)}. Active before set: {combatUIContainer?.activeSelf}");
-        if (combatUIContainer != null) combatUIContainer.SetActive(true);
-        Debug.Log($"CombatUIContainer active state AFTER set: {combatUIContainer?.activeSelf}");
-        // --------------------
-
-        Debug.Log("EnterCombatMode: UI Switched.");
-
-        mechBuilder?.ClearSelection();
+        if (buildCamController != null) buildCamController.enabled = false;
+        mechBuilder?.ClearSelection(); // 清除可能的幽灵零件
         Debug.Log("EnterCombatMode: Build Systems Disabled.");
 
-        // 创建/启用 MechRoot
+        // --- 创建/启用 MechRoot ---
         Debug.Log("EnterCombatMode: Creating/Enabling MechRoot...");
         if (currentMechRootInstance == null)
         {
-            if (mechRootPrefabOrObject.scene.IsValid())
-            { // 场景对象
-                currentMechRootInstance = mechRootPrefabOrObject;
-                currentMechRootInstance.SetActive(true);
-                Debug.Log($"EnterCombatMode: Activated existing MechRoot from scene: {currentMechRootInstance.name}");
-            }
-            else
-            { // Prefab
-                Debug.Log($"EnterCombatMode: Attempting to Instantiate prefab: {mechRootPrefabOrObject.name}");
-                currentMechRootInstance = Instantiate(mechRootPrefabOrObject);
-                // --- 在 Instantiate 后立刻检查 ---
-                if (currentMechRootInstance == null)
-                {
-                    Debug.LogError("!!! FATAL: Instantiate(mechRootPrefabOrObject) 返回了 NULL! 请检查预设文件是否存在且有效！", mechRootPrefabOrObject);
-                    EnterBuildMode(); // 尝试恢复
-                    return; // 阻止后续执行
-                }
-                Debug.Log($"EnterCombatMode: Instantiated MechRoot from prefab: {currentMechRootInstance.name}");
-                // -------------------------------
-            }
+            // ... (实例化或激活 MechRoot 的逻辑) ...
+            if (mechRootPrefabOrObject.scene.IsValid()) { /*...*/ } else { currentMechRootInstance = Instantiate(mechRootPrefabOrObject); }
+            if (currentMechRootInstance == null) { /* 致命错误检查 */ EnterBuildMode(); return; }
             currentMechRootInstance.name = "MechRoot_ActiveInstance";
-            if (enemySpawner != null) enemySpawner.enabled = true;
-
-            // --- 在访问 Transform 前再次进行严格检查 ---
-            if (currentMechRootInstance == null)
-            {
-                Debug.LogError("!!! FATAL: currentMechRootInstance 在设置 Transform 前意外变为 NULL!", this); EnterBuildMode(); return;
-            }
-            if (currentMechRootInstance.transform == null)
-            {
-                Debug.LogError("!!! FATAL: currentMechRootInstance.transform 是 NULL!", currentMechRootInstance); EnterBuildMode(); return;
-            }
-            if (chassisCoreTransform == null)
-            { // 再次检查 ChassisCore
-                Debug.LogError("!!! FATAL: chassisCoreTransform 在设置 Transform 前意外变为 NULL!", this); EnterBuildMode(); return;
-            }
-            Debug.Log($"EnterCombatMode: 即将设置位置/旋转. MechRoot: {currentMechRootInstance.name}, Chassis: {chassisCoreTransform.name}");
-            // ---------------------------------------
-
-            // 设置位置和旋转 (大约在原来的 Line 147 附近)
-            currentMechRootInstance.transform.position = chassisCoreTransform.position; // <-- 错误可能在这里
-            currentMechRootInstance.transform.rotation = chassisCoreTransform.rotation; // <-- 或者这里
-
-            Debug.Log("EnterCombatMode: MechRoot Transform set."); // 如果能执行到这里，说明上面两行没问题
-
-            // 获取控制器
+            // ... (获取 rootMechController 和 playerHealthComponent, 订阅事件) ...
             rootMechController = currentMechRootInstance.GetComponent<MechController>();
-            if (rootMechController == null) { /* ... */ return; }
-            playerTransform = currentMechRootInstance.transform; // 设置玩家引用
+            if (rootMechController == null) { /* Error */ EnterBuildMode(); return; }
+            playerHealthComponent = currentMechRootInstance.GetComponent<Health>();
+            if (playerHealthComponent != null) { playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath); playerHealthComponent.OnDeath.AddListener(HandlePlayerDeath); }
+            else { /* Error */ }
+        }
+        else { /* 使用现有实例 */ }
+        // -------------------------
+
+        // --- 设置 MechRoot 初始位置/旋转 ---
+        currentMechRootInstance.transform.position = chassisCoreTransform.position;
+        currentMechRootInstance.transform.rotation = chassisCoreTransform.rotation;
+        playerTransform = currentMechRootInstance.transform; // 可以在这里就设置 playerTransform
+        Debug.Log("EnterCombatMode: MechRoot initial transform set.");
+
+        // --- *** 2. 先设置父子关系 *** ---
+        Debug.Log("EnterCombatMode: Parenting ChassisCore to MechRoot...");
+        chassisCoreTransform.SetParent(currentMechRootInstance.transform, true); // worldPositionStays = true
+        Debug.Log("EnterCombatMode: Parenting Done.");
+        // --- *** 父子关系设置结束 *** ---
+
+        // --- vvv 落地逻辑 vvv ---
+        Debug.Log("EnterCombatMode: Starting ground drop logic..."); // <-- Log A: 开始执行落地逻辑
+        float highestGroundHitY = -Mathf.Infinity;
+        bool groundFound = false;
+
+        // --- 检查进入循环的条件 ---
+        if (chassisCoreTransform != null && groundCheckOffsets != null && groundCheckOffsets.Count > 0)
+        {
+            Debug.Log("EnterCombatMode: Ground check condition PASSED. Entering foreach loop..."); // <-- Log B: 进入循环的条件满足
+
+            foreach (Vector3 localOffset in groundCheckOffsets)
+            {
+                Debug.Log("EnterCombatMode: Inside foreach loop for offset: " + localOffset); // <-- Log C: 循环内部开始执行
+
+                // 计算射线起点
+                Vector3 worldOffsetPoint = chassisCoreTransform.TransformPoint(localOffset);
+                Vector3 rayOrigin = new Vector3(worldOffsetPoint.x, chassisCoreTransform.position.y + 1.0f, worldOffsetPoint.z);
+
+                // --- 可视化射线 ---
+                Debug.DrawRay(rayOrigin, Vector3.down * groundCheckDistance, Color.cyan, 3f); // 持续 3 秒显示青色射线
+                // -----------------
+
+                RaycastHit hit;
+                if (Physics.Raycast(rayOrigin, Vector3.down, out hit, groundCheckDistance + 1.0f, groundLayerMask))
+                {
+                    groundFound = true;
+                    if (hit.point.y > highestGroundHitY)
+                    {
+                        highestGroundHitY = hit.point.y;
+                    }
+                }
+            } // --- foreach 循环结束 ---
+        }
+        else // --- 如果进入循环的条件不满足 ---
+        {
+            // 打印具体是哪个条件失败了
+            Debug.LogError($"EnterCombatMode: Ground check condition FAILED! " +
+                           $"chassisCoreTransform is {(chassisCoreTransform == null ? "NULL" : "OK")}, " +
+                           $"groundCheckOffsets is {(groundCheckOffsets == null ? "NULL" : "OK")}, " +
+                           $"Count is {groundCheckOffsets?.Count ?? -1}"); // <-- Log D: 条件检查失败详情
+        }
+
+
+        if (groundFound)
+        {
+            // --- 添加这些日志 ---
+            Debug.Log($"Ground found! Highest ground Y = {highestGroundHitY}"); // 打印找到的最高地面 Y
+            float targetRootY = highestGroundHitY + pivotHeightAboveGround;
+            Debug.Log($"Pivot Height Offset = {pivotHeightAboveGround}, Calculated Target MechRoot Y = {targetRootY}"); // 打印计算出的目标 Y
+            Vector3 currentRootPos = currentMechRootInstance.transform.position;
+            Debug.Log($"MechRoot current Y BEFORE adjustment = {currentRootPos.y}"); // 打印调整前 Y
+            // ------------------
+
+            currentRootPos.y = targetRootY;
+            currentMechRootInstance.transform.position = currentRootPos; // 应用调整后的位置
+
+            // --- 添加这个日志 ---
+            Debug.Log($"MechRoot Y AFTER adjustment = {currentMechRootInstance.transform.position.y}"); // 打印调整后 Y
+            // ------------------
+            Debug.Log($"EnterCombatMode: Mech dropped command executed."); // 精简日志
         }
         else
         {
-            Debug.Log("EnterCombatMode: Using existing MechRoot instance.");
+            Debug.LogWarning("EnterCombatMode: Multi-raycast could not find ground...");
         }
-        // --- *** 修改：获取 Health 组件并订阅事件 *** ---
-        if (currentMechRootInstance != null)
-        {
-            playerHealthComponent = currentMechRootInstance.GetComponent<Health>();
-            if (playerHealthComponent != null)
-            {
-                playerHealthComponent.OnDeath.AddListener(HandlePlayerDeath); // 订阅死亡事件
-                Debug.Log("Added listener to player death event.");
-            }
-            else
-            {
-                Debug.LogError("在 MechRoot 上未找到 Health 组件!", currentMechRootInstance);
-            }
-            playerTransform = currentMechRootInstance.transform; // 设置玩家引用
-        }
+        // --- ^^^ 落地逻辑结束 ^^^ ---
 
-        // 设置父子关系
-        Debug.Log("EnterCombatMode: Parenting...");
-        chassisCoreTransform.SetParent(currentMechRootInstance.transform, true);
+        // --- 设置 GameManager 对 Player Transform 的引用 ---
+        if (currentMechRootInstance != null) playerTransform = currentMechRootInstance.transform;
+        // ----------------------------------------------
+
+        // --- 设置父子关系 ---
+        Debug.Log("EnterCombatMode: Parenting ChassisCore to MechRoot...");
+        chassisCoreTransform.SetParent(currentMechRootInstance.transform, true); // 保持世界变换
         Debug.Log("EnterCombatMode: Parenting Done.");
 
-        // 设置物理状态
-        Debug.Log("EnterCombatMode: Setting Physics State (Kinematic)...");
-        if (chassisRigidbody != null) chassisRigidbody.isKinematic = true;
+        // --- 设置物理状态 ---
+        Debug.Log("EnterCombatMode: Setting ChassisCore Physics State (Kinematic)...");
+        if (chassisRigidbody != null) chassisRigidbody.isKinematic = true; // 保持 Kinematic
         Debug.Log("EnterCombatMode: Physics State Set.");
 
-        // 启用战斗控制器
+        // --- 启用战斗控制器 ---
         Debug.Log("EnterCombatMode: Enabling Combat Controller...");
         if (rootMechController != null) rootMechController.enabled = true;
         Debug.Log("EnterCombatMode: Combat Controller Enabled.");
 
-        // 切换 UI
+        // --- 切换 UI ---
         Debug.Log("EnterCombatMode: Switching UI...");
         if (buildUIContainer != null) buildUIContainer.SetActive(false);
         if (combatUIContainer != null) combatUIContainer.SetActive(true);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
         Debug.Log("EnterCombatMode: UI Switched.");
 
-        // 切换摄像机
+        // --- 切换摄像机 ---
         Debug.Log("EnterCombatMode: Switching Cameras...");
         if (buildCameraObject != null) buildCameraObject.SetActive(false);
         if (combatCameraObject != null) combatCameraObject.SetActive(true);
-        if (combatCameraObject != null && !combatCameraObject.CompareTag("MainCamera")) { /* ... */ }
+        if (combatCameraObject != null && !combatCameraObject.CompareTag("MainCamera")) { Debug.LogWarning("Combat Camera Object might need 'MainCamera' tag!"); }
         Debug.Log("EnterCombatMode: Cameras Switched.");
 
-        // 触发事件
-        Debug.Log("EnterCombatMode: Invoking Event...");
+        // --- 启动敌人生成 ---
+        Debug.Log("EnterCombatMode: Enabling Enemy Spawner...");
+        if (enemySpawner != null) enemySpawner.enabled = true;
+        Debug.Log("EnterCombatMode: Enemy Spawner Enabled.");
+
+        // --- 触发事件 ---
+        Debug.Log("EnterCombatMode: Invoking OnEnterCombatMode Event...");
         OnEnterCombatMode?.Invoke();
         Debug.Log("EnterCombatMode: --- Finished Successfully ---");
-        // --- 确保 Game Over 面板隐藏 ---
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-
-        // --- 启动敌人生成 ---
-        if (enemySpawner != null) enemySpawner.enabled = true;
-
-        OnEnterCombatMode?.Invoke();
-    
-}
+    }
 
 
-
-
-    // 提供一个公共方法供 UI 按钮调用
     public void SwitchToCombatMode()
     {
-        if (currentState == GameState.Building)
-        {
-            EnterCombatMode();
-        }
-        else
-        {
-            Debug.LogWarning("已经在战斗模式或未知状态，无法切换到战斗模式。");
-        }
+        Debug.Log($"SwitchToCombatMode called. Current state: {currentState}");
+        if (currentState == GameState.Building) { EnterCombatMode(); }
+        else { Debug.LogWarning("Already in Combat/Game Over mode, cannot switch to Combat."); }
     }
 
-    // (可选) 提供切换回建造模式的方法
+
     public void SwitchToBuildMode()
     {
-        if (currentState == GameState.Combat)
-        {
-            EnterBuildMode();
-            // 可能需要重置机甲位置、状态等
-            // ResetMechPosition();
-        }
-        else
-        {
-            Debug.LogWarning("已经在建造模式或未知状态，无法切换到建造模式。");
-        }
+        Debug.Log($"SwitchToBuildMode called. Current state: {currentState}");
+        if (currentState == GameState.Combat || currentState == GameState.GameOver) { EnterBuildMode(); }
+        else { Debug.LogWarning("Already in Building mode, cannot switch to Build."); }
     }
 
 
-    // (可选) 获取当前状态
-    public GameState GetCurrentState()
-    {
-        return currentState;
-    }
-    // --- *** 新增：处理玩家死亡的函数 *** ---
+    public GameState GetCurrentState() { return currentState; }
+
+
     void HandlePlayerDeath()
     {
         Debug.Log("GAME OVER!");
-        if (currentState == GameState.GameOver) return; // 防止重复执行
+        if (currentState == GameState.GameOver) return;
+        currentState = GameState.GameOver;
+        Time.timeScale = 0f; // 暂停时间
 
-        currentState = GameState.GameOver; // 设置游戏结束状态
-
-        // 停止时间 (可选)
-        Time.timeScale = 0f; // 注意：这会停止所有基于 Time.deltaTime 的动画和物理！UI 动画可能也需要特殊处理。
-
-        // 禁用玩家控制器和敌人生成器
         if (rootMechController != null) rootMechController.enabled = false;
         if (enemySpawner != null) enemySpawner.enabled = false;
-
-        // 显示 Game Over 面板
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
 
-        // 取消订阅事件，避免内存泄漏或重复调用
-        if (playerHealthComponent != null)
-        {
-            playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
-        }
-
-        // (可选) 添加按钮用于重新开始或返回主菜单
-        // 例如，在 gameOverPanel 上添加按钮，调用 RestartGame() 或 GoToMainMenu()
+        // Unsubscribe handled in EnterBuildMode or can be done here too
+        // if (playerHealthComponent != null) playerHealthComponent.OnDeath.RemoveListener(HandlePlayerDeath);
     }
-    // -----------------------------------
 
-    // (可选) 重启游戏的方法
     public void RestartGame()
     {
-        Time.timeScale = 1f; // 恢复时间
-                             // 重新加载当前场景
+        Debug.Log("Restarting game...");
+        Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
-
-
-    // ... (SwitchToCombatMode, SwitchToBuildMode, GetCurrentState 不变) ...
-    // 注意：可能需要在 SwitchToBuildMode 中也加入恢复 Time.timeScale = 1f 的逻辑
 }

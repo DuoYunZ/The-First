@@ -13,6 +13,10 @@ public class Health : MonoBehaviour
 
     public bool IsDead => currentHealth <= 0; // 判断是否已死亡
 
+    [Header("掉落设置 (可选)")]
+    [Tooltip("死亡时掉落的经验宝石预设")]
+    public GameObject experienceGemPrefab; // *** 新增 ***
+
     void Awake() // 使用 Awake 确保在 Start 前初始化
     {
         currentHealth = maxHealth; // 游戏开始时设置为满血
@@ -45,6 +49,13 @@ public class Health : MonoBehaviour
     {
         Debug.Log($"{gameObject.name} 已被摧毁!");
         OnDeath?.Invoke();
+
+        // --- *** 新增：掉落经验宝石 *** ---
+        if (experienceGemPrefab != null)
+        {
+            // 在敌人死亡的位置实例化经验宝石
+            Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
+        }
 
         // --- 添加简单的死亡反馈 ---
         // 例如: 实例化一个爆炸特效预设
