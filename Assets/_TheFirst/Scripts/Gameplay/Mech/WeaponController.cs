@@ -1,79 +1,174 @@
+// WeaponController.cs (最终角色选择流程版)
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq; // 用于 FindObjectsOfType (或者用 GetComponentsInChildren)
+using UnityEngine.InputSystem;
 
-// 挂载在 MechRoot 上
+[System.Serializable]
+public class OwnedWeapon
+{
+    public WeaponStatBlock stats;
+    public int currentLevel = 1;
+    public WeaponPart weaponPartInstance;
+}
+
 public class WeaponController : MonoBehaviour
 {
-    [Header("自动开火设置")]
-    [Tooltip("是否启用自动开火")]
-    public bool autoFire = true; // 让武器自动持续开火
+    public static WeaponController Instance { get; private set; }
 
-    private List<WeaponPart> weaponParts = new List<WeaponPart>(); // 存储机甲上的所有武器部件
-    private Camera mainCamera; // 战斗相机，用于获取鼠标方向
+    // 【修改】我们不再需要将其设为 public，将在代码中自动查找
+    private Transform weaponMountPoint;
+
+    [Header("自动开火设置")]
+    public bool autoFire = true;
+
+    [Header("瞄准设置")]
+    public float aimTurnSpeed = 25f;
+
+    public List<OwnedWeapon> ownedWeapons = new List<OwnedWeapon>();
+
+    private Camera mainCamera;
+    private PlayerControls playerControls;
+    private Vector2 lookInput;
+
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return; // 如果不是单例，则不执行后续Awake代码
+        }
+
+        playerControls = new PlayerControls();
+
+        // --- 【核心修改】 ---
+        // 在 Awake 中，自动查找自己层级下的 "WeaponMounts" 子对象
+        // 这能确保我们永远得到的是场景中这个实例的挂载点，而不是预制件资产的
+        weaponMountPoint = transform.Find("WeaponMounts");
+        if (weaponMountPoint == null)
+        {
+            Debug.LogError("[WeaponController] 在 '" + gameObject.name + "' 的子级中未能找到名为 'WeaponMounts' 的对象！", this);
+            enabled = false; // 禁用此脚本以防止后续错误
+        }
+        // --- 修改结束 ---
+    }
+
+    private void OnEnable()
+    {
+        playerControls.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        playerControls.Player.Disable();
+    }
 
     void Start()
     {
-        mainCamera = Camera.main; // 获取主相机
+        mainCamera = Camera.main;
         if (mainCamera == null)
         {
             Debug.LogError("WeaponController: 未找到主摄像机!", this);
             enabled = false;
+        }
+    }
+
+    // AddNewWeapon 方法现在可以安全地使用 weaponMountPoint 了
+    public void AddNewWeapon(WeaponStatBlock weaponData)
+    {
+        if (weaponData == null || weaponData.weaponPartPrefab == null)
+        {
+            Debug.LogError("[WeaponController] AddNewWeapon 失败：传入的 weaponData 或其 weaponPartPrefab 为空！");
             return;
         }
 
-        FindAndRegisterWeapons();
+        // 这个检查现在变得至关重要，如果 Awake 中没找到，这里会直接返回
+        if (weaponMountPoint == null)
+        {
+            Debug.LogError("[WeaponController] AddNewWeapon 失败：'weaponMountPoint' 未找到！");
+            return;
+        }
+
+        // ... (检查是否已拥有的逻辑保持不变) ...
+
+        GameObject weaponPartGO = Instantiate(weaponData.weaponPartPrefab);
+        weaponPartGO.transform.SetParent(weaponMountPoint, false); // 现在这里的 weaponMountPoint 一定是场景中的实例
+
+        WeaponPart part = weaponPartGO.GetComponent<WeaponPart>();
+        if (part == null)
+        {
+            Debug.LogError($"[WeaponController] 致命错误：预制件 '{weaponData.weaponPartPrefab.name}' 上缺少 WeaponPart 组件！");
+            Destroy(weaponPartGO);
+            return;
+        }
+
+        part.StatBlock = weaponData;
+
+        OwnedWeapon newWeapon = new OwnedWeapon
+        {
+            stats = weaponData,
+            currentLevel = 1,
+            weaponPartInstance = part
+        };
+        ownedWeapons.Add(newWeapon);
+
+        part.Activate();
+        Debug.Log($"[WeaponController] 成功装备全新武器: '{weaponData.weaponName}'。");
     }
 
-    // (可选) 提供一个方法，当机甲结构变化时（比如移除/添加武器）重新查找武器
-    public void FindAndRegisterWeapons()
-    {
-        Debug.Log("WeaponController: 查找武器部件...");
-        // 从 MechRoot 的所有子对象中查找 WeaponPart (包括深层子对象)
-        weaponParts = GetComponentsInChildren<WeaponPart>(true).ToList(); // true 表示包括非激活的？按需调整
-        Debug.Log($"WeaponController: 找到了 {weaponParts.Count} 个武器部件。");
-    }
-
-
+    // Update, AimAndFire 等其他方法保持不变...
     void Update()
     {
-        if (!autoFire || weaponParts.Count == 0)
-        {
-            return; // 如果不自动开火或没有武器，则不执行
-        }
+        if (!autoFire || ownedWeapons.Count == 0 || weaponMountPoint == null) return;
 
-        // --- 计算鼠标方向 ---
-        Vector3 mouseWorldPos = Vector3.zero;
-        bool mousePosValid = false;
-        Ray mouseRay = mainCamera.ScreenPointToRay(Input.mousePosition);
-        Plane groundPlane = new Plane(Vector3.up, transform.position); // 水平面
+        Vector3 aimDirection = Vector3.zero;
+        bool hasAimInput = false;
+
+#if UNITY_STANDALONE || UNITY_EDITOR
+        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Plane groundPlane = new Plane(Vector3.up, transform.position);
         if (groundPlane.Raycast(mouseRay, out float distance))
         {
-            mouseWorldPos = mouseRay.GetPoint(distance);
-            mousePosValid = true;
+            Vector3 mouseWorldPos = mouseRay.GetPoint(distance);
+            aimDirection = mouseWorldPos - weaponMountPoint.position;
+            aimDirection.y = 0;
+            if (aimDirection.sqrMagnitude > 0.01f) hasAimInput = true;
         }
-        // -------------------
-
-        if (mousePosValid)
+#elif UNITY_ANDROID || UNITY_IOS
+        lookInput = playerControls.Player.Look.ReadValue<Vector2>();
+        if (lookInput.sqrMagnitude > 0.1f)
         {
-            // 计算从机甲中心指向鼠标的水平方向
-            Vector3 targetDirection = mouseWorldPos - transform.position; // 用 MechRoot 的位置
-            targetDirection.y = 0;
-            targetDirection.Normalize();
+            aimDirection = new Vector3(lookInput.x, 0, lookInput.y);
+            hasAimInput = true;
+        }
+#endif
 
-            if (targetDirection.sqrMagnitude > 0.01f) // 确保方向有效
+        if (hasAimInput)
+        {
+            AimAndFire(aimDirection);
+        }
+    }
+
+    private void AimAndFire(Vector3 targetDirection)
+    {
+        if (weaponMountPoint == null) return;
+        targetDirection.Normalize();
+        Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+        weaponMountPoint.rotation = Quaternion.Slerp(weaponMountPoint.rotation, targetRotation, aimTurnSpeed * Time.deltaTime);
+        Vector3 fireDirection = weaponMountPoint.forward;
+
+        foreach (OwnedWeapon weapon in ownedWeapons)
+        {
+            if (weapon.weaponPartInstance != null && weapon.weaponPartInstance.enabled)
             {
-                // --- 遍历所有武器并尝试开火 ---
-                foreach (WeaponPart weapon in weaponParts)
-                {
-                    if (weapon != null && weapon.enabled) // 确保武器脚本是启用的
-                    {
-                        // WeaponPart 内部自己管理冷却计时器
-                        // 直接调用 Fire，它会检查冷却
-                        weapon.Fire(targetDirection);
-                    }
-                }
+                weapon.weaponPartInstance.Fire(fireDirection);
             }
         }
     }
+
+    // 我们不再需要 RegisterExistingPart 方法，因为武器都是在新流程中动态添加的
+    // public void RegisterExistingPart(WeaponPart partInstance) { ... }
 }

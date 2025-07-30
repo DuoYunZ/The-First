@@ -1,16 +1,37 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
 // 挂载在 MechRoot 上
 public class PlayerLevelManager : MonoBehaviour
 {
+    #region Singleton Pattern
+    // 1. 创建一个公共的、静态的、只读的实例属性
+    public static PlayerLevelManager Instance { get; private set; }
+
+    // 2. 在 Awake 方法中设置这个实例
+    private void Awake()
+    {
+        // 如果还没有实例，那么将这个对象设为实例
+        if (Instance == null)
+        {
+            Instance = this;
+            // DontDestroyOnLoad(gameObject); // 如果你需要这个管理器跨场景存在，可以取消这行注释
+        }
+        // 如果实例已存在，并且不是当前这个对象，则销毁当前这个多余的对象
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+    #endregion
+
     [Header("等级与经验")]
     public int currentLevel = 1;
     public int currentExperience = 0;
     public int experienceToNextLevel = 10; // 升到下一级所需的经验
 
-    [Header("升级事件")]
-    public UnityEvent OnLevelUp; // 升级时触发 (用于打开升级选择界面等)
+    public event Action<int> OnLevelUp;
 
     // (可选) 用于计算下一级所需经验的曲线或公式参数
     // public AnimationCurve xpCurve;
@@ -41,6 +62,9 @@ public class PlayerLevelManager : MonoBehaviour
     /// </summary>
     private void LevelUp()
     {
+        // --- 日志 1 ---
+        Debug.Log("<color=lime>-- CHECKPOINT 1: LevelUp() method in PlayerLevelManager was called! --</color>");
+
         currentLevel++;
         currentExperience -= experienceToNextLevel; // 减去当前等级所需的经验
 
@@ -50,7 +74,7 @@ public class PlayerLevelManager : MonoBehaviour
         Debug.Log($"--- LEVEL UP! --- 达到等级 {currentLevel}. 下一级需要 {experienceToNextLevel} XP.");
 
         // 触发升级事件
-        OnLevelUp?.Invoke();
+        OnLevelUp?.Invoke(currentLevel); // 触发升级事件，通知 UpgradeManager
 
         // (可选) 可以在这里添加升级特效、音效等
     }

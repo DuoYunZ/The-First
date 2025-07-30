@@ -1,58 +1,124 @@
+// PlayerHealthUI.cs (最终修正版 - 修复隐藏父对象的问题)
 using UnityEngine;
-using UnityEngine.UI; // 需要引入 UI 命名空间
+using UnityEngine.UI;
+using System.Collections;
 
-[RequireComponent(typeof(Slider))] // 确保脚本挂载的对象有 Slider 组件
 public class PlayerHealthUI : MonoBehaviour
 {
-    private Slider healthSlider;
-    private Health playerHealth; // 玩家 Health 组件的引用
+    [Header("UI组件引用")]
+    public Image healthFillImage;       // 顶层，橙色
+    public Image shieldFillImage;       // 中层，蓝色
+    public Image pendingDamageFillImage;  // 底层，暗红色
+
+    [Header("宽度设置")]
+    [Tooltip("代表100点生命/护盾值的UI基础宽度")]
+    public float baseWidthPer100Points = 300f;
+
+    [Header("动画设置")]
+    [Tooltip("追赶动画开始前的延迟")]
+    public float pendingDamageDelay = 0.5f;
+    [Tooltip("追赶动画的持续时间")]
+    public float pendingDamageDuration = 0.4f;
+
+    private Health playerHealth;
+    private PlayerShield playerShield;
+    private RectTransform selfRectTransform;
+
+    private Coroutine pendingDamageCoroutine;
 
     void Awake()
     {
-        healthSlider = GetComponent<Slider>(); // 获取同一个对象上的 Slider 组件
+        selfRectTransform = GetComponent<RectTransform>();
     }
 
-    void Update()
+    void OnDestroy()
     {
-        // --- 持续查找玩家 Health 组件 (直到找到) ---
-        // 因为玩家 MechRoot 可能在游戏开始后才激活
-        if (playerHealth == null)
-        {
-            // 尝试通过 GameManager 获取 (如果 GameManager 单例可用且玩家存在)
-            if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
-            {
-                playerHealth = GameManager.Instance.playerTransform.GetComponent<Health>();
-                if (playerHealth != null)
-                {
-                    InitializeSlider(); // 找到后初始化 Slider
-                }
-            }
-            // 如果没找到，下一帧继续找...
-            if (playerHealth == null) return; // 本帧不更新 UI
-        }
-        // ------------------------------------------
-
-        // --- 如果找到了玩家 Health，则更新 Slider 值 ---
-        if (healthSlider != null) // 确保 Slider 存在
-        {
-            // 平滑更新或直接更新
-            healthSlider.value = playerHealth.GetCurrentHealth();
-            // 或者带点平滑效果:
-            // healthSlider.value = Mathf.Lerp(healthSlider.value, playerHealth.GetCurrentHealth(), Time.deltaTime * 10f);
-        }
+        if (playerHealth != null) playerHealth.OnHealthChanged.RemoveListener(OnDataChanged);
+        if (playerShield != null) playerShield.OnShieldChanged.RemoveListener(OnDataChanged);
     }
 
-    // 初始化 Slider 最大值等设置
-    void InitializeSlider()
+    public void Initialize(Health health, PlayerShield shield)
     {
-        if (healthSlider != null && playerHealth != null)
+        playerHealth = health;
+        playerShield = shield;
+
+        if (playerHealth == null || playerShield == null) return;
+
+        playerHealth.OnHealthChanged.AddListener(OnDataChanged);
+        playerShield.OnShieldChanged.AddListener(OnDataChanged);
+
+        StartCoroutine(InitialUpdate());
+    }
+
+    private IEnumerator InitialUpdate()
+    {
+        yield return null;
+        UpdateHealthDisplay(true);
+    }
+
+    private void OnDataChanged(int current, int max)
+    {
+        UpdateHealthDisplay(false);
+    }
+
+    private void UpdateHealthDisplay(bool instant = false)
+    {
+        if (playerHealth == null || playerShield == null) return;
+
+        int currentHealth = playerHealth.GetCurrentHealth();
+        int maxHealth = playerHealth.GetMaxHealth();
+        int currentShield = playerShield.GetCurrentShield();
+
+        // --- 【核心修正】---
+        // 只控制 shieldFillImage 自身的显隐，不再影响父对象
+        shieldFillImage.gameObject.SetActive(currentShield > 0);
+
+        float displayMaxWidth = Mathf.Max(maxHealth, currentHealth + currentShield);
+
+        float newPhysicalWidth = displayMaxWidth / 100f * baseWidthPer100Points;
+        selfRectTransform.sizeDelta = new Vector2(newPhysicalWidth, selfRectTransform.sizeDelta.y);
+
+        float healthTargetRatio = (currentHealth > 0) ? (float)currentHealth / displayMaxWidth : 0;
+        float shieldTargetRatio = (currentShield > 0) ? (float)(currentHealth + currentShield) / displayMaxWidth : healthTargetRatio;
+
+        if (pendingDamageCoroutine != null)
         {
-            healthSlider.maxValue = playerHealth.GetMaxHealth();
-            healthSlider.value = playerHealth.GetCurrentHealth(); // 设置初始血量
-            Debug.Log("PlayerHealthUI Initialized. MaxHealth: " + healthSlider.maxValue);
+            StopCoroutine(pendingDamageCoroutine);
+        }
+
+        if (instant || healthTargetRatio > healthFillImage.fillAmount)
+        {
+            healthFillImage.fillAmount = healthTargetRatio;
+            shieldFillImage.fillAmount = shieldTargetRatio;
+            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, 0f)); // 立即追赶
+        }
+        else
+        {
+            healthFillImage.fillAmount = healthTargetRatio;
+            shieldFillImage.fillAmount = shieldTargetRatio;
+
+            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, pendingDamageDelay)); // 延迟追赶
         }
     }
 
-    // (可选) 当玩家对象销毁时，可能需要隐藏或处理 Slider
-    // 可以通过 Health 的 OnDeath 事件来处理
+    private IEnumerator AnimatePendingDamage(float targetRatio, float delay)
+    {
+        if (delay > 0)
+        {
+            yield return new WaitForSeconds(delay);
+        }
+
+        float timer = 0f;
+        float startFill = pendingDamageFillImage.fillAmount;
+
+        while (timer < pendingDamageDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = Mathf.Clamp01(timer / pendingDamageDuration);
+            pendingDamageFillImage.fillAmount = Mathf.Lerp(startFill, targetRatio, progress);
+            yield return null;
+        }
+
+        pendingDamageFillImage.fillAmount = targetRatio;
+    }
 }

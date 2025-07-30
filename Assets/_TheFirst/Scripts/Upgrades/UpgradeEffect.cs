@@ -1,0 +1,33 @@
+using UnityEngine;
+
+// 品质枚举保持不变
+public enum Rarity { Common, Uncommon, Rare, Epic }
+
+// 效果行为类型枚举保持不变
+public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield }
+
+// 【新增】修改类型枚举，用于区分是增加固定值还是百分比
+public enum ModifierType { Flat, Percentage }
+
+[System.Serializable]
+public class UpgradeEffect
+{
+    [Tooltip("升级效果的行为类型")]
+    public EffectActionType actionType = EffectActionType.ModifyStat;
+
+    [Header("【如果 Action Type 是 ModifyStat】")]
+    [Tooltip("这个效果属于哪个属性")]
+    public UpgradeType statToModify;
+    [Tooltip("这个效果提供的数值")]
+    public float value;
+    [Tooltip("数值的类型是固定值(Flat)还是百分比(Percentage)")]
+    public ModifierType modType = ModifierType.Percentage;
+
+    [Header("【如果 Action Type 是 UnlockWeapon】")]
+    [Tooltip("要解锁的武器数据")]
+    public WeaponStatBlock weaponToUnlock;
+
+    [Header("【如果 Action Type 是 UnlockShield】")]
+    [Tooltip("要解锁的护盾数据")]
+    public ShieldData shieldToUnlock;
+}

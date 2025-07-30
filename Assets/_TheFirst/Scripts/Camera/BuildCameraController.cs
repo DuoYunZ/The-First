@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem; // 【新增】
 
 public class BuildCameraController : MonoBehaviour
 {
@@ -7,7 +8,7 @@ public class BuildCameraController : MonoBehaviour
     public Transform target; // 将 ChassisCore 拖到这里
     [Tooltip("鼠标右键按下时才允许旋转视角")]
     public bool requireMouseButton = true;
-    public int mouseButtonIndex = 1; // 0=左键, 1=右键, 2=中键
+    //public int mouseButtonIndex = 1; // 0=左键, 1=右键, 2=中键
 
     [Header("距离与缩放")]
     [Tooltip("初始以及当前的摄像机与目标的距离")]
@@ -36,6 +37,22 @@ public class BuildCameraController : MonoBehaviour
     private float y = 0.0f;
     private Vector3 targetPosition;
 
+    private PlayerControls playerControls;
+
+    void Awake()
+    {
+        playerControls = new PlayerControls();
+    }
+    void OnEnable()
+    {
+        playerControls.Builder.Enable();
+    }
+
+    void OnDisable()
+    {
+        playerControls.Builder.Disable();
+    }
+
     void Start()
     {
         // 初始化角度
@@ -56,39 +73,36 @@ public class BuildCameraController : MonoBehaviour
     // 使用 LateUpdate 可以确保目标物体已经完成它所有的移动和旋转
     void LateUpdate()
     {
-        if (target == null) return; // 如果目标丢失则不执行
+        if (target == null) return;
 
-        targetPosition = target.position; // 更新目标位置
+        targetPosition = target.position;
 
-        // 检查是否按下指定的鼠标按键 (如果 requireMouseButton 为 true)
-        bool mouseButtonPressed = !requireMouseButton || Input.GetMouseButton(mouseButtonIndex);
+        // 【修改】检查鼠标右键是否按下 (我们复用之前创建的 SecondaryAction)
+        bool mouseButtonPressed = !requireMouseButton || playerControls.Builder.SecondaryAction.IsPressed();
 
-        // 处理旋转输入
         if (mouseButtonPressed)
         {
-            x += Input.GetAxis("Mouse X") * xSpeed * 0.02f; // 乘以0.02f是为了与旧版Input Manager行为相似
-            y -= Input.GetAxis("Mouse Y") * ySpeed * 0.02f;
+            // 【修改】读取鼠标移动增量
+            Vector2 lookDelta = playerControls.Builder.CameraLook.ReadValue<Vector2>();
+            x += lookDelta.x * xSpeed * 0.02f;
+            y -= lookDelta.y * ySpeed * 0.02f;
 
-            // 限制垂直角度
             y = ClampAngle(y, yMinLimit, yMaxLimit);
         }
 
-        // 计算旋转
         Quaternion targetRotation = Quaternion.Euler(y, x, 0);
 
-        // 处理缩放输入
-        distance = Mathf.Clamp(distance - Input.GetAxis("Mouse ScrollWheel") * zoomSpeed, minDistance, maxDistance);
+        // 【修改】读取鼠标滚轮输入
+        float scrollValue = playerControls.Builder.CameraZoom.ReadValue<Vector2>().y;
+        // 滚轮向上是正值，向下是负值。我们需要反转它以符合直觉（向上滚是拉近，距离变小）
+        distance -= scrollValue * zoomSpeed * 0.01f; // 乘以一个小数让速度更可控
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
-        // 计算摄像机位置
-        // 从目标点出发，后退 distance 距离
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
         Vector3 targetCamPosition = targetRotation * negDistance + targetPosition;
 
-        // 应用位置和旋转 (使用 Lerp 实现平滑过渡)
-        // 如果不需要平滑，可以直接赋值: transform.rotation = targetRotation; transform.position = targetCamPosition;
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * rotationDamping * 10f); // 乘以10是为了让阻尼效果更明显
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * rotationDamping * 10f);
         transform.position = Vector3.Lerp(transform.position, targetCamPosition, Time.deltaTime * rotationDamping * 10f);
-
     }
 
     // 工具函数：将角度限制在 min 和 max 之间

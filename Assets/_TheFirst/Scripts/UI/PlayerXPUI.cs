@@ -49,7 +49,7 @@ public class PlayerXPUI : MonoBehaviour // 建议将此脚本挂载在 CombatUIContainer 
 
         if (levelText != null)
         {
-            levelText.text = "Level: " + levelManager.GetLevel();
+            levelText.text = "" + levelManager.GetLevel();
         }
     }
 }
