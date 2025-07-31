@@ -71,7 +71,7 @@ public class Health : MonoBehaviour
         Debug.Log($"{gameObject.name} 的最大生命值增加了 {amountToAdd}，当前生命值为: {currentHealth}/{maxHealth}");
     }
 
-    public bool TakeDamage(int damageAmount, Vector3 hitPosition, GameObject attacker = null, AttackType type = AttackType.Standard, Projectile projectile = null, EnemyBeamAttack beamAttacker = null)
+    public bool TakeDamage(int damageAmount, Vector3 hitPosition, GameObject attacker = null, AttackType type = AttackType.Standard, Projectile projectile = null, EnemyBeamController beamController = null)
     {
         if (IsDead) return false;
 
@@ -80,8 +80,8 @@ public class Health : MonoBehaviour
 
         if (isPlayerHealth && PlayerShield.Instance != null && PlayerShield.Instance.GetCurrentShield() > 0)
         {
-            // 将 beamAttacker 传递给护盾
-            remainingDamage = PlayerShield.Instance.AbsorbDamage(damageAmount, hitPosition, type, projectile, beamAttacker, out wasReflected);
+            // 将接收到的 beamController 传递给护盾
+            remainingDamage = PlayerShield.Instance.AbsorbDamage(damageAmount, hitPosition, type, projectile, beamController, out wasReflected);
         }
 
         if (remainingDamage > 0)

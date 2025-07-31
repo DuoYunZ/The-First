@@ -13,9 +13,11 @@ public class EnemyBeamController : MonoBehaviour
     private float tickInterval;
     private AttackType attackType;
     private float tickTimer;
+    public EnemyAttackData attackData { get; private set; } // 【新增】将 attackData 设为公开可读
 
     public void Initialize(EnemyAttackData data, GameObject attacker, Transform target)
     {
+        this.attackData = data;
         this.lineRenderer = GetComponent<LineRenderer>();
         this.playerTarget = target;
         this.attacker = attacker;
@@ -54,7 +56,8 @@ public class EnemyBeamController : MonoBehaviour
             Health playerHealth = playerTarget.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damagePerTick, endPoint, attacker, attackType, null, attacker.GetComponent<EnemyBeamAttack>());
+                // 【核心修改】最后一个参数传入 this，即脚本实例本身
+                playerHealth.TakeDamage(damagePerTick, endPoint, attacker, attackType, null, this);
             }
         }
     }

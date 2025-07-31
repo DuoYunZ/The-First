@@ -6,7 +6,7 @@ public class ReflectedBeam : MonoBehaviour
 {
     private LineRenderer lineRenderer;
     private Transform enemyTarget;
-    private Transform originalAttacker; // 原始攻击者的引用
+    private EnemyBeamController sourceBeam;
     private GameObject impactVfxPrefab;
     private GameObject activeImpactVfxInstance;
     private GameObject playerAttacker;
@@ -16,11 +16,11 @@ public class ReflectedBeam : MonoBehaviour
     //private float remainingDuration;
 
     // 由 PlayerShield 调用
-    public void Initialize(EnemyAttackData data, GameObject player, Transform target, Transform originalAttacker)
+    public void Initialize(EnemyAttackData data, GameObject player, Transform target, EnemyBeamController sourceBeam)
     {
         this.lineRenderer = GetComponent<LineRenderer>();
         this.enemyTarget = target;
-        this.originalAttacker = originalAttacker;
+        this.sourceBeam = sourceBeam; // 存储原始光束的控制器引用
         this.playerAttacker = player;
         this.impactVfxPrefab = data.beamImpactVfxPrefab;
         this.damagePerTick = Mathf.CeilToInt((float)data.beamDamagePerSecond / data.beamDamageTickRate);
@@ -30,8 +30,7 @@ public class ReflectedBeam : MonoBehaviour
     void Update()
     {
         // 如果原始攻击者、当前目标死亡，或持续时间耗尽，则光束立即消失
-        if (originalAttacker == null || !originalAttacker.gameObject.activeInHierarchy ||
-            enemyTarget == null || !enemyTarget.gameObject.activeInHierarchy)
+        if (sourceBeam == null || enemyTarget == null || !enemyTarget.gameObject.activeInHierarchy)
         {
             Destroy(gameObject);
             return;

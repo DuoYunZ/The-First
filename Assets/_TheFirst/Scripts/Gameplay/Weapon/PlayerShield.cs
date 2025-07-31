@@ -75,9 +75,9 @@ public class PlayerShield : MonoBehaviour
         RegenerateShield();
     }
 
-    public int AbsorbDamage(int damageAmount, Vector3 hitPosition, AttackType type, Projectile projectile, EnemyBeamAttack beamAttacker, out bool wasReflected)
+    public int AbsorbDamage(int damageAmount, Vector3 hitPosition, AttackType type, Projectile projectile, EnemyBeamController beamController, out bool wasReflected)
     {
-        Debug.Log($"<color=lime>[LOG 4 - 最终接收]</color> 护盾收到了攻击！类型是: {type}，来源是光束: {beamAttacker != null}");
+        
         wasReflected = false;
         if (!isUnlocked) return damageAmount;
 
@@ -141,10 +141,11 @@ public class PlayerShield : MonoBehaviour
                 return 0; // 反弹成功，不造成任何穿透伤害
             }
             // --- 光束反弹逻辑 ---
-            else if (beamAttacker != null)
+            else if (beamController != null) // 不再使用 beamAttacker
             {
-                TriggerReflectionBeam(beamAttacker);
-                wasReflected = true; // 光束类攻击也被“处理”了，不应再有穿透伤害
+                // 将接收到的 beamController 实例传给反弹方法
+                TriggerReflectionBeam(beamController);
+                wasReflected = true;
                 return 0;
             }
         }
@@ -153,27 +154,25 @@ public class PlayerShield : MonoBehaviour
         return damageAmount - absorbedDamage;
     }
 
-    private void TriggerReflectionBeam(EnemyBeamAttack originalAttacker)
+    private void TriggerReflectionBeam(EnemyBeamController originalBeam)
     {
-        if (reflectedBeamPrefab == null || reflectionFirePoint == null || originalAttacker.attackData == null) return;
+        if (reflectedBeamPrefab == null || reflectionFirePoint == null || originalBeam.attackData == null) return;
 
-        Transform target = FindNearestEnemyTransform(originalAttacker.gameObject);
-        if (target == null) target = originalAttacker.transform; // 如果没找到其他目标，就反弹给攻击者
+        Transform target = FindNearestEnemyTransform(originalBeam.gameObject);
+        if (target == null) target = originalBeam.transform; // 如果没找到其他目标，就反弹给攻击者      
 
-        // 【修改】确保实例化的是带有 ReflectedBeamController 的预制件
         GameObject beamGO = Instantiate(reflectedBeamPrefab, reflectionFirePoint.position, reflectionFirePoint.rotation, reflectionFirePoint);
-        ReflectedBeam beamController = beamGO.GetComponent<ReflectedBeam>(); // 获取新脚本的引用
+        ReflectedBeam reflectedBeamController = beamGO.GetComponent<ReflectedBeam>();
 
-        if (beamController != null)
+        if (reflectedBeamController != null)
         {
             Debug.Log("护盾触发反击光束！");
-            // 【修改】使用新脚本的初始化方法
-            beamController.Initialize(
-                originalAttacker.attackData,
+            // 【修改】使用新脚本的初始化方法，并传入原始光束的实例
+            reflectedBeamController.Initialize(
+                originalBeam.attackData, // <-- 这里需要让 EnemyBeamController 暴露它的 attackData
                 WeaponController.Instance.gameObject,
-                target,
-                originalAttacker.transform
-                //originalAttacker.GetRemainingDuration()
+                target,               
+                originalBeam // <-- 交接原始光束的实例！
             );
         }
     }
