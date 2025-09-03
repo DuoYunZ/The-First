@@ -118,7 +118,23 @@ public class WeaponController : MonoBehaviour
         part.Activate();
         Debug.Log($"[WeaponController] 成功装备全新武器: '{weaponData.weaponName}'。");
     }
+    public void RefreshAllWeaponStates()
+    {
+        Debug.Log("<color=yellow>[WeaponController] 接收到全局刷新指令，正在刷新所有武器...</color>");
 
+        // 遍历当前所有激活的 WeaponPart 实例
+        foreach (var weapon in ownedWeapons)
+        {
+            if (weapon.weaponPartInstance != null)
+            {
+                // 调用我们为 WeaponPart 准备的刷新方法
+                weapon.weaponPartInstance.RefreshOrbiters();
+
+                // 未来如果还有其他需要刷新的武器（比如光束武器），也可以在这里调用
+                // weapon.weaponPartInstance.RefreshBeam();
+            }
+        }
+    }
     // Update, AimAndFire 等其他方法保持不变...
     void Update()
     {

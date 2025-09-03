@@ -19,6 +19,9 @@ public class PlayerStats : MonoBehaviour
     public float flatAoeDamageBonus = 0f;
     public int bonusPierceCount = 0;          // 额外穿透数量
     public int bonusMaxHealth = 0;            // 额外最大生命值
+    public int bonusSlashCount = 0; // <--- ADD THIS LINE
+    public int bonusOrbitalCount = 0; // <--- 【新增】额外轨道武器数量
+
 
     [Header("特殊属性")]
     public float luck = 1.0f; // 幸运值, 1.0代表100% (基础值)
@@ -89,6 +92,14 @@ public class PlayerStats : MonoBehaviour
                 bonusPierceCount += (int)valueToApply;
                 break;
 
+            case UpgradeType.SlashCount:
+                // Slash count is always a flat bonus (e.g., +1 slash)
+                bonusSlashCount += (int)effect.value;
+                break;
+            case UpgradeType.OrbitalCount:
+                // 轨道武器数量也是固定值增加
+                bonusOrbitalCount += (int)effect.value;
+                break;
             // ... 为其他所有属性应用 valueToApply ...
             case UpgradeType.MaxHealth:
                 bonusMaxHealth += (int)valueToApply;

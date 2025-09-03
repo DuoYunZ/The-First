@@ -33,7 +33,21 @@ public class WaveManager : MonoBehaviour
     private float nextWaveCountdownTimer;
 
     public enum WaveState { StartingGame, SpawningEnemies, WaitingForAllEnemiesCleared, WaveCooldown }
-    public WaveState currentState = WaveState.StartingGame;
+    private WaveState _currentState = WaveState.StartingGame;
+
+
+    public WaveState currentState
+    {
+        get { return _currentState; }
+        private set
+        {
+            if (_currentState != value)
+            {
+                Debug.Log($"<color=yellow>WaveManager STATE CHANGE: From '{_currentState}' TO '{value}'</color>");
+                _currentState = value;
+            }
+        }
+    }
 
     // ================== 【修改点 1】无尽模式配置 ==================
     [Header("无尽模式配置")]
@@ -99,22 +113,42 @@ public class WaveManager : MonoBehaviour
                 break;
 
             case WaveState.WaitingForAllEnemiesCleared:
-                bool waveCleared = false;
-                // 无尽模式和普通模式共用清空逻辑
-                if (isInEndlessMode || allWaveConfigurations[currentWaveIndex].waveType != WaveType.Boss)
+                if (currentWaveActiveTimer > 0)
                 {
-                    if (enemiesRemainingInWave <= 0) waveCleared = true;
+                    currentWaveActiveTimer -= Time.deltaTime;
+                    // (可选) 在这里可以更新一个显示波次剩余时间的UI
+                    // UIManager.Instance?.UpdateWaveActiveTimer(currentWaveActiveTimer);
                 }
-                // Boss 波次特殊逻辑
-                else if (allWaveConfigurations[currentWaveIndex].waveType == WaveType.Boss)
+
+                bool waveCleared = false;
+
+                // 2. 检查波次是否因“时间耗尽”而结束
+                if (currentWaveIndex >= 0 && currentWaveIndex < allWaveConfigurations.Count &&
+               allWaveConfigurations[currentWaveIndex].maxWaveDuration > 0 &&
+               currentWaveActiveTimer <= 0)
                 {
-                    if (bossInstanceHealth == null || bossInstanceHealth.IsDead) waveCleared = true;
+                    Debug.Log($"<color=orange>波次 {currentWaveIndex + 1} 时间耗尽！强制进入下一波。</color>");
+                    waveCleared = true;
+                }
+
+                // 3. 如果时间没到，再检查波次是否因“敌人清空”而结束 (您的原有逻辑)
+                if (!waveCleared)
+                {
+                    if (isInEndlessMode || allWaveConfigurations[currentWaveIndex].waveType != WaveType.Boss)
+                    {
+                        if (enemiesRemainingInWave <= 0) waveCleared = true;
+                    }
+                    else if (allWaveConfigurations[currentWaveIndex].waveType == WaveType.Boss)
+                    {
+                        if (bossInstanceHealth == null || bossInstanceHealth.IsDead) waveCleared = true;
+                    }
                 }
 
                 if (waveCleared)
                 {
                     EndCurrentWave();
                 }
+                // ^^^ --- 修改结束 --- ^^^
                 break;
 
             case WaveState.WaveCooldown:
@@ -127,7 +161,50 @@ public class WaveManager : MonoBehaviour
                 break;
         }
     }
+    private void CheckForWaveCompletion()
+    {
+        // 1. 更新计时器
+        if (currentWaveActiveTimer > 0)
+        {
+            currentWaveActiveTimer -= Time.deltaTime;
+        }
 
+        // 【诊断日志】每一帧都打印出关键状态，方便观察
+        // 您可以在找到问题后注释掉这行代码
+        Debug.Log($"[CheckForWaveCompletion] State: {currentState}, Spawning: {waveIsCurrentlySpawning}, Enemies Left: {enemiesRemainingInWave}, Wave Timer: {currentWaveActiveTimer.ToString("F2")}");
+
+        // 2. 状态转换
+        if (currentState == WaveState.SpawningEnemies && !waveIsCurrentlySpawning)
+        {
+            currentState = WaveState.WaitingForAllEnemiesCleared;
+        }
+
+        bool waveCleared = false;
+        WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
+
+        // 3. 检查时间耗尽
+        if (currentConfig.maxWaveDuration > 0 && currentWaveActiveTimer <= 0)
+        {
+            Debug.Log($"<color=orange>条件满足: 时间耗尽！(Timer: {currentWaveActiveTimer.ToString("F2")})</color>");
+            waveCleared = true;
+        }
+
+        // 4. 检查敌人清空
+        if (!waveCleared)
+        {
+            if (enemiesRemainingInWave <= 0 && !waveIsCurrentlySpawning)
+            {
+                Debug.Log($"<color=green>条件满足: 敌人已清空！(Enemies: {enemiesRemainingInWave}, Spawning: {waveIsCurrentlySpawning})</color>");
+                waveCleared = true;
+            }
+        }
+
+        // 5. 结束波次
+        if (waveCleared)
+        {
+            EndCurrentWave();
+        }
+    }
     void StartNextWave()
     {
         // 如果已进入无尽模式，直接调用无尽波次生成逻辑
@@ -202,6 +279,7 @@ public class WaveManager : MonoBehaviour
 
     public void NotifySpawnerFinishedCurrentWave()
     {
+        Debug.Log("接收到 EnemySpawner 的生成完毕通知。");
         waveIsCurrentlySpawning = false;
     }
     public void AnEnemyFailedToSpawn()
@@ -325,5 +403,12 @@ public class WaveManager : MonoBehaviour
             damageGrowthFactor,
             speedGrowthFactor
         );
+    }
+    public void RegisterDebugEnemy()
+    {
+        // 在调试模式下，简单地将剩余敌人数量+1
+        enemiesRemainingInWave++;
+        UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
+        Debug.Log($"[调试] 一个新的敌人已被注册到WaveManager，当前剩余敌人: {enemiesRemainingInWave}");
     }
 }

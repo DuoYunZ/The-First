@@ -23,6 +23,12 @@ public class EnemySpawnGroup
      [Tooltip("（可选）此组敌人生成的方向提示")]
      public SpawnDirectionHint directionHint = SpawnDirectionHint.Random;
 
+    [Header("自定义属性覆盖 (可选)")]
+    [Tooltip("勾选此项，以启用下面的自定义属性，它会忽略'Is Elite'的设置。")]
+    public bool overrideStats = false;
+
+    [Tooltip("在此处设置的属性，将覆盖上面 EnemyType 中的基础值。")]
+    public EnemyStatOverrides statOverrides;
     // --- 未来可扩展字段 (怪物生成多样性) ---
     // [Tooltip("（可选）指定此组敌人必须从哪个出生点生成")]
     // public Transform specificSpawnPointOverride;

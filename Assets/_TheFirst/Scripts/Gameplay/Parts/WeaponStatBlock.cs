@@ -11,7 +11,9 @@ public enum WeaponBehaviorType
     Orbital, // <--- 轨道武器
     PersistentAOE,
     SummonDrone, // 无人机
-    Beam
+    Beam,
+    Landmine,
+    MeleeAOE
 }
 
 
@@ -168,4 +170,38 @@ public class WeaponStatBlock : ScriptableObject
     public float beamDuration = 3f;
     [Tooltip("光束关闭后的冷却时间（秒）")]
     public float beamCooldown = 5f;
+
+    [Tooltip("光束追踪玩家的转向速度。数值越小，光束转向越慢，玩家越容易躲开。")]
+    public float beamTurnSpeed = 5f; // 【新增】
+    [Tooltip("光束在地面上移动时留下的印记预制件")]
+    public GameObject scorchMarkPrefab; // 【新增】
+    [Tooltip("生成印记的时间间隔（秒），数值越小，印记越密集")]
+    public float scorchMarkInterval = 0.2f; // 【新增】
+    [Tooltip("可以生成印记的地面层")]
+    public LayerMask beamScorchMarkGroundLayer; // 【新增】
+
+
+    [Header("地雷武器属性 (仅 Behavior=Landmine 时有效)")]
+    [Tooltip("地雷的预制件 (需要挂载Landmine脚本和Trigger碰撞体)")]
+    public GameObject minePrefab;
+
+    [Tooltip("地雷在玩家身边生成的最大半径")]
+    public float spawnRadius = 5f;
+
+    [Tooltip("地雷放置后，需要多久才能激活（秒）")]
+    public float armingTime = 0.5f;
+
+    [Tooltip("地雷放置后，能存在多久（秒），超时会自动消失")]
+    public float mineDuration = 10f;
+
+    [Header("近战范围攻击属性 (仅 Behavior=MeleeAOE 时有效)")]
+    [Tooltip("攻击时产生的刀光/挥砍特效预制件")]
+    public GameObject slashEffectPrefab;
+
+    [Tooltip("攻击判定的扇形角度。90代表角色前方90度的锥形。360代表圆形。")]
+    [Range(0, 360)]
+    public float attackAngle = 90f;
+    [Header("特效与层设置")]
+    [Tooltip("【通用】当本次攻击命中敌人时，在敌人身上产生的特效")] // <--- 新增
+    public GameObject hitEffectPrefab; // <--- 新增
 }

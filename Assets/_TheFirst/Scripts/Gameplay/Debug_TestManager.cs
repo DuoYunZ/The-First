@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class Debug_TestManager : MonoBehaviour
 {
     [Header("敌人预制件列表 (用于生成)")]
-    public List<GameObject> enemyPrefabs;
+    public List<EnemyType> enemyTypes;
 
     [Header("武器数据列表 (用于直接给予)")]
     public List<WeaponStatBlock> weaponStatBlocks;
@@ -20,10 +20,16 @@ public class Debug_TestManager : MonoBehaviour
     public int xpToAdd = 20;
 
     private Transform playerTransform;
+    private EnemySpawner enemySpawner;
 
     void Start()
     {
-        // 延迟获取，确保玩家已初始化
+        enemySpawner = FindObjectOfType<EnemySpawner>();
+        if (enemySpawner == null)
+        {
+            Debug.LogError("Debug_TestManager 未能在场景中找到 EnemySpawner！");
+        }
+
         Invoke("GetPlayerReference", 0.2f);
     }
 
@@ -42,21 +48,21 @@ public class Debug_TestManager : MonoBehaviour
     /// </summary>
     public void SpawnEnemy(int enemyIndex)
     {
-        if (playerTransform == null)
+        if (enemySpawner == null)
         {
-            Debug.LogError("玩家引用为空，无法生成敌人！");
+            Debug.LogError("EnemySpawner 引用为空，无法生成敌人！");
             return;
         }
-        if (enemyIndex < 0 || enemyIndex >= enemyPrefabs.Count)
+        if (enemyIndex < 0 || enemyIndex >= enemyTypes.Count)
         {
             Debug.LogError($"无效的敌人索引: {enemyIndex}");
             return;
         }
 
-        Vector3 spawnPosition = playerTransform.position + (Random.onUnitSphere * Random.Range(5f, 10f));
-        spawnPosition.y = 0;
-        Instantiate(enemyPrefabs[enemyIndex], spawnPosition, Quaternion.identity);
-        Debug.Log($"已生成敌人: {enemyPrefabs[enemyIndex].name}");
+        // 直接命令 EnemySpawner 使用我们选择的 EnemyType 来生成敌人
+        enemySpawner.Debug_SpawnSingleEnemy(enemyTypes[enemyIndex]);
+
+        Debug.Log($"已请求 EnemySpawner 生成敌人: {enemyTypes[enemyIndex].name}");
     }
 
     /// <summary>

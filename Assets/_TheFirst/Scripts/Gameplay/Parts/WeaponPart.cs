@@ -75,6 +75,11 @@ public class WeaponPart : MonoBehaviour
             float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed; //未來可擴充
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
+
+        if (StatBlock.behavior == WeaponBehaviorType.Landmine)
+        {
+            HandleLandminePlacement();
+        }
         // --- 自动发射的光束武器 ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
@@ -373,7 +378,29 @@ public class WeaponPart : MonoBehaviour
             currentTarget = nextTarget;
         }
     }
+    public void RefreshOrbiters()
+    {
+        // 检查1：这个方法只对已激活的轨道武器有效
+        if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital || !isOrbitalActive)
+        {
+            return;
+        }
 
+        Debug.Log($"<color=orange>[WeaponPart] 接收到刷新指令，正在重新生成 '{myStatBlock.weaponName}'...</color>");
+
+        // 步骤1：销毁旧的轨道轴心和所有轨道物
+        if (orbitalPivot != null)
+        {
+            Destroy(orbitalPivot.gameObject);
+        }
+
+        // 清理旧的状态，防止意外的协程运行
+        isOrbitalActive = false;
+        StopAllCoroutines(); // 停止旧的生命周期计时器
+
+        // 步骤2：立即使用最新的属性重新执行一次完整的设置流程
+        SetupOrbiters();
+    }
     // --- 轨道武器初始化 ---
     private void SetupOrbiters()
     {
@@ -389,7 +416,7 @@ public class WeaponPart : MonoBehaviour
         orbitalPivot.localPosition = Vector3.zero;
 
         isOrbitalActive = true;
-        int finalOrbitalCount = StatBlock.baseOrbitalCount;
+        int finalOrbitalCount = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusOrbitalCount;
         float finalOrbitalRadius = StatBlock.baseOrbitalRadius;
         int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier);
 
@@ -618,6 +645,49 @@ public class WeaponPart : MonoBehaviour
             }
         }
     }
+    private void HandleLandminePlacement()
+    {
+        // 如果冷却未结束，则不执行
+        if (!IsReadyToFire) return;
 
+        // 1. 计算随机生成位置
+        Vector2 randomCirclePoint = Random.insideUnitCircle * StatBlock.spawnRadius;
+        Vector3 spawnPosition = transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
+
+        // (可选，但推荐) 增加一个射线检测，确保地雷生成在地面上
+        RaycastHit hit;
+        if (Physics.Raycast(spawnPosition + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground")))
+        {
+            spawnPosition = hit.point;
+        }
+
+        // 2. 实例化地雷
+        if (StatBlock.minePrefab != null)
+        {
+            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity);
+            Landmine mineScript = mineGO.GetComponent<Landmine>();
+
+            if (mineScript != null)
+            {
+                // 3. 计算最终伤害和范围
+                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier);
+                float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
+
+                // 4. 初始化地雷
+                mineScript.Initialize(
+                    finalDamage,
+                    finalRadius,
+                    StatBlock.armingTime,
+                    StatBlock.mineDuration,
+                    WeaponController.Instance.gameObject, // 攻击者是玩家
+                    StatBlock.explosionEffectPrefab,    // 使用抛物线弹的爆炸特效
+                    StatBlock.layersToDamageByAOE
+                );
+            }
+        }
+
+        // 5. 重置冷却计时器
+        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+    }
     #endregion
 }

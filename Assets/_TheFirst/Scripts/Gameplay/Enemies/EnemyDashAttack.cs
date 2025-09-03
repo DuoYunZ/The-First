@@ -23,6 +23,13 @@ public class EnemyDashAttack : MonoBehaviour
     [Tooltip("冲刺路径的宽度")]
     public float dashWidth = 2f;
 
+    [Header("【新增】特效预制件")]
+    [Tooltip("冲刺启动时在脚下生成的烟尘特效")]
+    public GameObject dashDustEffectPrefab;
+    [Tooltip("冲刺过程中跟随身体的持续速度线/拖尾特效")]
+    public GameObject dashSpeedEffectPrefab;
+
+
     // 私有变量
     private Transform playerTarget;
     private float attackCooldownTimer;
@@ -31,6 +38,7 @@ public class EnemyDashAttack : MonoBehaviour
     private bool isAttacking = false;
     private Collider damageCollider; // 用于在冲刺时激活的伤害碰撞体
     private Animator animator;
+    private GameObject currentDashSpeedEffectInstance; // 【新增】用于存储持续特效的实例
 
     void Start()
     {
@@ -46,6 +54,7 @@ public class EnemyDashAttack : MonoBehaviour
 
         enemyAI = GetComponent<EnemyAI>();
         rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>(); // 【新增】在Start中获取Animator
 
         // 最好有一个专门的碰撞体用于冲刺伤害，避免与主碰撞体冲突
         // 你可以为怪物创建一个子对象，挂载一个BoxCollider(设为IsTrigger)，并在这里获取它
@@ -81,10 +90,12 @@ public class EnemyDashAttack : MonoBehaviour
         Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
         transform.rotation = targetRotation;
 
+        // 【核心修改 A】触发“前摇”动画
         if (animator != null)
         {
-            animator.SetTrigger("Attack"); // 触发 "施法" 动画
+            animator.SetTrigger("doWarning");
         }
+
 
         // 2. 【核心修改】生成动态预警并调用其动画
         if (dashWarningPrefab != null)
@@ -109,6 +120,23 @@ public class EnemyDashAttack : MonoBehaviour
 
         // 4. 冲锋！
         // (可选) 触发“冲刺”动画: animator.SetTrigger("Dash");
+        if (animator != null)
+        {
+            animator.SetTrigger("doAttack");
+        }
+
+        
+        if (dashDustEffectPrefab != null)
+        {
+            Instantiate(dashDustEffectPrefab, transform.position, transform.rotation);
+        }
+
+        
+        if (dashSpeedEffectPrefab != null)
+        {
+            currentDashSpeedEffectInstance = Instantiate(dashSpeedEffectPrefab, transform.position, transform.rotation, transform);
+        }
+
         float dashDuration = dashDistance / dashSpeed;
         rb.velocity = transform.forward * dashSpeed;
 
@@ -116,6 +144,10 @@ public class EnemyDashAttack : MonoBehaviour
         yield return new WaitForSeconds(dashDuration);
         rb.velocity = Vector3.zero;
 
+        if (currentDashSpeedEffectInstance != null)
+        {
+            Destroy(currentDashSpeedEffectInstance);
+        }
         // 6. 攻击结束，恢复AI
         enemyAI.enabled = true;
         isAttacking = false;

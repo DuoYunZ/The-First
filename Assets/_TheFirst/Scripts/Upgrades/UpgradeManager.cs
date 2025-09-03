@@ -177,6 +177,10 @@ public class UpgradeManager : MonoBehaviour
 
         if (ownedUpgrades.ContainsKey(sourceNode)) ownedUpgrades[sourceNode]++;
         else ownedUpgrades.Add(sourceNode, 1);
+        if (WeaponController.Instance != null)
+        {
+            WeaponController.Instance.RefreshAllWeaponStates();
+        }
 
         if (upgradePanel != null) upgradePanel.SetActive(false);
         Time.timeScale = 1f;

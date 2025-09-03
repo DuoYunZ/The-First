@@ -11,6 +11,8 @@ public enum UpgradeType
     WeaponProjectileSpeed, // 子弹速度
     AddProjectile,      // 增加发射物数量
     PierceCount,        // 穿透
+    SlashCount,         // 刀光数量
+    OrbitalCount,      //轨道武器数量
 
     // 机甲属性类
     MaxHealth,          // 最大生命值

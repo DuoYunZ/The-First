@@ -7,6 +7,8 @@ public class EnemyType : ScriptableObject
     public string enemyName = "New Enemy";
     public bool isBoss = false; // <--- 新增：标记这是否是一个Boss
     public GameObject enemyPrefab; // 对应的怪物预制件
+    [Tooltip("敌人死亡时（非自爆）生成的特效")]
+    public GameObject deathVfxPrefab;
 
     [Header("基础属性")]
     public float baseHealth = 100f;
@@ -36,4 +38,36 @@ public class EnemyType : ScriptableObject
 
     [Tooltip("精英状态下的颜色渲染（一个简单的视觉区分方法）")]
     public Color eliteColorTint = Color.red;
+
+    // --- 【新增】自爆属性 ---
+    [Header("自爆属性 (Suicide Attack)")]
+    [Tooltip("勾选此项，如果这种类型的怪物是自爆怪")]
+    public bool isSuicideBomber = false;
+
+    [Tooltip("在准备自爆前，是否会有一个跳向玩家的动作")]
+    public bool hasJumpAttack = true;
+    [Tooltip("怪物进入此范围后，会触发跳跃攻击")]
+    public float jumpTriggerRange = 8f; // 替换了 armingRange
+    [Tooltip("跳跃抛物线的最高点")]
+    public float jumpArcHeight = 3f;   // 替换了 jumpForce
+    [Tooltip("跳跃在空中飞行的时间")]
+    public float jumpAirTime = 1.2f;
+
+    [Tooltip("怪物需要靠近玩家到这个距离，才会开始准备自爆")]
+    public float armingRange = 2.5f;
+
+    [Tooltip("准备自爆的持续时间（秒），期间会有预警")]
+    public float armingTime = 1.5f;
+
+    [Tooltip("自爆的伤害范围半径")]
+    public float explosionRadius = 4f;
+
+    [Tooltip("自爆造成的伤害")]
+    public int explosionDamage = 50;
+
+    [Tooltip("自爆时的视觉特效预制件")]
+    public GameObject explosionVfxPrefab;
+
+    [Tooltip("准备自爆期间的预警特效预制件")]
+    public GameObject armingWarningPrefab;
 }

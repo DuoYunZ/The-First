@@ -19,7 +19,8 @@ public class Health : MonoBehaviour
     [Header("死亡事件")]
     [Tooltip("当生命值归零时触发的事件")]
     public UnityEvent OnDeath;
-    public bool IsDead => currentHealth <= 0;
+    public bool IsDead { get; private set; }
+
 
     [Header("掉落设置 (可选)")]
     [Tooltip("死亡时掉落的经验宝石预设")]
@@ -60,7 +61,6 @@ public class Health : MonoBehaviour
         if (amountToAdd <= 0) return;
 
         maxHealth += amountToAdd;
-        currentHealth += amountToAdd;
 
         // 确保当前生命值不会意外超过新的最大值（虽然在此逻辑中不会发生，但这是个好习惯）
         if (currentHealth > maxHealth)
@@ -114,62 +114,62 @@ public class Health : MonoBehaviour
     }
 
 
-    private void Die()
+    public void Die(bool destroyImmediately = true)
     {
-        // --- 新增：檢查死亡時是否在燃燒 ---
+        if (IsDead) return;
+        IsDead = true;
+
+        currentHealth = 0;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        // --- 整合了您的“燃烧时死亡会爆炸”逻辑 ---
         StatusEffectReceiver receiver = GetComponent<StatusEffectReceiver>();
         if (receiver != null && receiver.IsBurning)
         {
             Debug.Log($"{gameObject.name} 在燃燒中死亡，觸發爆炸！");
-            ExplodeOnDeath(); // 呼叫一個新的爆炸方法
-            // 在這裡實例化一個小型的爆炸特效和傷害判定
-            // 這個邏輯可以復用 Projectile 的 Explode 方法，或者自己寫一個簡單的
-            // 例如：
-            // ExplodeOnDeath(transform.position); 
+            ExplodeOnDeath();
         }
+        // --- 整合结束 ---
+
         OnDeath?.Invoke();
+
         if (gameObject.CompareTag("Enemy"))
         {
             WaveManager.Instance?.EnemyDefeated();
         }
+        var enemyAI = GetComponent<EnemyAI>();
+
         if (experienceGemPrefab != null)
         {
             Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
         }
-        Destroy(gameObject);
+
+        if (destroyImmediately)
+        {
+            Destroy(gameObject);
+        }
     }
     private void ExplodeOnDeath()
     {
-        // 這個邏輯和 Projectile 的 Explode 方法非常相似
-        // 我們需要獲取爆炸的範圍、傷害等資訊。
-        // 為了簡單起見，我們可以暫時寫死或從一個全局管理器獲取。
-        // 一個更好的方法是讓 StatusEffectReceiver 記住是哪個武器施加的燃燒，然後從那裡讀取爆炸屬性。
-        // 我們先用一個簡單的實現：
-
-        float explosionRadius = 5f; // 可以先用一個固定值
-        int explosionDamage = 10; // 死亡爆炸的傷害
-        LayerMask damageableLayers = LayerMask.GetMask("Enemies"); // 假設你的敵人在 "Enemies" 層
-
-        // 視覺特效
-        // if (deathExplosionPrefab != null) Instantiate(deathExplosionPrefab, transform.position, Quaternion.identity);
+        float explosionRadius = 5f;
+        int explosionDamage = 10;
+        LayerMask damageableLayers = LayerMask.GetMask("Enemies");
 
         Collider[] collidersInRange = Physics.OverlapSphere(transform.position, explosionRadius, damageableLayers);
         foreach (Collider hitCollider in collidersInRange)
         {
-            if (hitCollider.gameObject == this.gameObject) continue; // 不要傷害到自己（雖然自己馬上要被銷毀了）
+            if (hitCollider.gameObject == this.gameObject) continue;
 
             Health healthComponent = hitCollider.GetComponent<Health>();
             if (healthComponent != null && !healthComponent.IsDead)
             {
-                // 對周圍敵人造成爆炸傷害
-                healthComponent.TakeDamage(explosionDamage, transform.position, this.gameObject);
+                // 【核心修复】这里的 TakeDamage 调用已更新为新版签名
+                healthComponent.TakeDamage(explosionDamage, hitCollider.transform.position, this.gameObject, AttackType.Standard);
 
-                // --- 核心：將燃燒 BUFF 傳播出去 ---
                 StatusEffectReceiver nearbyReceiver = healthComponent.GetComponent<StatusEffectReceiver>();
                 if (nearbyReceiver != null)
                 {
-                    // 這裡的燃燒傷害和持續時間可以是一個新值，或者繼承原來的
-                    nearbyReceiver.ApplyBurn(5, 3f, 1f); // 例如，傳播的燃燒效果稍弱一些
+                    nearbyReceiver.ApplyBurn(5, 3f, 1f);
                 }
             }
         }

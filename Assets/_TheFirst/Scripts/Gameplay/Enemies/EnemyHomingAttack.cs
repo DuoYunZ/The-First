@@ -22,6 +22,9 @@ public class EnemyHomingAttack : MonoBehaviour
     [Tooltip("子弹的转向速度，数值越大转弯越急")]
     public float homingTurnSpeed = 8f;
 
+    [Tooltip("子弹的存活时间（秒）")]
+    public float projectileLifetime = 3f; // 默认值可以设为您想要的 3
+
     [Header("视觉效果")]
     [Tooltip("子弹命中【玩家护盾】时的专属特效")]
     public GameObject shieldHitVfxPrefab;
@@ -111,8 +114,17 @@ public class EnemyHomingAttack : MonoBehaviour
 
             if (projectileScript != null)
             {
-                // 调用追踪弹的初始化方法
-                projectileScript.InitializeAsHoming(playerTarget, projectileSpeed, projectileDamage, true, homingTurnSpeed,  8f, this.shieldHitVfxPrefab, this.defaultHitVfxPrefab);
+                // --- 【核心修改 B】使用我们新增的 projectileLifetime 变量，而不是硬编码的 8f ---
+                projectileScript.InitializeAsHoming(
+                    playerTarget,
+                    projectileSpeed,
+                    projectileDamage,
+                    true, // isEnemyBullet
+                    homingTurnSpeed,
+                    this.projectileLifetime, // <-- 使用新变量
+                    this.shieldHitVfxPrefab,
+                    this.defaultHitVfxPrefab
+                );
             }
         }
 
