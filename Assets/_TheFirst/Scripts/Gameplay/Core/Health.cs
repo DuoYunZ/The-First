@@ -11,6 +11,8 @@ public class Health : MonoBehaviour
     [SerializeField] private int maxHealth = 100; // 在 Inspector 中为预制件设置一个默认最大生命值
     private int currentHealth;
 
+    private EnemyType enemyTypeData;
+
     [System.Serializable]
     public class HealthChangedEvent : UnityEvent<int, int> { }
     [Header("事件")]
@@ -28,7 +30,13 @@ public class Health : MonoBehaviour
 
     [Header("视觉效果 (可选)")]
     [Tooltip("受到伤害时生成的跳字预制件")]
-    public GameObject damagePopupPrefab; 
+    public GameObject damagePopupPrefab;
+
+    [Header("音效设置 (可选)")]
+    [Tooltip("受到伤害时播放的音效")]
+    public AudioClip[] impactSounds;
+    private AudioSource audioSource;
+
 
     /// <summary>
     /// Awake 在对象实例化后立即被调用。
@@ -36,7 +44,13 @@ public class Health : MonoBehaviour
     /// </summary>
     void Awake()
     {
-        currentHealth = maxHealth;       
+        currentHealth = maxHealth;
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.spatialBlend = 1.0f; // 设为3D音效
+        }
     }
 
     void Start()
@@ -49,11 +63,16 @@ public class Health : MonoBehaviour
     /// EnemySpawner 将为每个生成的敌人调用此方法，用计算出的新值覆盖 Awake 中设置的初始值。
     /// </summary>
     /// <param name="initialMaxHealth">根据波次计算出的最大生命值</param>
-    public void InitializeHealth(int initialMaxHealth)
+    public void InitializeHealth(int initialMaxHealth, EnemyType typeData)
     {
         maxHealth = initialMaxHealth;
         currentHealth = maxHealth;
+        this.enemyTypeData = typeData;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+    public void InitializeHealth(int initialMaxHealth)
+    {
+        InitializeHealth(initialMaxHealth, null);
     }
 
     public void AddMaxHealth(int amountToAdd)
@@ -103,6 +122,11 @@ public class Health : MonoBehaviour
             }
 
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
+            if (impactSounds != null && impactSounds.Length > 0)
+            {
+                AudioClip clipToPlay = impactSounds[Random.Range(0, impactSounds.Length)];
+                audioSource.PlayOneShot(clipToPlay);
+            }
 
             if (currentHealth <= 0)
             {
@@ -142,6 +166,11 @@ public class Health : MonoBehaviour
         if (experienceGemPrefab != null)
         {
             Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
+        }
+        if (enemyTypeData != null && enemyTypeData.deathVfxPrefab != null)
+        {
+            // 在当前物体的位置生成死亡特效
+            Instantiate(enemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
         }
 
         if (destroyImmediately)

@@ -1,125 +1,236 @@
 using UnityEngine;
 using System.Collections; // <--- 确保有这一行，用于协程
+using UnityEngine.AI;
 
+[RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    [Header("AI 设置")]
-    [Tooltip("敌人转向玩家的速度")]
-    public float rotationSpeed = 5f; // <--- 新增
-    private float _moveSpeed = 3f;
-    private int _touchDamage = 5;
+    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion }
+    private AIState _currentState = AIState.Chasing;
+    public AIState CurrentState => _currentState;
+
+    [Header("AI 设置")]   
     private float _originalMoveSpeed; // 新增：用于存储原始速度
 
     [Header("伤害设置")]
     [Tooltip("怪物每次造成伤害后的冷却时间（秒）")]
     public float damageCooldown = 1.0f;
+    private int _touchDamage = 5;
     private bool _canDealDamage = true;
 
+
+    [Header("随机停顿行为 (Random Pause Behavior)")]
+    [Tooltip("勾选此项以启用随机停顿功能")]
+    public bool canPause = true;
+    [Tooltip("在完成一次追逐后，有多大的几率进入停顿状态 (0到1)")]
+    [Range(0f, 1f)]
+    public float pauseChance = 0.2f; // 默认20%的几率停顿
+    [Tooltip("每次停顿的持续时间范围（秒）")]
+    public Vector2 pauseDurationRange = new Vector2(0.5f, 1.5f);
+    [Tooltip("每次追逐的持续时间范围（秒）")]
+    public Vector2 chaseDurationRange = new Vector2(3f, 7f);
+
+
     private Transform playerTransform = null;
-    private Rigidbody rb;
+    private NavMeshAgent agent;
+    private Rigidbody rb; // 【新增】Rigidbody 的引用
 
     // --- 新增：動畫相關 ---
     private Animator animator;
 
-    // ... Start(), InitializeEnemy(), FixedUpdate() 方法保持不变 ...
+    private float stateTimer; // 当前状态的剩余时间
 
+    // --- 【新增】用于目标点偏移的变量 ---
+    private Vector3 targetOffset;
+    private float offsetRecalculateTimer;
+
+    private EnemyExplosionAttack explosionAttackScript;
+
+    // ... Start(), InitializeEnemy(), FixedUpdate() 方法保持不变 ...
+    void Awake()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        rb = GetComponent<Rigidbody>(); // 【新增】获取 Rigidbody 组件
+        animator = GetComponentInChildren<Animator>();
+        explosionAttackScript = GetComponent<EnemyExplosionAttack>(); // 【新增】获取爆炸攻击脚本
+    }
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezePositionY;
-
-        animator = GetComponentInChildren<Animator>();
-        if (animator == null)
-        {
-            Debug.LogWarning($"在敵人 '{gameObject.name}' 上沒有找到 Animator 元件！");
-        }
+        // 游戏开始时，让怪物直接进入追逐状态
+        EnterChaseState();
     }
 
     public void InitializeEnemy(float speed, int damage)
     {
-        _moveSpeed = speed;
         _touchDamage = damage;
-        _originalMoveSpeed = speed; // 在初始化时记录下原始速度
+        _originalMoveSpeed = speed;
+
+        if (agent != null)
+        {
+            agent.speed = speed * Random.Range(0.7f, 1.7f);
+            agent.acceleration = agent.acceleration * Random.Range(0.7f, 1.7f);
+            agent.angularSpeed = agent.angularSpeed * Random.Range(0.7f, 1.7f);
+        }
     }
 
     // --- 新增：一个公共方法来设置移动速度 ---
     public void SetMoveSpeed(float newSpeed)
     {
-        _moveSpeed = newSpeed;
+        if (agent != null)
+        {
+            agent.speed = newSpeed; // 【修改】控制 NavMeshAgent 的速度
+        }
     }
 
     // --- 新增：一个公共方法来获取原始速度 ---
-    public float GetOriginalMoveSpeed()
+    public float GetOriginalMoveSpeed() => _originalMoveSpeed;
+
+    void Update()
     {
-        return _originalMoveSpeed;
-    }
-    void FixedUpdate()
-    {
-        // 獲取玩家引用的邏輯保持不變
         if (playerTransform == null)
         {
             if (GameManager.Instance != null && GameManager.Instance.GetCurrentState() == GameState.Combat)
             {
                 playerTransform = GameManager.Instance.playerTransform;
-                if (playerTransform == null) { rb.velocity = Vector3.zero; return; }
             }
-            else { rb.velocity = Vector3.zero; return; }
+            else
+            {
+                return;
+            }
         }
 
-        // 計算方向的邏輯保持不變
-        Vector3 directionToPlayer = (playerTransform.position - rb.position).normalized;
-        directionToPlayer.y = 0; // 確保在水平面移動
-
-        // --- 設定移動速度 (保持不變) ---
-        Vector3 targetVelocity = directionToPlayer * _moveSpeed;
-        rb.velocity = targetVelocity;
-
-        // --- 新增：設定旋轉朝向 ---
-        if (directionToPlayer.sqrMagnitude > 0.01f) // 確保有移動方向時才旋轉
+        // 【修改】当处于特殊攻击状态时，暂停常规的追逐/停顿逻辑
+        if (_currentState == AIState.JumpingAttack || _currentState == AIState.PreparingExplosion)
         {
-            // 1. 計算目標旋轉值 (讓敵人的前方對準 directionToPlayer)
-            Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-
-            // 2. 使用 Slerp 平滑地從當前旋轉插值到目標旋轉
-            Quaternion newRotation = Quaternion.Slerp(rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
-
-            // 3. 將新的旋轉值應用到 Rigidbody
-            rb.MoveRotation(newRotation);
-        }
-        // ------------------------
-
-        // 更新動畫狀態的方法呼叫保持不變
-        UpdateAnimation();
-    }
-
-    private void UpdateAnimation()
-    {
-        // 檢查1：確認 animator 引用是否有效
-        if (animator == null)
-        {
-            // 這個日誌只會在 animator 為空時顯示一次
-            Debug.LogError($"[EnemyAI] 敵人 '{gameObject.name}' 的 Animator 元件為空，無法播放動畫！");
+            // 在这些状态下，所有行为都由协程和攻击脚本控制
             return;
         }
 
-        // 檢查2：獲取剛體的當前速度大小
-        float currentSpeed = rb.velocity.magnitude;
-        bool isCurrentlyMoving = currentSpeed > 0.1f;
+        if (!agent.isOnNavMesh) return;
 
-        // 檢查3：查看 animator 中 isMoving 參數的當前值
-        bool animatorIsMovingState = animator.GetBool("isMoving");
+        stateTimer -= Time.deltaTime;
 
-        // 日誌 A: 持續打印當前狀態，方便觀察
-        // 你可以取消下面這行的註解來進行詳細偵錯
-        // Debug.Log($"[EnemyAI] 速度: {currentSpeed.ToString("F2")}, isCurrentlyMoving: {isCurrentlyMoving}, Animator's isMoving: {animatorIsMovingState}");
-
-        // 只有在需要改變狀態時才呼叫 SetBool，這是一種優化
-        if (isCurrentlyMoving != animatorIsMovingState)
+        if (_currentState == AIState.Chasing)
         {
-            // 日誌 B: 確認 SetBool 是否被呼叫
-            Debug.Log($"<color=lime>[EnemyAI] 狀態改變！將 'isMoving' 參數設定為: {isCurrentlyMoving}</color>");
+            if (agent.isActiveAndEnabled)
+            {
+                agent.SetDestination(playerTransform.position);
+            }
+            if (stateTimer <= 0)
+            {
+                if (canPause && Random.value < pauseChance)
+                {
+                    EnterPauseState();
+                }
+                else
+                {
+                    EnterChaseState();
+                }
+            }
+        }
+        else if (_currentState == AIState.Paused)
+        {
+            if (stateTimer <= 0)
+            {
+                EnterChaseState();
+            }
+        }
+
+        UpdateAnimation();
+    }
+    private void EnterChaseState()
+    {
+        _currentState = AIState.Chasing;
+        stateTimer = Random.Range(chaseDurationRange.x, chaseDurationRange.y);
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
+    }
+
+    private void EnterPauseState()
+    {
+        _currentState = AIState.Paused;
+        stateTimer = Random.Range(pauseDurationRange.x, pauseDurationRange.y);
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+    }
+
+    public void RequestJumpAttack(Vector3 targetPosition, float jumpDuration, float arcHeight)
+    {
+        // 只有在追逐状态下才能发起跳跃攻击
+        if (_currentState == AIState.Chasing)
+        {
+            _currentState = AIState.JumpingAttack;
+            StartCoroutine(ParabolicJumpCoroutine(targetPosition, jumpDuration, arcHeight));
+        }
+    }
+    public void ResumeNormalBehavior()
+    {
+        // 攻击结束后，立刻回到追逐状态
+        EnterChaseState();
+    }
+    private IEnumerator ParabolicJumpCoroutine(Vector3 endPoint, float jumpDuration, float arcHeight)
+    {
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        bool originalAgentState = agent.enabled;
+        agent.enabled = false;
+        rb.isKinematic = false;
+        rb.useGravity = false;
+
+        Vector3 startPoint = transform.position;
+        float timer = 0f;
+
+        while (timer < jumpDuration)
+        {
+            float t = timer / jumpDuration;
+            Vector3 horizontalPosition = Vector3.Lerp(startPoint, endPoint, t);
+            float verticalPosition = Mathf.Sin(t * Mathf.PI) * arcHeight;
+            transform.position = new Vector3(horizontalPosition.x, startPoint.y + verticalPosition, horizontalPosition.z);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = endPoint;
+        rb.isKinematic = true;
+        agent.enabled = originalAgentState;
+
+        // 【关键】将Agent同步到新位置
+        if (agent.isOnNavMesh) agent.Warp(transform.position);
+
+        // 跳跃结束，进入落地准备状态
+        _currentState = AIState.PreparingExplosion;
+
+        // 【关键】通知攻击脚本，移动已完成，可以执行后续的爆炸逻辑了
+        if (explosionAttackScript != null)
+        {
+            explosionAttackScript.OnJumpFinished();
+        }
+        else
+        {
+            Debug.LogError("找不到 EnemyExplosionAttack 脚本来完成攻击！", this);
+            // 如果找不到攻击脚本，恢复正常行为以防卡死
+            ResumeNormalBehavior();
+        }
+    }
+    private void UpdateAnimation()
+    {
+        if (animator == null) return;
+
+        // 我们需要检查 agent.velocity 因为即使 isStopped = true, velocity 也需要一帧才归零
+        bool isCurrentlyMoving = !agent.isStopped && agent.velocity.magnitude > 0.1f;
+
+        if (isCurrentlyMoving != animator.GetBool("isMoving"))
+        {
             animator.SetBool("isMoving", isCurrentlyMoving);
         }
     }

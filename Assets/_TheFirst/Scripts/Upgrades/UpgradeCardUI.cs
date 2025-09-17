@@ -19,6 +19,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     private SkillTreeNodeData sourceNode;
     private UpgradeOption displayedOption; // 【修改】现在存储的是一个 UpgradeOption
     private bool isSelected = false;
+    private Animator animator;
 
     void Awake()
     {
@@ -28,6 +29,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
+        animator = GetComponent<Animator>();
     }
 
     // Setup 方法现在接收“技能节点”和“具体选项”两个参数
@@ -42,16 +44,26 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             return;
         }
 
-        // 直接更新UI内容，不再关心背景样式
         iconImage.sprite = sourceNode.skillIcon;
         nameText.text = sourceNode.skillName;
         descriptionText.text = displayedOption.description;
 
-        // 播放出现动画
         Canvas.ForceUpdateCanvases();
         initialScale = transform.localScale;
         initialAnchorPos = rectTransform.anchoredPosition;
-        AnimateIn();
+
+    }
+    public void Show()
+    {
+        if (animator != null)
+        {
+            // 触发我们在Animator Controller中设置的名为"Show"的触发器
+            animator.SetTrigger("Show");
+        }
+        else
+        {
+            Debug.LogError("在卡片上找不到Animator组件！", this);
+        }
     }
 
     public void OnCardSelected()
@@ -62,27 +74,19 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         }
     }
 
-    // --- 所有动画和交互方法保持不变 ---
-    private void AnimateIn()
-    {
-        if (canvasGroup == null) return;
-        canvasGroup.alpha = 0;
-        transform.localScale = initialScale * 0.8f;
-        transform.DOScale(initialScale, 0.5f).SetUpdate(true).SetEase(Ease.OutBack);
-        canvasGroup.DOFade(1f, 0.4f).SetUpdate(true);
-    }
+   
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (isSelected) return;
         rectTransform.DOAnchorPosY(initialAnchorPos.y + 50f, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true);
-        transform.DOScale(initialScale * 1.05f, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true);
+        transform.DOScale(initialScale * 1.05f, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true); // 增加缩放
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         if (isSelected) return;
         rectTransform.DOAnchorPosY(initialAnchorPos.y, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true);
-        transform.DOScale(initialScale, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true);
+        transform.DOScale(initialScale, 0.2f).SetEase(Ease.OutQuad).SetUpdate(true); // 恢复缩放
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -90,11 +94,24 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (isSelected) return;
         isSelected = true;
 
+        // 停止所有正在进行的悬浮动画，避免冲突
+        rectTransform.DOKill();
+        transform.DOKill();
+
+        if (animator != null)
+        {
+            animator.SetTrigger("Select");
+        }
         DG.Tweening.Sequence clickSequence = DOTween.Sequence();
-        clickSequence.Append(transform.DOPunchScale(new Vector3(-0.1f, -0.1f, 0), 0.2f, 1));
-        clickSequence.Append(rectTransform.DOAnchorPosY(initialAnchorPos.y + 200f, 0.4f).SetEase(Ease.InBack));
-        clickSequence.Join(canvasGroup.DOFade(0f, 0.3f).SetDelay(0.1f));
-        clickSequence.SetUpdate(true);
-        clickSequence.OnComplete(OnCardSelected);
+
+        clickSequence.AppendInterval(0.1f); // 根据Card_Selected动画的长度调整这个时间
+
+    // 后续的渐隐和飞走动画
+    clickSequence.Append(rectTransform.DOAnchorPosY(initialAnchorPos.y + 200f, 0.4f).SetEase(Ease.InBack));
+    clickSequence.Join(canvasGroup.DOFade(0f, 0.3f).SetDelay(0.1f)); // 这个delay是相对于上一个动画而言的
+    clickSequence.SetUpdate(true);
+    
+    // 动画序列完成后，才真正执行升级逻辑
+    clickSequence.OnComplete(OnCardSelected);
     }
 }

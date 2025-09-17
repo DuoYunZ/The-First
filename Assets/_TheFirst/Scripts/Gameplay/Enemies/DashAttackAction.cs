@@ -1,5 +1,6 @@
 // --- DashAttackAction.cs (最终版，支持动画事件) ---
 using UnityEngine;
+using UnityEngine.AI;
 
 public class DashAttackAction : Node
 {
@@ -38,6 +39,7 @@ public class DashAttackAction : Node
     private Rigidbody rb;
     private Animator animator;
     private EnemyAI regularAI;
+    private NavMeshAgent agent; // 【修改】
     private Transform selfTransform; // 【修正】增加了selfTransform的引用
 
     void Awake()
@@ -45,7 +47,7 @@ public class DashAttackAction : Node
         rb = GetComponentInParent<Rigidbody>();
         if (rb != null) selfTransform = rb.transform; // 【修正】在Awake中获取selfTransform
         animator = GetComponentInParent<Animator>();
-        regularAI = GetComponentInParent<EnemyAI>();
+        agent = GetComponentInParent<NavMeshAgent>();
     }
 
     public override NodeState Evaluate()
@@ -57,7 +59,7 @@ public class DashAttackAction : Node
 
         if (currentState == ActionState.Ready)
         {
-            if (regularAI != null) regularAI.enabled = false;
+            if (agent != null) agent.isStopped = true;
 
             Transform playerTarget = GameManager.Instance?.playerTransform;
             if (playerTarget != null)
@@ -92,7 +94,10 @@ public class DashAttackAction : Node
                     {
                         animator.SetTrigger(dashAnimationTrigger);
                     }
+                    if (agent != null) agent.enabled = false;
+                    rb.isKinematic = false; // 确保Rigidbody可以被速度驱动
                     rb.velocity = rb.transform.forward * dashSpeed;
+
                     sideFireTimer = 0f;
                 }
                 break;
@@ -130,6 +135,15 @@ public class DashAttackAction : Node
                     currentState = ActionState.Recovering;
                     timer = 0f;
                     rb.velocity = Vector3.zero;
+                    rb.isKinematic = true;
+                    if (agent != null)
+                    {
+                        agent.enabled = true;
+                        // 【关键】将 agent 的位置同步到冲刺结束后的新位置
+                        agent.Warp(selfTransform.position);
+                        // 保持暂停状态，直到后摇结束
+                        agent.isStopped = true;
+                    }
                     if (animator != null && !string.IsNullOrEmpty(recoveryAnimationTrigger))
                     {
                         animator.SetTrigger(recoveryAnimationTrigger);

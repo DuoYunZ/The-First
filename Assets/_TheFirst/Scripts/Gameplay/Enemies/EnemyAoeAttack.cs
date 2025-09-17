@@ -1,7 +1,9 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
+[RequireComponent(typeof(NavMeshAgent))] // 新增
 public class EnemyAoeAttack : MonoBehaviour
 {
     [Header("攻击设置")]
@@ -27,6 +29,7 @@ public class EnemyAoeAttack : MonoBehaviour
     private EnemyAI enemyAI;
     private bool isAttacking = false;
     private Animator animator;
+    private NavMeshAgent agent;
 
     void Start()
     {
@@ -44,6 +47,7 @@ public class EnemyAoeAttack : MonoBehaviour
 
         enemyAI = GetComponent<EnemyAI>();
         animator = GetComponent<Animator>();
+        agent = GetComponent<NavMeshAgent>(); // 新增
     }
 
     void Update()
@@ -66,7 +70,7 @@ public class EnemyAoeAttack : MonoBehaviour
         isAttacking = true;
 
         // 1. 攻击前置动作
-        enemyAI.enabled = false;
+        agent.isStopped = true;
         Vector3 directionToPlayer = (playerAimTarget.position - transform.position).normalized;
         transform.rotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
 
@@ -102,7 +106,7 @@ public class EnemyAoeAttack : MonoBehaviour
         }
 
         // 6. 攻击结束，恢复移动
-        enemyAI.enabled = true;
+        agent.isStopped = false;
         isAttacking = false;
     }
 }

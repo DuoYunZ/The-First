@@ -1,6 +1,7 @@
 // --- EnemyMeleeAttack.cs ---
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
 [RequireComponent(typeof(Health))]
@@ -39,7 +40,7 @@ public class EnemyMeleeAttack : MonoBehaviour
     // 私有变量
     private Transform playerTarget;
     private float cooldownTimer;
-    private EnemyAI enemyAI;
+    private NavMeshAgent agent;
     private Animator animator;
     private bool isAttacking = false;
     private GameObject activeWarningIndicator; 
@@ -50,7 +51,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         {
             playerTarget = GameManager.Instance.playerTransform;
         }
-        enemyAI = GetComponent<EnemyAI>();
+        agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
 
         Health health = GetComponent<Health>();
@@ -89,15 +90,21 @@ public class EnemyMeleeAttack : MonoBehaviour
         isAttacking = true;
 
         // 1. 准备阶段：停止移动，面朝玩家
-        enemyAI.enabled = false;
-        var rb = GetComponent<Rigidbody>();
-        if (rb != null) rb.velocity = Vector3.zero;
-        if (animator != null) animator.SetBool("isMoving", false);
+        if (agent.isActiveAndEnabled)
+        {
+            agent.isStopped = true;
+            // 额外强制将速度设置为0，确保立即停止
+            agent.velocity = Vector3.zero;
+        }
+        yield return null;
+        if (animator != null)
+        {
+            animator.SetBool("isMoving", false);
+            animator.SetTrigger("doWarning");
+        }
 
         transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
 
-        // 触发攻击前摇/蓄力动画
-        if (animator != null) animator.SetTrigger("doWarning");
 
         // 2. 预警阶段：在身前生成预警特效
         if (warningIndicatorPrefab != null)
@@ -132,7 +139,10 @@ public class EnemyMeleeAttack : MonoBehaviour
         // yield return new WaitForSeconds(0.5f); 
         PerformAttack();
 
-        enemyAI.enabled = true;
+        if (agent.isActiveAndEnabled)
+        {
+            agent.isStopped = false;
+        }
         isAttacking = false;
         activeWarningIndicator = null;
     }

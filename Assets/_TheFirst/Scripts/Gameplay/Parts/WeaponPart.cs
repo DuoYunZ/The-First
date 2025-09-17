@@ -14,6 +14,19 @@ public class WeaponPart : MonoBehaviour
     [Tooltip("连锁闪电的视觉特效预制件")]
     public GameObject lightningChainPrefab;
 
+    [Header("音效设置")]
+    [Tooltip("标准、穿透、抛物线等发射型武器的开火音效")]
+    public AudioClip[] fireSounds;
+    [Tooltip("放置地雷的音效")]
+    public AudioClip landminePlaceSound;
+    [Tooltip("光束武器持续发出的循环音效")]
+    public AudioClip beamLoopSound;
+    [Tooltip("开火音效相对于子弹发射的延迟（秒）。负数为提前播放。")]
+    public float fireSoundDelay = -0.05f; // 默认设置为提前0.05秒
+
+
+    private AudioSource audioSource;
+
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
     {
@@ -44,14 +57,23 @@ public class WeaponPart : MonoBehaviour
 
 
     #region Unity Lifecycle Methods
-
+    void Awake() // 【修改】将 Start() 的内容移到 Awake()，确保 AudioSource 尽早被获取
+    {
+        // 确保 AudioSource 存在
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.spatialBlend = 1.0f;
+        }
+    }
     void Start()
     {
         // 在开始时，为光束武器充满能量
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
-        }
+        }      
     }
     void Update()
     {
@@ -131,10 +153,20 @@ public class WeaponPart : MonoBehaviour
     public void Fire(Vector3 initialDirection)
     {
         if (StatBlock == null || !IsReadyToFire) return;
+        StartCoroutine(FireRoutine(initialDirection));
+               
+    }
+    private IEnumerator FireRoutine(Vector3 initialDirection)
+    {
+        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+        if (fireSoundDelay < 0)
+        {
+            PlayFireSound(); // 先播放声音
+            yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); // 再等待
+        }
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) yield break;
 
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) return;
-
-        if (StatBlock == null || !IsReadyToFire) return;
+        
 
 
         // --- 1. 处理轨道武器的特殊逻辑 ---
@@ -144,7 +176,7 @@ public class WeaponPart : MonoBehaviour
             {
                 SetupOrbiters();
             }
-            return; // 轨道武器不执行后续的发射逻辑
+            yield break; // 轨道武器不执行后续的发射逻辑
         }
 
         // --- 2. 处理所有发射型武器的逻辑 ---
@@ -152,7 +184,7 @@ public class WeaponPart : MonoBehaviour
         bool isControlledByDrone = GetComponentInParent<DroneAI>() != null;
         Transform firstTarget = null; // 用于连锁闪电和自动瞄准
 
-        if (StatBlock.autoAimAtNearestEnemy && !isControlledByDrone)
+        if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
         {
             Transform nearestEnemy = FindNearestEnemyTransform();
             if (nearestEnemy != null)
@@ -165,11 +197,11 @@ public class WeaponPart : MonoBehaviour
             else
             {
                 // 如果是自动瞄准武器但没找到敌人，则不开火
-                return;
+                yield break;
             }
         }
 
-        if (finalTargetDirection.sqrMagnitude < 0.01f) return;
+        if (finalTargetDirection.sqrMagnitude < 0.01f) yield break;
 
         // 3. 根据武器行为执行不同的发射方式
         switch (StatBlock.behavior)
@@ -256,18 +288,28 @@ public class WeaponPart : MonoBehaviour
                 break;
         }
 
-        // 4. 重置冷却和播放特效
-        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
         if (StatBlock.muzzleFlashPrefab != null)
         {
             Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation);
+        }
+        if (fireSoundDelay >= 0)
+        {
+            yield return new WaitForSeconds(fireSoundDelay);
+            PlayFireSound();
         }
     }
 
     #endregion
 
     #region Private Helper Methods
-
+    private void PlayFireSound()
+    {
+        if (fireSounds != null && fireSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip clipToPlay = fireSounds[Random.Range(0, fireSounds.Length)];
+            audioSource.PlayOneShot(clipToPlay);
+        }
+    }
     // --- 发射直线弹 (标准/穿透) ---
     private void InstantiateAndFireProjectile(Vector3 direction)
     {
@@ -565,6 +607,12 @@ public class WeaponPart : MonoBehaviour
             // 使用新脚本的初始化方法
             activeBeamInstance.Initialize(StatBlock, this.gameObject, lockedBeamTarget);
         }
+        if (beamLoopSound != null && audioSource != null)
+        {
+            audioSource.clip = beamLoopSound;
+            audioSource.loop = true; // 确保音效循环
+            audioSource.Play();
+        }
     }
 
 
@@ -576,6 +624,8 @@ public class WeaponPart : MonoBehaviour
         Destroy(activeBeamInstance.gameObject);
         activeBeamInstance = null;
         lockedBeamTarget = null;
+
+        if (audioSource != null) audioSource.Stop();
     }
 
     // 能量耗尽时，也要解除锁定
@@ -588,6 +638,8 @@ public class WeaponPart : MonoBehaviour
         beamCooldownTimer = StatBlock.beamCooldown;
         beamEnergyTimer = 0;
         lockedBeamTarget = null;
+
+        if (audioSource != null) audioSource.Stop();
     }
 
 
@@ -683,6 +735,11 @@ public class WeaponPart : MonoBehaviour
                     StatBlock.explosionEffectPrefab,    // 使用抛物线弹的爆炸特效
                     StatBlock.layersToDamageByAOE
                 );
+            }
+            if (landminePlaceSound != null && audioSource != null)
+            {
+                // 使用 PlayClipAtPoint 可以在地雷实际放置的位置播放音效，效果更佳
+                AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition);
             }
         }
 

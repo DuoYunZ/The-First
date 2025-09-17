@@ -1,6 +1,7 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
 public class EnemyAdvancedAoeAttack : MonoBehaviour
@@ -35,7 +36,7 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
     // 私有变量
     private Transform playerTarget;
     private float attackCooldownTimer;
-    private EnemyAI enemyAI;
+    private NavMeshAgent agent; // 【修改】
     private Animator animator;
     private bool isCasting = false;
 
@@ -46,7 +47,7 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
             // 注意：我们现在只需要玩家的根Transform即可，不再需要AimTarget
             playerTarget = GameManager.Instance.playerTransform;
         }
-        enemyAI = GetComponent<EnemyAI>();
+        agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
     }
 
@@ -67,16 +68,10 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
     {
         isCasting = true;
 
-        if (enemyAI.enabled)
-        {
-            enemyAI.enabled = false;
-            // 如果有刚体，确保速度为零
-            var rb = GetComponent<Rigidbody>();
-            if (rb != null) rb.velocity = Vector3.zero;
+        agent.isStopped = true;
+        agent.velocity = Vector3.zero; // 确保立即停止
 
-            // 确保动画状态立即切换到待机
-            if (animator != null) animator.SetBool("isMoving", false);
-        }
+        if (animator != null) animator.SetBool("isMoving", false);
 
         // 面朝玩家
         transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
@@ -143,10 +138,7 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
             }
         }
 
-        if (!enemyAI.enabled)
-        {
-            enemyAI.enabled = true;
-        }
+        agent.isStopped = false;
         isCasting = false;
     }
 }

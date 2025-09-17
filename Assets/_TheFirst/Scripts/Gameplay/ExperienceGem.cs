@@ -35,6 +35,13 @@ public class ExperienceGem : MonoBehaviour
     [Tooltip("浮空后停滞的时间")]
     public float absorbHoverDuration = 0.2f;
 
+    [Header("音效与特效")]
+    // 【修改】重命名变量，以更好地反映其用途
+    [Tooltip("经验值被玩家收集时播放的音效")]
+    public AudioClip collectionSound;
+    [Tooltip("经验值被玩家收集时，在玩家身上播放的粒子特效")]
+    public GameObject collectionVfxPrefab;
+
     // --- 内部状态变量 ---
     private Transform collectionTarget;
     private PlayerLevelManager foundLevelManager;
@@ -133,7 +140,7 @@ public class ExperienceGem : MonoBehaviour
 
         isCollecting = true;
         isAbsorbFloating = true;
-        absorbStartPosition = transform.position;
+        absorbStartPosition = transform.position;       
 
         // 启动吸收浮空协程
         StartCoroutine(AbsorbFloatRoutine());
@@ -182,6 +189,23 @@ public class ExperienceGem : MonoBehaviour
             var lvlManager = collectionTarget.GetComponent<PlayerLevelManager>();
             if (lvlManager != null) lvlManager.AddExperience(experienceAmount);
         }
+        if (collectionTarget != null)
+        {
+            // 在玩家身上播放收集特效
+            if (collectionVfxPrefab != null)
+            {
+                Instantiate(collectionVfxPrefab, collectionTarget.position, collectionTarget.rotation);
+            }
+
+            // 在玩家身上播放收集音效
+            if (collectionSound != null && AudioManager.Instance != null)
+            {
+                // 请求 AudioManager 播放这个收集音效
+                // 声音将以2D形式播放，音量清晰，不受距离影响
+                AudioManager.Instance.PlaySoundEffect(collectionSound);
+            }
+        }
+
 
         // 销毁自身
         Destroy(gameObject);

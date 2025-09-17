@@ -15,11 +15,30 @@ public class PlayerBladeAttack : MonoBehaviour
     [Header("武器数据")]
     public WeaponStatBlock attackData;
 
+    [Header("刃气弹 (技能树解锁)")]
+    [Tooltip("刃气弹的预制件")]
+    public GameObject bladeEnergyProjectilePrefab;
+    [Tooltip("刃气弹的发射点")]
+    public Transform bladeEnergySpawnPoint;
+
+    private int attackCounter = 0;
+
+
     [Header("系统引用")]
     public Transform visualsTransform;
     public Transform slashSpawnPoint;
     public FloatingWeaponController floatingWeapon;
     public WeaponCooldownMaterial weaponCooldownMaterial;
+
+    [Header("音效设置")]
+    [Tooltip("攻击时播放的挥舞音效，可以放多个")]
+    public AudioSource attackAudioSource;
+    public AudioClip[] slashSounds;
+
+    [Header("音效时序设置")]
+    [Tooltip("挥刀音效相对于视觉特效的延迟（负数为提前）")]
+    public float soundEffectDelay = -0.1f; // 设置为负数，表示音效提前
+
 
     [Header("特效")]
     public GameObject flashEffectPrefab;
@@ -41,7 +60,7 @@ public class PlayerBladeAttack : MonoBehaviour
         {
             cooldownDuration = 1f / attackData.baseFireRate;
             cooldownTimer = cooldownDuration;
-        }
+        }       
     }
 
     void Update()
@@ -62,63 +81,154 @@ public class PlayerBladeAttack : MonoBehaviour
 
         if (floatingWeapon != null) floatingWeapon.HideWeapon();
         if (flashEffectPrefab != null) Instantiate(flashEffectPrefab, floatingWeapon.transform.position, floatingWeapon.transform.rotation);
-        yield return new WaitForSeconds(0.1f);
 
-        if (attackData != null && attackData.slashEffectPrefab != null)
+        // --- 音效时序逻辑 ---
+        // 1. 如果设置为提前播放音效
+        if (soundEffectDelay < 0)
+        {
+            PlaySlashSound(); // 先播放声音
+            yield return new WaitForSeconds(Mathf.Abs(soundEffectDelay)); // 再等待
+        }
+
+        // 2. 生成刀光特效 (这部分逻辑不变)
+        GenerateSlashVFX();
+
+        // 3. 如果设置为延迟或同时播放音效
+        if (soundEffectDelay >= 0)
+        {
+            yield return new WaitForSeconds(soundEffectDelay); // 先等待
+            PlaySlashSound(); // 再播放声音
+        }
+        // --- 音效时序逻辑结束 ---
+
+        yield return new WaitForSeconds(0.5f); // 攻击动作的整体持续时间
+        if (floatingWeapon != null) floatingWeapon.ShowWeapon();
+        isAttacking = false;
+    }
+    private void GenerateSlashVFX()
+    {
+        if (attackData == null) return;
+
+        attackCounter++;
+
+        bool hasImprovedFrequency = false; // <-- 【临时测试】设为 true 来测试“万刃归宗”
+        bool hasUnlockedProjectile = true;  // <-- 【临时测试】设为 true 来测试“刃气斩”
+
+
+        if (attackData.slashEffectPrefab != null)
         {
             int slashCount = 1 + PlayerStats.Instance.bonusSlashCount;
+            List<SlashPattern> currentPattern = GetCurrentSlashPattern(slashCount);
 
-            // 为了健壮性，我们创建一个新的List来引用正确的模式
-            List<SlashPattern> currentPattern = new List<SlashPattern>();
-            string patternName = "Level 1";
-
-            if (slashCount == 2)
+            if (currentPattern.Count > 0)
             {
-                currentPattern = slashesLevel2;
-                patternName = "Level 2";
-            }
-            else if (slashCount == 3)
-            {
-                currentPattern = slashesLevel3;
-                patternName = "Level 3";
-            }
-            else if (slashCount == 4)
-            {
-                currentPattern = slashesLevel4;
-                patternName = "Level 4";
-            }
-            else if (slashCount >= 5)
-            { // 如果等于或超过5，都使用5级的模式
-                currentPattern = slashesLevel5;
-                patternName = "Level 5+ (顶级)";
-            }
-            else
-            {
-                currentPattern = slashesLevel1;
-                patternName = "Level 1";
-            }
-
-            // --- 【决定性的诊断日志】 ---
-            // 这行日志会告诉我们，代码认为当前选中的列表里到底有多少个元素。
-            Debug.Log($"<color=cyan>[诊断] 攻击开始! 刀光等级: {slashCount}. 使用模式: '{patternName}'. 该模式配置的刀光数量为: {currentPattern.Count}</color>");
-
-            if (currentPattern.Count == 0)
-            {
-                Debug.LogWarning($"模式 '{patternName}' 的列表为空！请在PlayerBladeAttack组件中配置它。", this);
-            }
-            else
-            {
-                // 使用 foreach 循环确保每一个配置都被执行
                 foreach (var slash in currentPattern)
                 {
                     SpawnSlashVFX(slash.positionOffset, slash.angleOffset);
+
+                    // --- 4. 【核心新增】在生成每一道刀光时，判断是否要发射刃气 ---
+                    if (hasImprovedFrequency)
+                    {
+                        // 如果解锁了最高级技能，每一道刀光都发射刃气
+                        FireBladeEnergyProjectile(slash.angleOffset);
+                    }
+                    else if (hasUnlockedProjectile)
+                    {
+                        // 如果只解锁了第一级技能 ("刃气斩")
+                        // 我们需要检查整个攻击计数器是否是3的倍数。
+                        // 并且，为了避免一次攻击挥出多道刀光时发射多次，
+                        // 我们只让第一道刀光（或者任意一道固定的）来触发这个判定。
+                        // 一个简单的做法是，将这个判定移到循环外。
+                        // 为了让逻辑更清晰，我们做如下修改：
+                    }
                 }
             }
         }
+        // --- 5. 处理非最高级的刃气技能 ---
+        // (放在循环外，确保无论有多少道刀光，一次攻击只判定一次)
+        if (hasUnlockedProjectile && !hasImprovedFrequency)
+        {
+            if (attackCounter % 3 == 0)
+            {
+                Debug.Log($"攻击次数达到 {attackCounter}，触发“刃气斩”！");
+                // 从基础方向发射一道刃气
+                FireBladeEnergyProjectile(0);
+            }
+        }
+    }
 
-        yield return new WaitForSeconds(0.5f);
-        if (floatingWeapon != null) floatingWeapon.ShowWeapon();
-        isAttacking = false;
+    private void FireBladeEnergyProjectile(float angleOffset)
+    {
+        if (attackData.bladeEnergyPrefab == null)
+        {
+            Debug.LogWarning("想要发射刃气，但 WeaponStatBlock 中的 BladeEnergyPrefab 未设置！");
+            return;
+        }
+
+        Transform spawnPoint = bladeEnergySpawnPoint != null ? bladeEnergySpawnPoint : this.transform;
+
+        Quaternion baseRotation = visualsTransform.rotation;
+        Quaternion finalRotation = baseRotation * Quaternion.Euler(0, angleOffset, 0);
+
+        // 【修改】使用新的预制件
+        GameObject projectileGO = Instantiate(attackData.bladeEnergyPrefab, spawnPoint.position, finalRotation);
+        Projectile projectileScript = projectileGO.GetComponent<Projectile>();
+
+        if (projectileScript != null)
+        {
+            // --- 【核心修改】从 WeaponStatBlock 读取属性并初始化子弹 ---
+
+            // 1. 获取基础属性
+            int finalDamage = attackData.bladeEnergyDamage;
+            float finalSpeed = attackData.bladeEnergySpeed;
+            int finalPierce = attackData.bladeEnergyPierceCount;
+
+            // 2. （可选）应用玩家全局属性加成
+            finalDamage = Mathf.RoundToInt(finalDamage * PlayerStats.Instance.damageMultiplier);
+
+            // 3. （可选）应用刃气距离增长的技能树效果
+            // bool hasRangeUpgrade = DataManager.Instance.IsUpgradeUnlocked("Blade_ImproveRange");
+            // if(hasRangeUpgrade) finalSpeed *= 1.3f; // 假设距离增长30%是通过提速实现
+
+            // 4. 调用 Projectile.cs 的初始化方法
+            projectileScript.InitializeAsStraight(
+                finalRotation * Vector3.forward, // 发射方向
+                finalSpeed,                      // 飞行速度
+                finalDamage,                     // 伤害
+                false,                           // isEnemyBullet = false
+                finalPierce,                     // 穿透次数
+                5f,                              // 子弹生存时间
+                attackData.shieldImpactEffectPrefab, // 命中护盾特效
+                attackData.defaultImpactEffectPrefab, // 默认命中特效
+                0, 0, 0, 0, 0 // 其他效果（燃烧、减速等），暂时设为0
+            );
+
+            // 【重要】设置刃气弹的物理层
+            projectileGO.layer = LayerMask.NameToLayer("PlayerProjectiles");
+
+            Debug.Log($"发射了一道刃气！伤害: {finalDamage}, 速度: {finalSpeed}");
+        }
+    }
+    private void PlaySlashSound()
+    {
+        if (slashSounds != null && slashSounds.Length > 0 && attackAudioSource != null)
+        {
+            AudioClip clipToPlay = slashSounds[Random.Range(0, slashSounds.Length)];
+            attackAudioSource.PlayOneShot(clipToPlay);
+        }
+    }
+    private List<SlashPattern> GetCurrentSlashPattern(int slashLevel)
+    {
+        switch (slashLevel)
+        {
+            case 2: return slashesLevel2;
+            case 3: return slashesLevel3;
+            case 4: return slashesLevel4;
+            case 5:
+            default: // 如果等级超过5，或等于1，或出现意外情况，都使用对应的列表
+                if (slashLevel >= 5) return slashesLevel5;
+                return slashesLevel1;
+        }
     }
 
     // SpawnSlashVFX 和 OnDrawGizmosSelected 方法保持我们上一个版本即可
@@ -135,8 +245,7 @@ public class PlayerBladeAttack : MonoBehaviour
         if (damageController != null)
         {
             damageController.Initialize(attackData, this.gameObject);
-        }
-        Destroy(slashVFX, 2f);
+        }        
     }
 
     // OnDrawGizmosSelected 保持不变，它也需要使用新的诊断逻辑

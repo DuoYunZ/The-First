@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 
 public class UpgradeManager : MonoBehaviour
@@ -20,11 +21,15 @@ public class UpgradeManager : MonoBehaviour
     [Header("升级数据库")]
     public UpgradeDatabase upgradeDatabase;
 
+    [Header("动画设置")] // 【新增】
+    [Tooltip("每张卡片出现的间隔时间（秒）")]
+    public float delayBetweenCards = 0.2f; // 【新增】
     // 记录玩家已拥有的技能节点及其当前等级
     private Dictionary<SkillTreeNodeData, int> ownedUpgrades = new Dictionary<SkillTreeNodeData, int>();
 
     // 用于存储本次为玩家提供的三个“升级机会”
     private List<SkillTreeNodeData> offeredUpgrades = new List<SkillTreeNodeData>();
+    private List<UpgradeCardUI> activeCardUIs = new List<UpgradeCardUI>(); // 【新增】用于存储当前卡片实例
 
     void Awake()
     {
@@ -67,10 +72,16 @@ public class UpgradeManager : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+        activeCardUIs.Clear();
         upgradePanel.SetActive(true);
 
+        StartCoroutine(ShowCardsSequentially());
+    }
+    private IEnumerator ShowCardsSequentially()
+    {
         foreach (var upgradeNode in offeredUpgrades)
         {
+            // --- 这部分逻辑与您原来的一致 ---
             float playerLuck = PlayerStats.Instance != null ? PlayerStats.Instance.luck : 1.0f;
             UpgradeOption chosenOption = RaritySystem.GetRandomOptionByRarity(upgradeNode.possibleOptions, playerLuck);
 
@@ -79,14 +90,24 @@ public class UpgradeManager : MonoBehaviour
             GameObject prefabToInstantiate = GetPrefabForOption(chosenOption);
             GameObject cardGO = Instantiate(prefabToInstantiate, cardContainer);
             var cardUI = cardGO.GetComponent<UpgradeCardUI>();
+            // --- 逻辑结束 ---
+
             if (cardUI != null)
             {
-                // 【修正】调用新的 Setup 方法，传入正确的参数
+                // 1. 先设置卡片数据
                 cardUI.Setup(upgradeNode, chosenOption);
+
+                // 2. 再调用Show()方法来触发Animator动画
+                cardUI.Show();
+
+                // 3. 将实例化的卡片UI存入列表
+                activeCardUIs.Add(cardUI);
             }
+
+            // 【关键】等待指定的时间，再进行下一次循环
+            yield return new WaitForSecondsRealtime(delayBetweenCards);
         }
     }
-
     private List<SkillTreeNodeData> GetAvailableUpgrades()
     {
         // 获取玩家当前拥有的所有武器的 StatBlock

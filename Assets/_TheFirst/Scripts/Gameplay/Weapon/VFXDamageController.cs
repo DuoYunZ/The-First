@@ -1,6 +1,7 @@
 // --- VFXDamageController.cs (调试版) ---
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class VFXDamageController : MonoBehaviour
@@ -9,7 +10,38 @@ public class VFXDamageController : MonoBehaviour
     private GameObject attacker;
     private List<Health> hitTargets = new List<Health>();
     private GameObject hitEffectPrefab; // <--- 新增：用于存储命中特效
+    [Header("生命周期与伤害窗口")]
+    [Tooltip("特效的总生命周期（秒），之后将销毁自身")]
+    public float totalLifetime = 2f;
+    [Tooltip("碰撞体保持有效的时间（秒），即伤害判定的窗口期")]
+    public float damageActiveDuration = 0.2f; // 例如，只在前0.2秒造成伤害
+    private Collider col;
 
+    void Awake()
+    {
+        col = GetComponent<Collider>();
+    }
+
+    void Start()
+    {
+        // 预定在总生命周期结束后销毁整个GameObject
+        Destroy(gameObject, totalLifetime);
+
+        // 启动一个协程，在指定的伤害窗口期后，禁用碰撞体
+        StartCoroutine(DeactivateColliderRoutine());
+    }
+
+    private IEnumerator DeactivateColliderRoutine()
+    {
+        // 等待伤害窗口期结束
+        yield return new WaitForSeconds(damageActiveDuration);
+
+        // 时间一到，立即禁用碰撞体，停止伤害判定
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+    }
     // 修改 Initialize 方法，让它能接收 WeaponStatBlock
     public void Initialize(WeaponStatBlock weaponData, GameObject attacker)
     {

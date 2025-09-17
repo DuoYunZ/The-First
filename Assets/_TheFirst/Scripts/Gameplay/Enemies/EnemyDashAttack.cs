@@ -1,8 +1,11 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.AI; // 【新增】
+
 
 [RequireComponent(typeof(EnemyAI))]
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(NavMeshAgent))]
 public class EnemyDashAttack : MonoBehaviour
 {
     [Header("冲刺设置")]
@@ -33,7 +36,7 @@ public class EnemyDashAttack : MonoBehaviour
     // 私有变量
     private Transform playerTarget;
     private float attackCooldownTimer;
-    private EnemyAI enemyAI;
+    private NavMeshAgent agent;
     private Rigidbody rb;
     private bool isAttacking = false;
     private Collider damageCollider; // 用于在冲刺时激活的伤害碰撞体
@@ -52,7 +55,7 @@ public class EnemyDashAttack : MonoBehaviour
             enabled = false;
         }
 
-        enemyAI = GetComponent<EnemyAI>();
+        agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>(); // 【新增】在Start中获取Animator
 
@@ -82,8 +85,8 @@ public class EnemyDashAttack : MonoBehaviour
         isAttacking = true;
 
         // 1. 攻击前置动作：停止AI，面朝玩家
-        enemyAI.enabled = false;
-        rb.velocity = Vector3.zero;
+        agent.isStopped = true;
+        agent.velocity = Vector3.zero;
         if (animator != null) animator.SetBool("isMoving", false);
 
         Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
@@ -118,6 +121,8 @@ public class EnemyDashAttack : MonoBehaviour
         // 3. 等待预警（填充动画）播放完毕
         yield return new WaitForSeconds(warningDuration);
 
+        agent.enabled = false;
+        rb.isKinematic = false;
         // 4. 冲锋！
         // (可选) 触发“冲刺”动画: animator.SetTrigger("Dash");
         if (animator != null)
@@ -143,13 +148,15 @@ public class EnemyDashAttack : MonoBehaviour
         // 5. 冲锋结束后停止
         yield return new WaitForSeconds(dashDuration);
         rb.velocity = Vector3.zero;
+        agent.enabled = true;
+        agent.Warp(transform.position);
 
         if (currentDashSpeedEffectInstance != null)
         {
             Destroy(currentDashSpeedEffectInstance);
         }
         // 6. 攻击结束，恢复AI
-        enemyAI.enabled = true;
+        agent.isStopped = false;
         isAttacking = false;
     }
 
@@ -167,11 +174,7 @@ public class EnemyDashAttack : MonoBehaviour
                 // 【核心修改】攻击类型设置为 ShieldBreaking！
                 playerHealth.TakeDamage(dashDamage, transform.position, this.gameObject, AttackType.ShieldBreaking);
 
-                // 冲刺通常只造成一次伤害
-                if (enemyAI != null)
-                {
-                    enemyAI.TriggerDamageCooldown();
-                }
+                
             }
         }
     }

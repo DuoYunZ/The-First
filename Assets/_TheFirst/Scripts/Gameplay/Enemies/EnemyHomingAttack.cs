@@ -1,8 +1,10 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
 [RequireComponent(typeof(Animator))] // 【新增】确保怪物有Animator组件
+[RequireComponent(typeof(NavMeshAgent))]
 public class EnemyHomingAttack : MonoBehaviour
 {
     [Header("攻击设置")]
@@ -36,7 +38,7 @@ public class EnemyHomingAttack : MonoBehaviour
     private float attackCooldownTimer;
     private EnemyAI enemyAI;
     private Animator animator; // 【新增】动画控制器引用
-    private Rigidbody rb;
+    private NavMeshAgent agent;
     private bool isInAttackRange = false;
     private bool isInAttackSequence = false;
 
@@ -53,7 +55,7 @@ public class EnemyHomingAttack : MonoBehaviour
         }
         enemyAI = GetComponent<EnemyAI>();
         animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
+        agent = GetComponent<NavMeshAgent>();
     }
 
     void Update()
@@ -68,10 +70,10 @@ public class EnemyHomingAttack : MonoBehaviour
         if (isInAttackRange)
         {
             // --- 玩家在攻击范围内 ---
-            if (enemyAI.enabled)
+            if (agent.isStopped == false)
             {
-                enemyAI.enabled = false;
-                rb.velocity = Vector3.zero;
+                agent.isStopped = true; // 修改
+                agent.velocity = Vector3.zero;
                 animator.SetBool("isMoving", false);
             }
 
@@ -88,9 +90,9 @@ public class EnemyHomingAttack : MonoBehaviour
         else
         {
             // --- 玩家在攻击范围外 ---
-            if (!enemyAI.enabled)
+            if (agent.isStopped == true)
             {
-                enemyAI.enabled = true;
+                agent.isStopped = false; // 修改
             }
         }
     }

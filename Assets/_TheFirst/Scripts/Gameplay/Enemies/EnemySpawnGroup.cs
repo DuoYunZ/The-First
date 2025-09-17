@@ -20,8 +20,18 @@ public class EnemySpawnGroup
     [Tooltip("在此组内部，每个敌人之间的生成间隔时间。如果为0，则使用 EnemySpawner 的全局默认间隔。")]
     public float spawnIntervalWithinGroup = 0.2f;
 
-     [Tooltip("（可选）此组敌人生成的方向提示")]
-     public SpawnDirectionHint directionHint = SpawnDirectionHint.Random;
+    [Tooltip("（可选）此组敌人生成的方向提示")]
+    public SpawnDirectionHint directionHint = SpawnDirectionHint.Random;
+
+    [Header("爆发生成覆盖 (可选)")]
+    [Tooltip("勾选此项，为此组敌人启用独立的爆发生成设置，忽略 EnemySpawner 上的全局设置。")]
+    public bool overrideSpawnerBurstSettings = false;
+
+    [Tooltip("【独立设置】当这组敌人的数量超过此值时，启用爆发生成模式。")]
+    public int burstSpawnThreshold = 20;
+
+    [Tooltip("【独立设置】在爆发模式下，陆续生成完这一整组敌人所用的总时间（秒）。")]
+    public float burstSpawnTotalDuration = 1.5f;
 
     [Header("自定义属性覆盖 (可选)")]
     [Tooltip("勾选此项，以启用下面的自定义属性，它会忽略'Is Elite'的设置。")]

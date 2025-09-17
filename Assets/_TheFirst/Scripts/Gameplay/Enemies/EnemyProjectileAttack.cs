@@ -1,8 +1,10 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(NavMeshAgent))] // 新增
 public class EnemyProjectileAttack : MonoBehaviour
 {
     [Header("攻击设置")]
@@ -36,7 +38,7 @@ public class EnemyProjectileAttack : MonoBehaviour
     private float attackCooldownTimer;
     private EnemyAI enemyAI;
     private Animator animator;
-    private Rigidbody rb;
+    private NavMeshAgent agent; 
     private bool isInAttackRange = false; // 用于跟踪玩家是否在攻击范围内
 
     void Start()
@@ -52,7 +54,7 @@ public class EnemyProjectileAttack : MonoBehaviour
         }
         enemyAI = GetComponent<EnemyAI>();
         animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
+        agent = GetComponent<NavMeshAgent>(); 
     }
 
     void Update()
@@ -68,10 +70,10 @@ public class EnemyProjectileAttack : MonoBehaviour
         {
             // --- 【核心修改 1】玩家在攻击范围内 ---
             // 1. 禁用基础AI，由本脚本接管
-            if (enemyAI.enabled)
+            if (agent.isStopped == false)
             {
-                enemyAI.enabled = false;
-                rb.velocity = Vector3.zero;
+                agent.isStopped = true; // 修改
+                agent.velocity = Vector3.zero; // 确保停稳
                 animator.SetBool("isMoving", false);
             }
 
@@ -88,10 +90,9 @@ public class EnemyProjectileAttack : MonoBehaviour
         }
         else
         {
-            // --- 玩家在攻击范围外 ---
-            if (!enemyAI.enabled)
+            if (agent.isStopped == true)
             {
-                enemyAI.enabled = true; // 恢复移动AI
+                agent.isStopped = false; // 修改
             }
         }
     }

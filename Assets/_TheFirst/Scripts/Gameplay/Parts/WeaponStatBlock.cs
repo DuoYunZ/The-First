@@ -204,4 +204,14 @@ public class WeaponStatBlock : ScriptableObject
     [Header("特效与层设置")]
     [Tooltip("【通用】当本次攻击命中敌人时，在敌人身上产生的特效")] // <--- 新增
     public GameObject hitEffectPrefab; // <--- 新增
+
+    [Header("刃气弹属性 (由技能树解锁)")]
+    [Tooltip("刃气弹的预制件 (必须挂载 Projectile 脚本)")]
+    public GameObject bladeEnergyPrefab; // 我们用这个来代替旧的bladeEnergyProjectilePrefab
+    [Tooltip("刃气弹的基础伤害")]
+    public int bladeEnergyDamage = 10;
+    [Tooltip("刃气弹的飞行速度")]
+    public float bladeEnergySpeed = 15f;
+    [Tooltip("刃气弹的穿透次数")]
+    public int bladeEnergyPierceCount = 1;
 }

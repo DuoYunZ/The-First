@@ -9,6 +9,10 @@ public class MechController : MonoBehaviour
     [Header("旋转设置")]
     public float rotationSpeed = 15f;
 
+    [Header("音效设置")]
+    [Tooltip("走路音效剪辑数组，可以放多个以增加随机性")]
+    public AudioSource footstepAudioSource;
+    public AudioClip[] footstepClips;
     // 内部引用
     private Transform visualsTransform;
     private Rigidbody rb;
@@ -43,6 +47,11 @@ public class MechController : MonoBehaviour
         if (animator == null)
         {
             Debug.LogWarning("MechController: 在 'Visuals' 对象上未能找到 Animator 组件！", this);
+        }
+        
+        if (footstepAudioSource == null)
+        {
+            Debug.LogError("在玩家身上找不到AudioSource组件!", this);
         }
     }
 
@@ -100,5 +109,16 @@ public class MechController : MonoBehaviour
 
         // 将移动状态传递给 Animator 的 "isMoving" 参数
         animator.SetBool("isMoving", isMoving);
+    }
+    public void PlayFootstepSound()
+    {
+        if (footstepClips == null || footstepClips.Length == 0) return;
+
+        AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];
+
+        if (footstepAudioSource != null)
+        {
+            footstepAudioSource.PlayOneShot(clip);
+        }
     }
 }
