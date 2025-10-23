@@ -27,6 +27,11 @@ public class Health : MonoBehaviour
     [Header("掉落设置 (可选)")]
     [Tooltip("死亡时掉落的经验宝石预设")]
     public GameObject experienceGemPrefab;
+    [Tooltip("死亡时掉落的金币预设")] // <--- 新增
+    public GameObject goldCoinPrefab;
+    [Tooltip("掉落金币的几率 (0到1之间)")] // <--- 新增
+    [Range(0f, 1f)]
+    public float goldDropChance = 0.5f; // 默认50%几率
 
     [Header("视觉效果 (可选)")]
     [Tooltip("受到伤害时生成的跳字预制件")]
@@ -94,6 +99,11 @@ public class Health : MonoBehaviour
     {
         if (IsDead) return false;
 
+        if (isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.isInvincible)
+        {
+            return false; // 如果是玩家且处于无敌状态，则不承受任何伤害
+        }
+
         int remainingDamage = damageAmount;
         bool wasReflected = false;
 
@@ -159,14 +169,13 @@ public class Health : MonoBehaviour
 
         if (gameObject.CompareTag("Enemy"))
         {
-            WaveManager.Instance?.EnemyDefeated();
+            GameTimelineManager.Instance?.EnemyDefeated();
         }
+
+        HandleDrops();
         var enemyAI = GetComponent<EnemyAI>();
 
-        if (experienceGemPrefab != null)
-        {
-            Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
-        }
+       
         if (enemyTypeData != null && enemyTypeData.deathVfxPrefab != null)
         {
             // 在当前物体的位置生成死亡特效
@@ -176,6 +185,24 @@ public class Health : MonoBehaviour
         if (destroyImmediately)
         {
             Destroy(gameObject);
+        }
+    }
+    private void HandleDrops()
+    {
+        // 掉落经验
+        if (experienceGemPrefab != null)
+        {
+            Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
+        }
+
+        // 掉落金币
+        if (goldCoinPrefab != null)
+        {
+            // Random.value 会返回一个0到1之间的随机数
+            if (Random.value <= goldDropChance)
+            {
+                Instantiate(goldCoinPrefab, transform.position, Quaternion.identity);
+            }
         }
     }
     private void ExplodeOnDeath()

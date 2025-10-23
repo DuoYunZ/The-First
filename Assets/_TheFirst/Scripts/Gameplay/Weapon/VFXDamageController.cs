@@ -6,10 +6,12 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class VFXDamageController : MonoBehaviour
 {
-    private int damage;
+
+    private int finalDamage;
     private GameObject attacker;
     private List<Health> hitTargets = new List<Health>();
     private GameObject hitEffectPrefab; // <--- 新增：用于存储命中特效
+
     [Header("生命周期与伤害窗口")]
     [Tooltip("特效的总生命周期（秒），之后将销毁自身")]
     public float totalLifetime = 2f;
@@ -43,16 +45,16 @@ public class VFXDamageController : MonoBehaviour
         }
     }
     // 修改 Initialize 方法，让它能接收 WeaponStatBlock
-    public void Initialize(WeaponStatBlock weaponData, GameObject attacker)
+    public void Initialize(int calculatedDamage, GameObject hitVfx, GameObject attacker)
     {
-        this.damage = weaponData.baseAoeDamage;
+        this.finalDamage = calculatedDamage;
+        this.hitEffectPrefab = hitVfx;
         this.attacker = attacker;
-        this.hitEffectPrefab = weaponData.hitEffectPrefab; // <--- 新增：从武器数据中获取命中特效
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (damage <= 0) return;
+        if (finalDamage <= 0) return;
 
         Health targetHealth = other.GetComponentInParent<Health>();
 
@@ -67,7 +69,7 @@ public class VFXDamageController : MonoBehaviour
             }
 
             hitTargets.Add(targetHealth);
-            targetHealth.TakeDamage(damage, other.transform.position, attacker, AttackType.Standard);
+            targetHealth.TakeDamage(finalDamage, other.transform.position, attacker, AttackType.Standard);
         }
     }
 }

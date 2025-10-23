@@ -5,6 +5,10 @@ public class PlayerStats : MonoBehaviour
 {
     public static PlayerStats Instance { get; private set; }
 
+    [Header("Runtime State")]
+    [Tooltip("当此值为true时，玩家不会受到伤害")]
+    public bool isInvincible = false; // <--- ADD THIS LINE
+
     [Header("基础乘数 (会受升级影响)")]
     public float damageMultiplier = 1f;       // 所有直接伤害
     public float aoeDamageMultiplier = 1f;      // 所有范围伤害
@@ -36,12 +40,40 @@ public class PlayerStats : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // 如果需要跨场景，可以在这里 DontDestroyOnLoad(gameObject);
         }
         else
         {
             Destroy(gameObject);
+            return; // 【新增】如果不是单例，则不执行后续Awake代码
         }
+
+        // 【修改】在角色初始化时，应用所有永久性加成
+        ApplyPermanentUpgrades();
+    }
+
+    private void ApplyPermanentUpgrades()
+    {
+        // 确保 PlayerProgressManager 已经存在
+        if (PlayerProgressManager.Instance == null)
+        {
+            Debug.LogWarning("PlayerProgressManager 未找到，无法应用永久升级。这在游戏初次启动时是正常的。");
+            return;
+        }
+
+        Debug.Log("<color=cyan>正在从 PlayerProgressManager 应用永久属性加成...</color>");
+
+        // 将 PlayerProgressManager 中存储的永久加成，直接加到 PlayerStats 的对应属性上
+        // 这些将成为本局游戏的“初始值”
+        this.flatDamageBonus += PlayerProgressManager.Instance.permanentFlatDamageBonus;
+        this.damageMultiplier += PlayerProgressManager.Instance.permanentDamagePercentBonus;
+
+        // 射速是减法，所以我们要用乘法来应用（例如 1 * (1 - 0.1)）
+        // 但为了简化，我们暂时也用加法，但记得在计算最终射速时处理
+        // 更准确的做法是修改 fireRateMultiplier 的逻辑，但我们先保持简单
+        this.fireRateMultiplier -= PlayerProgressManager.Instance.permanentFireRateBonus;
+
+
+        Debug.Log($"应用后 -> 初始固定伤害: {this.flatDamageBonus}, 初始伤害乘数: {this.damageMultiplier}, 初始射速乘数: {this.fireRateMultiplier}");
     }
 
     /// <summary>

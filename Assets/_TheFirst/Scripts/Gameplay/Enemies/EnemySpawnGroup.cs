@@ -5,6 +5,28 @@ using UnityEngine;
 [System.Serializable] // 使其可以在 WaveConfig 的 Inspector 中被编辑
 public class EnemySpawnGroup
 {
+    public enum FormationType
+    {
+        None, // 默认的随机生成
+        Line, // 水平线
+        V_Shape,
+        Grid
+    }
+
+    [Header("阵型设置 (Formation)")]
+    [Tooltip("选择此组敌人生成的阵型")]
+    public FormationType formation = FormationType.None;
+    [Tooltip("阵型中敌人之间的间距")]
+    public float formationSpacing = 2f;
+    [Tooltip("V字形的深度因子 (0.5表示每隔1单位间距，也前进0.5单位)")]
+    public float vShapeDepthFactor = 0.5f;
+
+    [Tooltip("网格阵型的列数。行数将自动计算。")]
+    public int gridColumns = 5; // <--- 2. 在这里添加这一行
+
+    [Tooltip("阵型偏移量(沿前进方向)，用于创建交错线")]
+    public float formationOffset = 0f; // <--- 在这里添加这一行
+
     [Tooltip("要生成的敌人类型 (引用 EnemyType ScriptableObject)")]
     public EnemyType enemyType;
 
@@ -45,4 +67,16 @@ public class EnemySpawnGroup
 }
 
 // (可选) 如果要用到方向提示，可以定义一个枚举
-public enum SpawnDirectionHint { Random, North, South, East, West, AllSides }
+public enum SpawnDirectionHint
+{
+    Random,
+    North,      // 北 (0°)
+    Northeast,  // 东北 (45°)
+    East,       // 东 (90°)
+    Southeast,  // 东南 (135°)
+    South,      // 南 (180°)
+    Southwest,  // 西南 (225°)
+    West,       // 西 (270°)
+    Northwest,   // 西北 (315°)
+    AllSides
+    }

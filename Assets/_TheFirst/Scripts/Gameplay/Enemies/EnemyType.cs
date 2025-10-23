@@ -1,5 +1,11 @@
 using UnityEngine;
 
+public enum AIType
+{
+    Chasing, // 默认的追逐玩家行为
+    StraightLineStampede // 新的直线移动行为
+}
+
 [CreateAssetMenu(fileName = "NewEnemyType", menuName = "Game/Enemy Type")]
 public class EnemyType : ScriptableObject
 {
@@ -9,6 +15,12 @@ public class EnemyType : ScriptableObject
     public GameObject enemyPrefab; // 对应的怪物预制件
     [Tooltip("敌人死亡时（非自爆）生成的特效")]
     public GameObject deathVfxPrefab;
+
+    [Header("AI 行为")]
+    [Tooltip("选择此怪物使用的AI逻辑")]
+    public AIType aiType = AIType.Chasing; // <--- 新增
+    [Tooltip("如果AI类型是StraightLineStampede，此为其在屏幕上的存活时间")]
+    public float lifetime = 15f; // <--- 新增
 
     [Header("基础属性")]
     public float baseHealth = 100f;

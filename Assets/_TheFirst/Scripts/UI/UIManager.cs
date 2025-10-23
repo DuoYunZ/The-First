@@ -20,25 +20,39 @@ public class UIManager : MonoBehaviour
     public GameObject waveMessagePanel;            // 这个是 GameObject 类型，保持不变
     public TextMeshProUGUI waveMessageText;        // <--- 修改类型 (Panel下的文本)
     public PlayerHealthUI playerHealthUI;
+    public TextMeshProUGUI goldDisplayText;
 
+    [Header("UI 面板引用")]
+    [Tooltip("对 SkillTreeUIManager 脚本的引用")]
+    public SkillTreeUIManager skillTreeUIManager;
     void Start()
     {
-        // 確保所有面板在遊戲開始時處於正確的初始狀態
-       // if (gameOverPanel != null) gameOverPanel.SetActive(false);
-       // if (combatUIContainer != null) combatUIContainer.SetActive(false); // 戰鬥UI預設也關閉
-       
+        if (PlayerProgressManager.Instance != null)
+        {
+            // 直接调用已有的更新方法，传入当前的金币值
+            UpdateGoldDisplay(PlayerProgressManager.Instance.currentGold);
+        }
+        else
+        {
+            // 这是一个保险措施，正常情况下不应该发生
+            Debug.LogWarning("在UIManager启动时未能找到PlayerProgressManager！");
+        }
+        // if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        // if (combatUIContainer != null) combatUIContainer.SetActive(false); // 戰鬥UI預設也關閉
+
     }
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+            // DontDestroyOnLoad(gameObject); // 如果您的UIManager是持久化的
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
-        // 讓 UIManager 也跨場景存在
-        DontDestroyOnLoad(gameObject);
     }
 
     public void InitializeCombatUIReferences()
@@ -165,5 +179,13 @@ public class UIManager : MonoBehaviour
     public void ShowGameOverPanel()
     {
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
+    }
+
+    public void UpdateGoldDisplay(int amount)
+    {
+        if (goldDisplayText != null)
+        {
+            goldDisplayText.text = $"{amount}";
+        }
     }
 }

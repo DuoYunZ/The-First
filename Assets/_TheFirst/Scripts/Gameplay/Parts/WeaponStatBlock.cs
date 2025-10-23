@@ -13,7 +13,8 @@ public enum WeaponBehaviorType
     SummonDrone, // 无人机
     Beam,
     Landmine,
-    MeleeAOE
+    MeleeAOE,
+    Boomerang
 }
 
 
@@ -214,4 +215,14 @@ public class WeaponStatBlock : ScriptableObject
     public float bladeEnergySpeed = 15f;
     [Tooltip("刃气弹的穿透次数")]
     public int bladeEnergyPierceCount = 1;
+
+    [Header("回旋镖属性 (仅 Behavior=Boomerang 时有效)")]
+    [Tooltip("回旋镖飞出的最大距离")]
+    public float maxDistance = 15f;
+    [Tooltip("玩家抓取回旋镖的半径")]
+    public float catchRadius = 2.5f;
+    [Tooltip("回旋镖自身的旋转速度 (度/秒)")]
+    public float rotationSpeed = 720f; // <--- 新增
+    [Tooltip("返回时超过原点的距离")]
+    public float returnOvershootDistance = 2f; // <--- 新增
 }

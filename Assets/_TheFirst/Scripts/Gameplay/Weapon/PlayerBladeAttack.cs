@@ -1,7 +1,8 @@
 // --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
+using UnityEngine;
 
 public class PlayerBladeAttack : MonoBehaviour
 {
@@ -20,6 +21,12 @@ public class PlayerBladeAttack : MonoBehaviour
     public GameObject bladeEnergyProjectilePrefab;
     [Tooltip("刃气弹的发射点")]
     public Transform bladeEnergySpawnPoint;
+
+    [Header("技能树节点引用")]
+    [Tooltip("将'刃气斩'（解锁刃气）的技能节点资产拖到这里")]
+    public WeaponUpgradeNode unlockProjectileNode;
+    [Tooltip("将'万刃归宗'（强化频率）的技能节点资产拖到这里")]
+    public WeaponUpgradeNode improveFrequencyNode;
 
     private int attackCounter = 0;
 
@@ -111,9 +118,14 @@ public class PlayerBladeAttack : MonoBehaviour
 
         attackCounter++;
 
-        bool hasImprovedFrequency = false; // <-- 【临时测试】设为 true 来测试“万刃归宗”
-        bool hasUnlockedProjectile = true;  // <-- 【临时测试】设为 true 来测试“刃气斩”
+        bool hasImprovedFrequency = false;
+        bool hasUnlockedProjectile = false;
 
+        if (PlayerProgressManager.Instance != null)
+        {
+            hasImprovedFrequency = PlayerProgressManager.Instance.IsNodeUnlocked(improveFrequencyNode);
+            hasUnlockedProjectile = PlayerProgressManager.Instance.IsNodeUnlocked(unlockProjectileNode);
+        }
 
         if (attackData.slashEffectPrefab != null)
         {
@@ -131,16 +143,7 @@ public class PlayerBladeAttack : MonoBehaviour
                     {
                         // 如果解锁了最高级技能，每一道刀光都发射刃气
                         FireBladeEnergyProjectile(slash.angleOffset);
-                    }
-                    else if (hasUnlockedProjectile)
-                    {
-                        // 如果只解锁了第一级技能 ("刃气斩")
-                        // 我们需要检查整个攻击计数器是否是3的倍数。
-                        // 并且，为了避免一次攻击挥出多道刀光时发射多次，
-                        // 我们只让第一道刀光（或者任意一道固定的）来触发这个判定。
-                        // 一个简单的做法是，将这个判定移到循环外。
-                        // 为了让逻辑更清晰，我们做如下修改：
-                    }
+                    }                    
                 }
             }
         }
@@ -244,8 +247,34 @@ public class PlayerBladeAttack : MonoBehaviour
         VFXDamageController damageController = slashVFX.GetComponent<VFXDamageController>();
         if (damageController != null)
         {
-            damageController.Initialize(attackData, this.gameObject);
-        }        
+            int baseDamage = attackData.baseAoeDamage;
+
+            // 2. 从 PlayerProgressManager 获取已解锁的永久固定伤害加成
+            //    (添加安全检查，以防 PlayerProgressManager 不存在)
+            int permanentBonus = 0;
+            if (PlayerProgressManager.Instance != null)
+            {
+                permanentBonus = PlayerProgressManager.Instance.permanentMeleeAoeFlatDamageBonus;
+            }
+
+            // 3. 计算应用了永久加成后的伤害值
+            int totalDamage = baseDamage + permanentBonus;
+
+            // 4. (重要!) 再应用 PlayerStats 中的当局伤害乘数
+            //    (同样添加安全检查)
+            if (PlayerStats.Instance != null)
+            {
+                totalDamage = Mathf.RoundToInt(totalDamage * PlayerStats.Instance.aoeDamageMultiplier);
+            }
+
+            // 5. 调用 VFXDamageController 的【新版】Initialize 方法
+            damageController.Initialize(
+                totalDamage,                 // 第一个参数：最终计算出的伤害值
+                attackData.hitEffectPrefab,  // 第二个参数：命中特效
+                this.gameObject              // 第三个参数：攻击者
+            );
+
+        }
     }
 
     // OnDrawGizmosSelected 保持不变，它也需要使用新的诊断逻辑

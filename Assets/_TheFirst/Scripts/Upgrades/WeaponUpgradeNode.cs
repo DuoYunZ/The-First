@@ -9,6 +9,7 @@ public enum PermanentUpgradeType
     FireRatePercent,
     ProjectileSpeedPercent,
     // ... 未来可以添加更多，如暴击率、穿透+1等
+    MeleeAoeFlatDamage,         // 近战范围固定伤害 (为您的刀光量身定做)
     UnlockBladeEnergyProjectile,     // 解锁“刃气弹”机制
     ImproveBladeEnergyFrequency,   // 提升“刃气弹”触发频率
     ImproveBladeEnergyRange        // 提升“刃气弹”距离/速度

@@ -22,24 +22,18 @@ public class WeaponPart : MonoBehaviour
     [Tooltip("光束武器持续发出的循环音效")]
     public AudioClip beamLoopSound;
     [Tooltip("开火音效相对于子弹发射的延迟（秒）。负数为提前播放。")]
-    public float fireSoundDelay = -0.05f; // 默认设置为提前0.05秒
-
+    public float fireSoundDelay = -0.05f;
 
     private AudioSource audioSource;
 
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
     {
-        get { return myStatBlock; } // 假设您有get
-        set
-        {
-            myStatBlock = value;
-            // 【新增日志】
-            Debug.Log($"WeaponPart '{gameObject.name}' 已装备武器: '{myStatBlock.weaponName}', 行为类型: {myStatBlock.behavior}");
-        }
+        get { return myStatBlock; }
+        set { myStatBlock = value; }
     }
 
-    // 内部计时器和状态
+    private bool isBoomerangOut = false;
     private float fireCooldown = 0f;
     private float orbitalCooldownTimer = 0f;
     private bool isOrbitalActive = false;
@@ -47,19 +41,14 @@ public class WeaponPart : MonoBehaviour
 
     public bool IsReadyToFire => fireCooldown <= 0f;
 
-    // --- 【新增】光束武器专用变量 ---
     private PlayerBeamController activeBeamInstance = null;
-    private float beamEnergyTimer = 0f;  // 代表光束剩余的“能量”或“总持续时间”
-    private float beamCooldownTimer = 0f; // 光束冷却计时器
-    // --- 【新增】用于存储当前锁定的目标 ---
+    private float beamEnergyTimer = 0f;
+    private float beamCooldownTimer = 0f;
     private Transform lockedBeamTarget = null;
 
-
-
     #region Unity Lifecycle Methods
-    void Awake() // 【修改】将 Start() 的内容移到 Awake()，确保 AudioSource 尽早被获取
+    void Awake()
     {
-        // 确保 AudioSource 存在
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
@@ -69,40 +58,34 @@ public class WeaponPart : MonoBehaviour
     }
     void Start()
     {
-        // 在开始时，为光束武器充满能量
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
-        }      
+        }
     }
     void Update()
     {
-        // 更新所有冷却计时器
         if (fireCooldown > 0f) fireCooldown -= Time.deltaTime;
         if (orbitalCooldownTimer > 0f) orbitalCooldownTimer -= Time.deltaTime;
         if (beamCooldownTimer > 0f)
         {
             beamCooldownTimer -= Time.deltaTime;
-            // 当冷却结束时，重新为光束充满能量
             if (beamCooldownTimer <= 0)
             {
                 beamEnergyTimer = StatBlock.beamDuration;
-                Debug.Log("光束冷却结束，能量已充满！");
             }
         }
 
-        // 如果是轨道武器，则执行旋转
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital && orbitalPivot != null)
         {
-            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed; //未來可擴充
+            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed;
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
 
-        if (StatBlock.behavior == WeaponBehaviorType.Landmine)
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Landmine) // Added null check
         {
             HandleLandminePlacement();
         }
-        // --- 自动发射的光束武器 ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             HandleBeamWeapon();
@@ -111,35 +94,21 @@ public class WeaponPart : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 确保在武器部件被销毁时，它创建的独立物件（如轨道轴心）也被一并销毁
-        if (orbitalPivot != null)
-        {
-            Destroy(orbitalPivot.gameObject);
-        }
-        if (activeBeamInstance != null)
-        {
-            Destroy(activeBeamInstance.gameObject);
-        }
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
+        if (activeBeamInstance != null) { Destroy(activeBeamInstance.gameObject); }
     }
-
     #endregion
 
     #region Public Control Methods
-
-    /// <summary>
-    /// 启动武器。在 WeaponController 中赋值完 StatBlock 后呼叫。
-    /// </summary>
     public void Activate()
     {
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
-            beamCooldownTimer = 0; // 确保新装备的武器不在冷却中
+            beamCooldownTimer = 0;
         }
-
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
         {
-            // 如果是轨道武器，且不在冷却中，则立即启动
             if (!isOrbitalActive && orbitalCooldownTimer <= 0)
             {
                 SetupOrbiters();
@@ -147,158 +116,131 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 开火指令，由 WeaponController 在每一帧调用
-    /// </summary>
     public void Fire(Vector3 initialDirection)
     {
         if (StatBlock == null || !IsReadyToFire) return;
+        // Specifically check boomerang state *before* checking IsReadyToFire for it
+        if (StatBlock.behavior == WeaponBehaviorType.Boomerang && isBoomerangOut) return;
+
         StartCoroutine(FireRoutine(initialDirection));
-               
     }
+
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
-        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
-        if (fireSoundDelay < 0)
+        // --- Cooldown Logic ---
+        if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
-            PlayFireSound(); // 先播放声音
-            yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); // 再等待
+            if (isBoomerangOut) yield break; // Double check state
+            isBoomerangOut = true; // Mark as out, no cooldown set here
         }
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) yield break;
-
-        
-
-
-        // --- 1. 处理轨道武器的特殊逻辑 ---
-        if (StatBlock.behavior == WeaponBehaviorType.Orbital)
+        else
         {
-            if (!isOrbitalActive && orbitalCooldownTimer <= 0)
-            {
-                SetupOrbiters();
-            }
-            yield break; // 轨道武器不执行后续的发射逻辑
+            // Set cooldown for non-boomerang weapons
+            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
         }
 
-        // --- 2. 处理所有发射型武器的逻辑 ---
+        // --- Sound Delay ---
+        if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
+
+        // --- Special Weapon Handling ---
+        if (StatBlock.behavior == WeaponBehaviorType.Beam) yield break; // Beams handled in Update
+        if (StatBlock.behavior == WeaponBehaviorType.Orbital) { if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); } yield break; }
+
+        // --- Targeting Logic ---
         Vector3 finalTargetDirection = initialDirection;
-        bool isControlledByDrone = GetComponentInParent<DroneAI>() != null;
-        Transform firstTarget = null; // 用于连锁闪电和自动瞄准
-
+        Transform firstTarget = null;
         if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
         {
             Transform nearestEnemy = FindNearestEnemyTransform();
-            if (nearestEnemy != null)
-            {
-                // 玩家的自动瞄准，我们依然希望它是水平的
-                Vector3 directionToEnemy = (nearestEnemy.position - firePoint.position);
-                directionToEnemy.y = 0;
-                finalTargetDirection = directionToEnemy.normalized;
-            }
+            if (nearestEnemy != null) { finalTargetDirection = (nearestEnemy.position - firePoint.position); finalTargetDirection.y = 0; finalTargetDirection.Normalize(); firstTarget = nearestEnemy; }
             else
             {
-                // 如果是自动瞄准武器但没找到敌人，则不开火
+                if (StatBlock.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; // Cancel boomerang if no target for auto-aim
                 yield break;
             }
         }
+        if (finalTargetDirection.sqrMagnitude < 0.01f)
+        {
+            if (StatBlock.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; // Cancel boomerang if direction invalid
+            yield break;
+        }
 
-        if (finalTargetDirection.sqrMagnitude < 0.01f) yield break;
-
-        // 3. 根据武器行为执行不同的发射方式
+        // --- Firing based on Behavior ---
         switch (StatBlock.behavior)
         {
             case WeaponBehaviorType.Standard:
             case WeaponBehaviorType.Pierce:
                 InstantiateAndFireProjectile(finalTargetDirection);
                 break;
-
             case WeaponBehaviorType.ParabolicAOE:
-                // 這裡應該呼叫一個專門發射拋物線炮彈的方法
-                // 但如果這個方法不存在或被註解掉了，炮彈就發射不出去
                 InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock);
                 break;
             case WeaponBehaviorType.Chain:
                 if (firstTarget != null)
                 {
-                    int finalChainCount = StatBlock.baseChainCount; //未來可擴充
-                    int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier);
+                    int finalChainCount = StatBlock.baseChainCount; // Future upgrades
+                    int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus); // Include flat bonus
                     StartCoroutine(ChainDamageRoutine(firstTarget, finalChainCount, finalDamage, StatBlock.chainRange));
                 }
                 break;
-
             case WeaponBehaviorType.SummonDrone:
                 InstantiateAndInitializeDrones();
-
-                if (StatBlock.isOneShot)
-                {
-                    this.enabled = false;
-                    Debug.Log($"一次性召唤技能 '{StatBlock.weaponName}' 已执行完毕并禁用。");
-                }
-                break; // 结束
-
-            case WeaponBehaviorType.PersistentAOE:
-                // 1. 自動尋找最近的敵人作為目標
-                Transform targetEnemy = FindNearestEnemyTransform();
-
-                // 2. 如果找到了目標，則執行發射
-                if (targetEnemy != null)
-                {
-                    // 3. 計算目標位置和 "天空" 中的起始位置
-                    Vector3 targetPosition = targetEnemy.position;
-                    float spawnHeight = StatBlock.deployerSpawnHeight;
-                    float horizontalOffset = 5f; // 水平偏移量，製造傾斜感，可以設為 StatBlock 的屬性
-
-                    // 從目標位置正上方，再稍微向玩家方向偏移一點，作為起始點
-                    Vector3 directionFromPlayer = (targetPosition - transform.position).normalized;
-                    directionFromPlayer.y = 0; // 只考慮水平方向
-
-                    Vector3 startPosition = targetPosition + (Vector3.up * spawnHeight) - (directionFromPlayer * horizontalOffset);
-
-                    // 4. 計算從起始位置指向目標位置的飛行方向
-                    Vector3 fallDirection = (targetPosition - startPosition).normalized;
-
-                    // 5. 實例化部署器
-                    if (StatBlock.deployerProjectilePrefab != null)
-                    {
-                        // 在計算出的空中起始點創建部署器，並讓它朝向目標
-                        GameObject deployerGO = Instantiate(StatBlock.deployerProjectilePrefab, startPosition, Quaternion.LookRotation(fallDirection));
-                        Projectile projectileScript = deployerGO.GetComponent<Projectile>();
-
-                        if (projectileScript != null)
-                        {
-                            // 6. 獲取傷害、持續時間等屬性
-                            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier);
-                            float finalDuration = StatBlock.baseAreaDuration;
-                            float finalInterval = StatBlock.baseAreaTickInterval;
-
-                            // 7. 呼叫我們修改後的初始化方法
-                            projectileScript.InitializeAsAirdropDeployer(
-                                startPosition,
-                                fallDirection,
-                                StatBlock.deployerFallSpeed,
-                                StatBlock.areaPrefab,
-                                finalDamage,
-                                finalDuration,
-                                finalInterval,
-                                this.gameObject
-                            );
-                        }
-                    }
-                }
-                // 如果沒找到敵人，則不發射，這符合自動攻擊武器的行為
+                if (StatBlock.isOneShot) { this.enabled = false; }
                 break;
+            case WeaponBehaviorType.PersistentAOE:
+                Transform targetEnemy = FindNearestEnemyTransform();
+                if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); }
+                break;
+            case WeaponBehaviorType.Boomerang:
+                InstantiateAndFireBoomerang(finalTargetDirection);
+                break;
+                // Add cases for MeleeAOE, Landmine (handled in Update) if needed
         }
 
-        if (StatBlock.muzzleFlashPrefab != null)
+        // --- Muzzle Flash & Delayed Sound ---
+        if (StatBlock.muzzleFlashPrefab != null) { Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation); }
+        if (fireSoundDelay >= 0) { yield return new WaitForSeconds(fireSoundDelay); PlayFireSound(); }
+    }
+
+    public void OnBoomerangCaught(Vector3 catchPosition)
+    {
+        if (!isBoomerangOut) return; // Avoid processing if already caught/reset
+
+        isBoomerangOut = false;
+        ResetCooldown(); // Allow next shot immediately
+
+        // Auto re-throw logic
+        Transform nearestEnemy = FindNearestEnemyTransform(catchPosition, StatBlock.autoAimRange);
+        Vector3 nextDirection;
+        if (nearestEnemy != null)
         {
-            Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation);
+            nextDirection = (nearestEnemy.position - catchPosition).normalized;
+            nextDirection.y = 0;
         }
-        if (fireSoundDelay >= 0)
+        else
         {
-            yield return new WaitForSeconds(fireSoundDelay);
-            PlayFireSound();
+            if (GameManager.Instance?.playerTransform != null)
+                nextDirection = -GameManager.Instance.playerTransform.forward;
+            else
+                nextDirection = transform.forward;
+        }
+        StartCoroutine(FireRoutine(nextDirection.normalized)); // Immediately start the next fire sequence
+    }
+
+    public void StartCooldownIfNotCaught()
+    {
+        if (isBoomerangOut) // Only trigger if it was actually out and missed
+        {
+            isBoomerangOut = false;
+            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+            // Debug.Log($"Boomerang '{StatBlock.weaponName}' missed, starting cooldown: {fireCooldown}s.");
         }
     }
 
+    public void ResetCooldown()
+    {
+        fireCooldown = 0.01f; // Set a very small cooldown to allow immediate firing
+    }
     #endregion
 
     #region Private Helper Methods
@@ -310,7 +252,7 @@ public class WeaponPart : MonoBehaviour
             audioSource.PlayOneShot(clipToPlay);
         }
     }
-    // --- 发射直线弹 (标准/穿透) ---
+
     private void InstantiateAndFireProjectile(Vector3 direction)
     {
         if (firePoint == null || StatBlock.projectilePrefab == null) return;
@@ -322,193 +264,207 @@ public class WeaponPart : MonoBehaviour
             int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
             float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
             int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount;
-
-            // --- 新增：獲取燃燒屬性 ---
-            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage * PlayerStats.Instance.aoeDamageMultiplier);
+            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage * PlayerStats.Instance.aoeDamageMultiplier); // Assuming DoT scales with AOE mult
             float finalDotDuration = StatBlock.baseDotDuration;
             float finalDotTickInterval = StatBlock.dotTickInterval;
-            float finalSlowPercentage = StatBlock.baseSlowPercentage; // + PlayerStats...
-            float finalSlowDuration = StatBlock.baseSlowDuration; // + PlayerStats...
+            float finalSlowPercentage = StatBlock.baseSlowPercentage; // Add player stats if applicable
+            float finalSlowDuration = StatBlock.baseSlowDuration; // Add player stats if applicable
 
             projectileScript.InitializeAsStraight(
-              direction, finalSpeed, finalDamage, false, finalPierceCount, 
+              direction, finalSpeed, finalDamage, false, finalPierceCount,
               StatBlock.baseProjectileLifetime, StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
-              finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, // <--- 传入减速百分比
-            finalSlowDuration, AttackType.Standard// <-- 傳入燃燒參數
+              finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage,
+              finalSlowDuration, AttackType.Standard
             );
         }
     }
 
-    // --- 发射抛物线弹 ---
     private void InstantiateAndFireParabolicProjectile(Vector3 horizontalDir, WeaponStatBlock statsToUse)
     {
         if (firePoint == null || statsToUse.projectilePrefab == null) return;
 
-        // 1. 計算所有最終屬性
         int finalDirectDamage = Mathf.RoundToInt(statsToUse.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
         int finalAoeDamage = Mathf.RoundToInt(statsToUse.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
         float finalAoeRadius = statsToUse.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
         float finalLaunchForce = statsToUse.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-
-        // 燃燒相關屬性
         int finalDotDamage = Mathf.RoundToInt(statsToUse.baseDotDamage * PlayerStats.Instance.aoeDamageMultiplier);
         float finalDotDuration = statsToUse.baseDotDuration;
         float finalDotTickInterval = statsToUse.dotTickInterval;
 
-        // 2. 實例化炮彈，初始旋轉可以朝向目標水平方向
         GameObject bullet = Instantiate(statsToUse.projectilePrefab, firePoint.position, Quaternion.LookRotation(horizontalDir));
         Projectile projectileScript = bullet.GetComponent<Projectile>();
 
         if (projectileScript != null)
         {
-            // 3. 計算拋物線的初始速度向量
             float angleRad = statsToUse.launchAngle * Mathf.Deg2Rad;
             float hVel = finalLaunchForce * Mathf.Cos(angleRad);
             float vVel = finalLaunchForce * Mathf.Sin(angleRad);
             Vector3 initialVelocity = (horizontalDir * hVel) + (Vector3.up * vVel);
 
-            // 4. 呼叫炮彈的初始化方法，傳入所有計算好的參數
             projectileScript.InitializeAsParabolic(
-                initialVelocity,
-                finalDirectDamage,
-                finalAoeDamage,
-                statsToUse.baseProjectileLifetime,
-                statsToUse.explosionEffectPrefab,
-                finalAoeRadius,
-                statsToUse.layersToDamageByAOE,
-                statsToUse.layersToExplodeOn,
-                finalDotDamage,
-                finalDotDuration,
-                finalDotTickInterval
+                initialVelocity, finalDirectDamage, finalAoeDamage, statsToUse.baseProjectileLifetime,
+                statsToUse.explosionEffectPrefab, finalAoeRadius, statsToUse.layersToDamageByAOE, statsToUse.layersToExplodeOn,
+                finalDotDamage, finalDotDuration, finalDotTickInterval
             );
         }
     }
 
-    // --- 连锁闪电协程 ---
+    private void InstantiateAndFireBoomerang(Vector3 direction)
+    {
+        if (firePoint == null || StatBlock.projectilePrefab == null)
+        {
+            isBoomerangOut = false; // Reset state on failure
+            Debug.LogError($"[WeaponPart] Boomerang fire failed: FirePoint or ProjectilePrefab missing for {StatBlock?.weaponName}");
+            return;
+        }
+
+        GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
+        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
+        float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
+        float finalMaxDistance = StatBlock.maxDistance * PlayerStats.Instance.projectileSpeedMultiplier; // Scale distance too
+        float finalScale = PlayerStats.Instance.aoeRadiusMultiplier;
+        float finalCatchRadius = StatBlock.catchRadius * finalScale; // Scale catch radius
+        bullet.transform.localScale = Vector3.one * finalScale;
+
+        Projectile projectileScript = bullet.GetComponent<Projectile>();
+        if (projectileScript != null)
+        {
+            projectileScript.InitializeAsBoomerang(
+                direction, finalSpeed, finalDamage, finalMaxDistance, finalCatchRadius,
+                StatBlock.baseProjectileLifetime, StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
+                this, StatBlock.rotationSpeed, StatBlock.returnOvershootDistance
+            );
+            // Debug.Log($"[WeaponPart] Fired Boomerang: Speed={finalSpeed}, MaxDist={finalMaxDistance}, Lifetime={StatBlock.baseProjectileLifetime}");
+        }
+        else
+        {
+            isBoomerangOut = false; // Reset state on failure
+            Debug.LogError($"[WeaponPart] Boomerang fire failed: Projectile script missing on prefab for {StatBlock?.weaponName}");
+            Destroy(bullet); // Clean up instantiated prefab if script is missing
+        }
+    }
+
     private IEnumerator ChainDamageRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange)
     {
         var hitEnemies = new List<Health>();
-        Vector3 lastHitPosition = firePoint.position;
+        Vector3 lastHitPosition = firePoint.position; // Start chain from fire point
 
         while (currentTarget != null && remainingChains >= 0)
         {
             Vector3 currentTargetPosition = currentTarget.position;
-            Health targetHealth = currentTarget.GetComponent<Health>();
+            Health targetHealth = currentTarget.GetComponent<Health>(); // Get Health component
 
-            if (targetHealth != null && !hitEnemies.Contains(targetHealth))
+            // Check if valid target and not already hit in this chain
+            if (targetHealth != null && !hitEnemies.Contains(targetHealth) && !targetHealth.IsDead)
             {
                 hitEnemies.Add(targetHealth);
-                targetHealth.TakeDamage(damage, transform.position, gameObject); // 修正：传入攻击者
+                // Use targetHealth.TakeDamage directly
+                targetHealth.TakeDamage(damage, currentTargetPosition, this.gameObject); // Pass damage source position and attacker
 
+                // Instantiate VFX between last position and current target
                 if (lightningChainPrefab != null)
                 {
-                    var chainVFX_GO = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity);
-                    chainVFX_GO.GetComponent<ChainLightningVFX>().Setup(lastHitPosition, currentTargetPosition);
+                    var chainVFX_GO = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity); // Instantiate at origin temporarily
+                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetPosition); // Setup positions
                 }
 
-                if (StatBlock.impactEffectPrefab != null)
+                // Instantiate impact effect at the target
+                if (StatBlock.impactEffectPrefab != null) // Use StatBlock impact effect
                 {
                     Instantiate(StatBlock.impactEffectPrefab, currentTargetPosition, Quaternion.identity);
                 }
             }
 
-            yield return new WaitForSeconds(0.05f);
+            yield return new WaitForSeconds(0.05f); // Small delay between chains
 
+            // Find the next target
             Transform nextTarget = FindNextChainTarget(currentTargetPosition, chainRange, hitEnemies);
             remainingChains--;
-            lastHitPosition = currentTargetPosition;
+            lastHitPosition = currentTargetPosition; // Update last hit position
             currentTarget = nextTarget;
         }
     }
+
     public void RefreshOrbiters()
     {
-        // 检查1：这个方法只对已激活的轨道武器有效
-        if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital || !isOrbitalActive)
-        {
-            return;
-        }
-
-        Debug.Log($"<color=orange>[WeaponPart] 接收到刷新指令，正在重新生成 '{myStatBlock.weaponName}'...</color>");
-
-        // 步骤1：销毁旧的轨道轴心和所有轨道物
-        if (orbitalPivot != null)
-        {
-            Destroy(orbitalPivot.gameObject);
-        }
-
-        // 清理旧的状态，防止意外的协程运行
+        if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital || !isOrbitalActive) return;
+        // Debug.Log($"<color=orange>[WeaponPart] Refreshing orbiters for '{myStatBlock.weaponName}'...</color>");
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
         isOrbitalActive = false;
-        StopAllCoroutines(); // 停止旧的生命周期计时器
-
-        // 步骤2：立即使用最新的属性重新执行一次完整的设置流程
-        SetupOrbiters();
+        StopCoroutine(nameof(OrbitalLifetimeRoutine)); // Stop specific coroutine by name
+        SetupOrbiters(); // Re-setup with current stats
     }
-    // --- 轨道武器初始化 ---
+
     private void SetupOrbiters()
     {
         Transform stableAnchor = FindStableAnchor();
         if (stableAnchor == null)
         {
-            Debug.LogError($"未能在玩家机甲上找到 'StableAnchor'！将使用根对象作为后备。");
+            Debug.LogWarning($"StableAnchor not found! Using WeaponController transform as fallback.", this);
             stableAnchor = WeaponController.Instance.transform;
         }
 
         orbitalPivot = new GameObject($"{StatBlock.weaponName}_Pivot").transform;
         orbitalPivot.SetParent(stableAnchor);
         orbitalPivot.localPosition = Vector3.zero;
+        orbitalPivot.localRotation = Quaternion.identity; // Ensure pivot starts unrotated
 
         isOrbitalActive = true;
         int finalOrbitalCount = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusOrbitalCount;
-        float finalOrbitalRadius = StatBlock.baseOrbitalRadius;
-        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier);
+        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * PlayerStats.Instance.aoeRadiusMultiplier; // Scale radius
+        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus); // Use direct damage stats
 
         for (int i = 0; i < finalOrbitalCount; i++)
         {
             if (StatBlock.orbitalPrefab == null) continue;
             float angle = i * (360f / finalOrbitalCount);
-            Vector3 spawnPos = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), 0, Mathf.Cos(angle * Mathf.Deg2Rad)) * finalOrbitalRadius;
+            // Spawn relative to pivot's *local* forward/right
+            Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
             GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
             orbiterGO.transform.localPosition = spawnPos;
             orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage);
         }
 
-        float finalDuration = StatBlock.baseDuration;
+        float finalDuration = StatBlock.baseDuration; // Add upgrades later if needed
         if (finalDuration > 0)
         {
             StartCoroutine(OrbitalLifetimeRoutine(finalDuration));
         }
+        // Debug.Log($"Setup Orbiters: Count={finalOrbitalCount}, Radius={finalOrbitalRadius}, Damage={finalDamage}, Duration={finalDuration}");
     }
 
-
-
-    // --- 轨道武器生命周期协程 ---
     private IEnumerator OrbitalLifetimeRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
         if (orbitalPivot != null) Destroy(orbitalPivot.gameObject);
         isOrbitalActive = false;
-        orbitalCooldownTimer = 1f / StatBlock.baseFireRate;
-        Debug.Log($"轨道武器 '{StatBlock.weaponName}' 持续时间结束，进入冷却: {orbitalCooldownTimer} 秒。");
+        orbitalCooldownTimer = 1f / StatBlock.baseFireRate; // Use standard cooldown after duration ends
+        // Debug.Log($"Orbital '{StatBlock.weaponName}' duration ended, starting cooldown: {orbitalCooldownTimer}s.");
     }
 
-    // --- 索敌方法 ---
-    private Transform FindNearestEnemyTransform()
+    private Transform FindNearestEnemyTransform() { return FindNearestEnemyTransform(transform.position, StatBlock.autoAimRange); }
+
+    private Transform FindNearestEnemyTransform(Vector3 searchCenter, float searchRadius)
     {
         float closestDistanceSqr = Mathf.Infinity;
         Transform nearestEnemy = null;
-        if (StatBlock == null) return null;
+        if (StatBlock == null) return null; // Safety check
 
-        Collider[] colliders = Physics.OverlapSphere(transform.position, StatBlock.autoAimRange, StatBlock.layersToDamageByAOE);
+        // Ensure layersToDamageByAOE includes the "Enemies" layer or is set appropriately
+        LayerMask layersToSearch = StatBlock.layersToDamageByAOE == 0 ? LayerMask.GetMask("Enemies") : StatBlock.layersToDamageByAOE;
+
+        Collider[] colliders = Physics.OverlapSphere(searchCenter, searchRadius, layersToSearch);
         foreach (Collider hitCollider in colliders)
         {
-            if (hitCollider.CompareTag("Enemy"))
+            Health enemyHealth = hitCollider.GetComponentInParent<Health>();
+            // Ensure it's an enemy, alive, and use CompareTag for reliability
+            if (enemyHealth != null && !enemyHealth.IsDead && hitCollider.CompareTag("Enemy"))
             {
-                float dSqrToTarget = (transform.position - hitCollider.transform.position).sqrMagnitude;
+                float dSqrToTarget = (searchCenter - hitCollider.transform.position).sqrMagnitude;
                 if (dSqrToTarget < closestDistanceSqr)
                 {
                     closestDistanceSqr = dSqrToTarget;
-                    Health enemyHealth = hitCollider.GetComponentInParent<Health>();
-                    if (enemyHealth != null) nearestEnemy = enemyHealth.transform;
+                    nearestEnemy = enemyHealth.transform; // Target the transform of the Health component
                 }
             }
         }
@@ -535,215 +491,203 @@ public class WeaponPart : MonoBehaviour
         }
         return closestTarget;
     }
-    // --- 【新增】光束武器的完整处理逻辑 ---
+
     private void HandleBeamWeapon()
     {
-        // 1. 如果正在冷却，直接返回
-        if (beamCooldownTimer > 0f) return;
+        if (beamCooldownTimer > 0f) return; // In cooldown
 
-        // 2. 验证当前目标或寻找新目标
-        ValidateOrFindTarget();
+        ValidateOrFindTarget(); // Find/check target
 
-        // 3. 根据目标和能量状态决定行为
-        if (lockedBeamTarget != null)
+        if (lockedBeamTarget != null) // Have a valid target
         {
-            // 有目标：尝试启动或维持光束
             if (beamEnergyTimer > 0f && activeBeamInstance == null)
             {
-                StartBeam();
+                StartBeam(); // Start beam if energy available and not already active
             }
-
-            if (activeBeamInstance != null)
+            if (activeBeamInstance != null) // If beam is active
             {
-                // 如果光束是激活的，就消耗能量
-                beamEnergyTimer -= Time.deltaTime;
+                beamEnergyTimer -= Time.deltaTime; // Consume energy
                 if (beamEnergyTimer <= 0f)
                 {
-                    StopBeamAndStartCooldown();
+                    StopBeamAndStartCooldown(); // Energy depleted
                 }
             }
         }
-        else
+        else // No valid target
         {
-            // 没目标：如果光束还开着，就让它进入待机
             if (activeBeamInstance != null)
             {
-                StopBeamForStandby();
+                StopBeamForStandby(); // Stop beam if no target
             }
         }
     }
+
     private void ValidateOrFindTarget()
     {
-        // 检查已锁定的目标是否仍然有效
         if (lockedBeamTarget != null)
         {
-            if (!lockedBeamTarget.gameObject.activeInHierarchy || Vector3.Distance(transform.position, lockedBeamTarget.position) > StatBlock.beamMaxDistance)
+            // Check if target is still active and within range
+            if (!lockedBeamTarget.gameObject.activeInHierarchy || Vector3.Distance(firePoint.position, lockedBeamTarget.position) > StatBlock.beamMaxDistance)
             {
-                lockedBeamTarget = null;
+                lockedBeamTarget = null; // Invalidate target
             }
         }
-
-        // 如果没有锁定目标，则寻找一个新的
         if (lockedBeamTarget == null)
         {
-            lockedBeamTarget = FindNearestEnemyTransform();
-            // 再次验证新找到的目标是否在射程内
-            if (lockedBeamTarget != null && Vector3.Distance(transform.position, lockedBeamTarget.position) > StatBlock.beamMaxDistance)
-            {
-                lockedBeamTarget = null;
-            }
+            lockedBeamTarget = FindNearestEnemyTransform(firePoint.position, StatBlock.beamMaxDistance); // Find new target within range
         }
     }
+
     private void StartBeam()
     {
-        if (StatBlock.beamVfxPrefab == null) return;
+        if (StatBlock.beamVfxPrefab == null || firePoint == null) return;
 
-        // 确保预制件上挂载的是 PlayerBeamController
-        GameObject beamGO = Instantiate(StatBlock.beamVfxPrefab, firePoint.position, firePoint.rotation, firePoint);
+        GameObject beamGO = Instantiate(StatBlock.beamVfxPrefab, firePoint.position, firePoint.rotation, firePoint); // Parent to firepoint
         activeBeamInstance = beamGO.GetComponent<PlayerBeamController>();
 
         if (activeBeamInstance != null)
         {
-            // 使用新脚本的初始化方法
             activeBeamInstance.Initialize(StatBlock, this.gameObject, lockedBeamTarget);
+            if (beamLoopSound != null && audioSource != null && !audioSource.isPlaying) // Play loop sound only if not already playing
+            {
+                audioSource.clip = beamLoopSound;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
         }
-        if (beamLoopSound != null && audioSource != null)
+        else
         {
-            audioSource.clip = beamLoopSound;
-            audioSource.loop = true; // 确保音效循环
-            audioSource.Play();
+            Debug.LogError($"Beam VFX prefab '{StatBlock.beamVfxPrefab.name}' is missing PlayerBeamController script!", this);
+            Destroy(beamGO); // Clean up invalid instance
         }
     }
 
-
-
-    // 待机时，也应该解除锁定，以便下次能寻找新目标
-    private void StopBeamForStandby()
+    private void StopBeamForStandby() // Target lost or out of range
     {
         if (activeBeamInstance == null) return;
         Destroy(activeBeamInstance.gameObject);
         activeBeamInstance = null;
-        lockedBeamTarget = null;
-
-        if (audioSource != null) audioSource.Stop();
+        lockedBeamTarget = null; // Lose lock
+        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); } // Stop loop sound
     }
 
-    // 能量耗尽时，也要解除锁定
-    private void StopBeamAndStartCooldown()
+    private void StopBeamAndStartCooldown() // Energy depleted
     {
         if (activeBeamInstance == null) return;
         Destroy(activeBeamInstance.gameObject);
         activeBeamInstance = null;
-
         beamCooldownTimer = StatBlock.beamCooldown;
-        beamEnergyTimer = 0;
-        lockedBeamTarget = null;
-
-        if (audioSource != null) audioSource.Stop();
+        beamEnergyTimer = 0; // Ensure energy is zero
+        lockedBeamTarget = null; // Lose lock
+        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); } // Stop loop sound
+        // Debug.Log($"Beam energy depleted, starting cooldown: {beamCooldownTimer}s.");
     }
 
-
-
-    // 当武器被卸下或切换时，确保光束停止
-    public void DeactivateBeam()
+    public void DeactivateBeam() // Called when weapon is unequipped
     {
-        {
-            StopBeamForStandby(); // 切换武器时使用待机逻辑即可
-        }
+        StopBeamForStandby(); // Just stop it, don't trigger cooldown
+        beamEnergyTimer = 0; // Reset energy as well
     }
-
 
     private Transform FindStableAnchor()
     {
-        if (WeaponController.Instance == null) return null;
-
-        // 在 WeaponController 所在的整個物件及其所有子物件中，尋找掛載了 StableAnchorMarker 的那個
+        if (WeaponController.Instance == null) return transform; // Fallback
         StableAnchorMarker marker = WeaponController.Instance.GetComponentInChildren<StableAnchorMarker>();
-
-        if (marker != null)
-        {
-            return marker.transform;
-        }
-
-        // 如果找不到，再執行後備邏輯
-        return null;
+        return marker != null ? marker.transform : WeaponController.Instance.transform; // Return marker or controller transform
     }
+
     private void InstantiateAndInitializeDrones()
     {
-        if (StatBlock == null || StatBlock.summonPrefab == null || StatBlock.summonWeaponStats == null)
-        {
-            Debug.LogError("召唤失败：WeaponStatBlock 中的 summonPrefab 或 summonWeaponStats 未设置！");
-            return;
-        }
+        if (StatBlock == null || StatBlock.summonPrefab == null || StatBlock.summonWeaponStats == null) return;
 
-        int finalSummonCount = StatBlock.summonCount;
-        float finalSummonDuration = StatBlock.summonDuration;
+        int finalSummonCount = StatBlock.summonCount; // Add upgrades later
+        float finalSummonDuration = StatBlock.summonDuration; // Add upgrades later
+
+        Transform playerRoot = WeaponController.Instance.transform; // Get player root
 
         for (int i = 0; i < finalSummonCount; i++)
         {
-            Vector3 spawnOffset = Random.insideUnitSphere * 3f;
-            spawnOffset.y = StatBlock.summonSpawnHeight;
-            Vector3 spawnPosition = transform.position + spawnOffset;
+            // Spawn around the player root
+            Vector3 spawnOffset = Random.insideUnitSphere * 2f; // Smaller radius around player
+            spawnOffset.y = StatBlock.summonSpawnHeight; // Use defined height
+            Vector3 spawnPosition = playerRoot.position + spawnOffset;
 
-            // 【核心修改】Instantiate 时不再指定父级，让无人机生成在场景的根目录
-            GameObject droneGO = Instantiate(StatBlock.summonPrefab, spawnPosition, Quaternion.identity);
-
+            GameObject droneGO = Instantiate(StatBlock.summonPrefab, spawnPosition, Quaternion.identity); // Instantiate at world position
             DroneAI droneAI = droneGO.GetComponent<DroneAI>();
-
             if (droneAI != null)
             {
-                // 【重要】将 WeaponController.Instance.transform (即玩家的根对象) 作为主人传进去
-                droneAI.Initialize(this.StatBlock.summonWeaponStats, finalSummonDuration, WeaponController.Instance.transform);
+                droneAI.Initialize(StatBlock.summonWeaponStats, finalSummonDuration, playerRoot); // Pass player root as master
             }
         }
     }
+
+    private void InstantiateAndFireAirdropDeployer(Vector3 targetPosition)
+    {
+        if (StatBlock.deployerProjectilePrefab == null || firePoint == null) return;
+
+        float spawnHeight = StatBlock.deployerSpawnHeight;
+        float horizontalOffset = 5f; // Example offset
+
+        // Calculate spawn position above and slightly offset from the target
+        Vector3 directionFromPlayer = (targetPosition - firePoint.position).normalized;
+        directionFromPlayer.y = 0; // Horizontal direction only
+        Vector3 startPosition = targetPosition + (Vector3.up * spawnHeight) - (directionFromPlayer * horizontalOffset);
+        Vector3 fallDirection = (targetPosition - startPosition).normalized; // Direction towards target
+
+        GameObject deployerGO = Instantiate(StatBlock.deployerProjectilePrefab, startPosition, Quaternion.LookRotation(fallDirection));
+        Projectile projectileScript = deployerGO.GetComponent<Projectile>();
+
+        if (projectileScript != null)
+        {
+            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); // Include flat bonus
+            float finalDuration = StatBlock.baseAreaDuration; // Add upgrades later
+            float finalInterval = StatBlock.baseAreaTickInterval; // Add upgrades later (lower is faster ticks)
+
+            projectileScript.InitializeAsAirdropDeployer(
+                startPosition, fallDirection, StatBlock.deployerFallSpeed, StatBlock.areaPrefab,
+                finalDamage, finalDuration, finalInterval, this.gameObject // Pass this WeaponPart's GameObject as attacker
+            );
+        }
+    }
+
+
     private void HandleLandminePlacement()
     {
-        // 如果冷却未结束，则不执行
-        if (!IsReadyToFire) return;
+        if (!IsReadyToFire) return; // Check cooldown
 
-        // 1. 计算随机生成位置
         Vector2 randomCirclePoint = Random.insideUnitCircle * StatBlock.spawnRadius;
-        Vector3 spawnPosition = transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
+        // Place relative to the player's root position, not the weapon part itself
+        Vector3 spawnPositionBase = WeaponController.Instance.transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
 
-        // (可选，但推荐) 增加一个射线检测，确保地雷生成在地面上
         RaycastHit hit;
-        if (Physics.Raycast(spawnPosition + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground")))
+        Vector3 spawnPosition = spawnPositionBase; // Default if raycast fails
+        if (Physics.Raycast(spawnPositionBase + Vector3.up * 5f, Vector3.down, out hit, 10f, StatBlock.beamScorchMarkGroundLayer != 0 ? StatBlock.beamScorchMarkGroundLayer : LayerMask.GetMask("Ground"))) // Use beam ground layer or default "Ground"
         {
-            spawnPosition = hit.point;
+            spawnPosition = hit.point; // Place exactly on ground
         }
 
-        // 2. 实例化地雷
         if (StatBlock.minePrefab != null)
         {
-            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity);
+            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity); // Default rotation
             Landmine mineScript = mineGO.GetComponent<Landmine>();
-
             if (mineScript != null)
             {
-                // 3. 计算最终伤害和范围
-                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier);
+                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); // Use AOE stats
                 float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
-
-                // 4. 初始化地雷
                 mineScript.Initialize(
-                    finalDamage,
-                    finalRadius,
-                    StatBlock.armingTime,
-                    StatBlock.mineDuration,
-                    WeaponController.Instance.gameObject, // 攻击者是玩家
-                    StatBlock.explosionEffectPrefab,    // 使用抛物线弹的爆炸特效
-                    StatBlock.layersToDamageByAOE
+                    finalDamage, finalRadius, StatBlock.armingTime, StatBlock.mineDuration,
+                    WeaponController.Instance.gameObject, // Attacker is the player controller
+                    StatBlock.explosionEffectPrefab, // Use explosion effect from StatBlock
+                    StatBlock.layersToDamageByAOE // Use layers from StatBlock
                 );
             }
             if (landminePlaceSound != null && audioSource != null)
             {
-                // 使用 PlayClipAtPoint 可以在地雷实际放置的位置播放音效，效果更佳
-                AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition);
+                AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition); // Play sound at placement location
             }
         }
 
-        // 5. 重置冷却计时器
+        // Reset cooldown after placing
         fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
     }
     #endregion
