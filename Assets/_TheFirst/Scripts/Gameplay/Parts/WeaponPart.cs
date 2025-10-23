@@ -127,23 +127,13 @@ public class WeaponPart : MonoBehaviour
 
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
-        // --- Cooldown Logic ---
-        if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
-        {
-            if (isBoomerangOut) yield break; // Double check state
-            isBoomerangOut = true; // Mark as out, no cooldown set here
-        }
-        else
-        {
-            // Set cooldown for non-boomerang weapons
-            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
-        }
+        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
 
         // --- Sound Delay ---
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
 
         // --- Special Weapon Handling ---
-        if (StatBlock.behavior == WeaponBehaviorType.Beam) yield break; // Beams handled in Update
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) yield break;
         if (StatBlock.behavior == WeaponBehaviorType.Orbital) { if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); } yield break; }
 
         // --- Targeting Logic ---
@@ -152,18 +142,16 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
         {
             Transform nearestEnemy = FindNearestEnemyTransform();
+            // If nearest enemy found, use its direction
             if (nearestEnemy != null) { finalTargetDirection = (nearestEnemy.position - firePoint.position); finalTargetDirection.y = 0; finalTargetDirection.Normalize(); firstTarget = nearestEnemy; }
-            else
+            // If no enemy found AND it's auto-aim, *don't* fire (unless it's boomerang, which uses player forward)
+            else if (StatBlock.behavior != WeaponBehaviorType.Boomerang)
             {
-                if (StatBlock.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; // Cancel boomerang if no target for auto-aim
                 yield break;
             }
+            // If it IS a boomerang and no enemy found, it will use initialDirection (player forward) below
         }
-        if (finalTargetDirection.sqrMagnitude < 0.01f)
-        {
-            if (StatBlock.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; // Cancel boomerang if direction invalid
-            yield break;
-        }
+        if (finalTargetDirection.sqrMagnitude < 0.01f) { yield break; }
 
         // --- Firing based on Behavior ---
         switch (StatBlock.behavior)
@@ -313,34 +301,37 @@ public class WeaponPart : MonoBehaviour
     {
         if (firePoint == null || StatBlock.projectilePrefab == null)
         {
-            isBoomerangOut = false; // Reset state on failure
+            // isBoomerangOut = false; // 发射失败时重置状态 (如果您有 isBoomerangOut 变量)
             Debug.LogError($"[WeaponPart] Boomerang fire failed: FirePoint or ProjectilePrefab missing for {StatBlock?.weaponName}");
             return;
         }
 
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
+
         int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
         float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        float finalMaxDistance = StatBlock.maxDistance * PlayerStats.Instance.projectileSpeedMultiplier; // Scale distance too
+        float finalMaxDistance = StatBlock.maxDistance; // 暂时不用乘数
         float finalScale = PlayerStats.Instance.aoeRadiusMultiplier;
-        float finalCatchRadius = StatBlock.catchRadius * finalScale; // Scale catch radius
         bullet.transform.localScale = Vector3.one * finalScale;
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
+            // --- 调用新的初始化方法，并传递 overshoot ---
             projectileScript.InitializeAsBoomerang(
-                direction, finalSpeed, finalDamage, finalMaxDistance, finalCatchRadius,
-                StatBlock.baseProjectileLifetime, StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
-                this, StatBlock.rotationSpeed, StatBlock.returnOvershootDistance
+                direction,
+                finalSpeed,
+                finalDamage,
+                finalMaxDistance,
+                StatBlock.rotationSpeed,
+                StatBlock.returnOvershootDistance // <-- 传递这个新值
             );
-            // Debug.Log($"[WeaponPart] Fired Boomerang: Speed={finalSpeed}, MaxDist={finalMaxDistance}, Lifetime={StatBlock.baseProjectileLifetime}");
         }
         else
         {
-            isBoomerangOut = false; // Reset state on failure
+            // isBoomerangOut = false; // 初始化失败时重置状态
             Debug.LogError($"[WeaponPart] Boomerang fire failed: Projectile script missing on prefab for {StatBlock?.weaponName}");
-            Destroy(bullet); // Clean up instantiated prefab if script is missing
+            Destroy(bullet);
         }
     }
 

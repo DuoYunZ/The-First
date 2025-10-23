@@ -216,13 +216,15 @@ public class WeaponStatBlock : ScriptableObject
     [Tooltip("刃气弹的穿透次数")]
     public int bladeEnergyPierceCount = 1;
 
-    [Header("回旋镖属性 (仅 Behavior=Boomerang 时有效)")]
-    [Tooltip("回旋镖飞出的最大距离")]
+    [Header("回旋镖属性 (Boomerang Properties - Only if Behavior=Boomerang)")]
+    [Tooltip("回旋镖飞出的最大距离 (Max outbound distance)")]
     public float maxDistance = 15f;
-    [Tooltip("玩家抓取回旋镖的半径")]
+    [Tooltip("玩家抓取回旋镖的半径 (Player catch radius on return)")]
     public float catchRadius = 2.5f;
-    [Tooltip("回旋镖自身的旋转速度 (度/秒)")]
-    public float rotationSpeed = 720f; // <--- 新增
-    [Tooltip("返回时超过原点的距离")]
-    public float returnOvershootDistance = 2f; // <--- 新增
+    [Tooltip("回旋镖自身的旋转速度 (度/秒) - Y-axis rotation speed")]
+    public float rotationSpeed = 720f;
+    [Tooltip("回旋镖飞出的最大距离 (Max outbound distance)")]
+    public float returnOvershootDistance = 15f;
+    [Tooltip("回旋镖开始返回时的平滑转弯持续时间(秒)")]
+    public float turnDuration = 0.3f; // <--- 新增：转弯时间
 }

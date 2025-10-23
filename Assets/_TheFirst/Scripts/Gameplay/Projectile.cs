@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -6,13 +7,11 @@ public class Projectile : MonoBehaviour
     public AttackType attackType = AttackType.Standard;
 
     [Header("视觉效果")]
-    [Tooltip("命中护盾时播放的专属特效")]
     public GameObject shieldImpactEffectPrefab;
-    [Tooltip("命中无护盾玩家或敌人时播放的通用特效")]
     public GameObject defaultImpactEffectPrefab;
 
     // --- 弹道控制 ---
-    private bool isParabolic = false;
+    private bool isParabolic = false; // 现在默认为 false，因为模式更常用
 
     [Header("直线参数")]
     private Vector3 direction;
@@ -24,7 +23,7 @@ public class Projectile : MonoBehaviour
     public bool faceMovementDirection = true;
 
     // --- 通用子弹参数 ---
-    private float lifetime = 5f; // Default value, will be overridden by Initialize
+    public float lifetime = 5f;
     private int directDamage = 0;
     private int aoeDamage = 0;
     private bool hasExploded = false;
@@ -53,7 +52,7 @@ public class Projectile : MonoBehaviour
     private float slowDuration;
 
     // --- 弹道和行为模式 ---
-    private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang }
+    private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang } // <-- 添加 Boomerang
     private ProjectileMode mode;
     private bool isEnemyProjectile = false;
     private Transform homingTarget;
@@ -66,45 +65,47 @@ public class Projectile : MonoBehaviour
     private float areaIntervalPayload;
     private GameObject creatorAttacker;
 
-    // --- 回旋镖属性 ---
+    // --- vvv 新增：回旋镖属性 vvv ---
     private enum BoomerangState { Outbound, Inbound }
     private BoomerangState boomerangState;
-    private WeaponPart launcher;
-    private Vector3 spawnPoint; // 发射点 (记录玩家位置)
-    private float maxDistance;
+    private WeaponPart launcher; // 抓取时需要通知的发射器
+    private Vector3 spawnPoint; // 发射点
+    private Transform playerTransform; // 玩家引用，用于返回
+    private float maxDistance; // 最大飞行距离    
     private float catchRadius;
-    private bool hasBeenCaught = false;
-    private float rotationSpeed = 720f;
-    private float returnOvershootDistance = 2f;
-    private Vector3 returnDirection; // 返回时使用的方向
+    private float rotationSpeed;
+    private float returnOvershootDistance; // <-- 新增
+    private Vector3 returnTargetPoint;     // <-- 新增: 最终返回的目标点
+    private Vector3 returnDirection;       // <-- 新增: 固定的返回方向
+
+    private bool hasBeenCaught = false; // 是否已被抓取
+    // --- ^^^ 新增结束 ^^^ ---
+
 
     // --- 伤害冷却字典 ---
     private Dictionary<Health, float> hitCooldowns = new Dictionary<Health, float>();
     private float hitCooldown = 0.5f;
 
-    private float timeSinceReturnStarted = 0f;
-
-    // --- 初始化方法 ---
-
     public void InitializeAsReflectable(Vector3 dir, float spd, int dmg, float life, GameObject vfx)
     {
-        this.mode = ProjectileMode.Straight;
-        this.attackType = AttackType.Reflectable;
-        this.isEnemyProjectile = true;
+        this.mode = ProjectileMode.Straight; // 假设激光是直线
+        this.attackType = AttackType.Reflectable; // 【关键】设置类型
+        this.isEnemyProjectile = true; // 可反弹的子弹来自敌人
+
         this.direction = dir;
         this.speed = spd;
         this.directDamage = dmg;
         this.lifetime = life;
         this.impactEffectPrefab = vfx;
+
         Destroy(gameObject, this.lifetime);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Reflectable: Lifetime={this.lifetime}");
     }
 
     public void MarkAsPlayerProjectile()
     {
         this.isEnemyProjectile = false;
-        this.tag = "PlayerProjectile";
+        this.tag = "PlayerProjectile"; // （可选）改变标签以便调试
+        // 更新可伤害层，现在它可以伤害敌人了
         this.damageableLayers = LayerMask.GetMask("Enemies");
         gameObject.layer = LayerMask.NameToLayer("PlayerProjectile");
         this.attackType = AttackType.Standard;
@@ -113,10 +114,12 @@ public class Projectile : MonoBehaviour
     public void SetNewDirection(Vector3 newDirection)
     {
         this.direction = newDirection.normalized;
+        // 让子弹朝向新方向
         transform.rotation = Quaternion.LookRotation(this.direction);
     }
 
-    public void InitializeAsHoming(Transform target, float spd, int dmg, bool isEnemyBullet, float turnSpeed, float life, GameObject shieldVfx, GameObject defaultVfx)
+    public void InitializeAsHoming(Transform target, float spd, int dmg, bool isEnemyBullet, float turnSpeed, float life,
+                               GameObject shieldVfx, GameObject defaultVfx) // <-- 同样更新追踪弹
     {
         this.mode = ProjectileMode.Homing;
         this.isParabolic = false;
@@ -129,10 +132,10 @@ public class Projectile : MonoBehaviour
         this.shieldImpactEffectPrefab = shieldVfx;
         this.defaultImpactEffectPrefab = defaultVfx;
         Destroy(gameObject, life);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Homing: Lifetime={this.lifetime}");
     }
-
+    /// <summary>
+    /// 【新方法】：初始化为从天而降的“部署器”
+    /// </summary>
     public void InitializeAsAirdropDeployer(Vector3 startPosition, Vector3 flightDirection, float fallSpeed, GameObject areaPrefab, int dmg, float dur, float interval, GameObject attacker)
     {
         this.mode = ProjectileMode.AirdropDeployer;
@@ -145,15 +148,13 @@ public class Projectile : MonoBehaviour
         this.areaDurationPayload = dur;
         this.areaIntervalPayload = interval;
         this.creatorAttacker = attacker;
-        this.groundAndWallLayers = LayerMask.GetMask("Enemies", "Ground");
-        this.damageableLayers = LayerMask.GetMask("Enemies");
-        // Use a longer default lifetime for deployers in case they miss the ground
-        this.lifetime = 10f;
-        Destroy(gameObject, this.lifetime);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Airdrop: Lifetime={this.lifetime}");
+        this.groundAndWallLayers = LayerMask.GetMask("Enemies", "Ground"); // 修正：部署器也应该能打敌人
+        this.damageableLayers = LayerMask.GetMask("Enemies"); // 部署区域伤害敌人
+        Destroy(gameObject, 10f);
     }
-
+    /// <summary>
+    /// 为直线弹道设计的初始化方法
+    /// </summary>
     public void InitializeAsStraight(Vector3 dir, float spd, int directDmg, bool isEnemyBullet, int pierce, float life, GameObject shieldVfx, GameObject defaultVfx, int dotDmg, float dotDur, float dotTick, float slowPct, float slowDur, AttackType type = AttackType.Standard)
     {
         this.mode = ProjectileMode.Straight;
@@ -161,7 +162,7 @@ public class Projectile : MonoBehaviour
         this.attackType = type;
         this.shieldImpactEffectPrefab = shieldVfx;
         this.defaultImpactEffectPrefab = defaultVfx;
-        this.direction = dir.normalized;
+        this.direction = dir;
         this.speed = spd;
         this.directDamage = directDmg;
         this.isEnemyProjectile = isEnemyBullet;
@@ -172,22 +173,23 @@ public class Projectile : MonoBehaviour
         this.dotTickInterval = dotTick;
         this.slowPercentage = slowPct;
         this.slowDuration = slowDur;
-        this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies");
-        this.groundAndWallLayers = LayerMask.GetMask("Ground");
+        this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies"); // 自动设置
+        this.groundAndWallLayers = LayerMask.GetMask("Ground"); // 默认只与地面碰撞销毁
         Destroy(gameObject, this.lifetime);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Straight: Lifetime={this.lifetime}");
     }
 
+    /// <summary>
+    /// 初始化为【抛物线】弹道。由 WeaponPart 调用。
+    /// </summary>
     public void InitializeAsParabolic(Vector3 initialVelocity, int projectileDirectDamage, int projectileAoeDamage, float projectileLifetime, GameObject explosionVfxPrefab, float aoeRadius, LayerMask layersToDamage, LayerMask layersToExplodeOn, int dotDmg, float dotDur, float dotTick)
     {
         this.mode = ProjectileMode.Parabolic;
         this.isParabolic = true;
         this.currentVelocity = initialVelocity;
-        Rigidbody rb = GetComponent<Rigidbody>();
+        Rigidbody rb = GetComponent<Rigidbody>(); // 抛物线需要 Rigidbody
         if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.useGravity = false;
+        rb.isKinematic = false; // 必须是非运动学才能受力
+        rb.useGravity = false; // 我们手动模拟重力
         rb.velocity = initialVelocity;
 
         this.directDamage = projectileDirectDamage;
@@ -201,17 +203,15 @@ public class Projectile : MonoBehaviour
         this.dotDuration = dotDur;
         this.dotTickInterval = dotTick;
 
-        Collider col = GetComponent<Collider>();
+        Collider col = GetComponent<Collider>(); // 抛物线需要非触发器
         if (col != null) col.isTrigger = false;
 
         Destroy(gameObject, this.lifetime);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Parabolic: Lifetime={this.lifetime}");
     }
 
     public void InitializeAsChaining(Vector3 dir, float spd, int dmg, int chains, float range, float life, GameObject vfx)
     {
-        this.mode = ProjectileMode.Straight;
+        this.mode = ProjectileMode.Straight; // 连锁基于直线
         this.isParabolic = false;
         this.direction = dir;
         this.speed = spd;
@@ -222,115 +222,86 @@ public class Projectile : MonoBehaviour
         this.impactEffectPrefab = vfx;
         this.pierceCount = 1;
         this.hitEnemies.Clear();
-        this.damageableLayers = LayerMask.GetMask("Enemies");
+        this.damageableLayers = LayerMask.GetMask("Enemies"); // 连锁打敌人
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
         Destroy(gameObject, this.lifetime);
-        // Debug Log
-        // Debug.Log($"[Projectile Init] Chaining: Lifetime={this.lifetime}");
     }
 
-    public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist, float catchRad, float life,
-                                     GameObject shieldVFX, GameObject defaultVFX, WeaponPart launcherPart,
-                                     float rotSpeed, float overshootDist)
+    public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist,
+                                           float rotSpeed, float overshootDist) // <-- 新增 overshootDist
     {
-        // --- vvv Added Diagnostics vvv ---
-        Debug.Log($"[Projectile Init Boomerang] Received Lifetime: {life}, Speed: {spd}, MaxDist: {maxDist}");
-        if (life <= 0.1f) // Check if the received lifetime is suspiciously short
-        {
-            Debug.LogError($"[Projectile Init Boomerang] WARNING: Received very short lifetime ({life})! Check WeaponStatBlock 'Base Projectile Lifetime'.", this);
-        }
-        // --- ^^^ Added Diagnostics ^^^ ---
-
         this.mode = ProjectileMode.Boomerang;
         this.isParabolic = false;
         this.attackType = AttackType.Standard;
-        this.shieldImpactEffectPrefab = shieldVFX;
-        this.defaultImpactEffectPrefab = defaultVFX;
-        this.direction = dir.normalized;
+        this.direction = dir.normalized; // 初始飞行方向
         this.speed = spd;
         this.directDamage = dmg;
         this.pierceCount = 999;
-        this.lifetime = life; // Assign the received lifetime
-
-        this.launcher = launcherPart;
-        if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
-            this.spawnPoint = GameManager.Instance.playerTransform.position;
-        else
-        {
-            Debug.LogError("Projectile (Boomerang): GameManager 未找到，无法获取玩家位置！ Using fire point as fallback.", this);
-            this.spawnPoint = transform.position; // Fallback to initial position if player not found
-        }
-        transform.position = this.spawnPoint; // Start at the recorded spawn point
-
+        this.lifetime = 10f; // 保持固定生命周期
         this.maxDistance = maxDist;
-        this.catchRadius = catchRad;
         this.rotationSpeed = rotSpeed;
-        this.returnOvershootDistance = overshootDist;
+        this.spawnPoint = transform.position; // 记录发射时的确切位置
+        this.returnOvershootDistance = overshootDist; // <-- 接收过冲距离
 
-        this.boomerangState = BoomerangState.Outbound;
-        this.hasBeenCaught = false;
+        // --- 设置初始状态 ---
+        this.boomerangState = BoomerangState.Outbound; // <-- 设置初始状态
+        // --- 设置结束 ---
 
         this.damageableLayers = LayerMask.GetMask("Enemies");
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
 
-        // Boomerang destruction is handled in Update
-        Debug.Log($"[Projectile Init Boomerang] Finished. Mode={this.mode}, State={this.boomerangState}, Lifetime set to {this.lifetime}");
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
+        rb.isKinematic = false;
+        rb.useGravity = false;
+        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+
+        // 暂时保留生命周期销毁
+        Destroy(gameObject, this.lifetime);
+
+        Debug.Log($"[Projectile Init Boomerang Step2] Initialized: Speed={spd}, MaxDist={maxDist}, RotSpeed={rotSpeed}, Overshoot={overshootDist}, Lifetime={this.lifetime}");
     }
 
+    private void SetReturnState()
+    {
+        // 确保只从 Outbound 状态切换一次
+        if (boomerangState == BoomerangState.Outbound)
+        {
+            boomerangState = BoomerangState.Inbound;
+
+            // 计算包含过冲的最终返回点
+            // 使用初始方向的反方向 (-direction) 来计算过冲点
+            returnTargetPoint = spawnPoint - direction * returnOvershootDistance;
+
+            // 计算从当前位置到目标点的固定返回方向
+            returnDirection = (returnTargetPoint - transform.position).normalized;
+
+            Debug.Log($"[Projectile Boomerang] Entering Inbound state. Target: {returnTargetPoint}");
+
+            // （可选）如果使用 Rigidbody，可以在这里清除一下当前速度，使转向更干脆
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null) rb.velocity = Vector3.zero;
+        }
+    }
     private void OnDrawGizmos()
     {
         if (isParabolic)
         {
-            Gizmos.color = new Color(1, 0.92f, 0.016f, 0.5f);
+            Gizmos.color = new Color(1, 0.92f, 0.016f, 0.5f); // 黄色代表爆炸范围
             Gizmos.DrawWireSphere(transform.position, this.explosionRadius);
         }
-        // Optional: Draw boomerang catch radius
-        // if(mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound)
-        // {
-        //     Gizmos.color = Color.cyan;
-        //     Gizmos.DrawWireSphere(transform.position, catchRadius);
-        // }
     }
-
     void Update()
     {
         if (hasExploded) return;
 
-        // --- Movement Logic ---
-        switch (mode)
+        // 自转逻辑
+        if (mode == ProjectileMode.Boomerang)
         {
-            case ProjectileMode.Straight:
-            case ProjectileMode.AirdropDeployer:
-                transform.position += direction * speed * Time.deltaTime;
-                break;
-            case ProjectileMode.Parabolic:
-                Rigidbody rb = GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.velocity += Vector3.down * gravity * Time.deltaTime;
-                    if (faceMovementDirection && rb.velocity.sqrMagnitude > 0.01f)
-                    { transform.rotation = Quaternion.LookRotation(rb.velocity); }
-                }
-                break;
-            case ProjectileMode.Homing:
-                if (homingTarget != null)
-                {
-                    Vector3 directionToTarget = (homingTarget.position - transform.position).normalized;
-                    Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, homingTurnSpeed * Time.deltaTime);
-                }
-                transform.position += transform.forward * speed * Time.deltaTime;
-                break;
-            case ProjectileMode.Boomerang:
-                // Self-rotation
-                transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
-                // Movement based on state
-                if (boomerangState == BoomerangState.Outbound) { HandleBoomerangOutbound(); }
-                else if (boomerangState == BoomerangState.Inbound) { HandleBoomerangInbound(); }
-                break;
+            transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
         }
 
-        // --- Damage Cooldown Update ---
+        // --- Existing Damage Cooldown Logic ---
         if (hitCooldowns.Count > 0)
         {
             List<Health> keys = new List<Health>(hitCooldowns.Keys);
@@ -341,204 +312,162 @@ public class Projectile : MonoBehaviour
                 if (hitCooldowns[key] <= 0) { hitCooldowns.Remove(key); }
             }
         }
-
-        // --- Lifetime Check and Destruction Logic ---
-        // Add diagnostic log before check
-        // Debug.Log($"[Projectile Update] {gameObject.name} - Lifetime: {lifetime:F2}, Mode: {mode}, Boomerang Caught: {hasBeenCaught}");
-
-        lifetime -= Time.deltaTime;
+        /*lifetime -= Time.deltaTime;
         if (lifetime <= 0)
         {
-            // Only destroy if NOT parabolic (handled by collision/explosion)
-            // AND if (NOT boomerang OR (is boomerang AND NOT caught))
-            if (mode != ProjectileMode.Parabolic && (mode != ProjectileMode.Boomerang || !hasBeenCaught))
+            // 只要生命周期结束就销毁，除非是特殊情况（例如抛物线还没落地）
+            // 回旋镖如果超时未接住，也在此处销毁
+            if (mode != ProjectileMode.Parabolic) // 抛物线由碰撞或自身逻辑销毁
             {
-                Debug.Log($"[Projectile Destroy] {gameObject.name} Lifetime ended. Mode={mode}, Boomerang Caught={hasBeenCaught}");
-                if (mode == ProjectileMode.Boomerang && launcher != null)
+                Debug.Log($"[Projectile Destroy] {gameObject.name} Lifetime ended ({lifetime:F2}s). Mode={mode}, Boomerang Caught={hasBeenCaught}");
+                // 如果是回旋镖且未被抓住，通知冷却
+                if (mode == ProjectileMode.Boomerang && !hasBeenCaught && launcher != null)
                 {
-                    launcher.StartCooldownIfNotCaught(); // Notify timeout
+                    launcher.StartCooldownIfNotCaught();
                 }
                 Destroy(gameObject);
             }
-            // Parabolic projectiles are destroyed on collision/explosion
-            // Caught boomerangs just continue until they fade naturally (or hit something else after being caught, though unlikely)
-            // If a caught boomerang needs to disappear after a certain time *after being caught*, we'd need more logic.
+        }*/
+    }
+
+    void FixedUpdate()
+    {
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (hasExploded || rb == null || rb.isKinematic) return;
+
+        switch (mode)
+        {
+            // ... (Keep your existing cases for Straight, Parabolic, Homing) ...
+            case ProjectileMode.Straight:
+            case ProjectileMode.AirdropDeployer:
+                rb.velocity = direction * speed;
+                break;
+            case ProjectileMode.Parabolic:
+                rb.velocity += Vector3.down * gravity * Time.fixedDeltaTime;
+                if (faceMovementDirection && rb.velocity.sqrMagnitude > 0.01f)
+                { rb.MoveRotation(Quaternion.LookRotation(rb.velocity)); }
+                break;
+           case ProjectileMode.Homing:
+                   if (homingTarget != null)
+                   {
+                      Vector3 directionToTarget = (homingTarget.position - rb.position).normalized;
+                      Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+                      Quaternion newRotation = Quaternion.Slerp(rb.rotation, targetRotation, homingTurnSpeed * Time.fixedDeltaTime);
+                      rb.MoveRotation(newRotation);
+                   }
+                   rb.velocity = transform.forward * speed;
+                  break;
+
+            case ProjectileMode.Boomerang:
+                if (boomerangState == BoomerangState.Outbound)
+                {
+                    rb.velocity = direction * speed; // 继续飞出
+                                                     // 检查是否到达最大距离
+                    float distanceTraveled = Vector3.Distance(spawnPoint, rb.position);
+                    if (distanceTraveled >= maxDistance)
+                    {
+                        SetReturnState(); // 到达距离，开始返回
+                    }
+                }
+                else if (boomerangState == BoomerangState.Inbound)
+                {
+                    // 朝计算好的返回方向移动
+                    rb.velocity = returnDirection * speed;
+
+                    // (可选) 检查是否已飞过返回点，如果飞过了也可以销毁
+                    // if (Vector3.Dot(returnDirection, (returnTargetPoint - rb.position)) < 0)
+                    // {
+                    //     Debug.Log("[Projectile Boomerang] Overshot return target. Destroying.");
+                    //     Destroy(gameObject);
+                    // }
+                }
+                break;
         }
     }
 
-    // --- Collision/Trigger Handling ---
-
     void OnTriggerEnter(Collider other)
     {
-        if (hasExploded || mode == ProjectileMode.Parabolic) return; // Parabolic uses OnCollisionEnter
+        if (hasExploded || mode == ProjectileMode.Parabolic) return;
 
-        // --- Boomerang Catch Logic ---
-        if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
-        {
-            Transform currentPlayerTransform = GameManager.Instance?.playerTransform;
-            if (!hasBeenCaught && currentPlayerTransform != null && Vector3.Distance(transform.position, currentPlayerTransform.position) < catchRadius)
-            {
-                hasBeenCaught = true;
-                if (launcher != null)
-                {
-                    launcher.OnBoomerangCaught(transform.position);
-                }
-                Debug.Log("Boomerang Caught!");
-                // Do not return here yet, allow it to potentially hit walls/enemies right after catch if needed
-            }
-            // If caught, it won't be destroyed prematurely by distance check in HandleBoomerangInbound
-            return; // Important: Don't process other collisions if it hits the player on return
-        }
+        // --- 碰撞玩家逻辑 (将在下一步实现抓取) ---
+        // if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
+        // {
+        //     // Step 3: Implement Catch Logic Here
+        //     return;
+        // }
 
-        // --- Damage Target Logic ---
+        // --- 碰撞敌人逻辑 ---
         int targetLayer = isEnemyProjectile ? LayerMask.NameToLayer("Player") : LayerMask.NameToLayer("Enemies");
         if (other.gameObject.layer == targetLayer)
         {
             Health targetHealth = other.GetComponentInParent<Health>();
             if (targetHealth != null)
             {
-                HandleHit(targetHealth, other);
+                HandleHit(targetHealth, other); // HandleHit 不会销毁回旋镖
             }
         }
-        // --- Ground/Wall Collision Logic ---
+        // --- 碰撞墙壁/地面逻辑 ---
         else if (((1 << other.gameObject.layer) & groundAndWallLayers) != 0)
         {
+            // --- vvv 修改回旋镖撞墙逻辑 vvv ---
             if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Outbound)
             {
-                SetReturnState(); // Hit wall on way out, start returning
+                Debug.Log("[Projectile Boomerang] Hit wall while outbound. Returning.");
+                SetReturnState(); // 撞墙，开始返回
             }
-            else if (mode != ProjectileMode.Boomerang) // Non-boomerang projectiles
+            // --- ^^^ 修改结束 ^^^ ---
+            else if (mode != ProjectileMode.Boomerang) // 其他子弹撞墙销毁
             {
                 HandleImpactEffect(false, other.ClosestPoint(transform.position));
                 Destroy(gameObject);
             }
-            // Boomerang hitting wall on return continues until lifetime ends or hits spawn point
+            // 回旋镖在返回途中撞墙会继续飞行
         }
     }
 
-    void OnCollisionEnter(Collision collision)
+    void HandleEnemyHit(Health enemyHealth)
     {
-        if (hasExploded || mode != ProjectileMode.Parabolic) return;
+        // 1. 造成伤害并记录
+        enemyHealth.TakeDamage(directDamage, enemyHealth.transform.position, this.gameObject);
+        hitEnemies.Add(enemyHealth);
+        if (impactEffectPrefab != null) Instantiate(impactEffectPrefab, enemyHealth.transform.position, Quaternion.identity);
 
-        if (((1 << collision.gameObject.layer) & groundAndWallLayers) != 0)
+        // 2. 处理穿透逻辑
+        if (pierceCount > 1)
         {
-            Explode(collision.contacts[0].point, collision.collider);
-        }
-        else if (((1 << collision.gameObject.layer) & damageableLayers) != 0)
-        {
-            Explode(collision.contacts[0].point, collision.collider);
-        }
-    }
-
-    // --- Helper Methods ---
-
-    void HandleHit(Health targetHealth, Collider hitCollider)
-    {
-        if (targetHealth.IsDead || hitEnemies.Contains(targetHealth)) return; // Skip dead or already hit by this projectile instance
-        if (hitCooldowns.ContainsKey(targetHealth)) return; // Skip if on cooldown for this specific target
-
-        hitCooldowns[targetHealth] = hitCooldown; // Apply cooldown for this target
-
-        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
-        bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();
-        GameObject attacker = creatorAttacker ?? launcher?.gameObject; // Determine attacker
-        bool wasReflected = targetHealth.TakeDamage(directDamage, hitPoint, attacker, this.attackType, this);
-
-        if (!wasReflected)
-        {
-            // Apply Status Effects
-            StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
-            if (receiver != null)
-            {
-                if (dotDamage > 0) receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval);
-                if (slowPercentage > 0) receiver.ApplySlow(slowPercentage, slowDuration);
-            }
-            // Play Impact Effect
-            HandleImpactEffect(targetHasShield, hitPoint);
-            // Mark as hit
-            hitEnemies.Add(targetHealth);
             piercedEnemies++;
-
-            // Handle Pierce/Chain/Destroy (Only for non-Boomerang)
-            if (mode != ProjectileMode.Boomerang && piercedEnemies >= pierceCount)
+            if (piercedEnemies >= pierceCount)
             {
-                if (remainingChains > 0) HandleChaining(hitPoint);
-                else Destroy(gameObject);
+                Destroy(gameObject);
             }
-            // Boomerang continues flying after hitting enemies
+            // 穿透和连锁通常是互斥的，我们可以在WeaponPart中决定初始化哪种
+            return; // 如果是穿透弹，处理完后就结束
         }
-        // If reflected, do nothing, let the TakeDamage handle it
-    }
 
-    private void HandleBoomerangOutbound()
-    {
-        transform.position += direction * speed * Time.deltaTime;
-        float distanceTraveled = Vector3.Distance(spawnPoint, transform.position);
-        if (distanceTraveled >= maxDistance)
+        // 3. 处理连锁逻辑
+        if (remainingChains > 0)
         {
-            SetReturnState(); // Reached max distance, start returning
-        }
-    }
-
-    private void HandleBoomerangInbound()
-    {
-        // Increment the return timer
-        timeSinceReturnStarted += Time.deltaTime;
-
-        // Calculate direction towards spawn point dynamically
-        returnDirection = (spawnPoint - transform.position).normalized;
-        transform.position += returnDirection * speed * Time.deltaTime;
-
-        // Check if near spawn point AND not caught yet
-        if (!hasBeenCaught)
-        {
-            // --- Introduce a minimum return time before checking distance ---
-            // Only check proximity if we've been returning for at least a fraction of a second
-            if (timeSinceReturnStarted > 1f) // e.g., wait 0.1 seconds
+            remainingChains--;
+            Transform nextTarget = FindNextTarget(enemyHealth.transform.position);
+            if (nextTarget != null)
             {
-                float distanceToSpawn = Vector3.Distance(transform.position, spawnPoint);
-                if (distanceToSpawn < 0.5f) // Reached proximity of spawn point
-                {
-                    Debug.Log($"[Projectile Destroy] Boomerang reached spawn point proximity ({distanceToSpawn:F2}m) after returning for {timeSinceReturnStarted:F2}s without being caught.");
-                    if (launcher != null)
-                    {
-                        launcher.StartCooldownIfNotCaught(); // Notify timeout
-                    }
-                    Destroy(gameObject);
-                }
+                // 找到了新目标，更新方向
+                Debug.Log($"连锁到新目标: {nextTarget.name}");
+                this.direction = (nextTarget.position - transform.position).normalized;
+                // （可选）可以加一个瞬移或转向效果
             }
-        }
-        // If caught, it continues moving until lifetime expires (handled in Update)
-    }
-
-    private void SetReturnState()
-    {
-        if (boomerangState == BoomerangState.Outbound) // Ensure this only happens once
-        {
-            boomerangState = BoomerangState.Inbound;
-            timeSinceReturnStarted = 0f; // Reset the return timer when state changes
-            Debug.Log("[Projectile] Boomerang entering Inbound state.");
-            // Return direction is now calculated dynamically in HandleBoomerangInbound
-        }
-    }
-
-    void HandleChaining(Vector3 hitPoint)
-    {
-        remainingChains--;
-        Transform nextTarget = FindNextTarget(hitPoint);
-        if (nextTarget != null)
-        {
-            // Debug.Log($"Chaining to target: {nextTarget.name}");
-            this.direction = (nextTarget.position - transform.position).normalized;
-            piercedEnemies = 0; // Reset pierce count for the new chain link
-                                // hitCooldowns.Clear(); // Optionally reset cooldowns for chaining flexibility
+            else
+            {
+                // 没找到下一个目标，销毁子弹
+                Destroy(gameObject);
+            }
         }
         else
         {
-            Destroy(gameObject); // No more targets in range
+            // 穿透和连锁次数都用完了，销毁子弹
+            Destroy(gameObject);
         }
     }
-
     Transform FindNextTarget(Vector3 currentPosition)
     {
         Collider[] nearbyColliders = Physics.OverlapSphere(currentPosition, _chainRange, damageableLayers);
@@ -548,13 +477,14 @@ public class Projectile : MonoBehaviour
         foreach (var col in nearbyColliders)
         {
             Health potentialTargetHealth = col.GetComponentInParent<Health>();
+            // 检查：是敌人，活着，并且没被这颗子弹打过
             if (potentialTargetHealth != null && !potentialTargetHealth.IsDead && !hitEnemies.Contains(potentialTargetHealth))
             {
                 float distSqr = (currentPosition - col.transform.position).sqrMagnitude;
                 if (distSqr < minDistanceSqr)
                 {
                     minDistanceSqr = distSqr;
-                    closestTarget = potentialTargetHealth.transform; // Target the Health component's transform
+                    closestTarget = col.transform;
                 }
             }
         }
@@ -566,50 +496,158 @@ public class Projectile : MonoBehaviour
         if (hasExploded) return;
         hasExploded = true;
 
+        // ================== 新增的诊断日志 ==================
+        if (initiallyHitCollider != null)
+        {
+            Debug.Log($"[诊断] 炮弹爆炸，初始碰撞体是: '{initiallyHitCollider.name}', 它的标签是: '{initiallyHitCollider.tag}', 它的层是: '{LayerMask.LayerToName(initiallyHitCollider.gameObject.layer)}'");
+        }
+        else
+        {
+            Debug.LogWarning("[诊断] 炮弹爆炸，但初始碰撞体为 null！");
+            // 如果是 null，后续逻辑肯定不会执行，直接返回
+            Destroy(gameObject);
+            return;
+        }
+
         if (explosionEffectPrefab != null)
         {
             Instantiate(explosionEffectPrefab, explosionPoint, Quaternion.identity);
         }
-
         Health directlyHitEnemyHealth = null;
 
-        // Direct Hit Damage (if applicable)
-        if (initiallyHitCollider != null && ((1 << initiallyHitCollider.gameObject.layer) & damageableLayers) != 0)
+        // --- 1. 处理直接命中伤害 ---
+        if (initiallyHitCollider.CompareTag("Enemy"))
         {
+            // 只有当上面的诊断日志显示标签确实是 "Enemy" 时，才会进入这里
             directlyHitEnemyHealth = initiallyHitCollider.GetComponentInParent<Health>();
             if (directlyHitEnemyHealth != null && !directlyHitEnemyHealth.IsDead)
             {
-                // Debug.Log($"[Projectile Explode] Direct Hit on {initiallyHitCollider.name} for {directDamage} damage.");
-                GameObject attacker = creatorAttacker ?? launcher?.gameObject;
-                directlyHitEnemyHealth.TakeDamage(directDamage, explosionPoint, attacker, AttackType.Standard); // Use explosionPoint for damage source location?
+                // 这条日志现在应该能正常显示了
+                Debug.Log($"[Projectile] 炮弹爆炸，判定 '{initiallyHitCollider.name}' 为直接命中目标，造成 {directDamage} 点直接伤害。");
+                directlyHitEnemyHealth.TakeDamage(directDamage, explosionPoint, this.gameObject, AttackType.Standard);
+
                 StatusEffectReceiver receiver = directlyHitEnemyHealth.GetComponent<StatusEffectReceiver>();
-                if (receiver != null && dotDamage > 0)
-                { receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval); }
+                if (receiver != null && this.dotDamage > 0 && this.dotDuration > 0)
+                {
+                    receiver.ApplyBurn(this.dotDamage, this.dotDuration, this.dotTickInterval);
+                }
             }
         }
 
-        // Area Damage
+        // --- 2. 处理范围伤害 ---
         Collider[] collidersInRange = Physics.OverlapSphere(explosionPoint, explosionRadius, damageableLayers);
         foreach (Collider hitCollider in collidersInRange)
         {
-            // Skip player and the directly hit enemy (if any)
             if (hitCollider.CompareTag("Player")) continue;
+
             Health healthComponent = hitCollider.GetComponentInParent<Health>();
-            if (healthComponent != null && healthComponent != directlyHitEnemyHealth && !healthComponent.IsDead)
+
+            if (healthComponent != null && healthComponent == directlyHitEnemyHealth)
             {
-                // Debug.Log($"[Projectile Explode] AOE Hit on {hitCollider.name} for {aoeDamage} damage.");
-                GameObject attacker = creatorAttacker ?? launcher?.gameObject;
-                healthComponent.TakeDamage(aoeDamage, explosionPoint, attacker, AttackType.Standard);
+                continue;
+            }
+
+            if (healthComponent != null)
+            {
+                healthComponent.TakeDamage(aoeDamage, explosionPoint, this.gameObject, AttackType.Standard);
+
                 StatusEffectReceiver receiver = healthComponent.GetComponent<StatusEffectReceiver>();
-                if (receiver != null && dotDamage > 0)
-                { receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval); }
+                if (receiver != null && this.dotDamage > 0 && this.dotDuration > 0)
+                {
+                    receiver.ApplyBurn(this.dotDamage, this.dotDuration, this.dotTickInterval);
+                }
             }
         }
 
-        Destroy(gameObject); // Destroy after explosion logic
+        Destroy(gameObject);
+    }
+    void HandleHit(Health targetHealth, Collider hitCollider)
+    {
+        if (targetHealth.IsDead || hitEnemies.Contains(targetHealth)) return;
+        if (hitCooldowns.ContainsKey(targetHealth)) return;
+        hitCooldowns[targetHealth] = hitCooldown;
+
+        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
+        bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();
+        GameObject attacker = creatorAttacker ?? launcher?.gameObject; // Use correct attacker
+        bool wasReflected = targetHealth.TakeDamage(directDamage, hitPoint, attacker, this.attackType, this);
+
+        if (!wasReflected)
+        {
+            // Apply Status Effects (if any were initialized)
+            StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
+            if (receiver != null)
+            {
+                if (dotDamage > 0) receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval);
+                if (slowPercentage > 0) receiver.ApplySlow(slowPercentage, slowDuration);
+            }
+            HandleImpactEffect(targetHasShield, hitPoint);
+            hitEnemies.Add(targetHealth);
+            piercedEnemies++;
+
+            // --- vvv CRUCIAL: Ensure Boomerang DOES NOT destroy on hit vvv ---
+            // Only destroy if NOT boomerang AND pierce count is exceeded
+            if (mode != ProjectileMode.Boomerang && piercedEnemies >= pierceCount)
+            {
+                // Handle Chaining if applicable for non-boomerangs
+                if (remainingChains > 0) HandleChaining(hitPoint);
+                else Destroy(gameObject);
+            }
+            // --- ^^^ CRUCIAL End ^^^ ---
+        }
+    }
+    private void HandleBoomerangOutbound()
+    {
+        transform.position += direction * speed * Time.deltaTime;
+        float distanceTraveled = Vector3.Distance(spawnPoint, transform.position);
+        if (distanceTraveled >= maxDistance)
+        {
+            boomerangState = BoomerangState.Inbound;
+        }
     }
 
-    private void HandleImpactEffect(bool hitShield, Vector3 position)
+    private void HandleBoomerangInbound()
+    {
+        if (playerTransform == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
+        transform.position += directionToPlayer * speed * Time.deltaTime;
+
+        // 【优化】只有在未被抓取时才检测距离并销毁
+        if (!hasBeenCaught)
+        {
+            float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+            if (distanceToPlayer < 0.5f) // 飞到玩家附近但没触发抓取（可能玩家移速太快），销毁
+            {
+                Destroy(gameObject);
+            }
+        }
+        // 如果已被抓取，它会继续按当前方向飞，直到生命周期结束
+    }
+    // --- ^^^ 新增结束 ^^^ ---
+    void HandleChaining(Vector3 hitPoint)
+    {
+        remainingChains--;
+        Transform nextTarget = FindNextTarget(hitPoint);
+        if (nextTarget != null)
+        {
+            Debug.Log($"连锁到新目标: {nextTarget.name}");
+            this.direction = (nextTarget.position - transform.position).normalized;
+            // 重置命中计数器，允许再次穿透
+            piercedEnemies = 0;
+            // 可选：重置冷却字典，允许再次伤害之前命中的敌人
+            // hitCooldowns.Clear();
+        }
+        else
+        {
+            Destroy(gameObject); // 没有下一个目标
+        }
+    }
+    private void HandleImpactEffect(bool hitShield, Vector3 position) // 添加此方法
     {
         GameObject effectToPlay = hitShield ? shieldImpactEffectPrefab : defaultImpactEffectPrefab;
         if (effectToPlay != null)
@@ -618,4 +656,3 @@ public class Projectile : MonoBehaviour
         }
     }
 }
-
