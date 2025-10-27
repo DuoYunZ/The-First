@@ -77,8 +77,11 @@ public class Projectile : MonoBehaviour
     private float returnOvershootDistance; // <-- 新增
     private Vector3 returnTargetPoint;     // <-- 新增: 最终返回的目标点
     private Vector3 returnDirection;       // <-- 新增: 固定的返回方向
+    private Vector3 currentReturnDirection;
 
     private bool hasBeenCaught = false; // 是否已被抓取
+
+    private Rigidbody rb;
     // --- ^^^ 新增结束 ^^^ ---
 
 
@@ -227,59 +230,77 @@ public class Projectile : MonoBehaviour
         Destroy(gameObject, this.lifetime);
     }
 
-    public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist,
-                                           float rotSpeed, float overshootDist) // <-- 新增 overshootDist
+    public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist, float catchRad, float life,
+                                      GameObject shieldVFX, GameObject defaultVFX, WeaponPart launcherPart,
+                                      float rotSpeed) // 移除 overshootDist, turnDur
     {
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            // 如果在这里仍然找不到，说明 Prefab 真的有问题
+            Debug.LogError("[Projectile Init Boomerang] CRITICAL: Rigidbody component MISSING on prefab!", this);
+            Destroy(gameObject); // 直接销毁，防止后续错误
+            return;
+        }
+        // 添加详细日志
+        Debug.Log($"[Projectile Init Boomerang] START - Dir:{dir}, Spd:{spd}, Dmg:{dmg}, MaxDist:{maxDist}, CatchRad:{catchRad}, Life:{life}, RotSpd:{rotSpeed}");
+
         this.mode = ProjectileMode.Boomerang;
         this.isParabolic = false;
         this.attackType = AttackType.Standard;
-        this.direction = dir.normalized; // 初始飞行方向
-        this.speed = spd;
+        this.shieldImpactEffectPrefab = shieldVFX;
+        this.defaultImpactEffectPrefab = defaultVFX;
+        this.direction = dir.normalized; // 初始飞出方向
+        this.speed = spd; // 必须大于 0
         this.directDamage = dmg;
         this.pierceCount = 999;
-        this.lifetime = 10f; // 保持固定生命周期
+        this.lifetime = life; // 总生命周期，必须大于 0
         this.maxDistance = maxDist;
+        this.catchRadius = catchRad;
         this.rotationSpeed = rotSpeed;
-        this.spawnPoint = transform.position; // 记录发射时的确切位置
-        this.returnOvershootDistance = overshootDist; // <-- 接收过冲距离
 
-        // --- 设置初始状态 ---
-        this.boomerangState = BoomerangState.Outbound; // <-- 设置初始状态
-        // --- 设置结束 ---
+        this.launcher = launcherPart;
+        // 记录发射点
+        this.spawnPoint = transform.position; // 使用 projectile 自己的初始位置
+        // if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
+        //      this.spawnPoint = GameManager.Instance.playerTransform.position; // 或者用玩家位置，看哪个更合适
+        // else { Debug.LogError("..."); this.spawnPoint = transform.position; }
+        // transform.position = this.spawnPoint; // 如果上面用了玩家位置，这里要同步
+
+        this.boomerangState = BoomerangState.Outbound;
+        this.hasBeenCaught = false;
 
         this.damageableLayers = LayerMask.GetMask("Enemies");
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
 
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.velocity = Vector3.zero; // 清空初始速度
+            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        }
+        else { Debug.LogError("Rigidbody missing!", this); }
 
-        // 暂时保留生命周期销毁
-        Destroy(gameObject, this.lifetime);
+        // 移除这里的 Destroy(gameObject, lifetime)，交由 Update 处理
+        // Destroy(gameObject, this.lifetime);
 
-        Debug.Log($"[Projectile Init Boomerang Step2] Initialized: Speed={spd}, MaxDist={maxDist}, RotSpeed={rotSpeed}, Overshoot={overshootDist}, Lifetime={this.lifetime}");
+        // 结束日志
+        Debug.Log($"[Projectile Init Boomerang] FINISHED - Initial Velocity set in FixedUpdate. Lifetime={this.lifetime}");
     }
 
     private void SetReturnState()
     {
-        // 确保只从 Outbound 状态切换一次
         if (boomerangState == BoomerangState.Outbound)
         {
             boomerangState = BoomerangState.Inbound;
+            Debug.Log("[Projectile Boomerang] State changed to Inbound.");
 
-            // 计算包含过冲的最终返回点
-            // 使用初始方向的反方向 (-direction) 来计算过冲点
-            returnTargetPoint = spawnPoint - direction * returnOvershootDistance;
+            // --- 【修复3】清空已命中列表，允许返回时再次造成伤害 ---
+            hitEnemies.Clear();
+            piercedEnemies = 0; // 重置穿透计数器（虽然是999，但重置更规范）
+            // --- 【修复3 结束】 ---
 
-            // 计算从当前位置到目标点的固定返回方向
-            returnDirection = (returnTargetPoint - transform.position).normalized;
-
-            Debug.Log($"[Projectile Boomerang] Entering Inbound state. Target: {returnTargetPoint}");
-
-            // （可选）如果使用 Rigidbody，可以在这里清除一下当前速度，使转向更干脆
-            Rigidbody rb = GetComponent<Rigidbody>();
+            // 清除当前速度，以便立即应用返回速度
             if (rb != null) rb.velocity = Vector3.zero;
         }
     }
@@ -312,22 +333,23 @@ public class Projectile : MonoBehaviour
                 if (hitCooldowns[key] <= 0) { hitCooldowns.Remove(key); }
             }
         }
-        /*lifetime -= Time.deltaTime;
+        lifetime -= Time.deltaTime;
         if (lifetime <= 0)
         {
-            // 只要生命周期结束就销毁，除非是特殊情况（例如抛物线还没落地）
-            // 回旋镖如果超时未接住，也在此处销毁
-            if (mode != ProjectileMode.Parabolic) // 抛物线由碰撞或自身逻辑销毁
+            // 【核心修改】生命周期结束时的处理
+            Debug.Log($"[Projectile Destroy] {gameObject.name} Lifetime ended ({lifetime:F2}s). Mode={mode}, Boomerang Caught={hasBeenCaught}");
+
+            // 只有当它是【未被抓住】的回旋镖时，才通知冷却
+            if (mode == ProjectileMode.Boomerang && !hasBeenCaught && launcher != null)
             {
-                Debug.Log($"[Projectile Destroy] {gameObject.name} Lifetime ended ({lifetime:F2}s). Mode={mode}, Boomerang Caught={hasBeenCaught}");
-                // 如果是回旋镖且未被抓住，通知冷却
-                if (mode == ProjectileMode.Boomerang && !hasBeenCaught && launcher != null)
-                {
-                    launcher.StartCooldownIfNotCaught();
-                }
-                Destroy(gameObject);
+                launcher.StartCooldownIfNotCaught();
             }
-        }*/
+
+            // 只要生命周期结束就销毁 (除非是特殊情况，但这里我们简化处理)
+            // 抛物线由其碰撞逻辑处理销毁，这里不需要特殊判断了
+            Destroy(gameObject);
+            // 【核心修改结束】
+        }
     }
 
     void FixedUpdate()
@@ -361,27 +383,38 @@ public class Projectile : MonoBehaviour
             case ProjectileMode.Boomerang:
                 if (boomerangState == BoomerangState.Outbound)
                 {
-                    rb.velocity = direction * speed; // 继续飞出
-                                                     // 检查是否到达最大距离
+                    // **强制**设置飞出速度
+                    rb.velocity = direction * speed;
+                    // Debug.Log($"[Boomerang Outbound] Pos={rb.position}, Vel={rb.velocity}"); // 添加日志
+
                     float distanceTraveled = Vector3.Distance(spawnPoint, rb.position);
                     if (distanceTraveled >= maxDistance)
                     {
-                        SetReturnState(); // 到达距离，开始返回
+                        SetReturnState(); // 到达距离，切换状态
                     }
                 }
                 else if (boomerangState == BoomerangState.Inbound)
                 {
-                    // 朝计算好的返回方向移动
-                    rb.velocity = returnDirection * speed;
-
-                    // (可选) 检查是否已飞过返回点，如果飞过了也可以销毁
-                    // if (Vector3.Dot(returnDirection, (returnTargetPoint - rb.position)) < 0)
-                    // {
-                    //     Debug.Log("[Projectile Boomerang] Overshot return target. Destroying.");
-                    //     Destroy(gameObject);
-                    // }
+                    // 实时计算朝向出生点的方向
+                    currentReturnDirection = (spawnPoint - rb.position).normalized;
+                    // **强制**设置返回速度
+                    rb.velocity = currentReturnDirection * speed;
+                    // Debug.Log($"[Boomerang Inbound] Pos={rb.position}, Vel={rb.velocity}"); // 添加日志
+                    if (!hasBeenCaught)
+                    {
+                        float distanceToSpawn = Vector3.Distance(rb.position, spawnPoint);
+                        float proximityThreshold = 0.5f + (speed * Time.fixedDeltaTime);
+                        // 【重要】只有当非常接近出生点【并且】未被抓住时才销毁
+                        if (distanceToSpawn < proximityThreshold)
+                        {
+                            Debug.Log($"[Projectile Destroy] Boomerang reached spawn point proximity ({distanceToSpawn:F2}m) without being caught.");
+                            if (launcher != null) { launcher.StartCooldownIfNotCaught(); }
+                            Destroy(gameObject); // 直接销毁
+                        }
+                    }
                 }
                 break;
+                // --- ^^^ 核心修改结束 ^^^ ---
         }
     }
 
@@ -389,39 +422,48 @@ public class Projectile : MonoBehaviour
     {
         if (hasExploded || mode == ProjectileMode.Parabolic) return;
 
-        // --- 碰撞玩家逻辑 (将在下一步实现抓取) ---
-        // if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
-        // {
-        //     // Step 3: Implement Catch Logic Here
-        //     return;
-        // }
+        // --- vvv 核心修改：抓取逻辑 vvv ---
+        if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
+        {
+            Transform currentPlayerTransform = GameManager.Instance?.playerTransform;
+            // 只有在【未被抓住过】且【靠近玩家】时才触发
+            if (!hasBeenCaught && currentPlayerTransform != null && Vector3.Distance(transform.position, currentPlayerTransform.position) < catchRadius)
+            {
+                hasBeenCaught = true; // 标记为已抓住
+                Debug.Log("Boomerang Caught!");
+                if (launcher != null)
+                {
+                    launcher.OnBoomerangCaught(transform.position); // 通知 WeaponPart
+                }
+                // 【核心修改】抓住后立刻销毁
+                Destroy(gameObject);
+                // 【核心修改结束】
+            }
+            // 注意：即使触发了碰撞，如果距离不够或已被抓过，也不会执行销毁，让它继续飞
+            return; // 碰到玩家不再处理其他碰撞
+        }
+        // --- ^^^ 核心修改结束 ^^^ ---
 
-        // --- 碰撞敌人逻辑 ---
+
+        // 伤害敌人 (保持不变)
         int targetLayer = isEnemyProjectile ? LayerMask.NameToLayer("Player") : LayerMask.NameToLayer("Enemies");
         if (other.gameObject.layer == targetLayer)
         {
             Health targetHealth = other.GetComponentInParent<Health>();
-            if (targetHealth != null)
-            {
-                HandleHit(targetHealth, other); // HandleHit 不会销毁回旋镖
-            }
+            if (targetHealth != null) { HandleHit(targetHealth, other); }
         }
-        // --- 碰撞墙壁/地面逻辑 ---
+        // 撞墙/地面 (保持不变)
         else if (((1 << other.gameObject.layer) & groundAndWallLayers) != 0)
         {
-            // --- vvv 修改回旋镖撞墙逻辑 vvv ---
             if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Outbound)
             {
-                Debug.Log("[Projectile Boomerang] Hit wall while outbound. Returning.");
-                SetReturnState(); // 撞墙，开始返回
+                SetReturnState(); // 撞墙开始返回
             }
-            // --- ^^^ 修改结束 ^^^ ---
-            else if (mode != ProjectileMode.Boomerang) // 其他子弹撞墙销毁
+            else if (mode != ProjectileMode.Boomerang)
             {
                 HandleImpactEffect(false, other.ClosestPoint(transform.position));
                 Destroy(gameObject);
             }
-            // 回旋镖在返回途中撞墙会继续飞行
         }
     }
 

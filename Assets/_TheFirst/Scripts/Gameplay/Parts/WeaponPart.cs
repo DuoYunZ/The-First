@@ -33,6 +33,12 @@ public class WeaponPart : MonoBehaviour
         set { myStatBlock = value; }
     }
 
+    private int currentLevel = 0; // 初始等级为0，需要调用 LevelUp 才会生效
+    private int catchStacks = 0;  // 当前连续接住次数
+    private int maxCatchStacks = 0; // 最大叠加次数 (根据等级变化)
+    private float stackDamageBonusPercent = 0f; // 每次叠加增加的伤害百分比
+    private float stackScaleBonusPercent = 0f; // 每次叠加增加的体积百分比
+
     private bool isBoomerangOut = false;
     private float fireCooldown = 0f;
     private float orbitalCooldownTimer = 0f;
@@ -125,9 +131,69 @@ public class WeaponPart : MonoBehaviour
         StartCoroutine(FireRoutine(initialDirection));
     }
 
+    public void LevelUpBoomerang()
+    {
+        currentLevel++;
+        Debug.Log($"回旋镖 '{StatBlock.weaponName}' 升级到 Lv.{currentLevel}");
+
+        // 根据新等级设置叠加规则
+        switch (currentLevel)
+        {
+            case 1:
+                // Lv1: 效果通常由外部升级系统处理基础伤害增加，这里不直接修改
+                // 如果需要在这里处理基础伤害，可以添加逻辑
+                // 例如: StatBlock.baseDirectDamage += 5; // 但不推荐直接修改 ScriptableObject
+                maxCatchStacks = 0; // Lv1 没有叠加效果
+                stackDamageBonusPercent = 0f;
+                stackScaleBonusPercent = 0f;
+                break;
+            case 2:
+                maxCatchStacks = 3;
+                stackDamageBonusPercent = 0.10f; // 10%
+                stackScaleBonusPercent = 0.10f;  // 10%
+                break;
+            case 3:
+                maxCatchStacks = 4;
+                stackDamageBonusPercent = 0.25f; // 25%
+                stackScaleBonusPercent = 0.25f;  // 25%
+                break;
+            case 4:
+                maxCatchStacks = 5;
+                stackDamageBonusPercent = 0.60f; // 60%
+                stackScaleBonusPercent = 0.60f;  // 60%
+                break;
+            // 可以添加更多等级...
+            default:
+                // 超过最高等级，可以保持不变或继续增加
+                Debug.LogWarning($"回旋镖已达到或超过最高配置等级 ({currentLevel})");
+                // 保持 Lv4 的设置
+                maxCatchStacks = 5;
+                stackDamageBonusPercent = 0.60f;
+                stackScaleBonusPercent = 0.60f;
+                break;
+        }
+
+        // 每次升级重置叠加层数，确保从新等级的0层开始
+        catchStacks = 0;
+        Debug.Log($"当前叠加规则: MaxStacks={maxCatchStacks}, DmgBonus={stackDamageBonusPercent * 100}%, ScaleBonus={stackScaleBonusPercent * 100}%");
+    }
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
-        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+        if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
+        {
+            // 检查1：如果回旋镖已发出，则不能再发
+            if (isBoomerangOut)
+            {
+                yield break;
+            }
+            // 检查2：如果可以发射，标记为已发出，但不设置冷却
+            isBoomerangOut = true;
+        }
+        else
+        {
+            // 对于非回旋镖武器，设置正常的冷却时间
+            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+        }
 
         // --- Sound Delay ---
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
@@ -312,6 +378,7 @@ public class WeaponPart : MonoBehaviour
         float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
         float finalMaxDistance = StatBlock.maxDistance; // 暂时不用乘数
         float finalScale = PlayerStats.Instance.aoeRadiusMultiplier;
+        float finalCatchRadius = StatBlock.catchRadius * finalScale;
         bullet.transform.localScale = Vector3.one * finalScale;
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
@@ -323,8 +390,12 @@ public class WeaponPart : MonoBehaviour
                 finalSpeed,
                 finalDamage,
                 finalMaxDistance,
-                StatBlock.rotationSpeed,
-                StatBlock.returnOvershootDistance // <-- 传递这个新值
+                finalCatchRadius,
+                StatBlock.baseProjectileLifetime,
+                StatBlock.shieldImpactEffectPrefab,
+                StatBlock.defaultImpactEffectPrefab,
+                this,
+                StatBlock.rotationSpeed                
             );
         }
         else
