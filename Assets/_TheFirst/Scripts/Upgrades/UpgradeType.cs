@@ -27,5 +27,13 @@ public enum UpgradeType
     ExperienceGain,     // 经验获取率
 
     // 特殊类 (虽然现在由 EffectActionType 处理，但保留可能有用)
-    NewWeapon
+    NewWeapon,
+
+    BoomerangStackUpgrade, // 代表升级回旋镖的叠加规则
+
+    ParabolicAoeStunChance, // 抛物线AOE眩晕几率
+
+    Stun
+
+
 }

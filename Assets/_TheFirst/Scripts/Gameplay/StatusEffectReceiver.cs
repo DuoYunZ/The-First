@@ -6,16 +6,22 @@ public class StatusEffectReceiver : MonoBehaviour
 {
     private Health enemyHealth;
     private EnemyAI enemyAI; // 如果需要處理減速等影響AI的效果
+    private StraightMoverAI straightMoverAI;
 
     // 用於追蹤正在進行的狀態協程，避免同一狀態重複疊加
     private Dictionary<UpgradeType, Coroutine> activeStatusCoroutines = new Dictionary<UpgradeType, Coroutine>();
 
     public bool IsBurning { get; private set; } = false;
+    public bool IsStunned { get; private set; } = false;
+
+    [Header("特效预制件 (可选)")]
+    public GameObject stunVfxPrefab;
 
     void Awake()
     {
         enemyHealth = GetComponent<Health>();
         enemyAI = GetComponent<EnemyAI>();
+        straightMoverAI = GetComponent<StraightMoverAI>();
     }
 
     /// <summary>
@@ -46,6 +52,51 @@ public class StatusEffectReceiver : MonoBehaviour
 
         var slowCoroutine = StartCoroutine(SlowRoutine(slowPercentage, duration));
         activeStatusCoroutines[UpgradeType.MoveSpeed] = slowCoroutine;
+    }
+
+    public void ApplyStun(float duration)
+    {
+        // 确保你的 UpgradeType 枚举中有一个 "Stun" 的值
+        if (activeStatusCoroutines.ContainsKey(UpgradeType.Stun))
+        {
+            StopCoroutine(activeStatusCoroutines[UpgradeType.Stun]);
+        }
+
+        var stunCoroutine = StartCoroutine(StunRoutine(duration));
+        activeStatusCoroutines[UpgradeType.Stun] = stunCoroutine;
+    }
+    private IEnumerator StunRoutine(float duration)
+    {
+        IsStunned = true;
+
+        GameObject stunVfxInstance = null;
+        if (stunVfxPrefab != null)
+        {
+            // 在敌人头顶或中心生成特效，并将其设为子物体
+            stunVfxInstance = Instantiate(stunVfxPrefab, transform.position, Quaternion.identity, transform);
+        }
+        // 停止两种可能的 AI 脚本
+        if (enemyAI != null) enemyAI.SetStunned(true);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(true);
+
+        // (可选) 在这里附加一个眩晕的粒子特效
+
+        yield return new WaitForSeconds(duration);
+
+        IsStunned = false;
+
+        // 恢复两种可能的 AI 脚本
+        if (enemyAI != null) enemyAI.SetStunned(false);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(false);
+
+        if (stunVfxInstance != null)
+        {
+            Destroy(stunVfxInstance);
+        }
+
+        // (可选) 在这里移除眩晕的粒子特效
+
+        activeStatusCoroutines.Remove(UpgradeType.Stun);
     }
 
     private IEnumerator SlowRoutine(float slowPercentage, float duration)

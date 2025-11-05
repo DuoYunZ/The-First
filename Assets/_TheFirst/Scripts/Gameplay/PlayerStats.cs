@@ -26,6 +26,9 @@ public class PlayerStats : MonoBehaviour
     public int bonusSlashCount = 0; // <--- ADD THIS LINE
     public int bonusOrbitalCount = 0; // <--- 【新增】额外轨道武器数量
 
+    [Header("武器特效加成")]
+    [Tooltip("抛物线AOE造成眩晕的几率 (0 到 1)")]
+    public float parabolicAoeStunChance = 0f;
 
     [Header("特殊属性")]
     public float luck = 1.0f; // 幸运值, 1.0代表100% (基础值)
@@ -33,6 +36,16 @@ public class PlayerStats : MonoBehaviour
     [Header("护盾属性")]
     public int maxShield = 0;
     public float shieldCooldown = 5f; // 基础冷却时间5秒
+
+    [Header("回旋镖叠加状态 (Boomerang Stacking)")]
+    [Tooltip("当前连续接住次数")]
+    public int boomerangCatchStacks = 0;
+    [Tooltip("当前等级允许的最大叠加次数")]
+    public int boomerangMaxCatchStacks = 0;
+    [Tooltip("当前等级下，每次叠加增加的伤害百分比 (0.1 = 10%)")]
+    public float boomerangStackDamageBonusPercent = 0f;
+    [Tooltip("当前等级下，每次叠加增加的体积百分比 (0.1 = 10%)")]
+    public float boomerangStackScaleBonusPercent = 0f;
 
 
     void Awake()
@@ -113,6 +126,13 @@ public class PlayerStats : MonoBehaviour
                 aoeRadiusMultiplier += valueToApply;
                 break;
 
+            case UpgradeType.ParabolicAoeStunChance:
+                if (effect.modType == ModifierType.Percentage) // 假设几率是百分比
+                {
+                    parabolicAoeStunChance += effect.value; // 例如 value = 0.1 (代表+10%)
+                }
+                break;
+
             case UpgradeType.WeaponFireRate:
                 // 射速是减法
                 fireRateMultiplier -= valueToApply;
@@ -152,6 +172,39 @@ public class PlayerStats : MonoBehaviour
 
             case UpgradeType.MoveSpeed:
                 moveSpeedMultiplier += valueToApply;
+                break;
+            case UpgradeType.BoomerangStackUpgrade:
+                // effect.value 在这里代表目标等级 (例如 2, 3, 4)
+                int targetLevel = Mathf.RoundToInt(effect.value);
+                Debug.Log($"应用回旋镖叠加升级，目标等级: {targetLevel}");
+
+                switch (targetLevel)
+                {
+                    case 2:
+                        boomerangMaxCatchStacks = 3;
+                        boomerangStackDamageBonusPercent = 0.10f; // 10%
+                        boomerangStackScaleBonusPercent = 0.10f;  // 10%
+                        break;
+                    case 3:
+                        boomerangMaxCatchStacks = 4;
+                        boomerangStackDamageBonusPercent = 0.25f; // 25%
+                        boomerangStackScaleBonusPercent = 0.25f;  // 25%
+                        break;
+                    case 4:
+                        boomerangMaxCatchStacks = 5;
+                        boomerangStackDamageBonusPercent = 0.60f; // 60%
+                        boomerangStackScaleBonusPercent = 0.60f;  // 60%
+                        break;
+                    // 可以添加更多等级...
+                    default:
+                        Debug.LogWarning($"收到未知的回旋镖叠加等级: {targetLevel}");
+                        // 可以选择保持上一个等级的设置或重置
+                        // boomerangMaxCatchStacks = 0; // 例如重置
+                        break;
+                }
+                // 【重要】升级规则时，重置当前层数
+                boomerangCatchStacks = 0;
+                Debug.Log($"回旋镖叠加规则更新: MaxStacks={boomerangMaxCatchStacks}, DmgBonus={boomerangStackDamageBonusPercent * 100}%, ScaleBonus={boomerangStackScaleBonusPercent * 100}%");
                 break;
         }
     }

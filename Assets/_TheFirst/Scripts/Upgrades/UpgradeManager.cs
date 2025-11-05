@@ -174,38 +174,38 @@ public class UpgradeManager : MonoBehaviour
     /// </summary>
     public void OnUpgradeOptionSelected(SkillTreeNodeData sourceNode, UpgradeOption chosenOption)
     {
+        // 1. 应用卡片效果 (保持不变)
+        //    【重要】当 effect.statToModify 是 BoomerangStackUpgrade 时，
+        //    PlayerStats.ApplyEffect 内部会自动处理回旋镖的升级逻辑。
         foreach (UpgradeEffect effect in chosenOption.effects)
-        {                       
+        {
             if (effect.actionType == EffectActionType.ModifyStat)
             {
-                PlayerStats.Instance.ApplyEffect(effect);
+                if (PlayerStats.Instance != null) { PlayerStats.Instance.ApplyEffect(effect); } // <-- 这里会处理 BoomerangStackUpgrade
+                else { Debug.LogError("PlayerStats Instance not found!"); }
             }
             else if (effect.actionType == EffectActionType.UnlockWeapon)
             {
-                if (effect.weaponToUnlock != null && WeaponController.Instance != null)
-                {
-                    WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock);
-                }
+                if (effect.weaponToUnlock != null && WeaponController.Instance != null) { WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock); }
             }
             else if (effect.actionType == EffectActionType.UnlockShield)
             {
-                if (effect.shieldToUnlock != null && PlayerShield.Instance != null)
-                {
-                    PlayerShield.Instance.EquipShield(effect.shieldToUnlock);
-                }
+                if (effect.shieldToUnlock != null && PlayerShield.Instance != null) { PlayerShield.Instance.EquipShield(effect.shieldToUnlock); }
             }
         }
 
-        if (ownedUpgrades.ContainsKey(sourceNode)) ownedUpgrades[sourceNode]++;
-        else ownedUpgrades.Add(sourceNode, 1);
-        if (WeaponController.Instance != null)
-        {
-            WeaponController.Instance.RefreshAllWeaponStates();
-        }
+        // 2. 更新升级记录 (保持不变)
+        if (ownedUpgrades.ContainsKey(sourceNode)) { ownedUpgrades[sourceNode]++; }
+        else { ownedUpgrades.Add(sourceNode, 1); }
+        Debug.Log($"升级 '{sourceNode.skillName}' 已应用，当前等级: {ownedUpgrades[sourceNode]}");       
 
+        // 4. 刷新状态并关闭面板 (保持不变)
+        // 刷新仍然重要，因为它会应用 PlayerStats 中可能改变的基础伤害/射速等
+        if (WeaponController.Instance != null) { WeaponController.Instance.RefreshAllWeaponStates(); }
         if (upgradePanel != null) upgradePanel.SetActive(false);
         Time.timeScale = 1f;
     }
+
     public void ForceGrantUpgrade(SkillTreeNodeData nodeToGrant)
     {
         if (nodeToGrant == null) return;

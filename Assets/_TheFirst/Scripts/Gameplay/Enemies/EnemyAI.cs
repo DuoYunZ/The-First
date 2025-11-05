@@ -10,6 +10,8 @@ public class EnemyAI : MonoBehaviour
     private AIState _currentState = AIState.Chasing;
     public AIState CurrentState => _currentState;
 
+    private bool isStunned = false; // <--- vvv 新增 vvv
+
     [Header("AI 设置")]   
     private float _originalMoveSpeed; // 新增：用于存储原始速度
 
@@ -83,11 +85,35 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    public void SetStunned(bool stunned)
+    {
+        isStunned = stunned;
+        if (agent != null && agent.isOnNavMesh)
+        {
+            // 立即停止或恢复 NavMeshAgent 的移动
+            agent.isStopped = stunned;
+        }
+        if (animator != null)
+        {
+            if (stunned)
+            {
+                // 当被眩晕时，强制 "isMoving" 为 false，
+                // 这将触发向“待机”状态的过渡。
+                animator.SetBool("isMoving", false);
+            }
+            // 当眩晕结束 (stunned == false) 时，我们不需要在这里设置回 true。
+            // 稍后 Update() 循环中的 UpdateAnimation() 方法会接管，
+            // 并根据 agent.velocity 自动将其设置回 true。
+        }
+    }
+
     // --- 新增：一个公共方法来获取原始速度 ---
     public float GetOriginalMoveSpeed() => _originalMoveSpeed;
 
     void Update()
     {
+        if (isStunned) return;
+
         if (playerTransform == null)
         {
             if (GameManager.Instance != null && GameManager.Instance.GetCurrentState() == GameState.Combat)

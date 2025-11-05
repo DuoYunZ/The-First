@@ -120,8 +120,8 @@ public class Health : MonoBehaviour
             // 同时，让生命值跳字也使用这个精确的命中位置
             if (damagePopupPrefab != null)
             {
-                // Vector3 popupPosition = transform.position + Vector3.up * 1.5f; // 旧代码
-                Vector3 popupPosition = hitPosition + Vector3.up * 1.5f; // 新代码
+                Vector3 popupPosition = transform.position + Vector3.up * 1.5f; 
+              
                 GameObject popupGO = Instantiate(damagePopupPrefab, popupPosition, Quaternion.identity);
 
                 DamagePopup damagePopup = popupGO.GetComponent<DamagePopup>();

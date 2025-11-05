@@ -123,15 +123,16 @@ public class WeaponController : MonoBehaviour
         Debug.Log("<color=yellow>[WeaponController] 接收到全局刷新指令，正在刷新所有武器...</color>");
 
         // 遍历当前所有激活的 WeaponPart 实例
-        foreach (var weapon in ownedWeapons)
+        foreach (OwnedWeapon ownedWeapon in ownedWeapons)
         {
-            if (weapon.weaponPartInstance != null)
+            if (ownedWeapon.weaponPartInstance != null)
             {
-                // 调用我们为 WeaponPart 准备的刷新方法
-                weapon.weaponPartInstance.RefreshOrbiters();
+                // ... (你现有的 RefreshOrbiters 调用) ...
+                ownedWeapon.weaponPartInstance.RefreshOrbiters(); //
 
-                // 未来如果还有其他需要刷新的武器（比如光束武器），也可以在这里调用
-                // weapon.weaponPartInstance.RefreshBeam();
+                // --- vvv 新增 vvv ---
+                ownedWeapon.weaponPartInstance.RefreshAura();
+                // --- ^^^ 新增 ^^^ ---
             }
         }
     }

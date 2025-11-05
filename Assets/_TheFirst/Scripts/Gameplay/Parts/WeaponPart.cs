@@ -24,6 +24,12 @@ public class WeaponPart : MonoBehaviour
     [Tooltip("开火音效相对于子弹发射的延迟（秒）。负数为提前播放。")]
     public float fireSoundDelay = -0.05f;
 
+    [Header("光环状态 (运行时)")]
+    private List<Health> targetsInAura = new List<Health>();
+    private float auraTickTimer = 0f;
+    private SphereCollider auraCollider;
+    private GameObject auraVfxInstance;
+
     private AudioSource audioSource;
 
     // 由 WeaponController 在运行时赋值
@@ -31,13 +37,7 @@ public class WeaponPart : MonoBehaviour
     {
         get { return myStatBlock; }
         set { myStatBlock = value; }
-    }
-
-    private int currentLevel = 0; // 初始等级为0，需要调用 LevelUp 才会生效
-    private int catchStacks = 0;  // 当前连续接住次数
-    private int maxCatchStacks = 0; // 最大叠加次数 (根据等级变化)
-    private float stackDamageBonusPercent = 0f; // 每次叠加增加的伤害百分比
-    private float stackScaleBonusPercent = 0f; // 每次叠加增加的体积百分比
+    }   
 
     private bool isBoomerangOut = false;
     private float fireCooldown = 0f;
@@ -61,12 +61,18 @@ public class WeaponPart : MonoBehaviour
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.spatialBlend = 1.0f;
         }
+
+        auraCollider = GetComponent<SphereCollider>();
     }
     void Start()
     {
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
+        }
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
+        {
+            SetupAura();
         }
     }
     void Update()
@@ -84,17 +90,118 @@ public class WeaponPart : MonoBehaviour
 
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital && orbitalPivot != null)
         {
-            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed;
+            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed; // Add player stats later if needed
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
 
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Landmine) // Added null check
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Landmine)
         {
             HandleLandminePlacement();
         }
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             HandleBeamWeapon();
+        }
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
+        {
+            HandleAuraDamageTick();
+        }
+    }
+
+    private void SetupAura()
+    {
+        if (StatBlock == null) return;
+
+        // 计算最终半径 (计入玩家加成)
+        float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier; //
+
+        if (auraCollider != null)
+        {
+            auraCollider.radius = finalRadius;
+        }
+        else { Debug.LogError("Aura WeaponPart 预制件上缺少 SphereCollider!", this); }
+
+        // 实例化视觉特效 (如果提供了)
+        if (StatBlock.auraVfxPrefab != null)
+        {
+            // 作为子物体实例化，确保它跟随 WeaponPart (即玩家)
+            auraVfxInstance = Instantiate(StatBlock.auraVfxPrefab, transform.position, Quaternion.identity, transform);
+            // 调整VFX的缩放以匹配碰撞器半径 (这里的 '2' 是一个通用值，你可能需要微调)
+            auraVfxInstance.transform.localScale = Vector3.one * finalRadius * StatBlock.vfxBaseScaleMultiplier;
+        }
+
+        auraTickTimer = 0; // 立即触发第一次伤害
+        targetsInAura.Clear();
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        // 确保此逻辑只在光环武器上运行
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+
+        Health enemyHealth = other.GetComponentInParent<Health>();
+        // 检查是否是敌人、未死亡、且不在列表中
+        if (enemyHealth != null && !enemyHealth.IsDead && other.CompareTag("Enemy")) //
+        {
+            if (!targetsInAura.Contains(enemyHealth))
+            {
+                targetsInAura.Add(enemyHealth);
+            }
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        // 确保此逻辑只在光环武器上运行
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+
+        Health enemyHealth = other.GetComponentInParent<Health>();
+        if (enemyHealth != null)
+        {
+            if (targetsInAura.Contains(enemyHealth))
+            {
+                targetsInAura.Remove(enemyHealth);
+            }
+        }
+    }
+
+    public void RefreshAura()
+    {
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+
+        float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier; //
+
+        if (auraCollider != null) { auraCollider.radius = finalRadius; }
+
+        if (auraVfxInstance != null)
+        {
+            auraVfxInstance.transform.localScale = Vector3.one * finalRadius * StatBlock.vfxBaseScaleMultiplier;
+        }
+    }
+    private void HandleAuraDamageTick()
+    {
+        auraTickTimer -= Time.deltaTime;
+        if (auraTickTimer <= 0f)
+        {
+            if (StatBlock == null) return;
+            auraTickTimer = StatBlock.baseAreaTickInterval; // 重置计时器
+
+            // 计算最终伤害
+            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); //
+
+            // 从后往前遍历列表，防止在移除时出错
+            for (int i = targetsInAura.Count - 1; i >= 0; i--)
+            {
+                Health target = targetsInAura[i];
+                if (target == null || target.IsDead) //
+                {
+                    targetsInAura.RemoveAt(i);
+                    continue;
+                }
+
+                // 对范围内的每个目标造成伤害
+                target.TakeDamage(finalDamage, target.transform.position, this.gameObject, AttackType.Standard); //
+            }
         }
     }
 
@@ -106,7 +213,7 @@ public class WeaponPart : MonoBehaviour
     #endregion
 
     #region Public Control Methods
-    public void Activate()
+    public void Activate() // Called when weapon is equipped/activated
     {
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
@@ -120,180 +227,175 @@ public class WeaponPart : MonoBehaviour
                 SetupOrbiters();
             }
         }
+        // 添加：激活时重置回旋镖状态（如果它是回旋镖）
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
+        {
+            isBoomerangOut = false;
+            // 注意：catchStacks 现在由 PlayerStats 管理，这里不需要重置
+        }
     }
 
     public void Fire(Vector3 initialDirection)
     {
-        if (StatBlock == null || !IsReadyToFire) return;
-        // Specifically check boomerang state *before* checking IsReadyToFire for it
-        if (StatBlock.behavior == WeaponBehaviorType.Boomerang && isBoomerangOut) return;
+        // Check generic cooldown first
+        if (!IsReadyToFire) return;
+        // Then check specific boomerang state
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang && isBoomerangOut) return;
 
         StartCoroutine(FireRoutine(initialDirection));
-    }
+    }   
+    
 
-    public void LevelUpBoomerang()
-    {
-        currentLevel++;
-        Debug.Log($"回旋镖 '{StatBlock.weaponName}' 升级到 Lv.{currentLevel}");
-
-        // 根据新等级设置叠加规则
-        switch (currentLevel)
-        {
-            case 1:
-                // Lv1: 效果通常由外部升级系统处理基础伤害增加，这里不直接修改
-                // 如果需要在这里处理基础伤害，可以添加逻辑
-                // 例如: StatBlock.baseDirectDamage += 5; // 但不推荐直接修改 ScriptableObject
-                maxCatchStacks = 0; // Lv1 没有叠加效果
-                stackDamageBonusPercent = 0f;
-                stackScaleBonusPercent = 0f;
-                break;
-            case 2:
-                maxCatchStacks = 3;
-                stackDamageBonusPercent = 0.10f; // 10%
-                stackScaleBonusPercent = 0.10f;  // 10%
-                break;
-            case 3:
-                maxCatchStacks = 4;
-                stackDamageBonusPercent = 0.25f; // 25%
-                stackScaleBonusPercent = 0.25f;  // 25%
-                break;
-            case 4:
-                maxCatchStacks = 5;
-                stackDamageBonusPercent = 0.60f; // 60%
-                stackScaleBonusPercent = 0.60f;  // 60%
-                break;
-            // 可以添加更多等级...
-            default:
-                // 超过最高等级，可以保持不变或继续增加
-                Debug.LogWarning($"回旋镖已达到或超过最高配置等级 ({currentLevel})");
-                // 保持 Lv4 的设置
-                maxCatchStacks = 5;
-                stackDamageBonusPercent = 0.60f;
-                stackScaleBonusPercent = 0.60f;
-                break;
-        }
-
-        // 每次升级重置叠加层数，确保从新等级的0层开始
-        catchStacks = 0;
-        Debug.Log($"当前叠加规则: MaxStacks={maxCatchStacks}, DmgBonus={stackDamageBonusPercent * 100}%, ScaleBonus={stackScaleBonusPercent * 100}%");
-    }
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
+        // --- 冷却和状态检查 (保持不变) ---
         if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
-            // 检查1：如果回旋镖已发出，则不能再发
-            if (isBoomerangOut)
-            {
-                yield break;
-            }
-            // 检查2：如果可以发射，标记为已发出，但不设置冷却
-            isBoomerangOut = true;
+            if (isBoomerangOut) yield break;
+            isBoomerangOut = true; // 发射时不冷却，只标记
         }
-        else
-        {
-            // 对于非回旋镖武器，设置正常的冷却时间
-            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
-        }
+        else { fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier; }
+        // --- 冷却结束 ---
 
-        // --- Sound Delay ---
+        // 音效延迟...
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
+        // 特殊武器...
+        if (StatBlock?.behavior == WeaponBehaviorType.Beam) yield break;
+        if (StatBlock?.behavior == WeaponBehaviorType.Orbital) { if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); } yield break; }
 
-        // --- Special Weapon Handling ---
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) yield break;
-        if (StatBlock.behavior == WeaponBehaviorType.Orbital) { if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); } yield break; }
-
-        // --- Targeting Logic ---
+        // 目标和方向...
         Vector3 finalTargetDirection = initialDirection;
         Transform firstTarget = null;
         if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
         {
             Transform nearestEnemy = FindNearestEnemyTransform();
-            // If nearest enemy found, use its direction
             if (nearestEnemy != null) { finalTargetDirection = (nearestEnemy.position - firePoint.position); finalTargetDirection.y = 0; finalTargetDirection.Normalize(); firstTarget = nearestEnemy; }
-            // If no enemy found AND it's auto-aim, *don't* fire (unless it's boomerang, which uses player forward)
-            else if (StatBlock.behavior != WeaponBehaviorType.Boomerang)
-            {
-                yield break;
-            }
-            // If it IS a boomerang and no enemy found, it will use initialDirection (player forward) below
+            else if (StatBlock.behavior != WeaponBehaviorType.Boomerang) { yield break; }
         }
-        if (finalTargetDirection.sqrMagnitude < 0.01f) { yield break; }
+        if (finalTargetDirection.sqrMagnitude < 0.01f) { if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; yield break; }
+
+        // --- Calculate Final Damage and Scale ---
+        int baseDamage = 0;
+        float baseScale = 1f; // 基础体积乘数总是 1
+
+        if (StatBlock != null && PlayerStats.Instance != null)
+        {
+            // 基础伤害考虑玩家全局加成
+            baseDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
+            // 基础体积考虑玩家全局加成
+            baseScale = PlayerStats.Instance.aoeRadiusMultiplier;
+        }
+
+        // 2. 如果是回旋镖，计算【加法】叠加乘数
+        float totalDamageMultiplier = 1f;
+        float totalScaleMultiplier = 1f; // 这个乘数应用在 PlayerStats 的基础体积上
+        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0)
+        {
+            // 【核心修改】计算总加成百分比
+            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent;
+            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent;
+
+            // 应用加法叠加
+            totalDamageMultiplier = 1f + totalDamageBonusPercent;
+            totalScaleMultiplier = 1f + totalScaleBonusPercent; // 这个乘数是相对于【原始模型】的
+            // Debug.Log($"[FireRoutine] Stacks={PlayerStats.Instance.boomerangCatchStacks}, DmgBonus={totalDamageBonusPercent*100}%, ScaleBonus={totalScaleBonusPercent*100}% => TotalDmgMult={totalDamageMultiplier}, TotalScaleMult={totalScaleMultiplier}");
+        }
+        // 3. 计算最终伤害和体积
+        // 最终伤害 = 基础伤害 * 叠加乘数
+        int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
+        // 最终体积 = 玩家基础体积 * 叠加乘数
+        float finalScale = baseScale * totalScaleMultiplier; // <-- 体积乘数应用在这里
 
         // --- Firing based on Behavior ---
-        switch (StatBlock.behavior)
+        switch (StatBlock?.behavior)
         {
             case WeaponBehaviorType.Standard:
             case WeaponBehaviorType.Pierce:
-                InstantiateAndFireProjectile(finalTargetDirection);
-                break;
+                InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break; // 确保接收 finalDamage
             case WeaponBehaviorType.ParabolicAOE:
-                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock);
-                break;
+                int finalAoeDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
+                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalAoeDamage); break; // 确保接收 finalDamage(s)
             case WeaponBehaviorType.Chain:
-                if (firstTarget != null)
-                {
-                    int finalChainCount = StatBlock.baseChainCount; // Future upgrades
-                    int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus); // Include flat bonus
-                    StartCoroutine(ChainDamageRoutine(firstTarget, finalChainCount, finalDamage, StatBlock.chainRange));
-                }
-                break;
+                if (firstTarget != null) { StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange)); }
+                break; // 确保使用 finalDamage
             case WeaponBehaviorType.SummonDrone:
-                InstantiateAndInitializeDrones();
-                if (StatBlock.isOneShot) { this.enabled = false; }
+                InstantiateAndInitializeDrones(); if (StatBlock.isOneShot) { this.enabled = false; }
                 break;
             case WeaponBehaviorType.PersistentAOE:
                 Transform targetEnemy = FindNearestEnemyTransform();
                 if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); }
-                break;
+                break; // 确保传递伤害
             case WeaponBehaviorType.Boomerang:
-                InstantiateAndFireBoomerang(finalTargetDirection);
-                break;
-                // Add cases for MeleeAOE, Landmine (handled in Update) if needed
+                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale); break; // 传递最终伤害 & 最终体积
+            case null: Debug.LogError("StatBlock is null!"); break;
         }
 
         // --- Muzzle Flash & Delayed Sound ---
-        if (StatBlock.muzzleFlashPrefab != null) { Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation); }
+        if (StatBlock != null && StatBlock.muzzleFlashPrefab != null) { Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation); }
         if (fireSoundDelay >= 0) { yield return new WaitForSeconds(fireSoundDelay); PlayFireSound(); }
     }
 
     public void OnBoomerangCaught(Vector3 catchPosition)
     {
-        if (!isBoomerangOut) return; // Avoid processing if already caught/reset
+        if (!isBoomerangOut || StatBlock == null || PlayerStats.Instance == null)
+        {
+            // Debug.LogWarning($"[OnBoomerangCaught] Ignored. isBoomerangOut={isBoomerangOut}, StatBlock Null? {StatBlock == null}, PlayerStats Null? {PlayerStats.Instance == null}");
+            return;
+        }
 
-        isBoomerangOut = false;
-        ResetCooldown(); // Allow next shot immediately
+        isBoomerangOut = false; // Mark as returned
 
-        // Auto re-throw logic
+        // --- 核心修改：增加 PlayerStats 中的叠加层数 ---
+        if (PlayerStats.Instance.boomerangMaxCatchStacks > 0)
+        {
+            PlayerStats.Instance.boomerangCatchStacks = Mathf.Min(PlayerStats.Instance.boomerangCatchStacks + 1, PlayerStats.Instance.boomerangMaxCatchStacks);
+            Debug.Log($"Boomerang caught! PlayerStats Stacks increased to {PlayerStats.Instance.boomerangCatchStacks}/{PlayerStats.Instance.boomerangMaxCatchStacks}");
+        }
+
+        // --- 核心修改结束 ---
+
+        ResetCooldown(); // 重置冷却
+
+        // --- 自动再次丢出逻辑 ---
         Transform nearestEnemy = FindNearestEnemyTransform(catchPosition, StatBlock.autoAimRange);
         Vector3 nextDirection;
         if (nearestEnemy != null)
         {
             nextDirection = (nearestEnemy.position - catchPosition).normalized;
-            nextDirection.y = 0;
+            nextDirection.y = 0; // Keep horizontal
         }
-        else
+        else // No enemy? Throw behind player
         {
             if (GameManager.Instance?.playerTransform != null)
                 nextDirection = -GameManager.Instance.playerTransform.forward;
             else
-                nextDirection = transform.forward;
+                nextDirection = transform.forward; // Fallback
         }
-        StartCoroutine(FireRoutine(nextDirection.normalized)); // Immediately start the next fire sequence
+        Debug.Log($"[OnBoomerangCaught] Triggering re-throw towards {nextDirection}");
+        StartCoroutine(FireRoutine(nextDirection.normalized));
     }
 
     public void StartCooldownIfNotCaught()
     {
-        if (isBoomerangOut) // Only trigger if it was actually out and missed
+        if (isBoomerangOut)
         {
             isBoomerangOut = false;
             fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
-            // Debug.Log($"Boomerang '{StatBlock.weaponName}' missed, starting cooldown: {fireCooldown}s.");
+            // Debug.Log($"Boomerang '{StatBlock?.weaponName}' missed, starting cooldown: {fireCooldown}s.");
+
+            // --- 【核心修改】重置 PlayerStats 中的叠加层数 ---
+            if (PlayerStats.Instance != null && PlayerStats.Instance.boomerangCatchStacks > 0)
+            {
+                PlayerStats.Instance.boomerangCatchStacks = 0;
+                Debug.Log("PlayerStats catch stacks reset to 0.");
+            }
+            // --- 【核心修改结束】 ---
         }
     }
 
     public void ResetCooldown()
     {
-        fireCooldown = 0.01f; // Set a very small cooldown to allow immediate firing
+        fireCooldown = 0.01f; // Set a very small cooldown to allow immediate firing after catch
     }
     #endregion
 
@@ -307,47 +409,52 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
-    private void InstantiateAndFireProjectile(Vector3 direction)
+    // Updated to accept finalDamage
+    private void InstantiateAndFireProjectile(Vector3 direction, int finalDamage)
     {
-        if (firePoint == null || StatBlock.projectilePrefab == null) return;
-
+        if (firePoint == null || StatBlock?.projectilePrefab == null) return;
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
             float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
             int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount;
-            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage * PlayerStats.Instance.aoeDamageMultiplier); // Assuming DoT scales with AOE mult
+            // Get DoT/Slow stats (assuming they scale appropriately or have their own logic)
+            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage /* * ScalingFactorIfNeeded */);
             float finalDotDuration = StatBlock.baseDotDuration;
             float finalDotTickInterval = StatBlock.dotTickInterval;
-            float finalSlowPercentage = StatBlock.baseSlowPercentage; // Add player stats if applicable
-            float finalSlowDuration = StatBlock.baseSlowDuration; // Add player stats if applicable
+            float finalSlowPercentage = StatBlock.baseSlowPercentage;
+            float finalSlowDuration = StatBlock.baseSlowDuration;
 
             projectileScript.InitializeAsStraight(
-              direction, finalSpeed, finalDamage, false, finalPierceCount,
-              StatBlock.baseProjectileLifetime, StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
-              finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage,
-              finalSlowDuration, AttackType.Standard
+              direction, finalSpeed, finalDamage, // Use passed finalDamage
+              false, finalPierceCount, StatBlock.baseProjectileLifetime,
+              StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
+              finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, finalSlowDuration,
+              AttackType.Standard
             );
         }
+        else { Destroy(bullet); } // Clean up if script missing
     }
 
-    private void InstantiateAndFireParabolicProjectile(Vector3 horizontalDir, WeaponStatBlock statsToUse)
+    // Updated to accept finalDirectDamage and finalAoeDamage
+    private void InstantiateAndFireParabolicProjectile(Vector3 horizontalDir, WeaponStatBlock statsToUse, int finalDirectDamage, int finalAoeDamage)
     {
-        if (firePoint == null || statsToUse.projectilePrefab == null) return;
+        if (firePoint == null || statsToUse?.projectilePrefab == null) return;
 
-        int finalDirectDamage = Mathf.RoundToInt(statsToUse.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
-        int finalAoeDamage = Mathf.RoundToInt(statsToUse.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
+        // Calculate other final stats as needed
         float finalAoeRadius = statsToUse.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
         float finalLaunchForce = statsToUse.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        int finalDotDamage = Mathf.RoundToInt(statsToUse.baseDotDamage * PlayerStats.Instance.aoeDamageMultiplier);
+        int finalDotDamage = Mathf.RoundToInt(statsToUse.baseDotDamage /* * ScalingFactorIfNeeded */);
         float finalDotDuration = statsToUse.baseDotDuration;
         float finalDotTickInterval = statsToUse.dotTickInterval;
 
+        float finalStunChance = statsToUse.baseStunChance + PlayerStats.Instance.parabolicAoeStunChance;
+        // 最终时长 = 武器基础时长 (未来也可以让 PlayerStats 强化这个)
+        float finalStunDuration = statsToUse.baseStunDuration;
+
         GameObject bullet = Instantiate(statsToUse.projectilePrefab, firePoint.position, Quaternion.LookRotation(horizontalDir));
         Projectile projectileScript = bullet.GetComponent<Projectile>();
-
         if (projectileScript != null)
         {
             float angleRad = statsToUse.launchAngle * Mathf.Deg2Rad;
@@ -356,35 +463,40 @@ public class WeaponPart : MonoBehaviour
             Vector3 initialVelocity = (horizontalDir * hVel) + (Vector3.up * vVel);
 
             projectileScript.InitializeAsParabolic(
-                initialVelocity, finalDirectDamage, finalAoeDamage, statsToUse.baseProjectileLifetime,
-                statsToUse.explosionEffectPrefab, finalAoeRadius, statsToUse.layersToDamageByAOE, statsToUse.layersToExplodeOn,
-                finalDotDamage, finalDotDuration, finalDotTickInterval
-            );
+                 initialVelocity, finalDirectDamage, finalAoeDamage,
+                 statsToUse.baseProjectileLifetime, statsToUse.explosionEffectPrefab, finalAoeRadius,
+                 statsToUse.layersToDamageByAOE, statsToUse.layersToExplodeOn,
+                 finalDotDamage, finalDotDuration, finalDotTickInterval,
+                 finalStunChance, finalStunDuration
+             );
         }
+        else { Destroy(bullet); } // Clean up
     }
 
-    private void InstantiateAndFireBoomerang(Vector3 direction)
+    // Updated to accept finalDamage and finalScale
+    private void InstantiateAndFireBoomerang(Vector3 direction, int finalDamage, float finalScale, Vector3? launchPosition = null) // <-- 添加可选参数
     {
-        if (firePoint == null || StatBlock.projectilePrefab == null)
+        // 如果没有提供发射位置，则使用默认的 firePoint
+        Vector3 spawnPos = launchPosition ?? firePoint.position;
+
+        if (StatBlock?.projectilePrefab == null) // 简化 null 检查
         {
-            // isBoomerangOut = false; // 发射失败时重置状态 (如果您有 isBoomerangOut 变量)
-            Debug.LogError($"[WeaponPart] Boomerang fire failed: FirePoint or ProjectilePrefab missing for {StatBlock?.weaponName}");
+            isBoomerangOut = false;
+            Debug.LogError($"[WeaponPart] Boomerang fire failed: ProjectilePrefab missing for {StatBlock?.weaponName}");
             return;
         }
 
-        GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
-
-        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
-        float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        float finalMaxDistance = StatBlock.maxDistance; // 暂时不用乘数
-        float finalScale = PlayerStats.Instance.aoeRadiusMultiplier;
-        float finalCatchRadius = StatBlock.catchRadius * finalScale;
+        GameObject bullet = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
         bullet.transform.localScale = Vector3.one * finalScale;
+
+        float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
+        float finalMaxDistance = StatBlock.maxDistance;
+        float finalCatchRadius = StatBlock.catchRadius * finalScale;
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            // --- 调用新的初始化方法，并传递 overshoot ---
+            // --- 调用最终的 InitializeAsBoomerang ---
             projectileScript.InitializeAsBoomerang(
                 direction,
                 finalSpeed,
@@ -395,12 +507,13 @@ public class WeaponPart : MonoBehaviour
                 StatBlock.shieldImpactEffectPrefab,
                 StatBlock.defaultImpactEffectPrefab,
                 this,
-                StatBlock.rotationSpeed                
+                StatBlock.rotationSpeed,
+                StatBlock.returnOvershootDistance // <-- 传递这个值
             );
         }
         else
         {
-            // isBoomerangOut = false; // 初始化失败时重置状态
+            isBoomerangOut = false;
             Debug.LogError($"[WeaponPart] Boomerang fire failed: Projectile script missing on prefab for {StatBlock?.weaponName}");
             Destroy(bullet);
         }
@@ -409,124 +522,110 @@ public class WeaponPart : MonoBehaviour
     private IEnumerator ChainDamageRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange)
     {
         var hitEnemies = new List<Health>();
-        Vector3 lastHitPosition = firePoint.position; // Start chain from fire point
+        Vector3 lastHitPosition = firePoint.position;
 
         while (currentTarget != null && remainingChains >= 0)
         {
             Vector3 currentTargetPosition = currentTarget.position;
-            Health targetHealth = currentTarget.GetComponent<Health>(); // Get Health component
+            Health targetHealth = currentTarget.GetComponent<Health>();
 
-            // Check if valid target and not already hit in this chain
             if (targetHealth != null && !hitEnemies.Contains(targetHealth) && !targetHealth.IsDead)
             {
                 hitEnemies.Add(targetHealth);
-                // Use targetHealth.TakeDamage directly
-                targetHealth.TakeDamage(damage, currentTargetPosition, this.gameObject); // Pass damage source position and attacker
+                targetHealth.TakeDamage(damage, currentTargetPosition, this.gameObject); // Use calculated damage
 
-                // Instantiate VFX between last position and current target
                 if (lightningChainPrefab != null)
                 {
-                    var chainVFX_GO = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity); // Instantiate at origin temporarily
-                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetPosition); // Setup positions
+                    var chainVFX_GO = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity);
+                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetPosition);
                 }
-
-                // Instantiate impact effect at the target
-                if (StatBlock.impactEffectPrefab != null) // Use StatBlock impact effect
+                if (StatBlock?.impactEffectPrefab != null) // Use StatBlock impact
                 {
                     Instantiate(StatBlock.impactEffectPrefab, currentTargetPosition, Quaternion.identity);
                 }
             }
 
-            yield return new WaitForSeconds(0.05f); // Small delay between chains
+            yield return new WaitForSeconds(0.05f);
 
-            // Find the next target
             Transform nextTarget = FindNextChainTarget(currentTargetPosition, chainRange, hitEnemies);
             remainingChains--;
-            lastHitPosition = currentTargetPosition; // Update last hit position
+            lastHitPosition = currentTargetPosition;
             currentTarget = nextTarget;
         }
     }
 
-    public void RefreshOrbiters()
+    public void RefreshOrbiters() // Re-instantiate orbiters with current stats
     {
         if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital || !isOrbitalActive) return;
-        // Debug.Log($"<color=orange>[WeaponPart] Refreshing orbiters for '{myStatBlock.weaponName}'...</color>");
         if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
-        isOrbitalActive = false;
-        StopCoroutine(nameof(OrbitalLifetimeRoutine)); // Stop specific coroutine by name
-        SetupOrbiters(); // Re-setup with current stats
+        isOrbitalActive = false; // Mark inactive before setup
+        StopCoroutine(nameof(OrbitalLifetimeRoutine)); // Stop potential old lifetime timer
+        SetupOrbiters(); // Call setup again
     }
 
-    private void SetupOrbiters()
+    private void SetupOrbiters() // Creates the orbital system
     {
-        Transform stableAnchor = FindStableAnchor();
-        if (stableAnchor == null)
-        {
-            Debug.LogWarning($"StableAnchor not found! Using WeaponController transform as fallback.", this);
-            stableAnchor = WeaponController.Instance.transform;
-        }
+        if (StatBlock == null || StatBlock.orbitalPrefab == null) return; // Need data
+
+        Transform stableAnchor = FindStableAnchor(); // Find player's stable anchor point
 
         orbitalPivot = new GameObject($"{StatBlock.weaponName}_Pivot").transform;
         orbitalPivot.SetParent(stableAnchor);
         orbitalPivot.localPosition = Vector3.zero;
-        orbitalPivot.localRotation = Quaternion.identity; // Ensure pivot starts unrotated
+        orbitalPivot.localRotation = Quaternion.identity;
 
-        isOrbitalActive = true;
+        isOrbitalActive = true; // Mark as active *after* pivot creation
         int finalOrbitalCount = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusOrbitalCount;
-        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * PlayerStats.Instance.aoeRadiusMultiplier; // Scale radius
-        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus); // Use direct damage stats
+        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * PlayerStats.Instance.aoeRadiusMultiplier;
+        // Orbital damage scales like direct damage
+        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
 
         for (int i = 0; i < finalOrbitalCount; i++)
         {
-            if (StatBlock.orbitalPrefab == null) continue;
             float angle = i * (360f / finalOrbitalCount);
-            // Spawn relative to pivot's *local* forward/right
             Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
-            GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
-            orbiterGO.transform.localPosition = spawnPos;
+            GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot); // Parent to pivot
+            orbiterGO.transform.localPosition = spawnPos; // Position relative to pivot
             orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage);
         }
 
-        float finalDuration = StatBlock.baseDuration; // Add upgrades later if needed
+        float finalDuration = StatBlock.baseDuration; // Apply player bonuses if any
         if (finalDuration > 0)
         {
             StartCoroutine(OrbitalLifetimeRoutine(finalDuration));
         }
-        // Debug.Log($"Setup Orbiters: Count={finalOrbitalCount}, Radius={finalOrbitalRadius}, Damage={finalDamage}, Duration={finalDuration}");
     }
 
     private IEnumerator OrbitalLifetimeRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
-        if (orbitalPivot != null) Destroy(orbitalPivot.gameObject);
-        isOrbitalActive = false;
-        orbitalCooldownTimer = 1f / StatBlock.baseFireRate; // Use standard cooldown after duration ends
-        // Debug.Log($"Orbital '{StatBlock.weaponName}' duration ended, starting cooldown: {orbitalCooldownTimer}s.");
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); } // Destroy pivot and children
+        isOrbitalActive = false; // Mark inactive
+        orbitalCooldownTimer = (1f / StatBlock.baseFireRate); // Start cooldown based on fire rate after duration ends
     }
 
-    private Transform FindNearestEnemyTransform() { return FindNearestEnemyTransform(transform.position, StatBlock.autoAimRange); }
+    private Transform FindNearestEnemyTransform() { return FindNearestEnemyTransform(transform.position, StatBlock?.autoAimRange ?? 0f); }
 
+    // Overload for searching from a specific point
     private Transform FindNearestEnemyTransform(Vector3 searchCenter, float searchRadius)
     {
         float closestDistanceSqr = Mathf.Infinity;
         Transform nearestEnemy = null;
-        if (StatBlock == null) return null; // Safety check
+        if (StatBlock == null || searchRadius <= 0) return null;
 
-        // Ensure layersToDamageByAOE includes the "Enemies" layer or is set appropriately
         LayerMask layersToSearch = StatBlock.layersToDamageByAOE == 0 ? LayerMask.GetMask("Enemies") : StatBlock.layersToDamageByAOE;
 
         Collider[] colliders = Physics.OverlapSphere(searchCenter, searchRadius, layersToSearch);
         foreach (Collider hitCollider in colliders)
         {
             Health enemyHealth = hitCollider.GetComponentInParent<Health>();
-            // Ensure it's an enemy, alive, and use CompareTag for reliability
-            if (enemyHealth != null && !enemyHealth.IsDead && hitCollider.CompareTag("Enemy"))
+            if (enemyHealth != null && !enemyHealth.IsDead && hitCollider.CompareTag("Enemy")) // Check tag too
             {
                 float dSqrToTarget = (searchCenter - hitCollider.transform.position).sqrMagnitude;
                 if (dSqrToTarget < closestDistanceSqr)
                 {
                     closestDistanceSqr = dSqrToTarget;
-                    nearestEnemy = enemyHealth.transform; // Target the transform of the Health component
+                    nearestEnemy = enemyHealth.transform;
                 }
             }
         }
@@ -556,201 +655,172 @@ public class WeaponPart : MonoBehaviour
 
     private void HandleBeamWeapon()
     {
-        if (beamCooldownTimer > 0f) return; // In cooldown
+        if (StatBlock == null) return;
+        if (beamCooldownTimer > 0f) return;
 
-        ValidateOrFindTarget(); // Find/check target
+        ValidateOrFindTarget();
 
-        if (lockedBeamTarget != null) // Have a valid target
+        if (lockedBeamTarget != null)
         {
-            if (beamEnergyTimer > 0f && activeBeamInstance == null)
-            {
-                StartBeam(); // Start beam if energy available and not already active
-            }
-            if (activeBeamInstance != null) // If beam is active
-            {
-                beamEnergyTimer -= Time.deltaTime; // Consume energy
-                if (beamEnergyTimer <= 0f)
-                {
-                    StopBeamAndStartCooldown(); // Energy depleted
-                }
-            }
-        }
-        else // No valid target
-        {
+            if (beamEnergyTimer > 0f && activeBeamInstance == null) { StartBeam(); }
             if (activeBeamInstance != null)
             {
-                StopBeamForStandby(); // Stop beam if no target
+                beamEnergyTimer -= Time.deltaTime;
+                if (beamEnergyTimer <= 0f) { StopBeamAndStartCooldown(); }
             }
         }
+        else { if (activeBeamInstance != null) { StopBeamForStandby(); } }
     }
 
     private void ValidateOrFindTarget()
     {
+        if (StatBlock == null) return;
         if (lockedBeamTarget != null)
         {
-            // Check if target is still active and within range
             if (!lockedBeamTarget.gameObject.activeInHierarchy || Vector3.Distance(firePoint.position, lockedBeamTarget.position) > StatBlock.beamMaxDistance)
-            {
-                lockedBeamTarget = null; // Invalidate target
-            }
+            { lockedBeamTarget = null; }
         }
         if (lockedBeamTarget == null)
-        {
-            lockedBeamTarget = FindNearestEnemyTransform(firePoint.position, StatBlock.beamMaxDistance); // Find new target within range
-        }
+        { lockedBeamTarget = FindNearestEnemyTransform(firePoint.position, StatBlock.beamMaxDistance); }
     }
 
     private void StartBeam()
     {
-        if (StatBlock.beamVfxPrefab == null || firePoint == null) return;
-
-        GameObject beamGO = Instantiate(StatBlock.beamVfxPrefab, firePoint.position, firePoint.rotation, firePoint); // Parent to firepoint
+        if (StatBlock?.beamVfxPrefab == null || firePoint == null) return;
+        GameObject beamGO = Instantiate(StatBlock.beamVfxPrefab, firePoint.position, firePoint.rotation, firePoint);
         activeBeamInstance = beamGO.GetComponent<PlayerBeamController>();
-
         if (activeBeamInstance != null)
         {
             activeBeamInstance.Initialize(StatBlock, this.gameObject, lockedBeamTarget);
-            if (beamLoopSound != null && audioSource != null && !audioSource.isPlaying) // Play loop sound only if not already playing
-            {
-                audioSource.clip = beamLoopSound;
-                audioSource.loop = true;
-                audioSource.Play();
-            }
+            if (beamLoopSound != null && audioSource != null && !audioSource.isPlaying)
+            { audioSource.clip = beamLoopSound; audioSource.loop = true; audioSource.Play(); }
         }
-        else
-        {
-            Debug.LogError($"Beam VFX prefab '{StatBlock.beamVfxPrefab.name}' is missing PlayerBeamController script!", this);
-            Destroy(beamGO); // Clean up invalid instance
-        }
+        else { Debug.LogError($"Beam VFX missing PlayerBeamController script!", this); Destroy(beamGO); }
     }
 
-    private void StopBeamForStandby() // Target lost or out of range
+    private void StopBeamForStandby()
     {
         if (activeBeamInstance == null) return;
         Destroy(activeBeamInstance.gameObject);
         activeBeamInstance = null;
-        lockedBeamTarget = null; // Lose lock
-        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); } // Stop loop sound
+        lockedBeamTarget = null;
+        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); }
     }
 
-    private void StopBeamAndStartCooldown() // Energy depleted
+    private void StopBeamAndStartCooldown()
     {
-        if (activeBeamInstance == null) return;
+        if (activeBeamInstance == null || StatBlock == null) return;
         Destroy(activeBeamInstance.gameObject);
         activeBeamInstance = null;
         beamCooldownTimer = StatBlock.beamCooldown;
-        beamEnergyTimer = 0; // Ensure energy is zero
-        lockedBeamTarget = null; // Lose lock
-        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); } // Stop loop sound
-        // Debug.Log($"Beam energy depleted, starting cooldown: {beamCooldownTimer}s.");
+        beamEnergyTimer = 0;
+        lockedBeamTarget = null;
+        if (audioSource != null && audioSource.clip == beamLoopSound) { audioSource.Stop(); }
     }
 
-    public void DeactivateBeam() // Called when weapon is unequipped
+    public void DeactivateBeam() // When weapon is unequipped
     {
-        StopBeamForStandby(); // Just stop it, don't trigger cooldown
-        beamEnergyTimer = 0; // Reset energy as well
+        StopBeamForStandby();
+        beamEnergyTimer = 0;
     }
 
-    private Transform FindStableAnchor()
+    private Transform FindStableAnchor() // Finds a stable point on the player rig for parenting orbitals/pivots
     {
-        if (WeaponController.Instance == null) return transform; // Fallback
-        StableAnchorMarker marker = WeaponController.Instance.GetComponentInChildren<StableAnchorMarker>();
-        return marker != null ? marker.transform : WeaponController.Instance.transform; // Return marker or controller transform
+        // Try finding a specific marker component first
+        if (WeaponController.Instance != null)
+        {
+            StableAnchorMarker marker = WeaponController.Instance.GetComponentInChildren<StableAnchorMarker>();
+            if (marker != null) return marker.transform;
+        }
+        // Fallback to the WeaponController transform itself (player root)
+        return WeaponController.Instance?.transform ?? transform; // Use own transform if controller missing
     }
 
     private void InstantiateAndInitializeDrones()
     {
-        if (StatBlock == null || StatBlock.summonPrefab == null || StatBlock.summonWeaponStats == null) return;
+        if (StatBlock == null || StatBlock.summonPrefab == null || StatBlock.summonWeaponStats == null || WeaponController.Instance == null) return;
 
-        int finalSummonCount = StatBlock.summonCount; // Add upgrades later
-        float finalSummonDuration = StatBlock.summonDuration; // Add upgrades later
-
-        Transform playerRoot = WeaponController.Instance.transform; // Get player root
+        int finalSummonCount = StatBlock.summonCount;
+        float finalSummonDuration = StatBlock.summonDuration;
+        Transform playerRoot = WeaponController.Instance.transform;
 
         for (int i = 0; i < finalSummonCount; i++)
         {
-            // Spawn around the player root
-            Vector3 spawnOffset = Random.insideUnitSphere * 2f; // Smaller radius around player
-            spawnOffset.y = StatBlock.summonSpawnHeight; // Use defined height
+            Vector3 spawnOffset = Random.insideUnitSphere * 2f;
+            spawnOffset.y = StatBlock.summonSpawnHeight;
             Vector3 spawnPosition = playerRoot.position + spawnOffset;
 
-            GameObject droneGO = Instantiate(StatBlock.summonPrefab, spawnPosition, Quaternion.identity); // Instantiate at world position
+            GameObject droneGO = Instantiate(StatBlock.summonPrefab, spawnPosition, Quaternion.identity);
             DroneAI droneAI = droneGO.GetComponent<DroneAI>();
-            if (droneAI != null)
-            {
-                droneAI.Initialize(StatBlock.summonWeaponStats, finalSummonDuration, playerRoot); // Pass player root as master
-            }
+            if (droneAI != null) { droneAI.Initialize(StatBlock.summonWeaponStats, finalSummonDuration, playerRoot); }
+            else { Debug.LogWarning($"Summon prefab '{StatBlock.summonPrefab.name}' is missing DroneAI script.", droneGO); }
         }
     }
 
     private void InstantiateAndFireAirdropDeployer(Vector3 targetPosition)
     {
-        if (StatBlock.deployerProjectilePrefab == null || firePoint == null) return;
+        if (StatBlock?.deployerProjectilePrefab == null || firePoint == null || WeaponController.Instance == null) return;
 
         float spawnHeight = StatBlock.deployerSpawnHeight;
-        float horizontalOffset = 5f; // Example offset
+        float horizontalOffset = 5f; // Offset from target
 
-        // Calculate spawn position above and slightly offset from the target
-        Vector3 directionFromPlayer = (targetPosition - firePoint.position).normalized;
-        directionFromPlayer.y = 0; // Horizontal direction only
+        Vector3 directionFromPlayer = (targetPosition - WeaponController.Instance.transform.position).normalized; // Use player position
+        directionFromPlayer.y = 0;
         Vector3 startPosition = targetPosition + (Vector3.up * spawnHeight) - (directionFromPlayer * horizontalOffset);
-        Vector3 fallDirection = (targetPosition - startPosition).normalized; // Direction towards target
+        Vector3 fallDirection = (targetPosition - startPosition).normalized; // Direction towards target on ground
 
         GameObject deployerGO = Instantiate(StatBlock.deployerProjectilePrefab, startPosition, Quaternion.LookRotation(fallDirection));
         Projectile projectileScript = deployerGO.GetComponent<Projectile>();
-
         if (projectileScript != null)
         {
-            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); // Include flat bonus
-            float finalDuration = StatBlock.baseAreaDuration; // Add upgrades later
-            float finalInterval = StatBlock.baseAreaTickInterval; // Add upgrades later (lower is faster ticks)
+            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
+            float finalDuration = StatBlock.baseAreaDuration;
+            float finalInterval = StatBlock.baseAreaTickInterval;
 
             projectileScript.InitializeAsAirdropDeployer(
                 startPosition, fallDirection, StatBlock.deployerFallSpeed, StatBlock.areaPrefab,
-                finalDamage, finalDuration, finalInterval, this.gameObject // Pass this WeaponPart's GameObject as attacker
+                finalDamage, finalDuration, finalInterval, WeaponController.Instance.gameObject // Attacker is the Player object
             );
         }
+        else { Destroy(deployerGO); } // Clean up
     }
-
 
     private void HandleLandminePlacement()
     {
-        if (!IsReadyToFire) return; // Check cooldown
+        if (StatBlock == null || !IsReadyToFire || WeaponController.Instance == null) return;
 
         Vector2 randomCirclePoint = Random.insideUnitCircle * StatBlock.spawnRadius;
-        // Place relative to the player's root position, not the weapon part itself
         Vector3 spawnPositionBase = WeaponController.Instance.transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
 
         RaycastHit hit;
-        Vector3 spawnPosition = spawnPositionBase; // Default if raycast fails
-        if (Physics.Raycast(spawnPositionBase + Vector3.up * 5f, Vector3.down, out hit, 10f, StatBlock.beamScorchMarkGroundLayer != 0 ? StatBlock.beamScorchMarkGroundLayer : LayerMask.GetMask("Ground"))) // Use beam ground layer or default "Ground"
-        {
-            spawnPosition = hit.point; // Place exactly on ground
-        }
+        Vector3 spawnPosition = spawnPositionBase;
+        LayerMask groundMask = StatBlock.beamScorchMarkGroundLayer != 0 ? StatBlock.beamScorchMarkGroundLayer : LayerMask.GetMask("Ground");
+        if (Physics.Raycast(spawnPositionBase + Vector3.up * 5f, Vector3.down, out hit, 10f, groundMask))
+        { spawnPosition = hit.point; } // Place on ground if found
 
         if (StatBlock.minePrefab != null)
         {
-            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity); // Default rotation
+            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity);
             Landmine mineScript = mineGO.GetComponent<Landmine>();
             if (mineScript != null)
             {
-                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); // Use AOE stats
+                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
                 float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
                 mineScript.Initialize(
                     finalDamage, finalRadius, StatBlock.armingTime, StatBlock.mineDuration,
-                    WeaponController.Instance.gameObject, // Attacker is the player controller
-                    StatBlock.explosionEffectPrefab, // Use explosion effect from StatBlock
-                    StatBlock.layersToDamageByAOE // Use layers from StatBlock
+                    WeaponController.Instance.gameObject, // Player is attacker
+                    StatBlock.explosionEffectPrefab, StatBlock.layersToDamageByAOE
                 );
             }
+            else { Debug.LogWarning($"Mine prefab '{StatBlock.minePrefab.name}' is missing Landmine script.", mineGO); }
+
             if (landminePlaceSound != null && audioSource != null)
-            {
-                AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition); // Play sound at placement location
-            }
+            { AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition); } // Play sound at location
         }
 
-        // Reset cooldown after placing
+        // Reset cooldown
         fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
     }
     #endregion
 }
+

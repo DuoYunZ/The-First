@@ -14,7 +14,8 @@ public enum WeaponBehaviorType
     Beam,
     Landmine,
     MeleeAOE,
-    Boomerang
+    Boomerang,
+    Aura
 }
 
 
@@ -47,6 +48,12 @@ public class WeaponStatBlock : ScriptableObject
 
     [Tooltip("抛物线发射角度 (仅当 isParabolic 为 true 时有效)")]
     public float launchAngle = 45f;
+
+    [Tooltip("此AOE武器造成眩晕的基础几率 (0 到 1)")]
+    [Range(0f, 1f)]
+    public float baseStunChance = 0.1f; // 例如 10% 基础几率
+    [Tooltip("此AOE武器造成眩晕的基础持续时间（秒）")]
+    public float baseStunDuration = 1.0f;
 
     [Tooltip("子弹基础存活时间")]
     public float baseProjectileLifetime = 5f;
@@ -129,6 +136,11 @@ public class WeaponStatBlock : ScriptableObject
     public float baseAreaTickInterval = 0.5f;
     [Tooltip("傷害區域的基礎每跳傷害")]
     public int baseAreaDamagePerTick = 4;
+    [Tooltip("光环的视觉特效预制件")]
+    public GameObject auraVfxPrefab;
+
+    [Tooltip("VFX预制件的基础缩放乘数 (用于校准视觉和碰撞器半径)")]
+    public float vfxBaseScaleMultiplier = 1.0f;
 
     [Header("控制效果 (Control Effects)")]
     [Tooltip("基础减速百分比 (例如 0.3 表示减速30%)")]
@@ -225,6 +237,7 @@ public class WeaponStatBlock : ScriptableObject
     public float rotationSpeed = 720f;
     [Tooltip("回旋镖飞出的最大距离 (Max outbound distance)")]
     public float returnOvershootDistance = 15f;
-    [Tooltip("回旋镖开始返回时的平滑转弯持续时间(秒)")]
-    public float turnDuration = 0.3f; // <--- 新增：转弯时间
+
+   
+
 }

@@ -51,6 +51,8 @@ public class Projectile : MonoBehaviour
     private float slowPercentage;
     private float slowDuration;
 
+    private float stunChance = 0f;
+    private float stunDuration = 0f;
     // --- 弹道和行为模式 ---
     private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang } // <-- 添加 Boomerang
     private ProjectileMode mode;
@@ -89,6 +91,31 @@ public class Projectile : MonoBehaviour
     private Dictionary<Health, float> hitCooldowns = new Dictionary<Health, float>();
     private float hitCooldown = 0.5f;
 
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            // 如果 Awake 时找不到，尝试在子物体找 (作为后备)
+            rb = GetComponentInChildren<Rigidbody>();
+            if (rb != null)
+            {
+                Debug.LogWarning("Rigidbody found on child, not self. Consider moving component.", this);
+            }
+        }
+
+        // 最终检查
+        if (rb == null)
+        {
+            Debug.LogError("Projectile CRITICAL: Could not find Rigidbody component!", this);
+        }
+        else
+        {
+            // 基础设置
+            rb.useGravity = false;
+        }
+    }
     public void InitializeAsReflectable(Vector3 dir, float spd, int dmg, float life, GameObject vfx)
     {
         this.mode = ProjectileMode.Straight; // 假设激光是直线
@@ -124,6 +151,12 @@ public class Projectile : MonoBehaviour
     public void InitializeAsHoming(Transform target, float spd, int dmg, bool isEnemyBullet, float turnSpeed, float life,
                                GameObject shieldVfx, GameObject defaultVfx) // <-- 同样更新追踪弹
     {
+        if (rb == null)
+        {
+            Debug.LogError("[Projectile Init Homing] FAILED: Rigidbody reference is null (check Awake).", this);
+            // Destroy(gameObject);
+            // return;
+        }
         this.mode = ProjectileMode.Homing;
         this.isParabolic = false;
         this.homingTarget = target;
@@ -134,6 +167,12 @@ public class Projectile : MonoBehaviour
         this.lifetime = life;
         this.shieldImpactEffectPrefab = shieldVfx;
         this.defaultImpactEffectPrefab = defaultVfx;
+        if (rb != null)
+        {
+            rb.isKinematic = false; // 确保非运动学
+                                    // 可以选择性地设置 Constraints，如果直线弹不需要旋转的话
+            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        }
         Destroy(gameObject, life);
     }
     /// <summary>
@@ -160,6 +199,13 @@ public class Projectile : MonoBehaviour
     /// </summary>
     public void InitializeAsStraight(Vector3 dir, float spd, int directDmg, bool isEnemyBullet, int pierce, float life, GameObject shieldVfx, GameObject defaultVfx, int dotDmg, float dotDur, float dotTick, float slowPct, float slowDur, AttackType type = AttackType.Standard)
     {
+        if (rb == null && spd > 0) // 只在需要移动时报错
+        {
+            Debug.LogError("[Projectile Init Straight] FAILED: Rigidbody reference is null (check Awake).", this);
+            // Destroy(gameObject); // 可以选择销毁或让它停在原地
+            // return;
+        }
+
         this.mode = ProjectileMode.Straight;
         this.isParabolic = false;
         this.attackType = type;
@@ -178,13 +224,23 @@ public class Projectile : MonoBehaviour
         this.slowDuration = slowDur;
         this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies"); // 自动设置
         this.groundAndWallLayers = LayerMask.GetMask("Ground"); // 默认只与地面碰撞销毁
+        if (rb != null)
+        {
+            rb.isKinematic = false; // 确保非运动学
+                                    // 可以选择性地设置 Constraints，如果直线弹不需要旋转的话
+            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        }
         Destroy(gameObject, this.lifetime);
     }
 
     /// <summary>
     /// 初始化为【抛物线】弹道。由 WeaponPart 调用。
     /// </summary>
-    public void InitializeAsParabolic(Vector3 initialVelocity, int projectileDirectDamage, int projectileAoeDamage, float projectileLifetime, GameObject explosionVfxPrefab, float aoeRadius, LayerMask layersToDamage, LayerMask layersToExplodeOn, int dotDmg, float dotDur, float dotTick)
+    public void InitializeAsParabolic(Vector3 initialVelocity, int projectileDirectDamage, int projectileAoeDamage,
+                                      float projectileLifetime, GameObject explosionVfxPrefab, float aoeRadius,
+                                      LayerMask layersToDamage, LayerMask layersToExplodeOn,
+                                      int dotDmg, float dotDur, float dotTick,
+                                      float newStunChance, float newStunDuration)
     {
         this.mode = ProjectileMode.Parabolic;
         this.isParabolic = true;
@@ -205,6 +261,9 @@ public class Projectile : MonoBehaviour
         this.dotDamage = dotDmg;
         this.dotDuration = dotDur;
         this.dotTickInterval = dotTick;
+
+        this.stunChance = newStunChance;
+        this.stunDuration = newStunDuration;
 
         Collider col = GetComponent<Collider>(); // 抛物线需要非触发器
         if (col != null) col.isTrigger = false;
@@ -232,14 +291,13 @@ public class Projectile : MonoBehaviour
 
     public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist, float catchRad, float life,
                                       GameObject shieldVFX, GameObject defaultVFX, WeaponPart launcherPart,
-                                      float rotSpeed) // 移除 overshootDist, turnDur
+                                      float rotSpeed, float overshootDist) // <-- 加回 overshootDist
     {
-        rb = GetComponent<Rigidbody>();
+
         if (rb == null)
         {
-            // 如果在这里仍然找不到，说明 Prefab 真的有问题
-            Debug.LogError("[Projectile Init Boomerang] CRITICAL: Rigidbody component MISSING on prefab!", this);
-            Destroy(gameObject); // 直接销毁，防止后续错误
+            Debug.LogError("[Projectile Init Boomerang] FAILED: Rigidbody reference is null (check Awake).", this);
+            Destroy(gameObject);
             return;
         }
         // 添加详细日志
@@ -258,31 +316,21 @@ public class Projectile : MonoBehaviour
         this.maxDistance = maxDist;
         this.catchRadius = catchRad;
         this.rotationSpeed = rotSpeed;
-
+        this.returnOvershootDistance = overshootDist; // <-- 存储过冲距离
         this.launcher = launcherPart;
         // 记录发射点
         this.spawnPoint = transform.position; // 使用 projectile 自己的初始位置
-        // if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
-        //      this.spawnPoint = GameManager.Instance.playerTransform.position; // 或者用玩家位置，看哪个更合适
-        // else { Debug.LogError("..."); this.spawnPoint = transform.position; }
-        // transform.position = this.spawnPoint; // 如果上面用了玩家位置，这里要同步
-
+                                              // 
         this.boomerangState = BoomerangState.Outbound;
         this.hasBeenCaught = false;
 
         this.damageableLayers = LayerMask.GetMask("Enemies");
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
 
-        if (rb != null)
-        {
-            rb.isKinematic = false;
-            rb.velocity = Vector3.zero; // 清空初始速度
-            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
-        }
-        else { Debug.LogError("Rigidbody missing!", this); }
-
-        // 移除这里的 Destroy(gameObject, lifetime)，交由 Update 处理
-        // Destroy(gameObject, this.lifetime);
+        rb.isKinematic = false; // 确保非运动学
+        rb.velocity = Vector3.zero;
+        rb.useGravity = false;
+        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
 
         // 结束日志
         Debug.Log($"[Projectile Init Boomerang] FINISHED - Initial Velocity set in FixedUpdate. Lifetime={this.lifetime}");
@@ -293,12 +341,17 @@ public class Projectile : MonoBehaviour
         if (boomerangState == BoomerangState.Outbound)
         {
             boomerangState = BoomerangState.Inbound;
-            Debug.Log("[Projectile Boomerang] State changed to Inbound.");
 
-            // --- 【修复3】清空已命中列表，允许返回时再次造成伤害 ---
-            hitEnemies.Clear();
-            piercedEnemies = 0; // 重置穿透计数器（虽然是999，但重置更规范）
-            // --- 【修复3 结束】 ---
+            // --- 【核心修改】计算返回目标点 (出生点后方) ---
+            // 使用初始飞出方向的反方向 (-direction) 来计算过冲点
+            returnTargetPoint = spawnPoint - direction * returnOvershootDistance;
+            // --- 计算结束 ---
+
+            // --- 【核心修改】计算【固定】的返回方向 (从当前点指向目标点) ---
+            currentReturnDirection = (returnTargetPoint - transform.position).normalized;
+            // --- 计算结束 ---
+
+            Debug.Log($"[Projectile Boomerang] State changed to Inbound. TargetPoint={returnTargetPoint}, ReturnDir={currentReturnDirection}");
 
             // 清除当前速度，以便立即应用返回速度
             if (rb != null) rb.velocity = Vector3.zero;
@@ -354,7 +407,7 @@ public class Projectile : MonoBehaviour
 
     void FixedUpdate()
     {
-        Rigidbody rb = GetComponent<Rigidbody>();
+       
         if (hasExploded || rb == null || rb.isKinematic) return;
 
         switch (mode)
@@ -383,10 +436,7 @@ public class Projectile : MonoBehaviour
             case ProjectileMode.Boomerang:
                 if (boomerangState == BoomerangState.Outbound)
                 {
-                    // **强制**设置飞出速度
-                    rb.velocity = direction * speed;
-                    // Debug.Log($"[Boomerang Outbound] Pos={rb.position}, Vel={rb.velocity}"); // 添加日志
-
+                    rb.velocity = direction * speed; // 保持飞出速度
                     float distanceTraveled = Vector3.Distance(spawnPoint, rb.position);
                     if (distanceTraveled >= maxDistance)
                     {
@@ -395,55 +445,69 @@ public class Projectile : MonoBehaviour
                 }
                 else if (boomerangState == BoomerangState.Inbound)
                 {
-                    // 实时计算朝向出生点的方向
-                    currentReturnDirection = (spawnPoint - rb.position).normalized;
-                    // **强制**设置返回速度
+                    // --- 【核心修改】使用固定的返回方向 ---
                     rb.velocity = currentReturnDirection * speed;
-                    // Debug.Log($"[Boomerang Inbound] Pos={rb.position}, Vel={rb.velocity}"); // 添加日志
-                    if (!hasBeenCaught)
-                    {
-                        float distanceToSpawn = Vector3.Distance(rb.position, spawnPoint);
-                        float proximityThreshold = 0.5f + (speed * Time.fixedDeltaTime);
-                        // 【重要】只有当非常接近出生点【并且】未被抓住时才销毁
-                        if (distanceToSpawn < proximityThreshold)
-                        {
-                            Debug.Log($"[Projectile Destroy] Boomerang reached spawn point proximity ({distanceToSpawn:F2}m) without being caught.");
-                            if (launcher != null) { launcher.StartCooldownIfNotCaught(); }
-                            Destroy(gameObject); // 直接销毁
-                        }
-                    }
+                    // --- 【核心修改结束】 ---
+
+                    // 【重要】移除 FixedUpdate 中的销毁逻辑，完全交给 Update 和 OnTriggerEnter
+                    // if (!hasBeenCaught) { /* ... 移除距离判断和 Destroy ... */ }
                 }
                 break;
                 // --- ^^^ 核心修改结束 ^^^ ---
         }
     }
+    void OnCollisionEnter(Collision collision)
+    {
+        if (hasExploded) return;
 
+        // 仅在抛物线模式下处理物理碰撞
+        if (mode == ProjectileMode.Parabolic)
+        {
+            // 检查是否碰撞到了我们关心的层 (地面/墙壁 或 可伤害层)
+            int hitLayer = collision.gameObject.layer;
+
+            // 使用你在 InitializeAsParabolic 中设置的层掩码
+            if (((1 << hitLayer) & groundAndWallLayers) != 0 || ((1 << hitLayer) & damageableLayers) != 0)
+            {
+                // 在第一个碰撞点爆炸，并传递命中的 collider
+                // Explode 方法会处理直接伤害和 AOE 伤害
+                Explode(collision.contacts[0].point, collision.collider);
+            }
+        }
+    }
     void OnTriggerEnter(Collider other)
     {
-        if (hasExploded || mode == ProjectileMode.Parabolic) return;
+        if (hasExploded) return;
 
-        // --- vvv 核心修改：抓取逻辑 vvv ---
+        if (mode == ProjectileMode.Parabolic)
+        {
+            // 检查是否碰到了可伤害层 (即敌人)
+            if (((1 << other.gameObject.layer) & damageableLayers) != 0)
+            {
+                // 在敌人身上爆炸
+                Explode(other.ClosestPoint(transform.position), other);
+            }
+            // 无论碰到什么，抛物线模式都不应执行下面的其他逻辑（如回旋镖抓取）
+            return;
+        }
+
+        // 抓取逻辑
         if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
         {
             Transform currentPlayerTransform = GameManager.Instance?.playerTransform;
-            // 只有在【未被抓住过】且【靠近玩家】时才触发
             if (!hasBeenCaught && currentPlayerTransform != null && Vector3.Distance(transform.position, currentPlayerTransform.position) < catchRadius)
             {
-                hasBeenCaught = true; // 标记为已抓住
+                hasBeenCaught = true;
                 Debug.Log("Boomerang Caught!");
                 if (launcher != null)
                 {
-                    launcher.OnBoomerangCaught(transform.position); // 通知 WeaponPart
+                    launcher.OnBoomerangCaught(transform.position); // 通知 WeaponPart (它会重新发射)
                 }
-                // 【核心修改】抓住后立刻销毁
+                // 【确认】抓住后立刻销毁当前实例
                 Destroy(gameObject);
-                // 【核心修改结束】
             }
-            // 注意：即使触发了碰撞，如果距离不够或已被抓过，也不会执行销毁，让它继续飞
-            return; // 碰到玩家不再处理其他碰撞
+            return; // 碰到玩家不再处理其他
         }
-        // --- ^^^ 核心修改结束 ^^^ ---
-
 
         // 伤害敌人 (保持不变)
         int targetLayer = isEnemyProjectile ? LayerMask.NameToLayer("Player") : LayerMask.NameToLayer("Enemies");
@@ -597,6 +661,16 @@ public class Projectile : MonoBehaviour
                 if (receiver != null && this.dotDamage > 0 && this.dotDuration > 0)
                 {
                     receiver.ApplyBurn(this.dotDamage, this.dotDuration, this.dotTickInterval);
+                }
+
+                if (this.stunChance > 0 && this.stunDuration > 0)
+                {
+                    // 进行概率摇奖
+                    if (Random.value <= this.stunChance)
+                    {
+                        // 你需要去 StatusEffectReceiver.cs 中添加这个 ApplyStun 方法
+                        receiver.ApplyStun(this.stunDuration);
+                    }
                 }
             }
         }
