@@ -3,7 +3,9 @@ using UnityEngine;
 public enum AIType
 {
     Chasing, // 默认的追逐玩家行为
-    StraightLineStampede // 新的直线移动行为
+    StraightLineStampede, // 新的直线移动行为
+    Pinball
+
 }
 
 [CreateAssetMenu(fileName = "NewEnemyType", menuName = "Game/Enemy Type")]
@@ -27,6 +29,11 @@ public class EnemyType : ScriptableObject
     public float baseDamage = 10f; // 如果怪物有攻击行为
     public float baseSpeed = 2f;
     // public int scoreValue = 10; // 击杀得分 (可选)
+
+    [Header("掉落设置")]
+    [Tooltip("这个敌人掉落能量石的几率 (0.01 = 1%)")]
+    [Range(0f, 1f)]
+    public float energyStoneDropChance = 0.01f; // 默认 1%
 
     [Header("波次控制")]
     [Tooltip("该怪物最早在哪一波开始出现")]

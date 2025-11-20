@@ -61,13 +61,16 @@ public class PlayerBladeAttack : MonoBehaviour
     private bool isAttacking = false;
     private float cooldownDuration;
 
+    private WeaponPart myWeaponPart;
+
     void Start()
     {
         if (attackData != null && attackData.baseFireRate > 0)
         {
             cooldownDuration = 1f / attackData.baseFireRate;
             cooldownTimer = cooldownDuration;
-        }       
+        }
+        myWeaponPart = GetComponent<WeaponPart>();
     }
 
     void Update()
@@ -203,7 +206,9 @@ public class PlayerBladeAttack : MonoBehaviour
                 5f,                              // 子弹生存时间
                 attackData.shieldImpactEffectPrefab, // 命中护盾特效
                 attackData.defaultImpactEffectPrefab, // 默认命中特效
-                0, 0, 0, 0, 0 // 其他效果（燃烧、减速等），暂时设为0
+                0, 0, 0, 0, 0,                   //
+                AttackType.Standard,
+                myWeaponPart
             );
 
             // 【重要】设置刃气弹的物理层
@@ -271,7 +276,8 @@ public class PlayerBladeAttack : MonoBehaviour
             damageController.Initialize(
                 totalDamage,                 // 第一个参数：最终计算出的伤害值
                 attackData.hitEffectPrefab,  // 第二个参数：命中特效
-                this.gameObject              // 第三个参数：攻击者
+                this.gameObject,              // 第三个参数：攻击者
+                myWeaponPart
             );
 
         }

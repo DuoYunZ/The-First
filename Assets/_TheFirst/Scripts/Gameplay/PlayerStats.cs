@@ -1,4 +1,5 @@
 // PlayerStats.cs (升级版)
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerStats : MonoBehaviour
@@ -47,6 +48,12 @@ public class PlayerStats : MonoBehaviour
     [Tooltip("当前等级下，每次叠加增加的体积百分比 (0.1 = 10%)")]
     public float boomerangStackScaleBonusPercent = 0f;
 
+    [Header("能量石计数 (运行时)")]
+    [Tooltip("追踪玩家当前装备的所有能量石类型和数量")]
+    public Dictionary<EnergyStoneEffectType, int> ActiveStoneCounts = new Dictionary<EnergyStoneEffectType, int>();
+
+    [Header("雷电石计数器 (运行时)")]
+    public int lightningSmiteCounter = 0;
 
     void Awake()
     {
@@ -207,5 +214,56 @@ public class PlayerStats : MonoBehaviour
                 Debug.Log($"回旋镖叠加规则更新: MaxStacks={boomerangMaxCatchStacks}, DmgBonus={boomerangStackDamageBonusPercent * 100}%, ScaleBonus={boomerangStackScaleBonusPercent * 100}%");
                 break;
         }
+    }
+    public void RegisterStone(EnergyStoneSO newStone, EnergyStoneSO oldStone)
+    {
+        // 1. 注销旧石头
+        if (oldStone != null)
+        {
+            UpdateStoneCount(oldStone, -1);
+        }
+
+        // 2. 注册新石头
+        if (newStone != null)
+        {
+            UpdateStoneCount(newStone, 1);
+        }
+    }
+    private void UpdateStoneCount(EnergyStoneSO stone, int delta)
+    {
+        // 这是一个健壮的实现，它会检查石头上的 *所有* 布尔值
+        // (我们使用 EnergyStoneEffectType 作为 Key)
+
+        if (stone.stoneEffects == null) return; //
+
+        foreach (EnergyStoneEffectType effectType in stone.stoneEffects) //
+        {
+            AddToCount(effectType, delta); //
+        }
+
+        if (stone.applyChain) AddToCount(EnergyStoneEffectType.ApplyChain, delta);
+        // ... (在这里添加 AddHoming, AddPierce 等...)
+    }
+
+    private void AddToCount(EnergyStoneEffectType type, int amount)
+    {
+        if (!ActiveStoneCounts.ContainsKey(type))
+        {
+            ActiveStoneCounts[type] = 0;
+        }
+        ActiveStoneCounts[type] += amount;
+    }
+
+    /// <summary>
+    /// (由 Projectile.cs 或 WeaponPart.cs 调用)
+    /// 获取当前装备了多少颗指定类型的石头
+    /// </summary>
+    public int GetStoneCount(EnergyStoneEffectType type)
+    {
+        if (ActiveStoneCounts.TryGetValue(type, out int count))
+        {
+            return count;
+        }
+        return 0;
     }
 }

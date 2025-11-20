@@ -1,9 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 // 將遊戲狀態枚舉放在類外部，方便其他腳本引用
-public enum GameState { Building, Combat, GameOver }
+public enum GameState { Building, Combat, GameOver, Victory } // [新增] Victory 状态
 
 public class GameManager : MonoBehaviour
 {
@@ -12,9 +13,9 @@ public class GameManager : MonoBehaviour
     [Header("場景名稱")]
     public string characterSelectSceneName = "CharacterSelectScene";
 
-    [Header("UI 引用")]
-    [Tooltip("遊戲結束 UI 面板")]
-    public GameObject gameOverPanel;
+    [Tooltip("新的结算界面脚本引用")]
+    public SettlementUI settlementUI;
+
     [Tooltip("戰鬥 UI 的容器")]
     public GameObject combatUIContainer;
 
@@ -23,6 +24,10 @@ public class GameManager : MonoBehaviour
     public Transform playerTransform { get; private set; }
     private Health playerHealthComponent = null;
     public Transform playerAimTarget { get; private set; }
+
+    [Header("能量石掉落池")]
+    [Tooltip("所有可能掉落的能量石 (EnergyStoneSO) 资产文件")]
+    public List<EnergyStoneSO> energyStoneLootTable;
 
     private void Awake()
     {
@@ -38,9 +43,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        // 在遊戲首次啟動時，確保所有相關UI都處於正確的初始狀態
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        // combatUIContainer 的顯隱由進入戰鬥場景的邏輯控制
+        if (settlementUI != null) settlementUI.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -107,11 +110,15 @@ public class GameManager : MonoBehaviour
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideCombatUI();
-            UIManager.Instance.ShowGameOverPanel();
+            // [已删除] UIManager.Instance.ShowGameOverPanel(); <-- 不再使用旧的
+        }
+        if (settlementUI != null)
+        {
+            settlementUI.Show(false); // false = 失敗/死亡
         }
         else
         {
-            Debug.LogError("[GameManager] UIManager.Instance is null! Cannot show/hide UI panels.");
+            Debug.LogError("[GameManager] SettlementUI 未赋值！请在 Inspector 中设置。");
         }
 
         if (WaveManager.Instance != null)
@@ -122,6 +129,27 @@ public class GameManager : MonoBehaviour
 
     #region Public Methods for UI Buttons
 
+
+    public void HandleVictory()
+    {
+        if (currentState == GameState.Victory || currentState == GameState.GameOver) return;
+
+        currentState = GameState.Victory;
+        Time.timeScale = 0f;
+        Debug.Log("[GameManager] 任務完成！勝利！");
+
+        // 1. 隱藏戰鬥UI
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.HideCombatUI();
+        }
+
+        // 2. 顯示新的結算界面 (勝利)
+        if (settlementUI != null)
+        {
+            settlementUI.Show(true); // true = 勝利
+        }
+    }
     /// <summary>
     /// 供“重新開始戰鬥”按鈕呼叫
     /// </summary>
@@ -131,6 +159,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         // 重新載入當前場景。DataManager 中的機甲配置仍然存在，
         // 所以 CombatSceneInitializer 會用同樣的配置重建機甲。
+        if (settlementUI != null) settlementUI.gameObject.SetActive(false);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
@@ -141,6 +170,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log($"[GameManager] 正在返回角色选择场景: {characterSelectSceneName}");
         Time.timeScale = 1f;
+        if (settlementUI != null) settlementUI.gameObject.SetActive(false);
 
         // 清理当前选择的角色数据，以便重新开始
         if (DataManager.Instance != null)

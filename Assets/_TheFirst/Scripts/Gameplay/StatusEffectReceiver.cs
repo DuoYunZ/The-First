@@ -7,150 +7,505 @@ public class StatusEffectReceiver : MonoBehaviour
     private Health enemyHealth;
     private EnemyAI enemyAI; // 如果需要處理減速等影響AI的效果
     private StraightMoverAI straightMoverAI;
+    private Animator animator; // <--- vvv 新增
+
+    private EnemyMeleeAttack meleeAttackScript;
+    private EnemyProjectileAttack projectileAttackScript; // <--- [新增]
+
+    private Renderer enemyRenderer; // <--- vvv 新增
+    private Color originalColor; // <--- vvv 新增
+
+
+    private HashSet<object> persistentSlowSources = new HashSet<object>();
+    private HashSet<object> persistentWeakenSources = new HashSet<object>();
+    private HashSet<object> persistentCorrodeSources = new HashSet<object>(); // <--- [新增]
+
+    private Color activePersistentSlowColor;
+    private Color activePersistentCorrodeColor;
 
     // 用於追蹤正在進行的狀態協程，避免同一狀態重複疊加
-    private Dictionary<UpgradeType, Coroutine> activeStatusCoroutines = new Dictionary<UpgradeType, Coroutine>();
+    private Dictionary<DebuffType, Coroutine> activeStatusCoroutines = new Dictionary<DebuffType, Coroutine>();
 
+    public bool IsSlowed { get; private set; } = false; // <--- [新增]
     public bool IsBurning { get; private set; } = false;
     public bool IsStunned { get; private set; } = false;
 
+    [Header("状态属性 (运行时)")]
+    public bool IsWeakened { get; private set; } = false;
+    [Tooltip("弱化状态下的伤害乘数")]
+    public float weakenDamageMultiplier { get; private set; } = 1.0f; // 1.0 = 100% 伤害
+
+    public bool IsCorroded { get; private set; } = false; // <--- [新增]
+    [Tooltip("腐蚀状态下的伤害乘数")]
+    public float corrodeDamageMultiplier { get; private set; } = 1.0f; // <--- [新增]
+
+
+    private float burnDurationRemaining = 0f;
+    private int currentBurnDamagePerTick = 0;
+    private float currentBurnTickInterval = 1f;
+
     [Header("特效预制件 (可选)")]
     public GameObject stunVfxPrefab;
+    public GameObject burnVfxPrefab; // <--- vvv 新增
+
+    [Tooltip("爆燃 (火焰石堆叠) 触发时的专属特效")]
+    public GameObject ignitionVfxPrefab;
+
+    private GameObject stunVfxInstance; // (我们把这个也改成私有变量)
+    private GameObject burnVfxInstance; // <--- vvv 新增
+
+    private string currentBurnSource = "";
+    private string currentCorrodeSource = "";
 
     void Awake()
     {
         enemyHealth = GetComponent<Health>();
         enemyAI = GetComponent<EnemyAI>();
         straightMoverAI = GetComponent<StraightMoverAI>();
+        animator = GetComponentInChildren<Animator>(); // <--- vvv 新增
+        meleeAttackScript = GetComponent<EnemyMeleeAttack>();
+        projectileAttackScript = GetComponent<EnemyProjectileAttack>(); // <--- [新增]
+        enemyRenderer = GetComponentInChildren<Renderer>(); // <--- vvv 新增
+
+        if (enemyRenderer != null)
+        {
+            originalColor = enemyRenderer.material.color; // <--- vvv 新增 (保存原始颜色)
+        }
     }
 
     /// <summary>
     /// 應用燃燒效果
     /// </summary>
-    public void ApplyBurn(int damagePerTick, float duration, float tickInterval)
+    public void ApplyBurn(int damagePerTick, float duration, float tickInterval, string sourceWeaponName = "")
     {
-        // 【日誌 A】
-        Debug.Log($"<color=orange>[StatusEffectReceiver] 收到 ApplyBurn 指令！傷害: {damagePerTick}, 持續: {duration}s, 間隔: {tickInterval}s</color>");
+        // 1. 存储燃烧数据 (用于爆燃)
+        currentBurnDamagePerTick = damagePerTick;
+        currentBurnTickInterval = (tickInterval > 0) ? tickInterval : 1f;
+        // (如果已经燃烧，我们刷新(刷新/叠加)持续时间，而不是重置)
+        burnDurationRemaining = Mathf.Max(burnDurationRemaining, duration);
 
-        if (activeStatusCoroutines.ContainsKey(UpgradeType.AoeDamage))
+        if (!string.IsNullOrEmpty(sourceWeaponName)) currentBurnSource = sourceWeaponName;
+
+        if (!IsBurning)
         {
-            StopCoroutine(activeStatusCoroutines[UpgradeType.AoeDamage]);
+            if (activeStatusCoroutines.ContainsKey(DebuffType.Burn))
+            {
+                StopCoroutine(activeStatusCoroutines[DebuffType.Burn]);
+            }
+            Coroutine burnCoroutine = StartCoroutine(BurnRoutine());
+            activeStatusCoroutines[DebuffType.Burn] = burnCoroutine;
+        }
+    }
+    public void Ignite()
+    {
+        if (!IsBurning || enemyHealth == null) return; //
+
+        // 1. 计算剩余伤害
+        int remainingTicks = Mathf.FloorToInt(burnDurationRemaining / currentBurnTickInterval); //
+        int ignitionDamage = remainingTicks * currentBurnDamagePerTick; //
+
+        if (ignitionDamage > 0)
+        {
+            // 2. 造成爆燃伤害 (使用 Standard 或 Ignition 类型)
+            enemyHealth.TakeDamage(ignitionDamage, transform.position, null, AttackType.Standard); //
+
+            // --- vvv [新增] vvv ---
+            // 3. 播放爆燃特效
+            if (ignitionVfxPrefab != null)
+            {
+                // 在敌人当前位置播放一次性的爆燃特效
+                Instantiate(ignitionVfxPrefab, transform.position, Quaternion.identity);
+            }
+            // --- ^^^ [新增] ^^^ ---
         }
 
-        Coroutine burnCoroutine = StartCoroutine(BurnRoutine(damagePerTick, duration, tickInterval));
-        activeStatusCoroutines[UpgradeType.AoeDamage] = burnCoroutine;
+        // 4. 停止燃烧
+        StopBurn(); //
     }
+
+    private void StopBurn()
+    {
+        if (!IsBurning) return;
+
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Burn))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Burn]);
+            activeStatusCoroutines.Remove(DebuffType.Burn);
+        }
+
+        IsBurning = false;
+        burnDurationRemaining = 0f;
+
+        if (burnVfxInstance != null)
+        {
+            Destroy(burnVfxInstance);
+            burnVfxInstance = null;
+        }
+    }
+
 
     // --- 新增：应用减速效果的方法 ---
     public void ApplySlow(float slowPercentage, float duration)
     {
-        // 使用 UpgradeType.MoveSpeed 作为减速状态的标识符
-        if (activeStatusCoroutines.ContainsKey(UpgradeType.MoveSpeed))
-        {
-            StopCoroutine(activeStatusCoroutines[UpgradeType.MoveSpeed]);
-        }
-
-        var slowCoroutine = StartCoroutine(SlowRoutine(slowPercentage, duration));
-        activeStatusCoroutines[UpgradeType.MoveSpeed] = slowCoroutine;
+        Color defaultSlowColor = Color.cyan;
+        ApplySlow(slowPercentage, duration, defaultSlowColor);
     }
 
-    public void ApplyStun(float duration)
+    public void ApplySlow(float slowPercentage, float duration, Color newColor)
     {
-        // 确保你的 UpgradeType 枚举中有一个 "Stun" 的值
-        if (activeStatusCoroutines.ContainsKey(UpgradeType.Stun))
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Slow))
         {
-            StopCoroutine(activeStatusCoroutines[UpgradeType.Stun]);
+            StopCoroutine(activeStatusCoroutines[DebuffType.Slow]);
+        }
+        var slowCoroutine = StartCoroutine(SlowRoutine(slowPercentage, duration, newColor));
+        activeStatusCoroutines[DebuffType.Slow] = slowCoroutine;
+    }
+
+    public void ApplyPersistentSlow(object source, float percentage, Color color)
+    {
+        if (persistentSlowSources.Add(source))
+        {
+            activePersistentSlowColor = color; // [!] 存储颜色
+            UpdateSlowState();
+        }
+    }
+    public void RemovePersistentSlow(object source)
+    {
+        if (persistentSlowSources.Remove(source))
+        {
+            UpdateSlowState();
+        }
+    }
+
+    private void UpdateSlowState()
+    {
+        if (persistentSlowSources.Count > 0)
+        {
+            if (IsSlowed) return;
+            IsSlowed = true;
+
+            float speedMultiplier = 1.0f - 0.3f; // (TODO: 0.3f 应从 source 读取)
+
+            if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed() * speedMultiplier);
+            if (animator != null) animator.speed = speedMultiplier;
+            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentSlowColor; // [!] 使用存储的颜色
+        }
+        else
+        {
+            if (!IsSlowed) return;
+            IsSlowed = false;
+
+            if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed());
+            if (animator != null) animator.speed = 1f;
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] 恢复原始颜色
+        }
+    }
+    public void ApplyStun(float duration) //
+    {
+        if (meleeAttackScript != null)
+        {
+            meleeAttackScript.InterruptAttack(); //
         }
 
-        var stunCoroutine = StartCoroutine(StunRoutine(duration));
-        activeStatusCoroutines[UpgradeType.Stun] = stunCoroutine;
+        if (projectileAttackScript != null)
+            projectileAttackScript.InterruptAttack(); // <--- [新增]
+
+        // --- vvv [ 核心修改 4 ] vvv ---
+        // 使用 DebuffType.Stun 作为 Key
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Stun))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Stun]);
+        }
+
+        var stunCoroutine = StartCoroutine(StunRoutine(duration, stunVfxPrefab)); //
+        // --- ^^^ [修改] ^^^ ---
+        activeStatusCoroutines[DebuffType.Stun] = stunCoroutine; //
+        // --- ^^^ [ 核心修改 4 ] ^^^ ---
     }
-    private IEnumerator StunRoutine(float duration)
+
+    public void ApplyStun(float duration, GameObject vfxOverride)
+    {
+        // (打断逻辑保持不变)
+        if (meleeAttackScript != null)
+            meleeAttackScript.InterruptAttack(); //
+        if (projectileAttackScript != null)
+            projectileAttackScript.InterruptAttack(); //
+
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Stun)) //
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Stun]); //
+        }
+
+        // (调用协程，并传递 *自定义* 的 vfxOverride)
+        var stunCoroutine = StartCoroutine(StunRoutine(duration, vfxOverride)); //
+        activeStatusCoroutines[DebuffType.Stun] = stunCoroutine; //
+    }
+
+    public void ApplyKnockback(Vector3 forceDirection, float forceAmount)
+    {
+        if (meleeAttackScript != null)
+        {
+            meleeAttackScript.InterruptAttack();
+        }
+
+        if (projectileAttackScript != null)
+            projectileAttackScript.InterruptAttack(); // <--- [新增]
+        // 将击退请求转发给正确的 AI 脚本
+        if (enemyAI != null)
+        {
+            enemyAI.ApplyKnockback(forceDirection, forceAmount); //
+        }
+        if (straightMoverAI != null)
+        {
+            straightMoverAI.ApplyKnockback(forceDirection, forceAmount); //
+        }
+    }
+
+    public void ApplyWeaken(float percentage, float duration) //
+    {
+        // --- vvv [ 核心修改 5 - 这修复了你的 Bug ] vvv ---
+        // 使用 DebuffType.Weaken 作为 Key
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Weaken))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Weaken]);
+        }
+
+        var weakenCoroutine = StartCoroutine(WeakenRoutine(percentage, duration));
+        activeStatusCoroutines[DebuffType.Weaken] = weakenCoroutine;
+        // --- ^^^ [ 核心修改 5 ] ^^^ ---
+    }
+
+    private IEnumerator WeakenRoutine(float percentage, float duration) //
+    {
+        // ... (协程内部逻辑保持不变) ...
+        IsWeakened = true; //
+        weakenDamageMultiplier = 1.0f - percentage; //
+        yield return new WaitForSeconds(duration);
+        IsWeakened = false; //
+        weakenDamageMultiplier = 1.0f; //
+
+        // (确保 Key 匹配)
+        activeStatusCoroutines.Remove(DebuffType.Weaken); //
+    }
+    public void ApplyCorrode(float multiplier, float duration)
+    {
+        ApplyCorrode(multiplier, duration, new Color(0.5f, 1f, 0.5f)); // [!] 使用默认绿色
+    }
+    public void ApplyCorrode(float multiplier, float duration, Color color, string sourceWeaponName = "")
+    {
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Corrode))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Corrode]);
+        }
+        var corrodeCoroutine = StartCoroutine(CorrodeRoutine(multiplier, duration, color)); // [!] 传递颜色
+        activeStatusCoroutines[DebuffType.Corrode] = corrodeCoroutine; //
+    }
+    public void ApplyPersistentCorrode(object source, float multiplier, Color color) // [!] 传递颜色
+    {
+        if (persistentCorrodeSources.Add(source)) //
+        {
+            activePersistentCorrodeColor = color; // [!] 存储颜色
+            UpdateCorrodeState(multiplier); //
+        }
+    }
+    public void RemovePersistentCorrode(object source)
+    {
+        if (persistentCorrodeSources.Remove(source))
+        {
+            UpdateCorrodeState(1.0f); // (TODO: 应改为读取剩余源中的最大值)
+        }
+    }
+    private void UpdateCorrodeState(float multiplier) //
+    {
+        if (persistentCorrodeSources.Count > 0) //
+        {
+            IsCorroded = true; //
+            corrodeDamageMultiplier = multiplier; //
+            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentCorrodeColor; // [!] 应用颜色
+        }
+        else
+        {
+            IsCorroded = false; //
+            corrodeDamageMultiplier = 1.0f; //
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] 恢复颜色
+        }
+    }
+    private IEnumerator CorrodeRoutine(float multiplier, float duration, Color color) // [!] 传递颜色
+    {
+        IsCorroded = true; //
+        corrodeDamageMultiplier = multiplier; //
+        if (enemyRenderer != null) enemyRenderer.material.color = color; // [!] 应用颜色
+
+        yield return new WaitForSeconds(duration);
+
+        IsCorroded = false; //
+        corrodeDamageMultiplier = 1.0f; //
+        if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] 恢复颜色
+
+        activeStatusCoroutines.Remove(DebuffType.Corrode); //
+    }
+    public void ApplyPersistentWeaken(object source, float percentage)
+    {
+        if (persistentWeakenSources.Add(source))
+        {
+            UpdateWeakenState();
+        }
+    }
+    public void RemovePersistentWeaken(object source)
+    {
+        if (persistentWeakenSources.Remove(source))
+        {
+            UpdateWeakenState();
+        }
+    }
+    private void UpdateWeakenState()
+    {
+        if (persistentWeakenSources.Count > 0)
+        {
+            IsWeakened = true; //
+            weakenDamageMultiplier = 1.0f - 0.2f; // 假设减伤20% (TODO: 从 source 读取)
+        }
+        else
+        {
+            IsWeakened = false; //
+            weakenDamageMultiplier = 1.0f; //
+        }
+    }
+
+    private IEnumerator StunRoutine(float duration, GameObject vfxToUse)
     {
         IsStunned = true;
 
-        GameObject stunVfxInstance = null;
-        if (stunVfxPrefab != null)
+        if (vfxToUse != null && stunVfxInstance == null)
         {
-            // 在敌人头顶或中心生成特效，并将其设为子物体
-            stunVfxInstance = Instantiate(stunVfxPrefab, transform.position, Quaternion.identity, transform);
+            stunVfxInstance = Instantiate(vfxToUse, transform.position, Quaternion.identity, transform);
         }
-        // 停止两种可能的 AI 脚本
-        if (enemyAI != null) enemyAI.SetStunned(true);
-        if (straightMoverAI != null) straightMoverAI.SetStunned(true);
 
-        // (可选) 在这里附加一个眩晕的粒子特效
+        if (enemyAI != null) enemyAI.SetStunned(true); //
+        if (straightMoverAI != null) straightMoverAI.SetStunned(true); //
 
         yield return new WaitForSeconds(duration);
 
         IsStunned = false;
 
-        // 恢复两种可能的 AI 脚本
-        if (enemyAI != null) enemyAI.SetStunned(false);
-        if (straightMoverAI != null) straightMoverAI.SetStunned(false);
+        if (enemyAI != null) enemyAI.SetStunned(false); //
+        if (straightMoverAI != null) straightMoverAI.SetStunned(false); //
+
+        if (persistentSlowSources.Count > 0) //
+        {
+            // 重新应用光环 的减速 效果
+            UpdateSlowState(); //
+        }
+        else
+        {
+            // (如果没有任何光环 效果，则安全地重置动画速度)
+            if (animator != null) animator.speed = 1f;
+        }
 
         if (stunVfxInstance != null)
         {
             Destroy(stunVfxInstance);
+            stunVfxInstance = null;
         }
 
-        // (可选) 在这里移除眩晕的粒子特效
-
-        activeStatusCoroutines.Remove(UpgradeType.Stun);
+        activeStatusCoroutines.Remove(DebuffType.Stun); //
     }
 
-    private IEnumerator SlowRoutine(float slowPercentage, float duration)
+    private IEnumerator SlowRoutine(float slowPercentage, float duration, Color newColor)
     {
-        if (enemyAI == null) yield break;
+        // (检查 enemyAI 和 straightMoverAI 是否为 null)
+        if (enemyAI == null && straightMoverAI == null) yield break;
 
-        Debug.Log($"{gameObject.name} 被减速 {slowPercentage * 100}%，持续 {duration} 秒。");
+        float speedMultiplier = Mathf.Max(0, 1f - slowPercentage);
 
-        float originalSpeed = enemyAI.GetOriginalMoveSpeed();
-        // 应用减速，确保速度不会低于0
-        enemyAI.SetMoveSpeed(Mathf.Max(0, originalSpeed * (1f - slowPercentage)));
+        // 1. 减速移动
+        if (enemyAI != null)
+        {
+            float originalSpeed = enemyAI.GetOriginalMoveSpeed(); //
+            enemyAI.SetMoveSpeed(originalSpeed * speedMultiplier); //
+        }
+        if (straightMoverAI != null)
+        {
+            // (确保你的 StraightMoverAI 也有 GetOriginalMoveSpeed 和 SetMoveSpeed)
+        }
 
-        // （可选）在这里可以改变敌人的颜色或添加冰霜特效
-        GetComponentInChildren<Renderer>().material.color = Color.cyan;
+        // 2. 减速动画
+        if (animator != null)
+        {
+            animator.speed = speedMultiplier;
+        }
+
+        // 3. 改变颜色
+        if (enemyRenderer != null)
+        {
+            enemyRenderer.material.color = newColor;
+        }
 
         yield return new WaitForSeconds(duration);
 
-        // 持续时间结束后，恢复原始速度
-        Debug.Log($"{gameObject.name} 的减速效果结束。");
-        enemyAI.SetMoveSpeed(originalSpeed);
+        if (persistentSlowSources.Count > 0) //
+        {
+            // (光环 仍在激活，所以这个瞬时协程不应该重置状态，
+            //  它只需要停止自己即可)
+            activeStatusCoroutines.Remove(DebuffType.Slow); //
+            yield break; // 提前退出
+        }
 
-        // （可选）恢复颜色和特效
-        GetComponentInChildren<Renderer>().material.color = Color.white;
+        // 持续时间结束后，恢复
+        if (enemyAI != null)
+        {
+            enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed()); //
+        }
+        if (animator != null)
+        {
+            animator.speed = 1f;
+        }
+        if (enemyRenderer != null)
+        {
+            enemyRenderer.material.color = originalColor;
+        }
 
-        activeStatusCoroutines.Remove(UpgradeType.MoveSpeed);
+        activeStatusCoroutines.Remove(DebuffType.Slow);
     }
 
-    private IEnumerator BurnRoutine(int damagePerTick, float duration, float tickInterval)
+    private IEnumerator BurnRoutine( )
     {
-        Debug.Log($"<color=orange>[StatusEffectReceiver] 燃燒協程(BurnRoutine)已啟動，目標: {gameObject.name}</color>"); Debug.Log($"<color=orange>[StatusEffectReceiver] 燃燒協程(BurnRoutine)已啟動，目標: {gameObject.name}</color>");
         IsBurning = true;
-        float timer = 0f;
 
-        while (timer < duration)
+        // 1. 启动特效
+        if (burnVfxPrefab != null && burnVfxInstance == null)
         {
-            // 等待一個 Tick 的間隔
-            yield return new WaitForSeconds(tickInterval);
-            timer += tickInterval;
+            burnVfxInstance = Instantiate(burnVfxPrefab, transform.position, Quaternion.identity, transform);
+        }
 
-            if (enemyHealth != null && !enemyHealth.IsDead)
+        // (使用类级变量)
+        float tickTimer = currentBurnTickInterval;
+
+        while (burnDurationRemaining > 0)
+        {
+            // 1. 等待
+            float waitTime = Mathf.Min(tickTimer, burnDurationRemaining);
+            yield return new WaitForSeconds(waitTime);
+
+            burnDurationRemaining -= waitTime;
+            tickTimer -= waitTime;
+
+            // 2. 造成伤害
+            if (tickTimer <= 0.01f)
             {
-                Debug.Log($"{gameObject.name} 受到燃燒傷害: {damagePerTick}");
-                // 燃燒傷害的攻擊者可以設為 null 或一個代表“環境”的物件
-                enemyHealth.TakeDamage(damagePerTick, transform.position, null);
-            }
-            else
-            {
-                // 如果敵人在燃燒期間死亡，提前結束協程
-                break;
+                if (enemyHealth != null && !enemyHealth.IsDead)
+                {
+                    enemyHealth.TakeDamage(currentBurnDamagePerTick, transform.position, null, AttackType.Standard, null, null, currentBurnSource);
+                }
+                else
+                {
+                    break; // 目标死亡
+                }
+                tickTimer = currentBurnTickInterval; // 重置跳字计时器
             }
         }
 
-        IsBurning = false;
-        activeStatusCoroutines.Remove(UpgradeType.AoeDamage);
-        // Debug.Log($"{gameObject.name} 的燃燒效果結束。");
+        // 3. 结束燃烧
+        StopBurn();
     }
 }

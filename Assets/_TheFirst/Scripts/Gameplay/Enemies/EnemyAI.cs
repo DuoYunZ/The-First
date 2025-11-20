@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion }
+    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion, MeleeAttacking } // <-- [新增] MeleeAttacking
     private AIState _currentState = AIState.Chasing;
     public AIState CurrentState => _currentState;
 
@@ -33,6 +33,8 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("每次追逐的持续时间范围（秒）")]
     public Vector2 chaseDurationRange = new Vector2(3f, 7f);
 
+    private Coroutine knockbackCoroutine;
+
 
     private Transform playerTransform = null;
     private NavMeshAgent agent;
@@ -41,6 +43,7 @@ public class EnemyAI : MonoBehaviour
     // --- 新增：動畫相關 ---
     private Animator animator;
 
+    private StatusEffectReceiver statusReceiver; // <--- vvv 新增
     private float stateTimer; // 当前状态的剩余时间
 
     // --- 【新增】用于目标点偏移的变量 ---
@@ -56,6 +59,7 @@ public class EnemyAI : MonoBehaviour
         rb = GetComponent<Rigidbody>(); // 【新增】获取 Rigidbody 组件
         animator = GetComponentInChildren<Animator>();
         explosionAttackScript = GetComponent<EnemyExplosionAttack>(); // 【新增】获取爆炸攻击脚本
+        statusReceiver = GetComponent<StatusEffectReceiver>();
     }
     void Start()
     {
@@ -63,6 +67,23 @@ public class EnemyAI : MonoBehaviour
         EnterChaseState();
     }
 
+    public void SetMeleeAttackingState(bool isAttacking)
+    {
+        if (isAttacking)
+        {
+            _currentState = AIState.MeleeAttacking;
+            // 我们信任 EnemyMeleeAttack 脚本会处理 agent.isStopped
+        }
+        else
+        {
+            // 只有当我们处于攻击状态时，才切换回追逐
+            if (_currentState == AIState.MeleeAttacking)
+            {
+                _currentState = AIState.Chasing;
+                // MeleeAttack 脚本会恢复 agent.isStopped
+            }
+        }
+    }
     public void InitializeEnemy(float speed, int damage)
     {
         _touchDamage = damage;
@@ -107,12 +128,68 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
+    {
+        // 眩晕时 或已经在被击退时，不触发
+        if (isStunned || knockbackCoroutine != null) return;
+
+        knockbackCoroutine = StartCoroutine(KnockbackRoutine(forceDirection * forceAmount, duration));
+    }
+
+    private IEnumerator KnockbackRoutine(Vector3 force, float duration)
+    {
+        // --- vvv 新增 Debug 1 vvv ---
+        Debug.Log($"<color=orange>KnockbackRoutine: 启动！施加的力: {force.magnitude}</color>");
+        // --- ^^^ 新增结束 ^^^ ---
+
+        // 1. 禁用 NavMeshAgent 对位置的控制
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+        agent.enabled = false;
+
+        // 2. 启用 Rigidbody 并施加力
+        rb.isKinematic = false;
+        rb.AddForce(force, ForceMode.Impulse);
+
+        // --- vvv 新增 Debug 2 vvv ---
+        Debug.Log($"<color=orange>KnockbackRoutine: AddForce 已执行！当前 Rigidbody 速度: {rb.velocity.magnitude}</color>");
+        // --- ^^^ 新增结束 ^^^ ---
+
+        // 3. 等待击退效果结束
+        yield return new WaitForSeconds(duration);
+
+        // --- vvv 新增 Debug 3 vvv ---
+        Debug.Log($"<color=orange>KnockbackRoutine: {duration}秒 结束，准备恢复 Agent</color>");
+        // --- ^^^ 新增结束 ^^^ ---
+
+        // 4. 恢复 Rigidbody 和 NavMeshAgent
+        rb.isKinematic = true;
+        agent.enabled = true;
+
+        // 5. 将 Agent“传送”到物理模拟结束的新位置
+        if (agent.isOnNavMesh)
+        {
+            agent.Warp(transform.position);
+            agent.isStopped = false;
+        }
+
+        knockbackCoroutine = null;
+    }
+
     // --- 新增：一个公共方法来获取原始速度 ---
     public float GetOriginalMoveSpeed() => _originalMoveSpeed;
 
     void Update()
     {
         if (isStunned) return;
+        if (knockbackCoroutine != null)
+        {
+            // 协程正在处理击退，Update() 应该停止干预
+            return;
+        }
 
         if (playerTransform == null)
         {
@@ -127,10 +204,9 @@ public class EnemyAI : MonoBehaviour
         }
 
         // 【修改】当处于特殊攻击状态时，暂停常规的追逐/停顿逻辑
-        if (_currentState == AIState.JumpingAttack || _currentState == AIState.PreparingExplosion)
+        if (_currentState == AIState.MeleeAttacking)
         {
-            // 在这些状态下，所有行为都由协程和攻击脚本控制
-            return;
+            return; // 暂停所有移动和动画逻辑
         }
 
         if (!agent.isOnNavMesh) return;
@@ -269,8 +345,16 @@ public class EnemyAI : MonoBehaviour
             Health playerHealth = other.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                // 【核心修改】在调用TakeDamage时，加入 AttackType.Standard
-                playerHealth.TakeDamage(_touchDamage, transform.position, this.gameObject, AttackType.Standard);
+                // --- vvv [ 核心修改 ] vvv ---
+                // 1. 获取弱化乘数 (如果 receiver 为 null, 默认为 1.0)
+                float multiplier = (statusReceiver != null) ? statusReceiver.weakenDamageMultiplier : 1.0f;
+
+                // 2. 计算最终伤害
+                int finalDamage = Mathf.RoundToInt(_touchDamage * multiplier);
+
+                // 3. 使用最终伤害
+                playerHealth.TakeDamage(finalDamage, transform.position, this.gameObject, AttackType.Standard); //
+                // --- ^^^ [ 核心修改 ] ^^^ ---
 
                 _canDealDamage = false;
                 StartCoroutine(DamageCooldownRoutine());

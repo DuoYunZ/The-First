@@ -9,7 +9,9 @@ public enum EnergyStoneEffectType
     ApplyStun,       // 施加眩晕 (来自大地石)
     ApplyChain,      // 施加连锁 (来自雷电石)
     ApplyKnockback,  // 施加击退 (来自风暴石)
+    ApplyWeaken,     // 增加防御 
     ApplyCorrode,    // 施加腐蚀 (来自剧毒石)
+    ApplyMagnet,
 
     // 机制类
     AddHoming,       // 附加追踪

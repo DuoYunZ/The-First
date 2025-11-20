@@ -26,6 +26,14 @@ public class PlayerLevelManager : MonoBehaviour
     }
     #endregion
 
+    public enum LevelingScheme
+    {
+        Quadratic,      // 二次方增长 (推荐：适合大多数肉鸽，后期平滑变难)
+        Exponential,    // 指数增长 (极难：后期几乎升不动)
+        Linear,         // 线性 (简单：后期升级太快，不推荐)
+        CustomCurve     // 自定义曲线 (最灵活：在 Inspector 面板画线)
+    }
+
     [Header("等级与经验")]
     public int currentLevel = 1;
     public int currentExperience = 0;
@@ -33,10 +41,29 @@ public class PlayerLevelManager : MonoBehaviour
 
     public event Action<int> OnLevelUp;
 
-    // (可选) 用于计算下一级所需经验的曲线或公式参数
-    // public AnimationCurve xpCurve;
-    // public float baseXp = 10;
-    // public float levelMultiplier = 1.5f;
+    [Header("经验曲线配置")]
+    [Tooltip("选择经验增长的计算公式")]
+    public LevelingScheme levelingScheme = LevelingScheme.Quadratic;
+
+    [Header("参数设置 (仅对非曲线模式有效)")]
+    [Tooltip("基础经验值 (1级升2级大概需要多少)")]
+    public int baseXp = 10;
+
+    [Tooltip("线性增长系数 (影响前期节奏)")]
+    public float linearFactor = 10f;
+
+    [Tooltip("二次方/指数增长系数 (影响后期节奏，数值越大约难)")]
+    public float powerFactor = 1.5f;
+
+    [Header("自定义曲线 (仅 CustomCurve 模式有效)")]
+    [Tooltip("X轴=等级, Y轴=所需经验。请将X轴范围设为 1~100 (或你的最大等级)")]
+    public AnimationCurve xpCurve = new AnimationCurve(new Keyframe(1, 10), new Keyframe(100, 10000));
+
+    private void Start()
+    {
+        // 初始化第一级所需的经验
+        experienceToNextLevel = CalculateNextLevelXP(currentLevel);
+    }
 
     /// <summary>
     /// 增加经验值。
@@ -84,12 +111,44 @@ public class PlayerLevelManager : MonoBehaviour
     /// </summary>
     private int CalculateNextLevelXP(int level)
     {
-        // 简单的线性增长 + 固定基础值 (你可以自定义更复杂的公式)
-        return 10 + (level - 1) * 5;
-        // 或者指数增长: return Mathf.RoundToInt(baseXp * Mathf.Pow(levelMultiplier, level - 1));
+        float nextReq = 0;
+
+        switch (levelingScheme)
+        {
+            case LevelingScheme.Linear:
+                // 公式: Base + Level * Linear
+                // 缺点: 后期太容易升级
+                nextReq = baseXp + (level * linearFactor);
+                break;
+
+            case LevelingScheme.Quadratic:
+                // 公式: Base + Level * Linear + Level^2 * Power
+                // 优点: 完美契合割草游戏。前期线性，后期随着杀怪数平方级增长，难度适中。
+                // 示例: Lvl 10=160xp, Lvl 50=4260xp (假设 param=1.5)
+                nextReq = baseXp + (level * linearFactor) + (Mathf.Pow(level, 2) * powerFactor);
+                break;
+
+            case LevelingScheme.Exponential:
+                // 公式: Base * Power^(Level-1)
+                // 缺点: 极容易导致数值溢出或后期完全升不动
+                nextReq = baseXp * Mathf.Pow(powerFactor, level - 1);
+                break;
+
+            case LevelingScheme.CustomCurve:
+                // 直接从图表中读取
+                nextReq = xpCurve.Evaluate(level);
+                break;
+        }
+
+        return Mathf.Max(10, Mathf.FloorToInt(nextReq)); // 确保至少需要10点，防止负数或0
     }
 
     // (可选) 获取当前等级等信息的方法
+    public float GetXPProgressNormalized()
+    {
+        if (experienceToNextLevel == 0) return 1f;
+        return (float)currentExperience / experienceToNextLevel;
+    }
     public int GetLevel() => currentLevel;
     public int GetCurrentXP() => currentExperience;
     public int GetXPToNextLevel() => experienceToNextLevel;

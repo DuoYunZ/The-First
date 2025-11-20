@@ -18,6 +18,10 @@ public class WeaponController : MonoBehaviour
     // 【修改】我们不再需要将其设为 public，将在代码中自动查找
     private Transform weaponMountPoint;
 
+    [Header("静态/自带武器")]
+    [Tooltip("将玩家身上自带的“刀光” 武器（即挂载了 PlayerBladeAttack 和 WeaponPart 脚本的那个GameObject）拖到这里")]
+    public WeaponPart builtInBladeWeapon;
+
     [Header("自动开火设置")]
     public bool autoFire = true;
 
@@ -114,6 +118,11 @@ public class WeaponController : MonoBehaviour
             weaponPartInstance = part
         };
         ownedWeapons.Add(newWeapon);
+
+        if (WeaponUI.Instance != null)
+        {
+            WeaponUI.Instance.UpdateWeaponIcons();
+        }
 
         part.Activate();
         Debug.Log($"[WeaponController] 成功装备全新武器: '{weaponData.weaponName}'。");

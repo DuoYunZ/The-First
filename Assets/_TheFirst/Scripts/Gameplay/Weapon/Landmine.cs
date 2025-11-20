@@ -11,18 +11,21 @@ public class Landmine : MonoBehaviour
     private GameObject attacker; // 伤害来源
     private LayerMask damageableLayers;
 
+    private WeaponPart launcher; // 用于获取武器名称进行统计
+
     private bool isArmed = false;
 
     /// <summary>
     /// 由WeaponPart在实例化后调用，用于传递属性
     /// </summary>
-    public void Initialize(int damage, float radius, float armingTime, float duration, GameObject attacker, GameObject vfxPrefab, LayerMask layersToDamage)
+    public void Initialize(int damage, float radius, float armingTime, float duration, GameObject attacker, GameObject vfxPrefab, LayerMask layersToDamage, WeaponPart launcher)
     {
         this.damage = damage;
         this.radius = radius;
         this.attacker = attacker;
         this.explosionVfxPrefab = vfxPrefab;
         this.damageableLayers = layersToDamage;
+        this.launcher = launcher;
 
         // 在指定时间后激活
         StartCoroutine(ArmingRoutine(armingTime));
@@ -34,8 +37,8 @@ public class Landmine : MonoBehaviour
     {
         yield return new WaitForSeconds(time);
         isArmed = true;
-        // (可选) 在这里可以播放一个“已激活”的提示音或视觉效果
-        // GetComponent<Renderer>().material.color = Color.red; 
+        
+        GetComponent<Renderer>().material.color = Color.red; 
     }
 
     void OnTriggerEnter(Collider other)
@@ -62,8 +65,10 @@ public class Landmine : MonoBehaviour
             Health enemyHealth = hit.GetComponentInParent<Health>();
             if (enemyHealth != null && !enemyHealth.IsDead)
             {
+                string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "Landmine";
                 // 对范围内的所有敌人造成伤害
-                enemyHealth.TakeDamage(damage, transform.position, attacker, AttackType.Standard);
+                enemyHealth.TakeDamage(damage, transform.position, attacker, AttackType.Standard, null, null, weaponName);
+                
             }
         }
 

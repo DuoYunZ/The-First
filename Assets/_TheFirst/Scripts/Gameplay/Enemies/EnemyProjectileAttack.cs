@@ -41,6 +41,9 @@ public class EnemyProjectileAttack : MonoBehaviour
     private NavMeshAgent agent; 
     private bool isInAttackRange = false; // 用于跟踪玩家是否在攻击范围内
 
+    private Coroutine attackCoroutine;
+    private bool isAttacking = false;
+
     void Start()
     {
         if (GameManager.Instance != null)
@@ -59,7 +62,17 @@ public class EnemyProjectileAttack : MonoBehaviour
 
     void Update()
     {
-        if (playerTarget == null) return;
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        if (playerTarget == null)
+        {
+            // 可选：如果希望怪物停下，可以重置状态
+            if (isAttacking) InterruptAttack();
+            return;
+        }
 
         attackCooldownTimer -= Time.deltaTime;
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
@@ -83,52 +96,81 @@ public class EnemyProjectileAttack : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
 
             // 3. 检查冷却并触发攻击协程
-            if (attackCooldownTimer <= 0)
+            if (attackCooldownTimer <= 0 && !isAttacking)
             {
-                StartCoroutine(AttackSequence());
+                // 保存协程引用，以便我们可以打断它
+                attackCoroutine = StartCoroutine(AttackSequence());
             }
+            // --- ^^^ [修改] ^^^ ---
         }
         else
         {
-            if (agent.isStopped == true)
+            // --- vvv [修改] vvv ---
+            // (增加 isAttacking 检查，防止在攻击动画播放时恢复移动)
+            if (agent.isStopped == true && !isAttacking)
             {
-                agent.isStopped = false; // 修改
+                agent.isStopped = false;
             }
+            // --- ^^^ [修改] ^^^ ---
         }
     }
 
     IEnumerator AttackSequence()
     {
-        // 【核心修改 2】攻击协程现在只负责攻击动作本身
-        attackCooldownTimer = 1f / fireRate; // 在攻击流程开始时就重置冷却
+        isAttacking = true; // [!] 标记攻击开始
+        attackCooldownTimer = 1f / fireRate;
 
-        // 1. 触发攻击动画
-        // 我们需要在Animator中创建一个名为 "Attack" 的Trigger参数
-        animator.SetTrigger("Attack");
+        animator.SetTrigger("Attack"); //
 
-        // 2. 等待攻击动画播放
-        yield return new WaitForSeconds(attackAnimationDuration);
+        yield return new WaitForSeconds(attackAnimationDuration); //
 
         // 3. 动画播放完毕后，发射子弹
-        if (playerTarget != null && isInAttackRange) // 增加检查，如果玩家在动画期间跑掉了，就不发射
+        if (playerTarget != null && isInAttackRange && agent.isActiveAndEnabled) // (增加 agent 检查)
         {
-            // 发射方向基于发射点的实时朝向
             Vector3 finalDirection = (playerTarget.position - firePoint.position).normalized;
             GameObject bullet = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(finalDirection));
             Projectile projectileScript = bullet.GetComponent<Projectile>();
 
             if (projectileScript != null)
             {
-                // 【核心修改】将两个特效都传递给子弹
-                projectileScript.InitializeAsStraight(
+                projectileScript.InitializeAsStraight( //
                     finalDirection, projectileSpeed, projectileDamage, true, 1, 5f,
-                    this.shieldHitVfxPrefab,   // 护盾特效
-                    this.defaultHitVfxPrefab,  // 常规特效
+                    this.shieldHitVfxPrefab,
+                    this.defaultHitVfxPrefab,
                     0, 0, 0,
                     0, 0,
                     projectileAttackType
                 );
             }
         }
+
+        isAttacking = false; // [!] 标记攻击结束
+        attackCoroutine = null;
+    }
+    public void InterruptAttack()
+    {
+        if (!isAttacking) return; // 没有在攻击，不打断
+
+        Debug.Log($"<color=yellow>[{gameObject.name}] Projectile Attack INTERRUPTED!</color>");
+
+        if (attackCoroutine != null)
+        {
+            StopCoroutine(attackCoroutine); // [!] 停止攻击协程
+        }
+
+        // 立即重置状态
+        isAttacking = false;
+        attackCoroutine = null;
+        attackCooldownTimer = 1f / fireRate; // 让它进入冷却
+
+        // 重置动画器
+        if (animator != null)
+        {
+            animator.ResetTrigger("Attack"); //
+        }
+
+        // (我们不需要在这里设置 agent.isStopped = false, 
+        //  因为 Stun/Knockback 会保持它停止，
+        //  或者 Update() 会在下一帧处理它)
     }
 }

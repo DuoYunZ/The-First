@@ -234,6 +234,22 @@ public class EnemySpawner : MonoBehaviour
                 else { Debug.LogWarning($"怪物 {type.name} 被标记为 StraightLineStampede 但缺少 StraightMoverAI 脚本！", enemyGO); }
                 enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type);
                 break;
+
+            case AIType.Pinball: //
+                PinballAI pinballAI = enemyGO.GetComponent<PinballAI>();
+                if (pinballAI != null)
+                {
+                    // [!] 修复：使用 'type.lifetime' 和 'Mathf.RoundToInt(finalDamage)'
+                    pinballAI.Initialize(finalSpeed, type.lifetime, Mathf.RoundToInt(finalDamage)); //
+                }
+                else
+                {
+                    Debug.LogError($"怪物预制件 {enemyGO.name} 缺少 PinballAI 脚本！"); //
+                }
+                // [!] 修复：Pinball 怪物也需要初始化 Health
+                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type); //
+                break;
+
             case AIType.Chasing:
             default:
                 if (type.isSuicideBomber) { enemyGO.GetComponent<EnemyExplosionAttack>()?.Initialize(type); }
@@ -241,6 +257,8 @@ public class EnemySpawner : MonoBehaviour
                 enemyGO.GetComponent<EnemyAI>()?.InitializeEnemy(finalSpeed, Mathf.RoundToInt(finalDamage));
                 if (type.isBoss && enemyGO.GetComponent<Health>() != null) { /* WaveManager.Instance?.RegisterBossInstance(enemyGO.GetComponent<Health>()); */ }
                 break;
+
+
         }
         Animator animator = enemyGO.GetComponentInChildren<Animator>();
         if (animator != null) { AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0); animator.Play(stateInfo.fullPathHash, 0, Random.Range(0f, 1f)); }

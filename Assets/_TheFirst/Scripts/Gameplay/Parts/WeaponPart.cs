@@ -1,6 +1,7 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public class WeaponPart : MonoBehaviour
 {
@@ -25,12 +26,29 @@ public class WeaponPart : MonoBehaviour
     public float fireSoundDelay = -0.05f;
 
     [Header("光环状态 (运行时)")]
-    private List<Health> targetsInAura = new List<Health>();
+    private float auraDebuffRefreshTimer = 0f; //
+    private HashSet<StatusEffectReceiver> aura_ActiveSlows = new HashSet<StatusEffectReceiver>(); //
+    private HashSet<StatusEffectReceiver> aura_ActiveWeaKens = new HashSet<StatusEffectReceiver>(); //
+    private HashSet<StatusEffectReceiver> aura_ActiveCorrodes = new HashSet<StatusEffectReceiver>(); // <--- [新增]
     private float auraTickTimer = 0f;
     private SphereCollider auraCollider;
     private GameObject auraVfxInstance;
+    [Tooltip("光环只应检测这些层上的敌人")]
+    public LayerMask enemyLayerMask; // <--- vvv 新增
+
+    [Tooltip("光环磁铁应检测的掉落物层")]
+    public LayerMask pickupLayerMask;
 
     private AudioSource audioSource;
+
+    [Header("能量石 (运行时)")]
+    [Tooltip("此武器当前镶嵌的能量石")]
+    public EnergyStoneSO currentStone { get; private set; }
+
+    private float auraKnockbackTimer = 0f;
+
+    private float auraMagnetTimer = 0f;
+
 
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
@@ -79,6 +97,10 @@ public class WeaponPart : MonoBehaviour
     {
         if (fireCooldown > 0f) fireCooldown -= Time.deltaTime;
         if (orbitalCooldownTimer > 0f) orbitalCooldownTimer -= Time.deltaTime;
+        if (auraKnockbackTimer > 0f) auraKnockbackTimer -= Time.deltaTime; //
+        if (auraDebuffRefreshTimer > 0f) auraDebuffRefreshTimer -= Time.deltaTime;
+        // --- ^^^ [新增] ^^^ ---
+
         if (beamCooldownTimer > 0f)
         {
             beamCooldownTimer -= Time.deltaTime;
@@ -105,6 +127,9 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
         {
             HandleAuraDamageTick();
+            HandleAuraKnockback();
+            HandleAuraPersistentDebuffs();
+            HandleAuraMagnet();
         }
     }
 
@@ -112,70 +137,76 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null) return;
 
-        // 计算最终半径 (计入玩家加成)
-        float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier; //
-
-        if (auraCollider != null)
+        if (auraCollider == null)
         {
-            auraCollider.radius = finalRadius;
+            Debug.LogError("Aura WeaponPart 预制件上缺少 SphereCollider!", this);
         }
-        else { Debug.LogError("Aura WeaponPart 预制件上缺少 SphereCollider!", this); }
 
-        // 实例化视觉特效 (如果提供了)
-        if (StatBlock.auraVfxPrefab != null)
-        {
-            // 作为子物体实例化，确保它跟随 WeaponPart (即玩家)
-            auraVfxInstance = Instantiate(StatBlock.auraVfxPrefab, transform.position, Quaternion.identity, transform);
-            // 调整VFX的缩放以匹配碰撞器半径 (这里的 '2' 是一个通用值，你可能需要微调)
-            auraVfxInstance.transform.localScale = Vector3.one * finalRadius * StatBlock.vfxBaseScaleMultiplier;
-        }
+        // 立即刷新状态来设置半径和VFX
+        RefreshAura();
 
         auraTickTimer = 0; // 立即触发第一次伤害
-        targetsInAura.Clear();
+        
     }
 
-    void OnTriggerEnter(Collider other)
-    {
-        // 确保此逻辑只在光环武器上运行
-        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
 
-        Health enemyHealth = other.GetComponentInParent<Health>();
-        // 检查是否是敌人、未死亡、且不在列表中
-        if (enemyHealth != null && !enemyHealth.IsDead && other.CompareTag("Enemy")) //
-        {
-            if (!targetsInAura.Contains(enemyHealth))
-            {
-                targetsInAura.Add(enemyHealth);
-            }
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        // 确保此逻辑只在光环武器上运行
-        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
-
-        Health enemyHealth = other.GetComponentInParent<Health>();
-        if (enemyHealth != null)
-        {
-            if (targetsInAura.Contains(enemyHealth))
-            {
-                targetsInAura.Remove(enemyHealth);
-            }
-        }
-    }
+   
 
     public void RefreshAura()
     {
-        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return; //
 
-        float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier; //
+        // 1. 计算最终半径 (计入玩家和石头加成)
+        float stoneScaleBonus = (currentStone != null) ? currentStone.scaleModifier : 0f;
+        float finalRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + stoneScaleBonus); //
 
-        if (auraCollider != null) { auraCollider.radius = finalRadius; }
+        // 2. 更新碰撞器
+        if (auraCollider != null) { auraCollider.radius = finalRadius; } //
 
-        if (auraVfxInstance != null)
+        // 3. 确定使用哪个VFX Prefab和缩放乘数
+        GameObject prefabToUse = StatBlock.auraVfxPrefab; //
+        float scaleMultiplier = StatBlock.vfxBaseScaleMultiplier; //
+
+        if (currentStone != null)
         {
-            auraVfxInstance.transform.localScale = Vector3.one * finalRadius * StatBlock.vfxBaseScaleMultiplier;
+            Debug.Log($"<color=cyan>[RefreshAura] 检查石头: {currentStone.stoneName}</color>"); //
+
+            if (currentStone.auraVfxOverride != null) //
+            {
+                Debug.Log($"<color=green>[RefreshAura] 成功！找到覆盖VFX: {currentStone.auraVfxOverride.name}</color>"); //
+                prefabToUse = currentStone.auraVfxOverride; //
+                scaleMultiplier = currentStone.overrideVfxScaleMultiplier; //
+            }
+            else
+            {
+                // [!] 这就是 Bug 所在
+                Debug.LogWarning($"<color=yellow>[RefreshAura] 失败! 石头 '{currentStone.stoneName}' 的 AuraVfxOverride 字段是 NULL (None)。</color>");
+            }
+        }
+        else
+        {
+            Debug.Log("[RefreshAura] 检查: currentStone 为 null，使用默认VFX。");
+        }
+
+        // 4. 检查是否需要更换VFX
+        // (我们使用 .name 比较，因为实例化的 '(Clone)' 后缀会被我们移除)
+        bool isWrongVfx = (auraVfxInstance != null && (auraVfxInstance.name.StartsWith(prefabToUse.name) == false));
+
+        if (auraVfxInstance == null || (isWrongVfx && prefabToUse != null))
+        {
+            if (auraVfxInstance != null) Destroy(auraVfxInstance); // 销毁旧的
+
+            if (prefabToUse != null)
+            {
+                auraVfxInstance = Instantiate(prefabToUse, transform.position, Quaternion.identity, transform); //
+                auraVfxInstance.name = prefabToUse.name; // 存储预制件名称以供比较
+            }
+        }
+
+        // 5. 更新VFX缩放
+        if (auraVfxInstance != null) //
+        {
+            auraVfxInstance.transform.localScale = Vector3.one * finalRadius * scaleMultiplier;
         }
     }
     private void HandleAuraDamageTick()
@@ -183,30 +214,467 @@ public class WeaponPart : MonoBehaviour
         auraTickTimer -= Time.deltaTime;
         if (auraTickTimer <= 0f)
         {
-            if (StatBlock == null) return;
-            auraTickTimer = StatBlock.baseAreaTickInterval; // 重置计时器
+            if (StatBlock == null) return; //
 
-            // 计算最终伤害
-            int finalDamage = Mathf.RoundToInt(StatBlock.baseAreaDamagePerTick * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus); //
+            // --- vvv [ 核心修复 3 ] vvv ---
+            // (重新添加 finalDamage 和 chainedTargets 的声明)
 
-            // 从后往前遍历列表，防止在移除时出错
-            for (int i = targetsInAura.Count - 1; i >= 0; i--)
+            float stoneFireRateBonus = (currentStone != null) ? currentStone.fireRateModifier : 0f; //
+            float finalTickInterval = StatBlock.baseAreaTickInterval * (1f - stoneFireRateBonus); //
+            auraTickTimer = finalTickInterval;
+
+            // [!] 'finalDamage' 的声明在这里
+            float stoneDamageBonus = (currentStone != null) ? currentStone.damageModifier : 0f; //
+            int finalDamage = Mathf.RoundToInt( //
+                (StatBlock.baseAreaDamagePerTick * (PlayerStats.Instance.aoeDamageMultiplier + stoneDamageBonus)) + //
+                PlayerStats.Instance.flatAoeDamageBonus //
+            );
+
+            // [!] 'chainedTargets' 的声明在这里
+            List<Health> chainedTargets = null; //
+            if (currentStone != null && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) //
             {
-                Health target = targetsInAura[i];
+                chainedTargets = ApplyAuraChainDamage(finalDamage); //
+            }
+            // --- ^^^ [ 核心修复 3 ] ^^^ ---
+
+            if (auraCollider == null) return; //
+            if (enemyLayerMask == 0) return; //
+
+            Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
+
+            foreach (Collider hit in hits)
+            {
+                if (!hit.CompareTag("Enemy")) continue; //
+
+                Health target = hit.GetComponentInParent<Health>(); //
                 if (target == null || target.IsDead) //
                 {
-                    targetsInAura.RemoveAt(i);
                     continue;
                 }
 
-                // 对范围内的每个目标造成伤害
-                target.TakeDamage(finalDamage, target.transform.position, this.gameObject, AttackType.Standard); //
+                // (使用 'finalDamage' 和 'chainedTargets')
+                if (chainedTargets == null || !chainedTargets.Contains(target))
+                {
+                    // [修复 3] 传入 StatBlock.weaponName
+                    target.TakeDamage(finalDamage, target.transform.position, this.gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
+                }
+
+                if (currentStone != null)
+                {
+                    StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>();
+                    if (receiver != null)
+                    {
+                        if (currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn) && Random.value <= currentStone.burnChance)
+                        {
+                            // [修复 4] 传入 StatBlock.weaponName 给 ApplyBurn
+                            receiver.ApplyBurn(currentStone.burnDamage, currentStone.burnDuration, currentStone.burnTickInterval, StatBlock.weaponName);
+                        }
+                    }
+                }
             }
         }
     }
 
+    public void ChainLightningFromTarget(Transform startTarget, int maxChains, int damage, float range)
+    {
+        if (startTarget == null || currentStone == null || (!currentStone.applyChain && !currentStone.applySmite)) //
+        {
+            return; // 安全检查
+        }
+
+        StartCoroutine(ChainLightningRoutine(startTarget, maxChains, damage, range, currentStone.chainVfxPrefab, currentStone.chainImpactVfxPrefab)); //
+    }
+    private IEnumerator ChainLightningRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange, GameObject chainVfx, GameObject impactVfx)
+    {
+        var hitEnemies = new List<Health>();
+        Vector3 lastHitPosition = currentTarget.position; // [!] 从第一个目标开始
+
+        while (currentTarget != null && remainingChains >= 0)
+        {
+            Vector3 currentTargetHitPoint = currentTarget.GetComponent<Health>()?.AimTargetPoint?.position ?? currentTarget.position; //
+            Health targetHealth = currentTarget.GetComponent<Health>(); //
+
+            if (targetHealth != null && !hitEnemies.Contains(targetHealth) && !targetHealth.IsDead) //
+            {
+                hitEnemies.Add(targetHealth);
+
+                // (我们假设第一个目标已经在 Projectile.cs 中受到了伤害，
+                //  这个协程只伤害 *后续* 目标)
+                if (hitEnemies.Count > 1)
+                {
+                    targetHealth.TakeDamage(damage, currentTargetHitPoint, this.gameObject, AttackType.Standard); //
+                }
+
+                // 播放连锁VFX (从上一个点到这个点)
+                if (chainVfx != null)
+                {
+                    var chainVFX_GO = Instantiate(chainVfx, Vector3.zero, Quaternion.identity); //
+                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetHitPoint); //
+                }
+                // 播放受击VFX
+                if (impactVfx != null)
+                {
+                    Instantiate(impactVfx, currentTargetHitPoint, Quaternion.identity); //
+                }
+            }
+
+            yield return new WaitForSeconds(0.05f); // 连锁之间的微小延迟
+
+            // (查找下一个目标... 逻辑保持不变)
+            Transform nextTarget = FindNextChainTarget(currentTargetHitPoint, chainRange, hitEnemies);
+            remainingChains--;
+            lastHitPosition = currentTargetHitPoint;
+            currentTarget = nextTarget;
+        }
+    }
+    private void HandleAuraPersistentDebuffs()
+    {
+        auraDebuffRefreshTimer -= Time.deltaTime;
+        if (auraDebuffRefreshTimer > 0f) return;
+        auraDebuffRefreshTimer = 0.25f; // 优化：每秒检查4次
+
+        if (currentStone == null || auraCollider == null || enemyLayerMask == 0)
+        {
+            ClearAllAuraDebuffs(); // 如果没有石头或碰撞器，清除所有
+            return;
+        }
+
+        bool stoneHasSlow = (currentStone != null) && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow); //
+        bool stoneHasWeaken = (currentStone != null) && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyWeaken); //
+        bool stoneHasCorrode = (currentStone != null) && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode); //
+
+        // 1. 获取半径内的所有敌人
+        HashSet<StatusEffectReceiver> enemiesInRadius = new HashSet<StatusEffectReceiver>();
+        Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
+
+        // --- vvv [ 核心修复 ] vvv ---
+        foreach (var hit in hits)
+        {
+            if (!hit.CompareTag("Enemy")) continue; //
+
+            // 1. 先获取 Health 组件并检查 IsDead
+            Health targetHealth = hit.GetComponentInParent<Health>();
+            if (targetHealth == null || targetHealth.IsDead) //
+            {
+                continue; // 跳过死亡或没有 Health 的物体
+            }
+
+            // 2. 只有在存活时，才获取 StatusEffectReceiver
+            StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>(); //
+            if (receiver != null)
+            {
+                enemiesInRadius.Add(receiver);
+            }
+        }
+        // --- ^^^ [ 核心修复 ] ^^^ ---
+
+        // --- 2. 处理减速 (Slow) ---
+        ProcessDebuffList(enemiesInRadius, aura_ActiveSlows, stoneHasSlow,
+            (receiver) => { receiver.ApplyPersistentSlow(this, currentStone.slowPercentage, currentStone.slowColor); }, //
+            (receiver) => { receiver.RemovePersistentSlow(this); }
+        );
+
+        // --- 3. 处理弱化 (Weaken) ---
+        ProcessDebuffList(enemiesInRadius, aura_ActiveWeaKens, stoneHasWeaken,
+            (receiver) => { receiver.ApplyPersistentWeaken(this, currentStone.weakenPercentage); }, //
+            (receiver) => { receiver.RemovePersistentWeaken(this); }
+        );
+
+        float finalCorrodeMultiplier = 1.0f;
+        if (stoneHasCorrode && currentStone != null)
+        {
+            int corrodeStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode); //
+            if (corrodeStoneCount >= 2) //
+            {
+                finalCorrodeMultiplier = currentStone.corrodeMultiplier_Stacked; // [!] 使用堆叠后的乘数
+            }
+            else
+            {
+                finalCorrodeMultiplier = currentStone.corrodeMultiplier; // [!] 使用基础乘数
+            }
+        }
+        // 4. 处理腐蚀 (Corrode)
+        ProcessDebuffList(enemiesInRadius, aura_ActiveCorrodes, stoneHasCorrode,
+            (receiver) => { receiver.ApplyPersistentCorrode(this, finalCorrodeMultiplier, currentStone.corrodeColor); }, //
+            (receiver) => { receiver.RemovePersistentCorrode(this); }
+        );
+    }
+
+    private void HandleAuraMagnet()
+    {
+        auraMagnetTimer -= Time.deltaTime;
+        if (auraMagnetTimer > 0f) return;
+        auraMagnetTimer = 0.5f; // 优化：每秒检查2次
+
+        if (currentStone == null || !currentStone.applyMagnet || auraCollider == null || pickupLayerMask == 0)
+        {
+            return;
+        }
+
+        // 1. 获取玩家 Transform (用于传递给掉落物)
+        Transform playerTransform = GameManager.Instance?.playerTransform;
+        if (playerTransform == null) return;
+
+        // 2. 计算磁力半径
+        // (光环的基础半径 + 能量石的额外百分比加成)
+        float finalRadius = auraCollider.radius * (1f + currentStone.magnetRadiusBonusPercent);
+
+        // 3. 扫描掉落物
+        Collider[] hits = Physics.OverlapSphere(transform.position, finalRadius, pickupLayerMask);
+
+        foreach (var hit in hits)
+        {
+            // 尝试获取经验球
+            ExperienceGem gem = hit.GetComponent<ExperienceGem>(); //
+            if (gem != null)
+            {
+                gem.TriggerMagnet(playerTransform);
+                continue; // 下一个
+            }
+
+            // 尝试获取金币
+            GoldPickup gold = hit.GetComponent<GoldPickup>(); //
+            if (gold != null)
+            {
+                gold.TriggerMagnet(playerTransform);
+            }
+        }
+    }
+
+    /// <summary>
+    /// (新增) 比较新旧列表并应用/移除debuff的通用帮助方法
+    /// </summary>
+    private void ProcessDebuffList(
+        HashSet<StatusEffectReceiver> enemiesInRadius,
+        HashSet<StatusEffectReceiver> activeList,
+        bool stoneHasEffect,
+        System.Action<StatusEffectReceiver> OnApply,
+        System.Action<StatusEffectReceiver> OnRemove)
+    {
+        if (!stoneHasEffect)
+        {
+            // 如果石头没有这个效果，移除所有
+            foreach (var receiver in activeList) { OnRemove(receiver); }
+            activeList.Clear();
+            return;
+        }
+
+        // 1. 应用新debuff (在范围内，但不在旧列表里)
+        foreach (var receiver in enemiesInRadius)
+        {
+            if (activeList.Add(receiver)) // Add() 只有在元素 *不* 存在时才返回 true
+            {
+                OnApply(receiver);
+            }
+        }
+
+        // 2. 移除旧debuff (在旧列表里，但不在范围内)
+        activeList.RemoveWhere(receiver =>
+        {
+            if (receiver == null || !enemiesInRadius.Contains(receiver))
+            {
+                OnRemove(receiver);
+                return true; // 从 activeList 中移除
+            }
+            return false;
+        });
+    }
+    private void ClearAllAuraDebuffs()
+    {
+        foreach (var receiver in aura_ActiveSlows) { receiver?.RemovePersistentSlow(this); }
+        aura_ActiveSlows.Clear();
+
+        foreach (var receiver in aura_ActiveWeaKens) { receiver?.RemovePersistentWeaken(this); }
+        aura_ActiveWeaKens.Clear();
+
+        foreach (var receiver in aura_ActiveCorrodes) { receiver?.RemovePersistentCorrode(this); } //
+        aura_ActiveCorrodes.Clear();
+    }
+    private List<Health> ApplyAuraChainDamage(int baseDamage)
+    {
+        // --- vvv [ 核心修复 ] vvv ---
+        // 1. 不再读取列表，而是立即扫描
+        if (currentStone == null || auraCollider == null) return null;
+        Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
+                                                                                                          // --- ^^^ [ 核心修复 ] ^^^ ---
+
+
+        // 计算连锁伤害
+        int chainDamage = Mathf.RoundToInt(baseDamage * currentStone.chainDamageMultiplier); //
+        if (chainDamage <= 0) chainDamage = 1;
+
+        List<Health> hitTargets = new List<Health>();
+
+        // --- vvv [ 核心修复 ] vvv ---
+        // 2. 从扫描结果 (hits) 中构建潜在目标列表
+        List<Health> potentialTargets = new List<Health>();
+        foreach (Collider hit in hits)
+        {
+            Health target = hit.GetComponentInParent<Health>();
+            if (target != null && !target.IsDead) //
+            {
+                potentialTargets.Add(target);
+            }
+        }
+        // --- ^^^ [ 核心修复 ] ^^^ ---
+
+        if (potentialTargets.Count == 0) return null;
+
+        // ... (确定 firstTarget 的逻辑保持不变) ...
+        Health firstTarget = potentialTargets
+            .OrderBy(t => (t.transform.position - transform.position).sqrMagnitude)
+            .FirstOrDefault();
+
+        if (firstTarget == null) return null;
+        potentialTargets.Remove(firstTarget);
+
+        Health currentTarget = firstTarget;
+        Vector3 lastVFXOriginPoint = transform.position;
+
+        // (连锁循环逻辑保持不变)
+        for (int i = 0; i <= currentStone.chainTargets; i++) //
+        {
+            if (currentTarget == null) break;
+
+            Vector3 currentTargetHitPoint = currentTarget.AimTargetPoint != null ? currentTarget.AimTargetPoint.position : currentTarget.transform.position; //
+
+            currentTarget.TakeDamage(chainDamage, currentTargetHitPoint, this.gameObject, AttackType.Standard); //
+            hitTargets.Add(currentTarget);
+
+            if (currentStone.chainImpactVfxPrefab != null) //
+            {
+                Instantiate(currentStone.chainImpactVfxPrefab, currentTargetHitPoint, Quaternion.identity); //
+            }
+            else if (StatBlock.defaultImpactEffectPrefab != null)
+            {
+                Instantiate(StatBlock.defaultImpactEffectPrefab, currentTargetHitPoint, Quaternion.identity); //
+            }
+
+            if (currentStone.chainVfxPrefab != null) //
+            {
+                Vector3 vfxOrigin = (i == 0) ? transform.position : lastVFXOriginPoint;
+                var chainVFX_GO = Instantiate(currentStone.chainVfxPrefab, Vector3.zero, Quaternion.identity); //
+                chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(vfxOrigin, currentTargetHitPoint); //
+            }
+
+            lastVFXOriginPoint = currentTargetHitPoint;
+
+            Health nextTarget = null;
+            float minSqrDist = currentStone.chainRange * currentStone.chainRange; //
+
+            foreach (Health potential in potentialTargets)
+            {
+                if (potential == null || hitTargets.Contains(potential)) continue;
+                float sqrDist = (potential.transform.position - lastVFXOriginPoint).sqrMagnitude;
+                if (sqrDist < minSqrDist)
+                {
+                    minSqrDist = sqrDist;
+                    nextTarget = potential;
+                }
+            }
+
+            if (nextTarget != null)
+            {
+                potentialTargets.Remove(nextTarget);
+                currentTarget = nextTarget;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return hitTargets;
+    }
+
+    private void HandleAuraKnockback()
+    {
+        if (currentStone == null || !currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback) || auraKnockbackTimer > 0f) //
+        {
+            return;
+        }
+
+        // (检查通过，重置计时器)
+        auraKnockbackTimer = currentStone.knockbackInterval; //
+
+        // --- vvv [ 调试日志 ] vvv ---
+        if (auraCollider == null) //
+        {
+            Debug.LogError("Knockback FAILED: auraCollider is NULL!");
+            return;
+        }
+        if (enemyLayerMask == 0) //
+        {
+            Debug.LogWarning("Knockback Check: 'Enemy Layer Mask' (in Inspector) is not set!");
+            return;
+        }
+        // --- ^^^ [ 调试日志 ] ^^^ ---
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
+
+        if (hits.Length == 0)
+        {
+            // 这是你之前看到的日志的新版本
+            Debug.LogWarning("Knockback Fire: OverlapSphere found 0 targets. (Check LayerMask?)");
+            return;
+        }
+
+        Debug.Log($"<color=green>Knockback Fire: OverlapSphere found {hits.Length} colliders. Checking them...</color>");
+        int knockbackStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback); //
+
+        float finalKnockbackForce;
+
+        if (knockbackStoneCount >= 2) //
+        {
+            // 使用堆叠后的力度
+            finalKnockbackForce = currentStone.knockbackForce_Stacked; //
+        }
+        else
+        {
+            // 使用基础力度
+            finalKnockbackForce = currentStone.knockbackForce; //
+        }
+
+
+        foreach (Collider hit in hits)
+        {
+            // --- vvv [ 核心修复 ] vvv ---
+            // 强制检查 Tag
+            if (!hit.CompareTag("Enemy"))
+            {
+                Debug.Log($"Knockback Check: Ignored collider '{hit.name}' (Tag is not 'Enemy').");
+                continue;
+            }
+            // --- ^^^ [ 核心修复 ] ^^^ ---
+
+            Health target = hit.GetComponentInParent<Health>(); //
+            if (target == null || target.IsDead) continue; //
+
+            StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>(); //
+            if (receiver != null)
+            {
+                Vector3 pushDir = (target.transform.position - transform.position).normalized; //
+                pushDir.y = 0; //
+
+                // [!] 使用 finalKnockbackForce
+                receiver.ApplyKnockback(pushDir, finalKnockbackForce); //
+            }
+            else
+            {
+                Debug.LogWarning($"Knockback Check: Target {target.name} IS 'Enemy' but is missing StatusEffectReceiver!");
+            }
+        }
+    }
     private void OnDestroy()
     {
+        if (currentStone != null)
+        {
+            if (PlayerStats.Instance != null)
+            {
+                PlayerStats.Instance.RegisterStone(null, currentStone);
+            }
+        }
         if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
         if (activeBeamInstance != null) { Destroy(activeBeamInstance.gameObject); }
     }
@@ -248,13 +716,24 @@ public class WeaponPart : MonoBehaviour
 
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
+        float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
+        float stoneScaleMod = (currentStone != null) ? currentStone.scaleModifier : 0f;
+        float stoneFireRateMod = (currentStone != null) ? currentStone.fireRateModifier : 0f;
         // --- 冷却和状态检查 (保持不变) ---
         if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             if (isBoomerangOut) yield break;
             isBoomerangOut = true; // 发射时不冷却，只标记
         }
-        else { fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier; }
+        else
+        {
+            // 冷却 = 基础 / (玩家乘数 * (1 + 能量石乘数))
+            float finalFireRateMultiplier = PlayerStats.Instance.fireRateMultiplier * (1f + stoneFireRateMod); //
+            // 防止除以零
+            if (finalFireRateMultiplier <= 0) finalFireRateMultiplier = PlayerStats.Instance.fireRateMultiplier; //
+
+            fireCooldown = (1f / StatBlock.baseFireRate) / finalFireRateMultiplier; //
+        }
         // --- 冷却结束 ---
 
         // 音效延迟...
@@ -275,30 +754,33 @@ public class WeaponPart : MonoBehaviour
         if (finalTargetDirection.sqrMagnitude < 0.01f) { if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; yield break; }
 
         // --- Calculate Final Damage and Scale ---
+
+
         int baseDamage = 0;
         float baseScale = 1f; // 基础体积乘数总是 1
 
         if (StatBlock != null && PlayerStats.Instance != null)
         {
-            // 基础伤害考虑玩家全局加成
-            baseDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
-            // 基础体积考虑玩家全局加成
-            baseScale = PlayerStats.Instance.aoeRadiusMultiplier;
+            // 基础伤害 = (武器基础 * (玩家乘数 + 能量石乘数)) + 玩家固定值
+            baseDamage = Mathf.RoundToInt(
+                StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + stoneDmgMod) + //
+                PlayerStats.Instance.flatDamageBonus //
+            );
+
+            // 基础体积 = 玩家乘数 + 能量石乘数 (注意：基础是1，不是0)
+            baseScale = PlayerStats.Instance.aoeRadiusMultiplier + stoneScaleMod; //
         }
 
         // 2. 如果是回旋镖，计算【加法】叠加乘数
         float totalDamageMultiplier = 1f;
         float totalScaleMultiplier = 1f; // 这个乘数应用在 PlayerStats 的基础体积上
-        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0)
+        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0) //
         {
-            // 【核心修改】计算总加成百分比
-            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent;
-            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent;
+            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent; //
+            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent; //
 
-            // 应用加法叠加
             totalDamageMultiplier = 1f + totalDamageBonusPercent;
-            totalScaleMultiplier = 1f + totalScaleBonusPercent; // 这个乘数是相对于【原始模型】的
-            // Debug.Log($"[FireRoutine] Stacks={PlayerStats.Instance.boomerangCatchStacks}, DmgBonus={totalDamageBonusPercent*100}%, ScaleBonus={totalScaleBonusPercent*100}% => TotalDmgMult={totalDamageMultiplier}, TotalScaleMult={totalScaleMultiplier}");
+            totalScaleMultiplier = 1f + totalScaleBonusPercent;
         }
         // 3. 计算最终伤害和体积
         // 最终伤害 = 基础伤害 * 叠加乘数
@@ -309,24 +791,25 @@ public class WeaponPart : MonoBehaviour
         // --- Firing based on Behavior ---
         switch (StatBlock?.behavior)
         {
-            case WeaponBehaviorType.Standard:
-            case WeaponBehaviorType.Pierce:
-                InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break; // 确保接收 finalDamage
-            case WeaponBehaviorType.ParabolicAOE:
-                int finalAoeDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
-                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalAoeDamage); break; // 确保接收 finalDamage(s)
-            case WeaponBehaviorType.Chain:
-                if (firstTarget != null) { StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange)); }
-                break; // 确保使用 finalDamage
-            case WeaponBehaviorType.SummonDrone:
-                InstantiateAndInitializeDrones(); if (StatBlock.isOneShot) { this.enabled = false; }
+            case WeaponBehaviorType.Standard: //
+            case WeaponBehaviorType.Pierce: //
+                InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break;
+            case WeaponBehaviorType.ParabolicAOE: //
+                // (注意：AOE伤害也需要应用 stoneDmgMod)
+                int finalAoeDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + stoneDmgMod) + PlayerStats.Instance.flatAoeDamageBonus); //
+                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalAoeDamage); break;
+            case WeaponBehaviorType.Chain: //
+                if (firstTarget != null) { StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange)); } //
                 break;
-            case WeaponBehaviorType.PersistentAOE:
+            case WeaponBehaviorType.SummonDrone: //
+                InstantiateAndInitializeDrones(); if (StatBlock.isOneShot) { this.enabled = false; } //
+                break;
+            case WeaponBehaviorType.PersistentAOE: //
                 Transform targetEnemy = FindNearestEnemyTransform();
-                if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); }
-                break; // 确保传递伤害
-            case WeaponBehaviorType.Boomerang:
-                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale); break; // 传递最终伤害 & 最终体积
+                if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); } //
+                break;
+            case WeaponBehaviorType.Boomerang: //
+                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale); break; //
             case null: Debug.LogError("StatBlock is null!"); break;
         }
 
@@ -418,7 +901,8 @@ public class WeaponPart : MonoBehaviour
         if (projectileScript != null)
         {
             float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount;
+            int stonePierceBonus = (currentStone != null) ? (int)currentStone.pierceModifier : 0;
+            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus; //
             // Get DoT/Slow stats (assuming they scale appropriately or have their own logic)
             int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage /* * ScalingFactorIfNeeded */);
             float finalDotDuration = StatBlock.baseDotDuration;
@@ -431,7 +915,8 @@ public class WeaponPart : MonoBehaviour
               false, finalPierceCount, StatBlock.baseProjectileLifetime,
               StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
               finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, finalSlowDuration,
-              AttackType.Standard
+              AttackType.Standard,
+              this // <--- [!] 传递 launcher 引用
             );
         }
         else { Destroy(bullet); } // Clean up if script missing
@@ -467,7 +952,8 @@ public class WeaponPart : MonoBehaviour
                  statsToUse.baseProjectileLifetime, statsToUse.explosionEffectPrefab, finalAoeRadius,
                  statsToUse.layersToDamageByAOE, statsToUse.layersToExplodeOn,
                  finalDotDamage, finalDotDuration, finalDotTickInterval,
-                 finalStunChance, finalStunDuration
+                finalStunChance, finalStunDuration, //
+                 this
              );
         }
         else { Destroy(bullet); } // Clean up
@@ -584,9 +1070,9 @@ public class WeaponPart : MonoBehaviour
         {
             float angle = i * (360f / finalOrbitalCount);
             Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
-            GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot); // Parent to pivot
+            GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
             orbiterGO.transform.localPosition = spawnPos; // Position relative to pivot
-            orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage);
+            orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage, this);
         }
 
         float finalDuration = StatBlock.baseDuration; // Apply player bonuses if any
@@ -691,7 +1177,7 @@ public class WeaponPart : MonoBehaviour
         activeBeamInstance = beamGO.GetComponent<PlayerBeamController>();
         if (activeBeamInstance != null)
         {
-            activeBeamInstance.Initialize(StatBlock, this.gameObject, lockedBeamTarget);
+            activeBeamInstance.Initialize(StatBlock, this, lockedBeamTarget); //
             if (beamLoopSound != null && audioSource != null && !audioSource.isPlaying)
             { audioSource.clip = beamLoopSound; audioSource.loop = true; audioSource.Play(); }
         }
@@ -807,9 +1293,14 @@ public class WeaponPart : MonoBehaviour
                 int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
                 float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
                 mineScript.Initialize(
-                    finalDamage, finalRadius, StatBlock.armingTime, StatBlock.mineDuration,
-                    WeaponController.Instance.gameObject, // Player is attacker
-                    StatBlock.explosionEffectPrefab, StatBlock.layersToDamageByAOE
+                    finalDamage,
+                    finalRadius,
+                    StatBlock.armingTime,
+                    StatBlock.mineDuration,
+                    WeaponController.Instance.gameObject,
+                    StatBlock.explosionEffectPrefab,
+                    StatBlock.layersToDamageByAOE,
+                    this // <--- [新增] 传递 WeaponPart 自身
                 );
             }
             else { Debug.LogWarning($"Mine prefab '{StatBlock.minePrefab.name}' is missing Landmine script.", mineGO); }
@@ -821,6 +1312,74 @@ public class WeaponPart : MonoBehaviour
         // Reset cooldown
         fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
     }
+    public void FuseEnergyStone(EnergyStoneSO newStone) 
+    {
+        if (newStone == null)
+        {
+            Debug.LogError("[FuseEnergyStone] 失败! 传入的 newStone 是 null!");
+            return;
+        }
+
+        Debug.Log($"<color=lime>[FuseEnergyStone] 1. 开始融合: {newStone.stoneName}</color>"); //
+
+        EnergyStoneSO oldStone = this.currentStone; // (获取旧石头，用于 PlayerStats)
+
+        // 2. 覆盖旧的能量石
+        this.currentStone = newStone; //
+
+        // 3. 立即检查
+        if (this.currentStone != null)
+        {
+            Debug.Log($"<color=lime>[FuseEnergyStone] 2. 变量已设置! this.currentStone 现在是: {this.currentStone.stoneName}</color>");
+        }
+        else
+        {
+            // 如果这个日志出现，就意味着发生了严重的内部错误
+            Debug.LogError("[FuseEnergyStone] 2. 严重错误! 刚刚设置了 currentStone，但它仍然是 null!");
+        }
+
+        // 4. (这是我们为“冰冻计数器” 添加的逻辑，请确保它在你的脚本里)
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.RegisterStone(newStone, oldStone); //
+        }
+        // --- ^^^ [ 核心调试 ] ^^^ ---
+
+
+        // 5. 融合后，立即刷新武器状态
+        RefreshWeaponStateFromStone(); //
+    }
+
+    public void RemoveEnergyStone() 
+    {
+        EnergyStoneSO oldStone = this.currentStone; // 1. 暂存旧石头
+
+        this.currentStone = null; // 2. 移除石头
+
+        // 3. 向全局计数器报告
+        if (oldStone != null && PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.RegisterStone(null, oldStone);
+        }        
+
+        RefreshWeaponStateFromStone(); 
+    }
+
+    private void RefreshWeaponStateFromStone()
+    {
+        // 这是一个占位符，我们将在这里添加逻辑
+        // 例如，如果石头改变了光环半径，我们就在这里调用 RefreshAura()
+
+        if (StatBlock.behavior == WeaponBehaviorType.Aura) //
+        {
+            RefreshAura(); //
+        }
+        if (StatBlock.behavior == WeaponBehaviorType.Orbital) //
+        {
+            RefreshOrbiters(); //
+        }
+    }
     #endregion
+
 }
 

@@ -43,7 +43,8 @@ public class EnemyMeleeAttack : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private bool isAttacking = false;
-    private GameObject activeWarningIndicator; 
+    private GameObject activeWarningIndicator;
+    private EnemyAI enemyAI; // <--- [新增]
 
     void Start()
     {
@@ -53,6 +54,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         }
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        enemyAI = GetComponent<EnemyAI>();
 
         Health health = GetComponent<Health>();
         if (health != null)
@@ -88,6 +90,7 @@ public class EnemyMeleeAttack : MonoBehaviour
     IEnumerator MeleeSequence()
     {
         isAttacking = true;
+        enemyAI.SetMeleeAttackingState(true);
 
         // 1. 准备阶段：停止移动，面朝玩家
         if (agent.isActiveAndEnabled)
@@ -144,9 +147,60 @@ public class EnemyMeleeAttack : MonoBehaviour
             agent.isStopped = false;
         }
         isAttacking = false;
+        enemyAI.SetMeleeAttackingState(false);
         activeWarningIndicator = null;
     }
 
+    public void InterruptAttack()
+    {
+        // 1. 检查是否真的在攻击中
+        if (!isAttacking)
+        {
+            return; // 没有在攻击，什么也不做
+        }
+
+        Debug.Log($"<color=yellow>[{gameObject.name}] Melee Attack INTERRUPTED!</color>");
+
+        // 2. 停止正在运行的 MeleeSequence 协程
+        //    (我们使用 StopAllCoroutines() 是最简单的方式，
+        //     因为它也会停止我们可能添加的任何其他攻击协程)
+        StopAllCoroutines(); //
+
+        // 3. 立即销毁预警特效 (正如你要求的)
+        if (activeWarningIndicator != null)
+        {
+            Destroy(activeWarningIndicator); //
+        }
+
+        if (animator != null)
+        {
+            // 1. 重置导致我们卡住的触发器
+            animator.ResetTrigger("doWarning"); //
+            animator.ResetTrigger("doAttack"); //
+
+            // 2. 强制动画器回到“待机”状态
+            //    (击退/眩晕协程会接管并让它保持停止)
+            //    (当协程结束后，EnemyAI.UpdateAnimation 会正确地将其设置回 true)
+            animator.SetBool("isMoving", false); //
+        }
+        if (enemyAI != null)
+        {
+            enemyAI.SetMeleeAttackingState(false);
+        }
+        // 4. 重置所有状态
+        isAttacking = false; //
+        activeWarningIndicator = null; //
+        cooldownTimer = cooldown; // 重置冷却时间，否则怪物可能会卡住
+
+        // 5. [关键] 恢复 NavMeshAgent 的控制权
+        //    (我们的协程在第 87 行 将其设置为了 true)
+        if (agent.isActiveAndEnabled && agent.isStopped)
+        {
+            agent.isStopped = false;
+        }
+        // (眩晕/击退协程会立即再次接管并设置 isStopped = true，
+        // 但这确保了 *这个脚本* 不会再“霸占”控制权)
+    }
     void PerformAttack()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, attackRadius);

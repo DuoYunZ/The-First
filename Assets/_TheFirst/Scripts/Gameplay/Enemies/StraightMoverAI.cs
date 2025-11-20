@@ -14,6 +14,7 @@ public class StraightMoverAI : MonoBehaviour
     private Vector3 savedVelocity;
 
     private Animator animator;
+    private StatusEffectReceiver statusReceiver;
 
     [Header("伤害设置")]
     [Tooltip("怪物每次造成伤害后的冷却时间（秒）")]
@@ -23,6 +24,7 @@ public class StraightMoverAI : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        statusReceiver = GetComponent<StatusEffectReceiver>();
         rb.useGravity = false;
         // 锁定Y轴位置和所有旋转，我们只通过脚本控制速度
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
@@ -87,6 +89,14 @@ public class StraightMoverAI : MonoBehaviour
             animator.SetBool("isMoving", !stunned);
         }
     }
+    public void ApplyKnockback(Vector3 forceDirection, float forceAmount)
+    {
+        if (rb != null && !isStunned)
+        {
+            // 在眩晕时不接受击退
+            rb.AddForce(forceDirection * forceAmount, ForceMode.Impulse);
+        }
+    }
     // --- 碰撞伤害逻辑 ---
     void OnTriggerStay(Collider other)
     {
@@ -97,7 +107,17 @@ public class StraightMoverAI : MonoBehaviour
             Health playerHealth = other.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(touchDamage, transform.position, this.gameObject, AttackType.Standard);
+                // --- vvv [ 核心修改 ] vvv ---
+                // 1. 获取弱化乘数
+                float multiplier = (statusReceiver != null) ? statusReceiver.weakenDamageMultiplier : 1.0f;
+
+                // 2. 计算最终伤害
+                int finalDamage = Mathf.RoundToInt(touchDamage * multiplier);
+
+                // 3. 使用最终伤害
+                playerHealth.TakeDamage(finalDamage, transform.position, this.gameObject, AttackType.Standard); //
+                                                                                                                // --- ^^^ [ 核心修改 ] ^^^ ---
+
                 canDealDamage = false;
                 StartCoroutine(DamageCooldownRoutine());
             }

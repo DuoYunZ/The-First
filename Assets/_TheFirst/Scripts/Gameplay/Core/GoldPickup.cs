@@ -100,29 +100,24 @@ public class GoldPickup : MonoBehaviour
     {
         if (isSpinning)
         {
-            // 对于俯视角游戏中平放的金币，围绕Y轴(向上轴)旋转可以产生“悬浮旋转”效果。
-            // 这通常是期望的效果。
             transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
         }
 
-        if (!canBePickedUp || collectionTarget == null || isAbsorbFloating) return;
+        // --- vvv [修改] vvv ---
+        // 1. 将 isCollecting 检查移到前面
+        if (isCollecting || !canBePickedUp || collectionTarget == null || isAbsorbFloating) return;
+        // --- ^^^ [修改] ^^^ ---
 
-        // 检查距离，如果足够近则开始吸收
         float distanceToPlayer = Vector3.Distance(transform.position, collectionTarget.position);
         if (!isCollecting && distanceToPlayer <= magnetRadius)
         {
-            StartAbsorbSequence();
+            StartAbsorbSequence(); //
         }
 
-        // 如果正在被吸收，则飞向玩家
-        if (isCollecting)
-        {
-            transform.position = Vector3.MoveTowards(transform.position, collectionTarget.position, collectionSpeed * Time.deltaTime);
-            if (distanceToPlayer < 0.5f) // 足够近时完成收集
-            {
-                Collect();
-            }
-        }
+        // --- vvv [修改] vvv ---
+        // (这段逻辑现在被 AbsorbFloatRoutine 协程的末尾接管了)
+        // if (isCollecting) ...
+        // --- ^^^ [修改] ^^^ ---
     }
 
     // 开始吸收序列（浮空 -> 飞向玩家）
@@ -140,7 +135,7 @@ public class GoldPickup : MonoBehaviour
     // 吸收前的浮空动画
     IEnumerator AbsorbFloatRoutine()
     {
-        // 1. 向上浮空
+        // (1. 向上浮空 - 保持不变)
         Vector3 floatTarget = absorbStartPosition + Vector3.up * absorbFloatHeight;
         float timer = 0f;
         while (timer < absorbFloatDuration)
@@ -151,11 +146,31 @@ public class GoldPickup : MonoBehaviour
             yield return null;
         }
 
-        // 2. 短暂悬停
+        // (2. 短暂悬停 - 保持不变)
         yield return new WaitForSeconds(absorbHoverDuration);
 
-        // 3. 结束浮空，允许 Update 中的移动逻辑接管
-        isAbsorbFloating = false;
+        // (3. 结束浮空)
+        isAbsorbFloating = false; //
+
+        // --- vvv [新增] vvv ---
+        // (4. 立即开始飞向玩家，直到被 Collect() 销毁)
+        while (true)
+        {
+            if (collectionTarget == null)
+            {
+                Destroy(gameObject); // 玩家消失了？销毁自己
+                yield break;
+            }
+
+            transform.position = Vector3.MoveTowards(transform.position, collectionTarget.position, collectionSpeed * Time.deltaTime);
+            if (Vector3.Distance(transform.position, collectionTarget.position) < 0.5f)
+            {
+                Collect(); //
+                yield break;
+            }
+            yield return null;
+        }
+        // --- ^^^ [新增] ^^^ ---
     }
 
     // 玩家直接走上去碰撞拾取
@@ -167,6 +182,19 @@ public class GoldPickup : MonoBehaviour
         }
     }
 
+    public void TriggerMagnet(Transform target)
+    {
+        // 确保只触发一次
+        if (isCollecting || !canBePickedUp) return;
+
+        if (collectionTarget == null)
+        {
+            collectionTarget = target;
+        }
+
+        StartAbsorbSequence();
+    }
+
     // 完成收集
     void Collect()
     {
@@ -176,7 +204,7 @@ public class GoldPickup : MonoBehaviour
             PlayerProgressManager.Instance.AddGold(goldValue);
         }
         // --- 修改结束 ---
-
+       
         // 播放音效和特效（与经验球逻辑相同）
         if (collectionTarget != null)
         {
@@ -192,5 +220,8 @@ public class GoldPickup : MonoBehaviour
         }
 
         Destroy(gameObject);
+
+        if (BattleStatisticsManager.Instance != null)
+            BattleStatisticsManager.Instance.AddGold(goldValue);
     }
 }
