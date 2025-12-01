@@ -4,7 +4,7 @@ using UnityEngine;
 public enum Rarity { Common, Uncommon, Rare, Epic }
 
 // 效果行为类型枚举保持不变
-public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield }
+public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield, EvolveWeapon }
 
 // 【新增】修改类型枚举，用于区分是增加固定值还是百分比
 public enum ModifierType { Flat, Percentage }

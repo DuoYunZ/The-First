@@ -22,6 +22,11 @@ public class EnergyStoneSO : ScriptableObject
     [Tooltip("当这个能量石在游戏中掉落时，应该实例化的预制件 (Prefab)")]
     public GameObject pickupPrefab;
 
+    [Header("视觉表现")]
+    [Tooltip("这颗石头对应的发光颜色 (HDR)")]
+    [ColorUsage(true, true)]
+    public Color stoneGlowColor = Color.white; // 默认为白
+
     [Header("光环特效覆盖 (可选)")]
     [Tooltip("用于替换光环默认VFX的预制件")]
     public GameObject auraVfxOverride;

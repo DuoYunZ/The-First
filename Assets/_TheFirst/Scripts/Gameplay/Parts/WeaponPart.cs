@@ -8,8 +8,19 @@ public class WeaponPart : MonoBehaviour
     [Header("武器数据蓝图 (在预制件中设置)")]
     public WeaponStatBlock myStatBlock;
 
+    public int currentLevel = 1;
+    public int maxLevel = 10;
+
     [Header("组件引用 (在预制件中设置)")]
     public Transform firePoint;
+
+    [Header("视觉表现组件 (可选)")]
+    [Tooltip("控制背后悬浮武器动画的脚本")]
+    public FloatingWeaponController floatingVisual;
+    [Tooltip("控制材质发光冷却的脚本")]
+    public WeaponCooldownMaterial cooldownMaterial;
+    [Tooltip("开火时隐藏武器模型的时间 (模拟挥砍/发射动作)")]
+    public float hideVisualDuration = 0.15f; // 远程通常比近战快，0.15秒比较合适
 
     [Header("特效预制件")]
     [Tooltip("连锁闪电的视觉特效预制件")]
@@ -84,14 +95,22 @@ public class WeaponPart : MonoBehaviour
     }
     void Start()
     {
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
+        if (StatBlock != null) maxLevel = StatBlock.maxLevel;
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam) beamEnergyTimer = StatBlock.beamDuration;
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura) SetupAura();
+
+        // Robust Component Finding
+        if (floatingVisual == null) floatingVisual = GetComponentInChildren<FloatingWeaponController>();
+        if (cooldownMaterial == null) cooldownMaterial = GetComponentInChildren<WeaponCooldownMaterial>();
+
+        // Initialize Color from Weapon Data
+        if (cooldownMaterial != null && StatBlock != null)
         {
-            beamEnergyTimer = StatBlock.beamDuration;
+            // Default to StatBlock color
+            if (StatBlock.weaponGlowColor.maxColorComponent > 0)
+                cooldownMaterial.SetEmissionColor(StatBlock.weaponGlowColor);
         }
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
-        {
-            SetupAura();
-        }
+        UpdateVisualModel();
     }
     void Update()
     {
@@ -705,6 +724,7 @@ public class WeaponPart : MonoBehaviour
 
     public void Fire(Vector3 initialDirection)
     {
+        Debug.Log($"[WeaponPart] Fire 被调用. IsReady: {IsReadyToFire}");
         // Check generic cooldown first
         if (!IsReadyToFire) return;
         // Then check specific boomerang state
@@ -735,6 +755,12 @@ public class WeaponPart : MonoBehaviour
             fireCooldown = (1f / StatBlock.baseFireRate) / finalFireRateMultiplier; //
         }
         // --- 冷却结束 ---
+
+        if (cooldownMaterial != null) cooldownMaterial.StartCooldown(fireCooldown);
+
+        if (floatingVisual != null) floatingVisual.HideWeapon();
+
+       
 
         // 音效延迟...
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
@@ -788,12 +814,19 @@ public class WeaponPart : MonoBehaviour
         // 最终体积 = 玩家基础体积 * 叠加乘数
         float finalScale = baseScale * totalScaleMultiplier; // <-- 体积乘数应用在这里
 
+        Debug.Log($"[FireRoutine] 准备发射. 武器名: {StatBlock?.weaponName}, 行为模式: {StatBlock?.behavior}");
         // --- Firing based on Behavior ---
         switch (StatBlock?.behavior)
         {
             case WeaponBehaviorType.Standard: //
             case WeaponBehaviorType.Pierce: //
+                Debug.Log("[FireRoutine] 进入 Standard 分支");
                 InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break;
+
+            case WeaponBehaviorType.MeleeAOE:
+                // 进入近战分支，启动协程处理连击
+                StartCoroutine(MeleeAttackRoutine(finalDamage, finalScale));
+                break;
             case WeaponBehaviorType.ParabolicAOE: //
                 // (注意：AOE伤害也需要应用 stoneDmgMod)
                 int finalAoeDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + stoneDmgMod) + PlayerStats.Instance.flatAoeDamageBonus); //
@@ -812,9 +845,15 @@ public class WeaponPart : MonoBehaviour
                 InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale); break; //
             case null: Debug.LogError("StatBlock is null!"); break;
         }
-
+        
         // --- Muzzle Flash & Delayed Sound ---
         if (StatBlock != null && StatBlock.muzzleFlashPrefab != null) { Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation); }
+
+        if (floatingVisual != null)
+        {
+            yield return new WaitForSeconds(hideVisualDuration);
+            floatingVisual.ShowWeapon();
+        }
         if (fireSoundDelay >= 0) { yield return new WaitForSeconds(fireSoundDelay); PlayFireSound(); }
     }
 
@@ -895,7 +934,16 @@ public class WeaponPart : MonoBehaviour
     // Updated to accept finalDamage
     private void InstantiateAndFireProjectile(Vector3 direction, int finalDamage)
     {
-        if (firePoint == null || StatBlock?.projectilePrefab == null) return;
+        if (firePoint == null)
+        {
+            Debug.LogError($"[发射失败] {gameObject.name} 的 WeaponPart 缺少 FirePoint！请在 Inspector 里赋值。");
+            return;
+        }
+        if (StatBlock?.projectilePrefab == null)
+        {
+            Debug.LogError($"[发射失败] {StatBlock?.weaponName} 的数据里没拖 ProjectilePrefab！");
+            return;
+        }
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
@@ -1362,21 +1410,235 @@ public class WeaponPart : MonoBehaviour
             PlayerStats.Instance.RegisterStone(null, oldStone);
         }        
 
-        RefreshWeaponStateFromStone(); 
+        RefreshWeaponStateFromStone();
     }
 
-    private void RefreshWeaponStateFromStone()
+    public void RefreshWeaponStateFromStone()
     {
-        // 这是一个占位符，我们将在这里添加逻辑
-        // 例如，如果石头改变了光环半径，我们就在这里调用 RefreshAura()
+        if (StatBlock.behavior == WeaponBehaviorType.Aura) RefreshAura();
+        if (StatBlock.behavior == WeaponBehaviorType.Orbital) RefreshOrbiters();
 
-        if (StatBlock.behavior == WeaponBehaviorType.Aura) //
+        // 进化/融合后，刷新模型
+        UpdateVisualModel();
+    }
+    private void UpdateVisualModel()
+    {
+        if (floatingVisual == null || StatBlock == null) return;
+
+        // 1. 换装
+        if (StatBlock.floatingModelPrefab != null)
         {
-            RefreshAura(); //
+            GameObject newModelInstance = floatingVisual.SwapModel(StatBlock.floatingModelPrefab);
+
+            // 2. 获取新模型上的材质脚本
+            if (newModelInstance != null)
+            {
+                cooldownMaterial = newModelInstance.GetComponent<WeaponCooldownMaterial>();
+                if (cooldownMaterial == null)
+                    cooldownMaterial = newModelInstance.GetComponentInChildren<WeaponCooldownMaterial>();
+            }
         }
-        if (StatBlock.behavior == WeaponBehaviorType.Orbital) //
+
+        // --- 【核心修复】同步引用给 PlayerBladeAttack ---
+        // 因为未进化时，是 PlayerBladeAttack 在控制攻击和冷却表现
+        // 所以必须把新生成的 visual 和 material 告诉它
+
+        var meleeAttackScript = GetComponent<PlayerBladeAttack>();
+        if (meleeAttackScript != null)
         {
-            RefreshOrbiters(); //
+            // 1. 同步材质引用 (修复发光失效)
+            meleeAttackScript.weaponCooldownMaterial = this.cooldownMaterial;
+
+            // 2. 同步控制器引用 (确保能控制显隐)
+            meleeAttackScript.floatingWeapon = this.floatingVisual;
+
+            // 调试日志
+            // Debug.Log($"[WeaponPart] 已将视觉组件同步给 PlayerBladeAttack. Material: {cooldownMaterial != null}");
+        }
+        // ---------------------------------------------
+    }
+
+    private IEnumerator MeleeAttackRoutine(int damage, float scale)
+    {
+        int count = StatBlock.multiHitCount;
+        if (count < 1) count = 1;
+
+        for (int i = 0; i < count; i++)
+        {
+            // 1. 处理锁敌转向
+            if (StatBlock.autoAimMelee)
+            {
+                RotateTowardsNearestEnemy();
+            }
+
+            // 2. 生成特效 (伤害由特效上的 VFXDamageController 负责)
+            SpawnMeleeVFX(damage, scale);
+
+            // 3. 播放音效 (如果有多段攻击，每次都播)
+            PlayFireSound();
+
+            // 4. 如果是多段攻击，等待间隔
+            if (count > 1)
+            {
+                yield return new WaitForSeconds(StatBlock.multiHitInterval);
+            }
+        }
+    }
+    private void SpawnMeleeVFX(int damage, float scale)
+    {
+        if (StatBlock.slashEffectPrefab == null) return;
+
+        // 确定生成位置和旋转
+        Vector3 spawnPos = firePoint.position;
+        Quaternion spawnRot = transform.rotation; // 跟随当前朝向
+
+        // 实例化特效
+        GameObject vfxObj = Instantiate(StatBlock.slashEffectPrefab, spawnPos, spawnRot);
+
+        // 应用体积缩放 (雷光刺变长/宽，爆炎斩变大)
+        vfxObj.transform.localScale = Vector3.one * (StatBlock.baseAoeRadius * scale);
+        // 注意：这里我们利用 baseAoeRadius 作为特效的基础缩放基准
+
+        // 初始化伤害控制器
+        VFXDamageController vfxCtrl = vfxObj.GetComponent<VFXDamageController>();
+        if (vfxCtrl != null)
+        {
+            vfxCtrl.Initialize(damage, StatBlock.hitEffectPrefab, this.gameObject, this);
+        }
+    }
+    private void RotateTowardsNearestEnemy()
+    {
+        // 使用 StatBlock.autoAimRange 或默认一个范围
+        float range = StatBlock.autoAimRange > 0 ? StatBlock.autoAimRange : 10f;
+        Transform target = FindNearestEnemyTransform(transform.position, range);
+
+        if (target != null)
+        {
+            Vector3 dir = (target.position - transform.position).normalized;
+            dir.y = 0; // 保持水平
+            if (dir != Vector3.zero)
+            {
+                // 瞬间转身，保证刺击准确
+                transform.rotation = Quaternion.LookRotation(dir);
+            }
+        }
+    }
+
+    private IEnumerator PerformMultiThrustRoutine(int damage, float scale)
+    {
+        // 1. 锁定目标方向
+        if (StatBlock.autoAimMelee)
+        {
+            RotateTowardsNearestEnemy();
+        }
+
+        // 2. 循环执行刺击
+        for (int i = 0; i < StatBlock.multiHitCount; i++)
+        {
+            // 每次刺击都微调方向 (防止敌人跑太快打空)
+            if (StatBlock.autoAimMelee) RotateTowardsNearestEnemy();
+
+            // 播放音效
+            PlayFireSound();
+
+            // 生成刺击特效 (雷光特效)
+            if (StatBlock.slashEffectPrefab != null)
+            {
+                // 稍微向前偏移一点，让特效看起来是从武器尖端发出的
+                Vector3 spawnPos = firePoint.position + transform.forward * 0.5f;
+                GameObject vfx = Instantiate(StatBlock.slashEffectPrefab, spawnPos, transform.rotation);
+                vfx.transform.localScale = Vector3.one * scale; // 刺击特效通常比较细长
+            }
+
+            // 执行判定 (这里用 BoxCast 模拟刺击的长条形判定)
+            PerformThrustHitCheck(damage, scale);
+
+            // 等待间隔
+            yield return new WaitForSeconds(StatBlock.multiHitInterval);
+        }
+    }
+
+    private void PerformThrustHitCheck(int damage, float scale)
+    {
+        // 刺击参数：长方形判定
+        // 宽度由 scale 决定，长度由 baseAoeRadius 决定
+        float thrustWidth = 1.5f * scale;
+        float thrustDistance = StatBlock.baseAoeRadius * scale;
+
+        Vector3 center = firePoint.position;
+        Vector3 halfExtents = new Vector3(thrustWidth / 2, 1f, thrustWidth / 2); // 高度给1f防止漏怪
+        Quaternion orientation = transform.rotation;
+
+        // 使用 BoxCastAll 穿透所有敌人
+        RaycastHit[] hits = Physics.BoxCastAll(center, halfExtents, transform.forward, orientation, thrustDistance, StatBlock.layersToDamageByAOE);
+
+        foreach (var hit in hits)
+        {
+            if (!hit.collider.CompareTag("Enemy")) continue;
+
+            Health h = hit.collider.GetComponentInParent<Health>();
+            if (h != null)
+            {
+                // 1. 造成伤害
+                h.TakeDamage(damage, hit.point, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
+
+                // 2. 触发闪电链 (如果是雷光刺)
+                // 这里的 currentStone 已经在 WeaponPart 中，我们直接检查属性
+                if (currentStone != null && (currentStone.applyChain || currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)))
+                {
+                    // 调用你现有的闪电链逻辑
+                    ChainLightningFromTarget(h.transform, StatBlock.baseChainCount, Mathf.RoundToInt(damage * 0.5f), StatBlock.chainRange);
+                }
+
+                // 3. 产生命中特效
+                if (StatBlock.hitEffectPrefab != null)
+                {
+                    Instantiate(StatBlock.hitEffectPrefab, hit.point, Quaternion.identity);
+                }
+            }
+        }
+    }
+
+    private void PerformMeleeAttack(Vector3 dir, int damage, float scale)
+    {
+        // 1. 播放特效
+        if (StatBlock.slashEffectPrefab != null)
+        {
+            GameObject vfx = Instantiate(StatBlock.slashEffectPrefab, firePoint.position, Quaternion.LookRotation(dir));
+            vfx.transform.localScale = Vector3.one * (StatBlock.baseAoeRadius * scale);
+        }       
+
+        // 2. 范围检测
+        float range = StatBlock.baseAoeRadius * scale;
+        Collider[] hits = Physics.OverlapSphere(firePoint.position, range, StatBlock.layersToDamageByAOE);
+
+        foreach (var hit in hits)
+        {
+            if (!hit.CompareTag("Enemy")) continue;
+
+            // 角度检测 (简单版)
+            Vector3 toTarget = (hit.transform.position - firePoint.position).normalized;
+            // Vector3.Angle 返回 0-180。如果 attackAngle 是 180，则只要在前方 90 度内都算命中。
+            if (Vector3.Angle(dir, toTarget) < StatBlock.attackAngle / 2)
+            {
+                Health h = hit.GetComponentInParent<Health>();
+                if (h != null)
+                {
+                    h.TakeDamage(damage, hit.transform.position, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
+
+                    // 爆炎斩：由于是 MeleeAOE，可以在这里额外施加 StatusEffectReceiver 的 Burn
+                    // 这一步其实已经在 WeaponStatBlock 的 currentStone 逻辑里处理了 (如果你的 WeaponPart Update 里有通用命中处理)
+                    // 但 Melee 是瞬间判定，所以需要在这里手动补一下石头效果：
+                    if (currentStone != null)
+                    {
+                        StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
+                        if (receiver != null && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn))
+                        {
+                            receiver.ApplyBurn(currentStone.burnDamage, currentStone.burnDuration, currentStone.burnTickInterval, StatBlock.weaponName);
+                        }
+                    }
+                }
+            }
         }
     }
     #endregion

@@ -27,6 +27,14 @@ public class WeaponStatBlock : ScriptableObject
     [Tooltip("要挂载到机甲上的武器部件预制件 (WeaponPart Prefab)")]
     public GameObject weaponPartPrefab;
 
+    [Header("视觉表现")]
+    [Tooltip("这把武器的代表色 (HDR)。例如：斩击用橙色，疾风之刃用青色。")]
+    [ColorUsage(true, true)]
+    public Color weaponGlowColor = new Color(1f, 0.5f, 0f) * 2f; // 默认橙色高亮
+    [Header("视觉模型")]
+    [Tooltip("这把武器在背后漂浮时的模型预制体 (包含MeshRenderer和CooldownMaterial脚本)")]
+    public GameObject floatingModelPrefab; // <--- 新增这个字段
+
     [Header("特殊规则")]
     [Tooltip("勾选后，此技能在释放一次后就会被禁用")]
     public bool isOneShot = false; // 是否为一次性技能
@@ -210,6 +218,23 @@ public class WeaponStatBlock : ScriptableObject
     [Header("近战范围攻击属性 (仅 Behavior=MeleeAOE 时有效)")]
     [Tooltip("攻击时产生的刀光/挥砍特效预制件")]
     public GameObject slashEffectPrefab;
+
+    [Header("近战 - 高级特性 (Melee Advanced)")]
+    [Tooltip("多段攻击次数 (例如雷光刺设为 3)")]
+    public int multiHitCount = 1;
+
+    [Tooltip("多段攻击的时间间隔 (秒)")]
+    public float multiHitInterval = 0.1f;
+
+    [Tooltip("攻击时是否强制朝向最近的敌人 (用于雷光刺)")]
+    public bool autoAimMelee = false;
+
+    /*[Tooltip("地面残留物预制体 (例如爆炎斩留下的燃烧区域)")]
+    public GameObject groundHazardPrefab;
+
+    [Tooltip("地面残留物持续时间")]
+    public float groundHazardDuration = 3f;*/
+
 
     [Tooltip("攻击判定的扇形角度。90代表角色前方90度的锥形。360代表圆形。")]
     [Range(0, 360)]

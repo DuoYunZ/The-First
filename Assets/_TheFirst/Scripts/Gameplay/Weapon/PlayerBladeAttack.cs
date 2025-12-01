@@ -71,6 +71,11 @@ public class PlayerBladeAttack : MonoBehaviour
             cooldownTimer = cooldownDuration;
         }
         myWeaponPart = GetComponent<WeaponPart>();
+
+        if (floatingWeapon == null)
+        {
+            floatingWeapon = GetComponentInChildren<FloatingWeaponController>();
+        }
     }
 
     void Update()
@@ -89,8 +94,24 @@ public class PlayerBladeAttack : MonoBehaviour
         isAttacking = true;
         weaponCooldownMaterial?.StartCooldown(cooldownDuration);
 
-        if (floatingWeapon != null) floatingWeapon.HideWeapon();
-        if (flashEffectPrefab != null) Instantiate(flashEffectPrefab, floatingWeapon.transform.position, floatingWeapon.transform.rotation);
+        if (floatingWeapon != null)
+        {
+            floatingWeapon.HideWeapon();
+        }
+
+        Transform effectTransform = transform; // 默认值
+        if (floatingWeapon != null)
+        {
+            effectTransform = floatingWeapon.transform;
+        }
+        else if (slashSpawnPoint != null)
+        {
+            effectTransform = slashSpawnPoint;
+        }
+        if (flashEffectPrefab != null)
+        {
+            Instantiate(flashEffectPrefab, effectTransform.position, effectTransform.rotation);
+        }
 
         // --- 音效时序逻辑 ---
         // 1. 如果设置为提前播放音效

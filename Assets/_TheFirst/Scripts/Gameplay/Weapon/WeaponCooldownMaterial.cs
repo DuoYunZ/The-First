@@ -11,7 +11,9 @@ public class WeaponCooldownMaterial : MonoBehaviour
     [Header("发光设置")]
     [Tooltip("自发光的基础颜色")]
     [ColorUsage(true, true)] // 允许在颜色拾取器中使用HDR
-    public Color emissionColor = new Color(1.0f, 0.5f, 0.0f);
+    public Color defaultEmissionColor = new Color(1.0f, 0.5f, 0.0f); // 默认颜色
+
+    private Color currentEmissionColor;
 
     [Tooltip("冷却开始时的最低发光强度")]
     public float minIntensity = -10f;
@@ -26,16 +28,23 @@ public class WeaponCooldownMaterial : MonoBehaviour
 
     void Awake()
     {
-        propBlock = new MaterialPropertyBlock();
+        if (targetRenderer == null) targetRenderer = GetComponentInChildren<Renderer>();
+        currentEmissionColor = defaultEmissionColor;
 
-        // 如果没有手动指定渲染器，就自动在子物体中查找第一个
-        if (targetRenderer == null)
-        {
-            targetRenderer = GetComponentInChildren<Renderer>();
-        }
+        // Ensure propBlock is ready
+        if (propBlock == null) propBlock = new MaterialPropertyBlock();
 
-        // 初始状态设置为满能量
         SetChargedEffect();
+    }
+    public void SetEmissionColor(Color newColor)
+    {
+        currentEmissionColor = newColor;
+        SetIntensity(maxIntensity); // Apply immediately
+    }
+    public void ResetEmissionColor()
+    {
+        currentEmissionColor = defaultEmissionColor;
+        SetIntensity(maxIntensity);
     }
 
     /// <summary>
@@ -44,48 +53,33 @@ public class WeaponCooldownMaterial : MonoBehaviour
     /// <param name="duration">冷却持续时间 (秒)</param>
     public void StartCooldown(float duration)
     {
-        // 【调试日志 1】检查方法是否被调用，以及冷却时间是否正确
-        Debug.Log($"[WeaponMaterial] StartCooldown called with duration: {duration}");
+        if (activeCooldownCoroutine != null) StopCoroutine(activeCooldownCoroutine);
 
-        if (activeCooldownCoroutine != null)
-        {
-            StopCoroutine(activeCooldownCoroutine);
-        }
+        if (duration <= 0) { SetChargedEffect(); return; }
 
-        // 【调试日志 2】检查传入的 duration 是否有效
-        if (duration <= 0)
+        // 【新增】双重保险：如果在非激活物体上启动，直接跳过并设置满状态
+        if (!this.gameObject.activeInHierarchy)
         {
-            Debug.LogWarning("[WeaponMaterial] Cooldown duration is 0 or negative. Animation skipped. Setting to charged.");
+            // Debug.LogWarning($"[Cooldown] 试图在非激活物体 {name} 上启动协程，已忽略。");
             SetChargedEffect();
-            return; // 如果时间无效，则直接设置为满能量状态并返回
+            return;
         }
 
         activeCooldownCoroutine = StartCoroutine(CooldownEffect(duration));
     }
 
+
     private IEnumerator CooldownEffect(float duration)
     {
         float elapsedTime = 0f;
-
-        // 【调试日志 3】确认强度是否被设置为最小值
-        Debug.Log("[WeaponMaterial] Coroutine started. Setting intensity to min: " + minIntensity);
         SetIntensity(minIntensity);
-
         while (elapsedTime < duration)
         {
             elapsedTime += Time.deltaTime;
             float progress = Mathf.Clamp01(elapsedTime / duration);
-            float currentIntensity = Mathf.Lerp(minIntensity, maxIntensity, progress);
-            SetIntensity(currentIntensity);
-
-            // 【调试日志 4】（可选，如果需要可以取消注释）在循环中持续打印进度
-            // Debug.Log($"[WeaponMaterial] Cooldown progress: {progress * 100:F1}%, Current Intensity: {currentIntensity:F2}");
-
+            SetIntensity(Mathf.Lerp(minIntensity, maxIntensity, progress));
             yield return null;
         }
-
-        // 【调试日志 5】确认协程是否正常结束
-        Debug.Log("[WeaponMaterial] Cooldown finished. Setting intensity to max: " + maxIntensity);
         SetChargedEffect();
     }
 
@@ -104,13 +98,13 @@ public class WeaponCooldownMaterial : MonoBehaviour
     {
         if (targetRenderer == null) return;
 
-        // 获取当前的属性块，以防其他脚本也在修改它
+        // Lazy initialization to prevent crashes if called before Awake
+        if (propBlock == null) propBlock = new MaterialPropertyBlock();
+
         targetRenderer.GetPropertyBlock(propBlock);
 
-        // URP Lit Shader 使用颜色乘以 2^强度 来计算HDR颜色
-        Color finalColor = emissionColor * Mathf.Pow(2, intensity);
+        Color finalColor = currentEmissionColor * Mathf.Pow(2, intensity);
 
-        // 设置颜色并应用到渲染器
         propBlock.SetColor(EmissionColorID, finalColor);
         targetRenderer.SetPropertyBlock(propBlock);
     }

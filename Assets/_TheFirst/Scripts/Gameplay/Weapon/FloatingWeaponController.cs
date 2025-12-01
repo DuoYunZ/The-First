@@ -21,6 +21,8 @@ public class FloatingWeaponController : MonoBehaviour
     [Tooltip("武器的模型/视觉部分，用于显示和隐藏")]
     public GameObject weaponVisual;
 
+    private Renderer[] visualRenderers;
+
     // 私有变量
     private Vector3 positionVelocity;
     private Vector3 baseLocalPosition;
@@ -29,10 +31,9 @@ public class FloatingWeaponController : MonoBehaviour
     {
         if (weaponVisual != null)
         {
-            baseLocalPosition = weaponVisual.transform.localPosition;
+            RefreshRenderers();
         }
 
-        // 【核心修正】在开始时，立即将武器传送到目标位置
         if (targetToFollow != null)
         {
             transform.position = targetToFollow.position;
@@ -40,19 +41,52 @@ public class FloatingWeaponController : MonoBehaviour
         }
     }
 
+    public GameObject SwapModel(GameObject newModelPrefab)
+    {
+        // 1. 如果没有新模型，或者新模型和当前一样，就不动
+        // (简单的名字检查，防止重复生成)
+        if (newModelPrefab == null) return null;
+        if (weaponVisual != null && weaponVisual.name.StartsWith(newModelPrefab.name)) return weaponVisual;
+
+        // 2. 销毁旧模型
+        if (weaponVisual != null)
+        {
+            Destroy(weaponVisual);
+        }
+
+        // 3. 生成新模型
+        weaponVisual = Instantiate(newModelPrefab, transform);
+        weaponVisual.transform.localPosition = Vector3.zero;
+        weaponVisual.transform.localRotation = Quaternion.identity;
+
+        // 4. 重置状态
+        baseLocalPosition = Vector3.zero;
+
+        // 5. 刷新缓存
+        RefreshRenderers();
+
+        return weaponVisual;
+    }
+
+    private void RefreshRenderers()
+    {
+        if (weaponVisual != null)
+        {
+            // includeInactive = true 确保刚生成还没激活也能找到
+            visualRenderers = weaponVisual.GetComponentsInChildren<Renderer>(true);
+        }
+    }
+
     // 使用LateUpdate可以防止角色移动时的抖动
     void LateUpdate()
     {
-        Debug.Log("Time.timeScale is: " + Time.timeScale); // <-- 添加这行
         if (targetToFollow == null) return;
 
-        // 1. 延迟位置跟随
+        // 跟随逻辑 (保持不变)
         transform.position = Vector3.SmoothDamp(transform.position, targetToFollow.position, ref positionVelocity, followSmoothTime);
-
-        // 2. 延迟旋转跟随
         transform.rotation = Quaternion.Slerp(transform.rotation, targetToFollow.rotation, Time.deltaTime / rotationSmoothTime);
 
-        // 3. 上下漂浮
+        // 漂浮逻辑 (保持不变)
         if (weaponVisual != null)
         {
             float bobOffset = Mathf.Sin(Time.time * bobSpeed) * bobAmount;
@@ -63,11 +97,13 @@ public class FloatingWeaponController : MonoBehaviour
     // 公开方法，用于从其他脚本控制武器的显隐
     public void ShowWeapon()
     {
-        if (weaponVisual != null) weaponVisual.SetActive(true);
+        if (visualRenderers != null)
+            foreach (var r in visualRenderers) r.enabled = true;
     }
 
     public void HideWeapon()
     {
-        if (weaponVisual != null) weaponVisual.SetActive(false);
+        if (visualRenderers != null)
+            foreach (var r in visualRenderers) r.enabled = false;
     }
 }

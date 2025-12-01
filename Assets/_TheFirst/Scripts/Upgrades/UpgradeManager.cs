@@ -56,27 +56,98 @@ public class UpgradeManager : MonoBehaviour
 
     private void HandlePlayerLevelUp(int newLevel)
     {
-        List<SkillTreeNodeData> availableUpgrades = GetAvailableUpgrades();
-        if (availableUpgrades.Count == 0) return;
         Time.timeScale = 0f;
-
         offeredUpgrades.Clear();
-        var shuffledUpgrades = availableUpgrades.OrderBy(a => Random.value).ToList();
-        int count = Mathf.Min(3, shuffledUpgrades.Count);
-        for (int i = 0; i < count; i++)
+
+        // --- 【核心修改】步骤 1: 优先检查进化 ---
+        EvolutionRecipeSO evolutionRecipe = null;
+        if (WeaponController.Instance != null)
         {
-            offeredUpgrades.Add(shuffledUpgrades[i]);
+            evolutionRecipe = WeaponController.Instance.GetPendingEvolution();
         }
 
-        foreach (Transform child in cardContainer)
+        if (evolutionRecipe != null)
         {
-            Destroy(child.gameObject);
+            // 如果有进化配方，我们创建一个临时的“进化节点”
+            // 这样 UI 就能显示它，而不需要我们在数据库里预先配置
+            SkillTreeNodeData evoNode = CreateEvolutionNode(evolutionRecipe);
+            offeredUpgrades.Add(evoNode);
+
+            // 策略选择：
+            // A. 进化时刻只显示这一张卡 (强制进化，类吸血鬼幸存者宝箱) -> 直接跳过后续抽卡
+            // B. 进化卡混在普通卡里 -> 继续下面的抽卡逻辑 (需注意 count - 1)
+
+            // 这里演示方案 A (更有仪式感):
+            Debug.Log($"[UpgradeManager] 发现进化配方: {evolutionRecipe.evolutionName}");
         }
+        else
+        {
+            // --- 如果没有进化，才执行常规抽卡 ---
+            List<SkillTreeNodeData> availableUpgrades = GetAvailableUpgrades();
+            if (availableUpgrades.Count > 0)
+            {
+                var shuffledUpgrades = availableUpgrades.OrderBy(a => Random.value).ToList();
+                int count = Mathf.Min(3, shuffledUpgrades.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    offeredUpgrades.Add(shuffledUpgrades[i]);
+                }
+            }
+        }
+        // ----------------------------------------
+
+        if (offeredUpgrades.Count == 0)
+        {
+            Time.timeScale = 1f; // 没东西升了，直接恢复
+            return;
+        }
+
+        // 刷新 UI
+        foreach (Transform child in cardContainer) Destroy(child.gameObject);
         activeCardUIs.Clear();
         upgradePanel.SetActive(true);
-
         StartCoroutine(ShowCardsSequentially());
     }
+
+    private SkillTreeNodeData CreateEvolutionNode(EvolutionRecipeSO recipe)
+    {
+        // 在内存中创建一个临时的 ScriptableObject 实例
+        SkillTreeNodeData node = ScriptableObject.CreateInstance<SkillTreeNodeData>();
+
+        node.skillName = recipe.evolutionName; // "疾风之刃"
+        node.skillIcon = recipe.evolvedWeapon.weaponIcon; // 用新武器的图标
+
+        // 创建一个选项
+        UpgradeOption option = new UpgradeOption();
+        option.description = recipe.description; // "进化！发射穿透风刃..."
+        option.rarity = Rarity.Epic; // 进化通常是史诗级的金色
+        option.effects = new List<UpgradeEffect>();
+
+        // 这里我们需要一种新的 ActionType 来告诉系统“这是进化”
+        // 但为了不改动太多底层代码，我们可以复用 'UnlockWeapon' 
+        // 并把 evolvedWeapon 传进去。
+        // *或者* 最好是在 UpgradeEffect.cs 里加一个 'EvolveWeapon' 类型。
+        // 为了稳健，我们假设你还没有加那个枚举，我们先用 UnlockWeapon 变通一下，
+        // 或者我们直接在 ApplyEffect 里通过名字判断。
+
+        // 推荐方案：去 UpgradeEffect.cs 加一个 EffectActionType.EvolveWeapon
+        // 这里假设你已经加了 (稍后步骤会提示你加)
+        UpgradeEffect effect = new UpgradeEffect();
+        effect.actionType = EffectActionType.EvolveWeapon; // <--- 需新增枚举
+        effect.weaponToUnlock = recipe.baseWeapon; // 这里的逻辑是：我们要进化的是 BaseWeapon
+                                                   // 或者我们可以存 evolvedWeapon，这取决于 WeaponController 怎么处理
+
+        // 实际上 WeaponController.TryUpgradeWeapon 需要的是“基础武器的名字”
+        // 既然 UpgradeEffect 没有 string 字段，我们可以借用 weaponToUnlock.weaponName
+        effect.weaponToUnlock = recipe.baseWeapon;
+
+        option.effects.Add(effect);
+
+        node.possibleOptions = new List<UpgradeOption> { option };
+
+        return node;
+    }
+
     private IEnumerator ShowCardsSequentially()
     {
         foreach (var upgradeNode in offeredUpgrades)
@@ -191,6 +262,14 @@ public class UpgradeManager : MonoBehaviour
             else if (effect.actionType == EffectActionType.UnlockShield)
             {
                 if (effect.shieldToUnlock != null && PlayerShield.Instance != null) { PlayerShield.Instance.EquipShield(effect.shieldToUnlock); }
+            }
+            else if (effect.actionType == EffectActionType.EvolveWeapon)
+            {
+                if (WeaponController.Instance != null && effect.weaponToUnlock != null)
+                {
+                    // 我们传递基础武器的名字，Controller 会自动去匹配配方并进化
+                    WeaponController.Instance.TryUpgradeWeapon(effect.weaponToUnlock.weaponName);
+                }
             }
         }
 
