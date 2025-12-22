@@ -54,6 +54,10 @@ public class StatusEffectReceiver : MonoBehaviour
     private GameObject stunVfxInstance; // (我们把这个也改成私有变量)
     private GameObject burnVfxInstance; // <--- vvv 新增
 
+    public bool IsElectrified { get; private set; } = false; // [新增] 感电状态
+    public GameObject electrifiedVfxPrefab; // [新增] 感电特效
+    private GameObject electrifiedVfxInstance;
+
     private string currentBurnSource = "";
     private string currentCorrodeSource = "";
 
@@ -241,23 +245,20 @@ public class StatusEffectReceiver : MonoBehaviour
         activeStatusCoroutines[DebuffType.Stun] = stunCoroutine; //
     }
 
-    public void ApplyKnockback(Vector3 forceDirection, float forceAmount)
+    public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
-        if (meleeAttackScript != null)
-        {
-            meleeAttackScript.InterruptAttack();
-        }
+        // 1. 打断攻击
+        if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
+        if (projectileAttackScript != null) projectileAttackScript.InterruptAttack();
 
-        if (projectileAttackScript != null)
-            projectileAttackScript.InterruptAttack(); // <--- [新增]
-        // 将击退请求转发给正确的 AI 脚本
+        // 2. 转发给 AI
         if (enemyAI != null)
         {
-            enemyAI.ApplyKnockback(forceDirection, forceAmount); //
+            enemyAI.ApplyKnockback(forceDirection, forceAmount, duration);
         }
         if (straightMoverAI != null)
         {
-            straightMoverAI.ApplyKnockback(forceDirection, forceAmount); //
+            straightMoverAI.ApplyKnockback(forceDirection, forceAmount);
         }
     }
 
@@ -507,5 +508,28 @@ public class StatusEffectReceiver : MonoBehaviour
 
         // 3. 结束燃烧
         StopBurn();
+    }
+    public void ApplyElectrified(float duration)
+    {
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Electrified)) // 需在枚举里加 Electrified
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Electrified]);
+        }
+        activeStatusCoroutines[DebuffType.Electrified] = StartCoroutine(ElectrifiedRoutine(duration));
+    }
+    private IEnumerator ElectrifiedRoutine(float duration)
+    {
+        IsElectrified = true;
+        // 生成感电特效 (滋滋滋的电流)
+        if (electrifiedVfxPrefab != null && electrifiedVfxInstance == null)
+        {
+            electrifiedVfxInstance = Instantiate(electrifiedVfxPrefab, transform.position, Quaternion.identity, transform);
+        }
+
+        yield return new WaitForSeconds(duration);
+
+        IsElectrified = false;
+        if (electrifiedVfxInstance != null) Destroy(electrifiedVfxInstance);
+        activeStatusCoroutines.Remove(DebuffType.Electrified);
     }
 }

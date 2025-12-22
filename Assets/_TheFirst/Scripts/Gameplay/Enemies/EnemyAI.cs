@@ -139,7 +139,7 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator KnockbackRoutine(Vector3 force, float duration)
     {
         // --- vvv 新增 Debug 1 vvv ---
-        Debug.Log($"<color=orange>KnockbackRoutine: 启动！施加的力: {force.magnitude}</color>");
+        //Debug.Log($"<color=orange>KnockbackRoutine: 启动！施加的力: {force.magnitude}</color>");
         // --- ^^^ 新增结束 ^^^ ---
 
         // 1. 禁用 NavMeshAgent 对位置的控制

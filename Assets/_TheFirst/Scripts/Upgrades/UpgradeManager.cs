@@ -245,15 +245,11 @@ public class UpgradeManager : MonoBehaviour
     /// </summary>
     public void OnUpgradeOptionSelected(SkillTreeNodeData sourceNode, UpgradeOption chosenOption)
     {
-        // 1. 应用卡片效果 (保持不变)
-        //    【重要】当 effect.statToModify 是 BoomerangStackUpgrade 时，
-        //    PlayerStats.ApplyEffect 内部会自动处理回旋镖的升级逻辑。
         foreach (UpgradeEffect effect in chosenOption.effects)
         {
             if (effect.actionType == EffectActionType.ModifyStat)
             {
-                if (PlayerStats.Instance != null) { PlayerStats.Instance.ApplyEffect(effect); } // <-- 这里会处理 BoomerangStackUpgrade
-                else { Debug.LogError("PlayerStats Instance not found!"); }
+                if (PlayerStats.Instance != null) { PlayerStats.Instance.ApplyEffect(effect); }
             }
             else if (effect.actionType == EffectActionType.UnlockWeapon)
             {
@@ -267,8 +263,53 @@ public class UpgradeManager : MonoBehaviour
             {
                 if (WeaponController.Instance != null && effect.weaponToUnlock != null)
                 {
-                    // 我们传递基础武器的名字，Controller 会自动去匹配配方并进化
                     WeaponController.Instance.TryUpgradeWeapon(effect.weaponToUnlock.weaponName);
+                }
+            }
+        }
+
+        if (WeaponController.Instance != null)
+        {
+            // 遍历玩家手里的所有武器
+            foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
+            {
+                bool matchFound = false;
+
+                // 判定方式 A: 检查 ScriptableObject 里的 "Associated Weapon" 字段 (最准确)
+                // (注意：你需要确保 SkillTreeNodeData 脚本里有 associatedWeapon 这个 public 字段)
+                if (sourceNode.associatedWeapon != null && sourceNode.associatedWeapon == ownedWrapper.stats)
+                {
+                    matchFound = true;
+                }
+                // 判定方式 B: 如果没配字段，回退到名字匹配 (例如 "手雷Lv5" 包含 "手雷")
+                else if (sourceNode.skillName.Contains(ownedWrapper.stats.weaponName))
+                {
+                    matchFound = true;
+                }
+
+                if (matchFound)
+                {
+                    // 只有当武器没满级时才加
+                    if (ownedWrapper.currentLevel < ownedWrapper.stats.maxLevel)
+                    {
+                        ownedWrapper.currentLevel++; // 1. 提升数据层级
+
+                        // 2. 同步给场景里的实体 WeaponPart
+                        if (ownedWrapper.weaponPartInstance != null)
+                        {
+                            ownedWrapper.weaponPartInstance.currentLevel = ownedWrapper.currentLevel;
+                        }
+
+                        Debug.Log($"<color=green>[UpgradeManager] 武器同步升级: '{ownedWrapper.stats.weaponName}' 升到了 Lv.{ownedWrapper.currentLevel}</color>");
+                    }
+                    else
+                    {
+                        // 如果已经是满级(Lv.5)，再升级可能是单纯加属性，这里不报错
+                        Debug.Log($"[UpgradeManager] '{ownedWrapper.stats.weaponName}' 已达等级上限，仅应用属性加成。");
+                    }
+
+                    // 找到一个匹配的就退出循环
+                    break;
                 }
             }
         }

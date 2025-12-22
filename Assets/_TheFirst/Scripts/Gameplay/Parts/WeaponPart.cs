@@ -297,12 +297,39 @@ public class WeaponPart : MonoBehaviour
 
     public void ChainLightningFromTarget(Transform startTarget, int maxChains, int damage, float range)
     {
-        if (startTarget == null || currentStone == null || (!currentStone.applyChain && !currentStone.applySmite)) //
+        // 1. 基础安全检查 (移除对 currentStone 的检查！)
+        if (startTarget == null || maxChains <= 0)
         {
-            return; // 安全检查
+            return;
         }
 
-        StartCoroutine(ChainLightningRoutine(startTarget, maxChains, damage, range, currentStone.chainVfxPrefab, currentStone.chainImpactVfxPrefab)); //
+        // 2. 决定使用哪个特效
+        // 优先使用石头特效；如果没有石头，使用 WeaponStatBlock 里的原生特效
+        GameObject chainVfxToUse = null;
+        GameObject impactVfxToUse = null;
+
+        if (currentStone != null && currentStone.chainVfxPrefab != null)
+        {
+            // 有石头，用石头的
+            chainVfxToUse = currentStone.chainVfxPrefab;
+            impactVfxToUse = currentStone.chainImpactVfxPrefab;
+        }
+        else
+        {
+            // 没石头，用 StatBlock 原生的
+            // 注意：StatBlock 可能会空，所以加个 ?. 检查
+            chainVfxToUse = StatBlock?.nativeChainVfxPrefab;
+            impactVfxToUse = StatBlock?.defaultImpactEffectPrefab; // 或者是 nativeChainImpact，暂时用通用的
+        }
+
+        // 3. 如果连原生的都没配，尝试用 WeaponPart 自身 Inspector 里的备份 (你现有的 lightningChainPrefab)
+        if (chainVfxToUse == null)
+        {
+            chainVfxToUse = this.lightningChainPrefab;
+        }
+        if (impactVfxToUse == null) impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
+        // 4. 启动协程
+        StartCoroutine(ChainLightningRoutine(startTarget, maxChains, damage, range, chainVfxToUse, impactVfxToUse));
     }
     private IEnumerator ChainLightningRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange, GameObject chainVfx, GameObject impactVfx)
     {
@@ -824,7 +851,7 @@ public class WeaponPart : MonoBehaviour
                 InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break;
 
             case WeaponBehaviorType.MeleeAOE:
-                // 进入近战分支，启动协程处理连击
+                // 必须调用 StartCoroutine 启动协程，才能实现“三连刺”
                 StartCoroutine(MeleeAttackRoutine(finalDamage, finalScale));
                 break;
             case WeaponBehaviorType.ParabolicAOE: //
@@ -1120,6 +1147,7 @@ public class WeaponPart : MonoBehaviour
             Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
             GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
             orbiterGO.transform.localPosition = spawnPos; // Position relative to pivot
+            orbiterGO.transform.localRotation = Quaternion.Euler(0, angle, 0);
             orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage, this);
         }
 

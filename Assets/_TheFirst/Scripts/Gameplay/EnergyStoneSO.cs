@@ -69,6 +69,9 @@ public class EnergyStoneSO : ScriptableObject
 
     [Header("元素 (雷电)")]
     public bool applyChain = false;
+    [Tooltip("雷击触发几率 (0.2 = 20%)")]
+    [Range(0f, 1f)]
+    public float lightningChance = 0.2f; // 默认为 20%
     [Tooltip("连锁闪电额外弹射的目标数量")]
     public int chainTargets = 2;
     [Tooltip("连锁闪电的弹射半径")]

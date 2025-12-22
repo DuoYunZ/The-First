@@ -79,6 +79,32 @@ public class WeaponStatBlock : ScriptableObject
     public int baseChainCount = 0; // <--- 新增
     [Tooltip("连锁攻击寻找下一个目标的范围半径。")]
     public float chainRange = 10f; // <--- 新增
+    [Tooltip("原生雷击的特效 (当没有插雷石时使用)")]
+    public GameObject nativeSmiteVfxPrefab;
+    [Tooltip("原生闪电链的连线特效 (当没有插雷石时使用)")]
+    public GameObject nativeChainVfxPrefab;
+    [Tooltip("原生闪电链的受击/命中特效 (击中敌人时的爆炸/火花)")]
+    public GameObject nativeChainImpactVfxPrefab;
+
+    [Header("手雷/抛物线进化特有 (Grenade Evolution)")]
+
+    [Tooltip("爆炸后生成的地面残留物 (例如：凝固汽油弹的火海)")]
+    public GameObject groundHazardPrefab; // 复用之前给爆炎斩提过的字段，如果没有请加上
+    [Tooltip("地面残留物持续时间")]
+    public float groundHazardDuration = 5f;
+
+    [Tooltip("【奇点手雷】是否将击退改为吸力？")]
+    public bool isBlackHole = false;
+    [Tooltip("吸力强度 (会将怪拉向爆炸中心)")]
+    public float blackHoleForce = 15f;
+
+    [Tooltip("【分裂毒爆】爆炸后分裂出的子弹预制体 (毒爆虫)")]
+    public GameObject subProjectilePrefab;
+    [Tooltip("分裂数量")]
+    public int subProjectileCount = 6;
+
+    [Tooltip("分裂子弹的命中/爆炸特效 (例如小型的毒液爆炸)")]
+    public GameObject subProjectileHitVfx;
 
     [Header("特效与层设置")]
     [Tooltip("枪口火焰特效预制件")]
@@ -263,6 +289,30 @@ public class WeaponStatBlock : ScriptableObject
     [Tooltip("回旋镖飞出的最大距离 (Max outbound distance)")]
     public float returnOvershootDistance = 15f;
 
-   
 
+    [Header("原生元素属性 (Native Elements)")]
+    [Tooltip("勾选后，即使不插火石，武器也自带燃烧效果")]
+    public bool nativeBurn = false;
+
+    [Tooltip("勾选后，即使不插风石，武器也自带击退效果")]
+    public bool nativeKnockback = false;
+    [Tooltip("原生击退力度 (仅当 nativeKnockback 为 true 时有效)")]
+    public float nativeKnockbackForce = 10f;
+    [Header("元素联动 (Elemental Synergy)")]
+    [Tooltip("当此抛射物经过 'BurningGround' 标签的物体上方时，留下的火径预制体")]
+    public GameObject synergyFireTrailPrefab;
+    [Tooltip("火径生成间隔 (秒/个)，数值越小火径越密集")]
+    public float fireTrailSpawnRate = 0.15f;
+
+    [Tooltip("原生雷击触发几率")]
+    public float nativeLightningChance = 0.2f;
+    [Tooltip("原生是否施加感电")]
+    public bool nativeElectrify = false;
+
+    [Tooltip("勾选后，即使不插毒石，武器也自带腐蚀/剧毒效果")]
+    public bool nativeCorrode = false;
+    [Tooltip("原生腐蚀易伤倍率 (例如 1.2 表示增伤 20%)")]
+    public float nativeCorrodeMultiplier = 1.2f;
+    [Tooltip("原生腐蚀颜色")]
+    public Color nativeCorrodeColor = new Color(0.5f, 1f, 0.5f); // 默认毒液绿
 }

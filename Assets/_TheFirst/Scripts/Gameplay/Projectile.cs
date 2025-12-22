@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -34,6 +35,8 @@ public class Projectile : MonoBehaviour
     public float explosionRadius = 3f;
     public LayerMask damageableLayers;
     public LayerMask groundAndWallLayers;
+
+    private float trailSpawnTimer = 0f; // 用于控制火径生成频率的计时器
 
     // --- 穿透相关变量 ---
     private int pierceCount = 1;
@@ -382,7 +385,7 @@ public class Projectile : MonoBehaviour
             transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
         }
 
-        // --- Existing Damage Cooldown Logic ---
+        // 冷却逻辑
         if (hitCooldowns.Count > 0)
         {
             List<Health> keys = new List<Health>(hitCooldowns.Keys);
@@ -393,22 +396,116 @@ public class Projectile : MonoBehaviour
                 if (hitCooldowns[key] <= 0) { hitCooldowns.Remove(key); }
             }
         }
+
+        // 生命周期
         lifetime -= Time.deltaTime;
         if (lifetime <= 0)
         {
-            // 【核心修改】生命周期结束时的处理
-            Debug.Log($"[Projectile Destroy] {gameObject.name} Lifetime ended ({lifetime:F2}s). Mode={mode}, Boomerang Caught={hasBeenCaught}");
-
-            // 只有当它是【未被抓住】的回旋镖时，才通知冷却
             if (mode == ProjectileMode.Boomerang && !hasBeenCaught && launcher != null)
             {
                 launcher.StartCooldownIfNotCaught();
             }
-
-            // 只要生命周期结束就销毁 (除非是特殊情况，但这里我们简化处理)
-            // 抛物线由其碰撞逻辑处理销毁，这里不需要特殊判断了
             Destroy(gameObject);
-            // 【核心修改结束】
+        }
+
+        // =========================================================
+        // 【最终修正】元素联动逻辑
+        // =========================================================
+
+        WeaponStatBlock stats = (launcher != null) ? launcher.StatBlock : null;
+
+        if (stats != null && stats.synergyFireTrailPrefab != null)
+        {
+            trailSpawnTimer += Time.deltaTime;
+
+            if (trailSpawnTimer >= stats.fireTrailSpawnRate)
+            {
+                // 从天而降的射线 (确保能穿透火海)
+                Vector3 rayOrigin = transform.position + Vector3.up * 5f;
+                RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 15f, ~0, QueryTriggerInteraction.Collide);
+
+                bool foundFire = false;
+                Vector3 groundPosition = Vector3.zero;
+                bool foundGround = false;
+
+                // --- 第一步：遍历所有打中的东西，收集信息 ---
+                foreach (RaycastHit hit in hits)
+                {
+                    if (!hit.collider.isTrigger)
+                    {
+                        // --- 【核心修复】排除敌人！ ---
+                        // 如果打中的是敌人，或者是 Player，绝对不能当做地面处理
+                        if (hit.collider.CompareTag("Enemy") || hit.collider.CompareTag("Player"))
+                        {
+                            continue;
+                        }
+
+                        // 双重保险：检查 Layer 是否为 Enemies (防止 Tag 没设对)
+                        int enemyLayer = LayerMask.NameToLayer("Enemies");
+                        if (hit.collider.gameObject.layer == enemyLayer)
+                        {
+                            continue;
+                        }
+                        // ---------------------------
+
+                        // 剩下的才认为是合法的地面 (Ground / Default / Terrain)
+                        // 找最高点 (防止打中地底下的东西)
+                        if (!foundGround || hit.point.y > groundPosition.y)
+                        {
+                            groundPosition = hit.point;
+                            foundGround = true;
+                        }
+                    }
+                }
+
+                // --- 第二步：只有当“有火”且“有地面”时才生成 ---
+                if (foundFire && foundGround)
+                {
+                    trailSpawnTimer = 0f;
+                    Vector3 spawnPos = groundPosition + Vector3.up * 0.05f;
+
+                    GameObject trailObj = Instantiate(stats.synergyFireTrailPrefab, spawnPos, Quaternion.identity);
+                    // Debug.Log($"<color=green>[Synergy] 风火联动！扩散火海 (Y={spawnPos.y})</color>");
+
+                    GroundHazard newTrailScript = trailObj.GetComponent<GroundHazard>();
+                    if (newTrailScript != null)
+                    {
+                        // --- 【核心修改】继承伤害逻辑 ---
+                        int finalTrailDamage = 0;
+
+                        // 1. 尝试从被打中的火海里读取原本的伤害
+                        // 我们之前遍历 hits 时，肯定打中过 BurningGround
+                        // 我们重新找一下那个火海组件
+                        foreach (var hit in hits)
+                        {
+                            if (hit.collider.CompareTag("BurningGround"))
+                            {
+                                GroundHazard originalFire = hit.collider.GetComponentInParent<GroundHazard>();
+                                if (originalFire != null)
+                                {
+                                    // 完美继承：原来的火是多少伤，扩散出去的火就是多少伤
+                                    finalTrailDamage = originalFire.DamagePerTick;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // 2. 保底逻辑：如果万一没读到（比如脚本丢失），才用风刃伤害的 30%
+                        if (finalTrailDamage == 0)
+                        {
+                            finalTrailDamage = Mathf.RoundToInt(directDamage * 0.3f);
+                            if (finalTrailDamage < 1) finalTrailDamage = 1;
+                        }
+
+                        // 3. 初始化新火径
+                        // 持续时间依然由风刃决定（比如风吹过去的火留存 3秒），或者你可以改成继承 originalFire.duration
+                        string weaponName = stats.weaponName; // 这里用风刃的名字，或者是 "扩散烈焰"
+                        GameObject ownerObj = (launcher != null) ? launcher.gameObject : this.gameObject;
+
+                        newTrailScript.Initialize(finalTrailDamage, 3f, weaponName, ownerObj);
+                    }
+                }                
+            }
         }
     }
 
@@ -604,49 +701,99 @@ public class Projectile : MonoBehaviour
         if (hasExploded) return;
         hasExploded = true;
 
-        // --- 【核心修复 1】准备武器名称 ---
+        // 0. 准备数据
         string weaponName = "";
+        WeaponStatBlock stats = null;
         if (launcher != null && launcher.StatBlock != null)
         {
-            weaponName = launcher.StatBlock.weaponName;
-        }
-        // --------------------------------
-
-        if (initiallyHitCollider != null)
-        {
-            Debug.Log($"[诊断] 炮弹爆炸，初始碰撞体是: '{initiallyHitCollider.name}'...");
-        }
-        else
-        {
-            Debug.LogWarning("[诊断] 炮弹爆炸，但初始碰撞体为 null！");
-            Destroy(gameObject);
-            return;
+            stats = launcher.StatBlock;
+            weaponName = stats.weaponName;
         }
 
+        // 播放爆炸特效
         if (explosionEffectPrefab != null)
         {
             Instantiate(explosionEffectPrefab, explosionPoint, Quaternion.identity);
         }
-        Health directlyHitEnemyHealth = null;
 
-        // --- 1. 处理直接命中伤害 ---
-        if (initiallyHitCollider.CompareTag("Enemy"))
+        // =========================================================
+        //  逻辑 1: 凝固汽油弹 (生成地面火海)
+        // =========================================================
+        if (stats != null && stats.groundHazardPrefab != null)
+        {
+            Vector3 spawnPos = explosionPoint;
+            bool snapToGround = !stats.isBlackHole;
+
+            if (snapToGround)
+            {
+                int groundMask = LayerMask.GetMask("Ground", "Terrain");
+                if (groundMask == 0) groundMask = ~(LayerMask.GetMask("Enemies", "Player", "PlayerProjectile"));
+
+                if (Physics.Raycast(explosionPoint + Vector3.up * 1.0f, Vector3.down, out RaycastHit hit, 50f, groundMask))
+                {
+                    spawnPos = hit.point + Vector3.up * 0.05f;
+                }
+            }
+            else
+            {
+                spawnPos += Vector3.up * 1.0f; // 黑洞悬浮
+            }
+
+            GameObject hazardObj = Instantiate(stats.groundHazardPrefab, spawnPos, Quaternion.identity);
+
+            // --- 【核心修复】逻辑分流：互斥检查 ---
+
+            // 1. 先找火焰脚本
+            GroundHazard fireScript = hazardObj.GetComponentInChildren<GroundHazard>();
+            // 2. 再找黑洞脚本
+            BlackHoleField blackHoleScript = hazardObj.GetComponentInChildren<BlackHoleField>();
+
+            if (fireScript != null)
+            {
+                // 是火焰：初始化火焰
+                int hazardDmg = Mathf.RoundToInt(aoeDamage * 0.2f);
+                if (hazardDmg < 1) hazardDmg = 1;
+                fireScript.Initialize(hazardDmg, stats.groundHazardDuration, weaponName, launcher != null ? launcher.gameObject : null);
+            }
+            else if (blackHoleScript != null)
+            {
+                // 是黑洞：初始化黑洞
+                blackHoleScript.Initialize(stats.blackHoleForce, stats.groundHazardDuration);
+            }
+            else
+            {
+                // 既不是火焰也不是黑洞，才销毁并报错 (或者只作为纯特效)
+                Debug.LogWarning($"[Explode] 生成了 {hazardObj.name}，但上面既没有 GroundHazard 也没有 BlackHoleField 脚本。纯视觉销毁。");
+                Destroy(hazardObj, stats.groundHazardDuration);
+            }
+        }
+
+
+        // =========================================================
+        //  逻辑 2: 分裂毒爆 (生成追踪虫)
+        // =========================================================
+        if (stats != null && stats.subProjectilePrefab != null && stats.subProjectileCount > 0)
+        {
+            SpawnClusterProjectiles(explosionPoint, stats);
+        }
+
+        // =========================================================
+        //  逻辑 3: 伤害与物理效果 (含奇点手雷)
+        // =========================================================
+
+        // A. 处理直接命中 (如果有)
+        Health directlyHitEnemyHealth = null;
+        if (initiallyHitCollider != null && initiallyHitCollider.CompareTag("Enemy"))
         {
             directlyHitEnemyHealth = initiallyHitCollider.GetComponentInParent<Health>();
             if (directlyHitEnemyHealth != null && !directlyHitEnemyHealth.IsDead)
             {
-                // --- 【核心修复 2】传入 weaponName ---
                 directlyHitEnemyHealth.TakeDamage(directDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
-
-                StatusEffectReceiver receiver = directlyHitEnemyHealth.GetComponent<StatusEffectReceiver>();
-                if (receiver != null && this.dotDamage > 0 && this.dotDuration > 0)
-                {
-                    receiver.ApplyBurn(this.dotDamage, this.dotDuration, this.dotTickInterval, weaponName); // 顺便把 burn source 也传进去（如果你改了 StatusEffectReceiver 的话）
-                }
+                ApplyElementalEffects(directlyHitEnemyHealth, weaponName);
             }
         }
 
-        // --- 2. 处理范围伤害 ---
+        // B. 处理 AOE 范围目标
         Collider[] collidersInRange = Physics.OverlapSphere(explosionPoint, explosionRadius, damageableLayers);
         foreach (Collider hitCollider in collidersInRange)
         {
@@ -654,142 +801,122 @@ public class Projectile : MonoBehaviour
 
             Health healthComponent = hitCollider.GetComponentInParent<Health>();
 
-            if (healthComponent != null && healthComponent == directlyHitEnemyHealth)
-            {
-                continue;
-            }
+            // 避免重复伤害直接命中的单位
+            if (healthComponent != null && healthComponent == directlyHitEnemyHealth) continue;
 
             if (healthComponent != null)
             {
-                // --- 【核心修复 3】AOE 伤害传入 weaponName ---
+                // 1. 造成 AOE 伤害
                 healthComponent.TakeDamage(aoeDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
 
+                // 2. 应用元素特效 (大一统逻辑)
+                ApplyElementalEffects(healthComponent, weaponName);
+
+                // 3. 处理【奇点手雷 (Black Hole)】 vs 普通击退
                 StatusEffectReceiver receiver = healthComponent.GetComponent<StatusEffectReceiver>();
-                if (receiver != null)
+                if (receiver != null && stats != null)
                 {
-                    if (this.dotDamage > 0 && this.dotDuration > 0)
+                    if (stats.isBlackHole)
                     {
-                        receiver.ApplyBurn(this.dotDamage, this.dotDuration, this.dotTickInterval, weaponName);
+                        // --- 奇点逻辑：吸力 ---
+                        // 方向：从敌人位置 -> 指向爆炸中心
+                        Vector3 pullDir = (explosionPoint - healthComponent.transform.position).normalized;
+                        pullDir.y = 0; // 保持水平
+                        // 施加吸力 (复用 ApplyKnockback，因为本质都是位移)
+                        receiver.ApplyKnockback(pullDir, stats.blackHoleForce);
                     }
-
-                    if (this.stunChance > 0 && this.stunDuration > 0)
+                    else
                     {
-                        if (Random.value <= this.stunChance)
-                        {
-                            receiver.ApplyStun(this.stunDuration);
-                        }
-                    }
-
-                    if (launcher != null && launcher.currentStone != null)
-                    {
-                        EnergyStoneSO stone = launcher.currentStone;
-
-                        if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn))
-                        {
-                            int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
-                            if (fireStoneCount >= 2 && receiver.IsBurning)
-                            {
-                                receiver.Ignite();
-                            }
-                            else if (!receiver.IsBurning)
-                            {
-                                receiver.ApplyBurn(stone.burnDamage, stone.burnDuration, stone.burnTickInterval, weaponName);
-                            }
-                        }
-
-                        if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow))
-                        {
-                            receiver.ApplySlow(stone.slowPercentage, stone.slowDuration, stone.slowColor);
-
-                            int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
-                            if (iceStoneCount >= 2 && !receiver.IsStunned && Random.value <= stone.freezeChance)
-                            {
-                                receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab);
-                            }
-                        }
-
-                        if (stone.applyStun && stone.stunChance > 0 && Random.value <= stone.stunChance)
-                        {
-                            receiver.ApplyStun(stone.stunDuration);
-                        }
-
-                        if (stone.applySmite)
-                        {
-                            int smiteDamage = Mathf.RoundToInt(
-                                stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier) +
-                                PlayerStats.Instance.flatDamageBonus
-                            );
-
-                            // --- 【核心修复 4】雷击伤害也传入 weaponName ---
-                            healthComponent.TakeDamage(smiteDamage, healthComponent.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
-
-                            if (stone.smiteVfxPrefab != null)
-                            {
-                                Instantiate(stone.smiteVfxPrefab, healthComponent.transform.position, Quaternion.identity);
-                            }
-
-                            int lightningStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
-
-                            if (lightningStoneCount >= 2)
-                            {
-                                PlayerStats.Instance.lightningSmiteCounter++;
-
-                                if (PlayerStats.Instance.lightningSmiteCounter >= 5)
-                                {
-                                    PlayerStats.Instance.lightningSmiteCounter = 0;
-                                    launcher.ChainLightningFromTarget(healthComponent.transform, stone.chainTargets, smiteDamage, stone.chainRange);
-                                }
-                            }
-                        }
-                        if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun))
-                        {
-                            float finalStunChance = stone.stunChance;
-                            int stunStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyStun);
-                            if (stunStoneCount >= 2)
-                            {
-                                finalStunChance = stone.stunChance_Stacked;
-                            }
-
-                            if (Random.value <= finalStunChance && !receiver.IsStunned)
-                            {
-                                receiver.ApplyStun(stone.stunDuration);
-                            }
-                        }
-
-                        if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback))
-                        {
-                            float finalKnockbackForce = stone.knockbackForce;
-                            int knockbackStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
-                            if (knockbackStoneCount >= 2)
-                            {
-                                finalKnockbackForce = stone.knockbackForce_Stacked;
-                            }
-
-                            if (healthComponent != null)
-                            {
-                                Vector3 pushDir = (healthComponent.transform.position - launcher.transform.position).normalized;
-                                pushDir.y = 0;
-                                receiver.ApplyKnockback(pushDir, finalKnockbackForce);
-                            }
-                        }
-
-                        if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
-                        {
-                            float finalCorrodeMultiplier = stone.corrodeMultiplier;
-                            int corrodeStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode);
-                            if (corrodeStoneCount >= 2)
-                            {
-                                finalCorrodeMultiplier = stone.corrodeMultiplier_Stacked;
-                            }
-                            receiver.ApplyCorrode(finalCorrodeMultiplier, 5f, stone.corrodeColor);
-                        }
-
+                        // --- 普通逻辑：爆炸击退 (可选) ---
+                        // 如果你也想让普通手雷有击退，可以在这里写：
+                        // Vector3 pushDir = (healthComponent.transform.position - explosionPoint).normalized;
+                        // receiver.ApplyKnockback(pushDir, 5f); 
                     }
                 }
             }
         }
 
         Destroy(gameObject);
+    }
+
+    private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats)
+    {
+        // 1. --- 寻找地面生成点 ---
+        Vector3 spawnBasePos = origin;
+        // 定义地面层级 (排除敌人和玩家，防止生成在头顶)
+        int groundMask = LayerMask.GetMask("Ground",  "Terrain");
+        if (groundMask == 0) groundMask = ~(LayerMask.GetMask("Enemies", "Player", "PlayerProjectile"));
+
+        RaycastHit hit;
+        // 从爆炸点上方一点向下射，找地面
+        if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out hit, 50f, groundMask))
+        {
+            // 找到了地面，基准点设为地面点
+            spawnBasePos = hit.point;
+        }
+        else
+        {
+            // 没找到地面 (空中爆炸)，就勉强用空中点，但最好确保你的地图有地面层
+            // spawnBasePos = origin; 
+        }
+
+        for (int i = 0; i < stats.subProjectileCount; i++)
+        {
+            // 2. --- 计算随机散布方向 (仅水平面) ---
+            Vector3 spreadDir = Random.onUnitSphere; // 生成一个随机球体方向
+            spreadDir.y = 0; // 压平到水平面，让蜘蛛在地上爬散开
+            spreadDir.Normalize();
+
+            // 生成点稍微抬高一点点，防止卡进地里
+            Vector3 finalSpawnPos = spawnBasePos + Vector3.up * 0.1f;
+
+            // 3. --- 生成子弹 ---
+            GameObject subObj = Instantiate(stats.subProjectilePrefab, finalSpawnPos, Quaternion.LookRotation(spreadDir));
+
+            // 可选：让分裂出来的小蜘蛛看起来小一点
+            subObj.transform.localScale = transform.localScale * 0.6f;
+
+            // 4. --- 初始化子弹 ---
+            Projectile subScript = subObj.GetComponent<Projectile>();
+            if (subScript != null)
+            {
+                // 在地面基准点附近找目标
+                Transform target = FindRandomNearbyEnemy(spawnBasePos, 15f);
+
+                // 伤害减半
+                int subDmg = Mathf.RoundToInt(aoeDamage * 0.5f);
+                if (subDmg < 1) subDmg = 1;
+
+                // 确定特效：优先用专属特效，没有就用默认保底
+                GameObject vfxToUse = stats.subProjectileHitVfx != null ? stats.subProjectileHitVfx : defaultImpactEffectPrefab;
+
+                // 初始化为追踪弹 (Homing)
+                // 注意：最后两个参数传入我们确定的 vfxToUse
+                subScript.InitializeAsHoming(
+                    target,
+                    8f,  // 速度稍微慢点，像爬行
+                    subDmg,
+                    false,
+                    15f, // 转向速度快点，更灵活
+                    4f,  // 存活时间略长
+                    vfxToUse, // 命中特效 (Hit VFX)
+                    vfxToUse  // 障碍物特效 (Obstacle VFX) - 蜘蛛通常用同一个
+                );
+
+                // 【核心】：传递发射器引用，这让子弹能继承毒石属性！
+                subScript.launcher = this.launcher;
+            }
+        }
+    }
+
+    private Transform FindRandomNearbyEnemy(Vector3 center, float radius)
+    {
+        Collider[] hits = Physics.OverlapSphere(center, radius, damageableLayers);
+        if (hits.Length == 0) return null;
+
+        // 随机选一个
+        Collider randomCol = hits[Random.Range(0, hits.Length)];
+        return randomCol.transform;
     }
     void HandleHit(Health targetHealth, Collider hitCollider)
     {
@@ -801,129 +928,18 @@ public class Projectile : MonoBehaviour
         bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();
         GameObject attacker = creatorAttacker ?? launcher?.gameObject;
 
-        // --- 【核心修复 5】准备武器名称 ---
         string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "";
-
-        // --- 【核心修复 6】传入 weaponName 给 TakeDamage ---
         bool wasReflected = targetHealth.TakeDamage(directDamage, hitPoint, attacker, this.attackType, this, null, weaponName);
 
         if (!wasReflected)
         {
-            // --- 【核心修改】移除了手动的 BattleStatisticsManager 调用，防止双重统计 ---
-            // (因为现在 Health.TakeDamage 会自己去调 Manager)
-            // ------------------------------------------------------------------
+            ApplyElementalEffects(targetHealth, weaponName);
 
             StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
             if (receiver != null)
             {
                 if (dotDamage > 0) receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval, weaponName);
-                if (slowPercentage > 0) receiver.ApplySlow(slowPercentage, slowDuration);
-
-                if (launcher != null && launcher.currentStone != null)
-                {
-                    EnergyStoneSO stone = launcher.currentStone;
-
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn))
-                    {
-                        int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
-                        if (fireStoneCount >= 2 && receiver.IsBurning)
-                        {
-                            receiver.Ignite();
-                        }
-                        else if (!receiver.IsBurning)
-                        {
-                            receiver.ApplyBurn(stone.burnDamage, stone.burnDuration, stone.burnTickInterval, weaponName);
-                        }
-                    }
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow))
-                    {
-                        receiver.ApplySlow(stone.slowPercentage, stone.slowDuration, stone.slowColor);
-
-                        int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
-                        if (iceStoneCount >= 2 && !receiver.IsStunned && Random.value <= stone.freezeChance)
-                        {
-                            receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab);
-                        }
-                    }
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun))
-                    {
-                        if (Random.value <= stone.stunChance)
-                        {
-                            receiver.ApplyStun(stone.stunDuration);
-                        }
-                    }
-
-                    if (stone.applySmite)
-                    {
-                        int smiteDamage = Mathf.RoundToInt(
-                            stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier) +
-                            PlayerStats.Instance.flatDamageBonus
-                        );
-
-                        // --- 【核心修复 7】Smite 伤害也传入 weaponName ---
-                        targetHealth.TakeDamage(smiteDamage, targetHealth.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
-
-                        if (stone.smiteVfxPrefab != null)
-                        {
-                            Instantiate(stone.smiteVfxPrefab, targetHealth.transform.position, Quaternion.identity);
-                        }
-
-                        int lightningStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
-
-                        if (lightningStoneCount >= 2)
-                        {
-                            PlayerStats.Instance.lightningSmiteCounter++;
-
-                            if (PlayerStats.Instance.lightningSmiteCounter >= 5)
-                            {
-                                PlayerStats.Instance.lightningSmiteCounter = 0;
-                                launcher.ChainLightningFromTarget(targetHealth.transform, stone.chainTargets, smiteDamage, stone.chainRange);
-                            }
-                        }
-                    }
-
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun))
-                    {
-                        float finalStunChance = stone.stunChance;
-                        int stunStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyStun);
-                        if (stunStoneCount >= 2)
-                        {
-                            finalStunChance = stone.stunChance_Stacked;
-                        }
-
-                        if (Random.value <= finalStunChance && !receiver.IsStunned)
-                        {
-                            receiver.ApplyStun(stone.stunDuration);
-                        }
-                    }
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback))
-                    {
-                        float finalKnockbackForce = stone.knockbackForce;
-                        int knockbackStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
-                        if (knockbackStoneCount >= 2)
-                        {
-                            finalKnockbackForce = stone.knockbackForce_Stacked;
-                        }
-
-                        if (targetHealth != null)
-                        {
-                            Vector3 pushDir = (targetHealth.transform.position - launcher.transform.position).normalized;
-                            pushDir.y = 0;
-                            receiver.ApplyKnockback(pushDir, finalKnockbackForce);
-                        }
-
-                    }
-                    if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
-                    {
-                        float finalCorrodeMultiplier = stone.corrodeMultiplier;
-                        int corrodeStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode);
-                        if (corrodeStoneCount >= 2)
-                        {
-                            finalCorrodeMultiplier = stone.corrodeMultiplier_Stacked;
-                        }
-                        receiver.ApplyCorrode(finalCorrodeMultiplier, 5f, stone.corrodeColor);
-                    }
-                }
+               
             }
             HandleImpactEffect(targetHasShield, hitPoint);
             hitEnemies.Add(targetHealth);
@@ -936,6 +952,7 @@ public class Projectile : MonoBehaviour
             }
         }
     }
+    
     private void HandleBoomerangOutbound()
     {
         transform.position += direction * speed * Time.deltaTime;
@@ -993,6 +1010,150 @@ public class Projectile : MonoBehaviour
         if (effectToPlay != null)
         {
             Instantiate(effectToPlay, position, Quaternion.identity);
+        }
+    }
+
+    private void ApplyElementalEffects(Health target, string weaponName)
+    {
+        if (target == null || launcher == null || launcher.StatBlock == null) return;
+
+        StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>();
+        if (receiver == null) return;
+
+        WeaponStatBlock stats = launcher.StatBlock;
+        EnergyStoneSO stone = launcher.currentStone;
+
+        // ---------------------------------------------------------
+        // 1. 雷电逻辑 (Smite / Chain)
+        // ---------------------------------------------------------
+        // 判定：(武器自带Chain > 0) OR (有雷石)
+        bool hasChain = (stats.baseChainCount > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain));
+
+        if (hasChain)
+        {
+            // 计算雷击伤害
+            int smiteDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain))
+                ? Mathf.RoundToInt(stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier))
+                : Mathf.RoundToInt(directDamage * 0.5f); // 原生雷击：基础伤害的一半
+
+            GameObject smiteVfx = (stone != null && stone.smiteVfxPrefab != null)
+                      ? stone.smiteVfxPrefab
+                      : stats.nativeSmiteVfxPrefab;
+
+            // 造成雷击伤害
+            target.TakeDamage(smiteDmg, target.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
+            if (smiteVfx != null) Instantiate(smiteVfx, target.transform.position, Quaternion.identity);
+
+            // 计数器逻辑
+            int chainStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
+
+            // 只要是原生雷武，或者有雷石，就参与计数
+            if (stats.baseChainCount > 0 || chainStoneCount >= 1)
+            {
+                PlayerStats.Instance.lightningSmiteCounter++;
+                if (PlayerStats.Instance.lightningSmiteCounter >= 3)
+                {
+                    PlayerStats.Instance.lightningSmiteCounter = 0;
+
+                    // 确定连锁参数
+                    int cCount = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainTargets : stats.baseChainCount;
+                    float cRange = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainRange : stats.chainRange;
+
+                    launcher.ChainLightningFromTarget(target.transform, cCount, smiteDmg, cRange);
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 2. 击退逻辑 (Knockback) - 风刃修复重点
+        // ---------------------------------------------------------
+        bool hasKnockback = stats.nativeKnockback || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback));
+
+        if (hasKnockback)
+        {
+            float kForce = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback)) ? stone.knockbackForce : stats.nativeKnockbackForce;
+
+            // 堆叠加成
+            int windStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
+            if (windStoneCount >= 2 && stone != null) kForce = stone.knockbackForce_Stacked;
+
+            Vector3 pushDir = (target.transform.position - transform.position).normalized; // 从子弹推向敌人
+            pushDir.y = 0;
+            receiver.ApplyKnockback(pushDir, kForce);
+        }
+
+        // ---------------------------------------------------------
+        // 3. 火焰逻辑 (Burn)
+        // ---------------------------------------------------------
+        bool hasBurn = stats.nativeBurn || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn));
+        if (hasBurn)
+        {
+            int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
+            int bDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDamage : stats.baseDotDamage;
+            float bDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDuration : stats.baseDotDuration;
+            float bTick = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnTickInterval : stats.dotTickInterval;
+
+            if (fireStoneCount >= 2 && receiver.IsBurning) receiver.Ignite();
+            else if (!receiver.IsBurning) receiver.ApplyBurn(bDmg, bDur, bTick, weaponName);
+        }
+
+        // ---------------------------------------------------------
+        // 4. 寒冰/减速 (Slow)
+        // ---------------------------------------------------------
+        bool hasSlow = (stats.baseSlowPercentage > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow));
+        if (hasSlow)
+        {
+            float sPct = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowPercentage : stats.baseSlowPercentage;
+            float sDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowDuration : stats.baseSlowDuration;
+            Color sColor = (stone != null) ? stone.slowColor : Color.blue;
+
+            receiver.ApplySlow(sPct, sDur, sColor);
+
+            int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
+            if (iceStoneCount >= 2 && receiver.IsSlowed && !receiver.IsStunned && stone != null)
+            {
+                if (Random.value <= stone.freezeChance) receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab);
+            }
+        }
+
+        // 5. 腐蚀 (Corrode)
+        bool hasCorrode = stats.nativeCorrode || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode));
+
+        if (hasCorrode)
+        {
+            // 确定易伤倍率
+            float mult = 1.0f;
+
+            // 优先检查石头堆叠
+            int poisonStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode);
+
+            if (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
+            {
+                // 如果有石头，用石头的数值
+                mult = (poisonStoneCount >= 2) ? stone.corrodeMultiplier_Stacked : stone.corrodeMultiplier;
+            }
+            else
+            {
+                // 如果没石头(是原生属性)，用 StatBlock 的数值
+                mult = stats.nativeCorrodeMultiplier;
+            }
+
+            // 确定颜色 (优先用石头颜色，没有则用原生颜色)
+            Color cColor = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
+                           ? stone.corrodeColor
+                           : stats.nativeCorrodeColor;
+
+            // 施加腐蚀 (默认持续 5秒)
+            receiver.ApplyCorrode(mult, 5f, cColor, weaponName);
+        }
+
+        // 6. 眩晕 (Stun - 大地)
+        bool hasStun = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun));
+        if (hasStun)
+        {
+            float chance = stone.stunChance;
+            if (PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyStun) >= 2) chance = stone.stunChance_Stacked;
+            if (Random.value <= chance) receiver.ApplyStun(stone.stunDuration);
         }
     }
 }

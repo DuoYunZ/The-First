@@ -1,54 +1,76 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // <--- 【关键 1】引入新输入系统的命名空间
+using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class EvolutionDebugger : MonoBehaviour
 {
-    [Header("测试设置")]
-    public string weaponToTest = "斩击";
+    [Header("测试资源")]
+    [Tooltip("按Y键时，要强行塞给武器的石头")]
     public EnergyStoneSO stoneToGive;
 
     void Update()
     {
-        // --- 【关键 2】使用新输入系统的检测方式 ---
-
-        // 检测 T 键：模拟升级
+        // --- 1. 按 T 键：将所有已拥有的武器直接升到 5 级 ---
         if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
             if (WeaponController.Instance != null)
             {
-                Debug.Log($"[测试] 按下T键 -> 尝试升级 {weaponToTest}...");
-                WeaponController.Instance.TryUpgradeWeapon(weaponToTest);
+                Debug.Log($"<color=yellow>[测试] 按下T键 -> 强行提升所有武器等级...</color>");
+
+                // 遍历所有持有的武器数据 (OwnedWeapon)
+                foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
+                {
+                    // 1. 修改数据层面的等级
+                    // (注意：OwnedWeapon 通常有 stats 或 data 字段，也应该有 currentLevel)
+                    if (ownedWrapper.currentLevel < 5)
+                    {
+                        ownedWrapper.currentLevel = 5;
+                    }
+
+                    // 2. 同步给场景里的实体 (WeaponPart)
+                    // 【关键修复】这里需要通过 assignedPart (或你代码里的名字) 来访问 WeaponPart
+                    var part = ownedWrapper.weaponPartInstance;
+
+                    if (part != null)
+                    {
+                        // 强制把 WeaponPart 里的等级也同步了
+                        part.currentLevel = ownedWrapper.currentLevel;
+                        Debug.Log($"[测试] {part.StatBlock.weaponName} 已强制升级到 Lv.{part.currentLevel}");
+                    }
+                }
+
+                // 刷新一下状态，确保进化检查被触发
+                WeaponController.Instance.RefreshAllWeaponStates();
             }
         }
 
-        // 检测 Y 键：模拟插石头
+        // --- 2. 按 Y 键：给所有武器插上石头 ---
         if (Keyboard.current != null && Keyboard.current.yKey.wasPressedThisFrame)
         {
             if (WeaponController.Instance != null && stoneToGive != null)
             {
-                WeaponPart part = FindWeaponPart(weaponToTest);
-                if (part != null)
+                Debug.Log($"<color=cyan>[测试] 按下Y键 -> 给所有武器插入 {stoneToGive.stoneName}</color>");
+
+                foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
                 {
-                    Debug.Log($"[测试] 按下Y键 -> 给 {weaponToTest} 强行插入 {stoneToGive.stoneName}");
-                    part.FuseEnergyStone(stoneToGive);
-                }
-                else
-                {
-                    Debug.LogWarning($"[测试失败] 找不到名为 '{weaponToTest}' 的武器组件，请检查名字是否匹配！");
+                    // 【关键修复】通过 assignedPart 找到实体，调用融合方法
+                    var part = ownedWrapper.weaponPartInstance;
+                    if (part != null)
+                    {
+                        part.FuseEnergyStone(stoneToGive);
+                    }
                 }
             }
         }
-    }
 
-    private WeaponPart FindWeaponPart(string name)
-    {
-        if (WeaponController.Instance == null) return null;
-        var parts = WeaponController.Instance.GetComponentsInChildren<WeaponPart>();
-        foreach (var p in parts)
+        // --- 3. 按 U 键：强制触发一次升级面板（检查是否弹出进化卡） ---
+        if (Keyboard.current != null && Keyboard.current.uKey.wasPressedThisFrame)
         {
-            // 防止空引用报错
-            if (p.StatBlock != null && p.StatBlock.weaponName == name) return p;
+            if (PlayerLevelManager.Instance != null)
+            {
+                // 【关键修复】随便加点经验触发升级，不用管 currentLevelXP 叫什么
+                PlayerLevelManager.Instance.AddExperience(100);
+            }
         }
-        return null;
     }
 }

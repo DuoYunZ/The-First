@@ -182,7 +182,15 @@ public class Health : MonoBehaviour
             // 飘字
             if (damagePopupPrefab != null)
             {
-                Vector3 popupPosition = transform.position + Vector3.up * 1.5f;
+                // [优化] 添加随机偏移，防止多段伤害(如雷击)重叠
+                // X轴随机左右偏移 0.5，Y轴随机向上浮动 0.5
+                float randomX = Random.Range(-0.5f, 0.5f);
+                float randomY = Random.Range(0f, 0.5f);
+                Vector3 randomOffset = new Vector3(randomX, randomY, 0);
+
+                // 基础高度 1.5 + 随机偏移
+                Vector3 popupPosition = transform.position + Vector3.up * 1.5f + randomOffset;
+
                 GameObject popupGO = Instantiate(damagePopupPrefab, popupPosition, Quaternion.identity);
                 DamagePopup damagePopup = popupGO.GetComponent<DamagePopup>();
                 if (damagePopup != null)
