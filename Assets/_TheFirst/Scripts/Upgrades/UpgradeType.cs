@@ -12,28 +12,28 @@ public enum UpgradeType
     AddProjectile,      // 增加发射物数量
     PierceCount,        // 穿透
     SlashCount,         // 刀光数量
-    OrbitalCount,      //轨道武器数量
+    OrbitalCount,       // 轨道武器数量
+    OrbitalSpeed,
+    WeaponDuration,
+    CritRate,
+    CritDamage,
 
     // 机甲属性类
     MaxHealth,          // 最大生命值
-    UnlockShield,   // 【新增】解锁护盾
-    MaxShield,      // 【新增】最大护盾值
-    ShieldCooldown, // 【新增】护盾冷却缩减
+    UnlockShield,       // 解锁护盾
+    MaxShield,          // 最大护盾值
+    ShieldCooldown,     // 护盾冷却缩减
     Armor,              // 护甲/减伤
     MoveSpeed,          // 移动速度
+    Revival,            // 【新增】复活次数 (解决报错)
 
     // 资源/拾取类
     PickupRadius,       // 拾取半径
     ExperienceGain,     // 经验获取率
+    Luck,               // 【新增】幸运值
 
-    // 特殊类 (虽然现在由 EffectActionType 处理，但保留可能有用)
-    NewWeapon,
-
-    BoomerangStackUpgrade, // 代表升级回旋镖的叠加规则
-
-    ParabolicAoeStunChance, // 抛物线AOE眩晕几率
-
-    Stun
-
-
+    // 特殊机制
+    BoomerangStackUpgrade, // 回旋镖叠加规则
+    ParabolicAoeStunChance, // 抛物线眩晕几率
+    Stun                   // 眩晕
 }

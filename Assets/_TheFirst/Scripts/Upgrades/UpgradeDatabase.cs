@@ -4,6 +4,9 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "UpgradeDatabase", menuName = "Game/Upgrade Database")]
 public class UpgradeDatabase : ScriptableObject
 {
-    // 这个列表将存储项目中所有的 UpgradeData 资产
-    public List<SkillTreeNodeData> allUpgrades;
+    [Header("通用被动技能 (移速/磁铁等) - 保持原样")]
+    public List<SkillTreeNodeData> passiveUpgrades;
+
+    [Header("武器升级链 (新系统)")]
+    public List<WeaponUpgradeChainSO> weaponChains;
 }

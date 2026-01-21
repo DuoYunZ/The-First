@@ -22,9 +22,9 @@ public class EvolutionDebugger : MonoBehaviour
                 {
                     // 1. 修改数据层面的等级
                     // (注意：OwnedWeapon 通常有 stats 或 data 字段，也应该有 currentLevel)
-                    if (ownedWrapper.currentLevel < 5)
+                    if (ownedWrapper.currentLevel < 8)
                     {
-                        ownedWrapper.currentLevel = 5;
+                        ownedWrapper.currentLevel = 8;
                     }
 
                     // 2. 同步给场景里的实体 (WeaponPart)

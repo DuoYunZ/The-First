@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 public class StatusEffectReceiver : MonoBehaviour
 {
+    [Header("引用")]
+    private Health health; // 获取 AimTargetPoint 用
+
     private Health enemyHealth;
     private EnemyAI enemyAI; // 如果需要處理減速等影響AI的效果
     private StraightMoverAI straightMoverAI;
@@ -58,11 +61,19 @@ public class StatusEffectReceiver : MonoBehaviour
     public GameObject electrifiedVfxPrefab; // [新增] 感电特效
     private GameObject electrifiedVfxInstance;
 
+    [Header("感电状态 (Shock)")]
+    public bool IsShocked { get; private set; }
+    private float shockTimer = 0f;
+    private GameObject currentShockVfx;
+
     private string currentBurnSource = "";
     private string currentCorrodeSource = "";
 
     void Awake()
     {
+        health = GetComponent<Health>();
+        if (health == null) health = GetComponentInParent<Health>();
+
         enemyHealth = GetComponent<Health>();
         enemyAI = GetComponent<EnemyAI>();
         straightMoverAI = GetComponent<StraightMoverAI>();
@@ -77,6 +88,11 @@ public class StatusEffectReceiver : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        HandleShockState();
+        // HandleBurnState(); 
+    }
     /// <summary>
     /// 應用燃燒效果
     /// </summary>
@@ -98,6 +114,13 @@ public class StatusEffectReceiver : MonoBehaviour
             }
             Coroutine burnCoroutine = StartCoroutine(BurnRoutine());
             activeStatusCoroutines[DebuffType.Burn] = burnCoroutine;
+        }
+        if (sourceWeaponName == "火球术" || sourceWeaponName == "Fireball")
+        {
+            if (PlayerProgressManager.Instance != null)
+            {
+                PlayerProgressManager.Instance.AddStat("Ignite_Count", 1);
+            }
         }
     }
     public void Ignite()
@@ -531,5 +554,75 @@ public class StatusEffectReceiver : MonoBehaviour
         IsElectrified = false;
         if (electrifiedVfxInstance != null) Destroy(electrifiedVfxInstance);
         activeStatusCoroutines.Remove(DebuffType.Electrified);
+    }
+    public void ApplyShock(float duration, GameObject vfxPrefab)
+    {
+        // 1. 刷新持续时间
+        shockTimer = duration;
+
+        // 2. 如果之前没有处于感电状态，或者是特效丢失了，就生成一个新的
+        if (!IsShocked || currentShockVfx == null)
+        {
+            IsShocked = true;
+
+            if (vfxPrefab != null)
+            {
+                // --- 【位置修正逻辑】 ---
+                Transform mountParent = transform; // 默认挂在自己身上
+                Vector3 offset = Vector3.zero;
+
+                // 尝试找 Health 里的瞄准点
+                if (health != null && health.AimTargetPoint != null)
+                {
+                    mountParent = health.AimTargetPoint;
+                }
+                else
+                {
+                    // 【保底方案】：如果没有 AimTargetPoint，强制向上偏移 1.0 米 (大概胸口位置)
+                    // 注意：这里我们不挂载到 AimTargetPoint，而是挂载到 root，但修改本地坐标
+                    offset = Vector3.up * 1.0f;
+                }
+
+                // 生成特效
+                currentShockVfx = Instantiate(vfxPrefab, mountParent.position + offset, Quaternion.identity, mountParent);
+
+                // 确保它确实挂上去了，并且位置正确
+                currentShockVfx.transform.localPosition = (health != null && health.AimTargetPoint != null) ? Vector3.zero : offset;
+            }
+        }
+    }
+
+    private void HandleShockState()
+    {
+        if (IsShocked)
+        {
+            shockTimer -= Time.deltaTime;
+
+            // 1. 倒计时结束清理
+            if (shockTimer <= 0)
+            {
+                ClearShockEffect();
+            }
+            // 2. 如果怪物死了，也要清理 (防止特效遗留在尸体上)
+            else if (health != null && health.IsDead)
+            {
+                ClearShockEffect();
+            }
+        }
+    }
+    private void ClearShockEffect()
+    {
+        IsShocked = false;
+        if (currentShockVfx != null)
+        {
+            Destroy(currentShockVfx);
+            currentShockVfx = null;
+        }
+    }
+
+    // --- 【关键】当物体被禁用/销毁时，强制清理特效 ---
+    void OnDisable()
+    {
+        ClearShockEffect();
     }
 }

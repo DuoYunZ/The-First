@@ -88,25 +88,26 @@ public class GroundHazard : MonoBehaviour
     {
         if (h == null) return;
 
-        // 生成一个唯一的 Key：敌人ID + 伤害类型
-        // 这样同一个敌人对 "FireHazard" 有冷却，但对 "PoisonHazard" 没有冷却
         string cooldownKey = h.GetInstanceID() + "_" + hazardTypeTag;
 
-        // 检查当前时间 是否已经超过了 下次允许受伤的时间
         if (IsCooldownReady(cooldownKey))
         {
-            // --- 造成伤害 ---
+            // 1. --- 造成火海伤害 (这是主菜，100% 伤害来源) ---
             h.TakeDamage(damagePerTick, h.transform.position, owner, AttackType.Standard, null, null, weaponName);
 
-            // 刷新燃烧 Debuff
+            // 2. --- [核心修改] 注释掉燃烧 Debuff ---
+            // 如果你不希望有“1/4”的小数字跳出来干扰视线，就把下面这段注释掉。
+            // 这样怪物离开火海后，就不会继续掉血了。
+            /*
             StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
             if (receiver != null)
             {
-                receiver.ApplyBurn(5, 3f, 1f, weaponName);
+                // 这里的 5 就是你看到的那个“很小的伤害”
+                receiver.ApplyBurn(5, 3f, 1f, weaponName); 
             }
+            */
 
-            // --- 设置新的冷却时间 ---
-            // 下一次受伤必须在 "当前时间 + 间隔" 之后
+            // 3. 设置冷却
             globalDamageCooldowns[cooldownKey] = Time.time + tickInterval;
         }
     }

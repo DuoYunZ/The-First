@@ -1,122 +1,131 @@
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
+using System.Collections;
 
 [RequireComponent(typeof(WeaponPart))]
 public class DroneAI : MonoBehaviour
 {
-    private enum DroneState { Orbiting, Attacking }
+    private enum DroneState { Orbiting, Attacking, Reloading }
     private DroneState currentState = DroneState.Orbiting;
 
-
-    [Header("AI 设置")]
-    [Tooltip("无人机的索敌范围")]
+    [Header("AI 基础设置")]
     public float detectionRange = 25f;
-    [Tooltip("无人机与目标的理想保持距离")]
-    public float idealDistance = 10f;
-    [Tooltip("跟随时与玩家的距离")]
-    public float followDistance = 5f;
-    [Tooltip("无人机的飞行速度")]
-    public float moveSpeed = 15f;
-    [Tooltip("无人机的转向速度")]
+    public float idealDistance = 10f; // 理想交战距离
+    public float moveSpeed = 15f;     // 恢复旧版速度
     public float turnSpeed = 10f;
-    [Tooltip("无人机索敌的目标层级")]
     public LayerMask enemyLayer;
 
-    [Header("巡航设置 (Orbit Settings)")]
-    [Tooltip("围绕玩家旋转的基础速度")]
+    [Header("弹幕攻击设置")]
+    public int maxAmmo = 6;             // 弹匣
+    public float burstInterval = 0.1f;  // 连发间隔 (越小越快)
+    public float reloadTime = 2.0f;     // 换弹时间
+    [Range(0, 180)]
+    public float spreadAngle = 60f;     // 散射角度 (设大一点，配合延迟追踪实现弧线)
+
+    [Header("旧版巡航设置 (保留原汁原味)")]
     public float orbitSpeed = 50f;
-    [Tooltip("巡航路径的随机扰动幅度")]
-    public float orbitNoiseStrength = 0.5f;
-    [Tooltip("巡航路径的随机扰动变化速度")]
-    public float orbitNoiseSpeed = 0.2f;
+    public float orbitNoiseStrength = 0.5f; // 噪声强度
+    public float orbitNoiseSpeed = 0.2f;    // 噪声速度
+    public float followDistance = 5f;       // 跟随玩家的距离
 
     // 内部变量
     private Transform currentTarget;
     private WeaponPart myWeaponPart;
-    private float lifeTimer;
-    private Transform ownerTransform; // 【新增】主人的Transform
-    private float flightAltitude; // 【新增】用于存储飞行高度
+    private float flightAltitude;
+    private Transform ownerTransform;
 
-    // 用于轨道巡航的变量
+    // 巡航专用变量
     private float orbitAngle = 0f;
-    private float noiseSeed; // 每个无人机拥有自己独立的随机种子
-    /// <summary>
-    /// 由召唤者（玩家）在实例化后调用，用于传递属性
-    /// </summary>
-    public void Initialize(WeaponStatBlock droneWeaponStats, float duration, Transform owner)
+    private float noiseSeed;
+
+    // 战斗专用变量
+    private int currentAmmo;
+    private bool isFiringBarrage = false;
+
+    public void Initialize(WeaponStatBlock stats, float duration, Transform owner, int damage, float fireRateMult)
     {
         myWeaponPart = GetComponent<WeaponPart>();
-        myWeaponPart.StatBlock = droneWeaponStats;
-        this.lifeTimer = duration;
+        if (myWeaponPart != null) myWeaponPart.StatBlock = stats;
+
         this.ownerTransform = owner;
         this.flightAltitude = transform.position.y;
-        this.orbitAngle = Random.Range(0f, 360f);
-        this.noiseSeed = Random.Range(0f, 100f); // 为柏林噪声设置随机种子
 
-        if (duration > 0)
-        {
-            Destroy(gameObject, duration);
-        }
+        // 恢复随机种子，保证每架飞机飞行轨迹不同
+        this.orbitAngle = Random.Range(0f, 360f);
+        this.noiseSeed = Random.Range(0f, 100f);
+
+        currentAmmo = maxAmmo; // 初始满弹
+
+        if (duration > 0) Destroy(gameObject, duration);
     }
 
     void Update()
     {
-        FindTarget(); // 每帧都尝试索敌
-
+        // 状态机分流
         switch (currentState)
         {
-            case DroneState.Orbiting:
-                OrbitOwner(); // 【修改】将 FollowOwner 改为 OrbitOwner
+            case DroneState.Reloading:
+                // 换弹时继续巡航
+                OrbitOwner();
                 break;
+
             case DroneState.Attacking:
                 AttackTarget();
+                break;
+
+            case DroneState.Orbiting:
+                FindTarget();
+                OrbitOwner();
                 break;
         }
     }
 
     void FindTarget()
     {
-        Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, detectionRange, enemyLayer);
-        if (enemiesInRange.Length > 0)
+        Collider[] enemies = Physics.OverlapSphere(transform.position, detectionRange, enemyLayer);
+        if (enemies.Length > 0)
         {
-            currentTarget = enemiesInRange[0].transform;
-            currentState = DroneState.Attacking;
-        }
-        else
-        {
-            currentTarget = null;
-            currentState = DroneState.Orbiting;
+            float minDist = float.MaxValue;
+            Transform best = null;
+            foreach (var e in enemies)
+            {
+                // 简单的找最近
+                float d = Vector3.Distance(transform.position, e.transform.position);
+                if (d < minDist) { minDist = d; best = e.transform; }
+            }
+            currentTarget = best;
+            if (currentTarget != null) currentState = DroneState.Attacking;
         }
     }
 
+    // --- 【恢复】旧版巡航逻辑 ---
     void OrbitOwner()
     {
         if (ownerTransform == null) return;
 
-        // 1. 更新轨道角度
+        // 1. 更新角度
         orbitAngle += orbitSpeed * Time.deltaTime;
 
-        // 2. 使用柏林噪声为巡航半径添加随机扰动，使其路径不规则
-        float noise = (Mathf.PerlinNoise(noiseSeed, Time.time * orbitNoiseSpeed) - 0.5f) * 2f; // 范围从 -1 到 1
-        float currentFollowDistance = followDistance + noise * orbitNoiseStrength;
+        // 2. 柏林噪声计算偏移 (丝滑的关键)
+        float noise = (Mathf.PerlinNoise(noiseSeed, Time.time * orbitNoiseSpeed) - 0.5f) * 2f;
+        float currentFollowDist = followDistance + noise * orbitNoiseStrength;
 
-        // 3. 计算轨道上的目标点
-        float offsetX = Mathf.Cos(orbitAngle * Mathf.Deg2Rad) * currentFollowDistance;
-        float offsetZ = Mathf.Sin(orbitAngle * Mathf.Deg2Rad) * currentFollowDistance;
-        Vector3 orbitPosition = ownerTransform.position + new Vector3(offsetX, 0, offsetZ);
-        orbitPosition.y = this.flightAltitude;
+        // 3. 计算目标位置
+        float offsetX = Mathf.Cos(orbitAngle * Mathf.Deg2Rad) * currentFollowDist;
+        float offsetZ = Mathf.Sin(orbitAngle * Mathf.Deg2Rad) * currentFollowDist;
 
-        // 4. 计算移动方向（即轨道的切线方向）
-        Vector3 moveDirection = (orbitPosition - transform.position).normalized;
+        Vector3 orbitPos = ownerTransform.position + new Vector3(offsetX, 0, offsetZ);
+        orbitPos.y = this.flightAltitude; // 保持原本的生成高度
 
-        // 5. 移动
-        transform.position = Vector3.Slerp(transform.position, orbitPosition, moveSpeed * Time.deltaTime);
+        // 4. 移动
+        // 使用 Slerp 使得转身平滑，不会横着飞
+        Vector3 moveDir = (orbitPos - transform.position).normalized;
+        transform.position = Vector3.Lerp(transform.position, orbitPos, moveSpeed * Time.deltaTime);
 
-        // 6. 【朝向修复】让无人机朝向它正在飞行的方向
-        if (moveDirection.sqrMagnitude > 0.01f)
+        // 5. 朝向移动方向
+        if (moveDir.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+            Quaternion lookRot = Quaternion.LookRotation(moveDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, turnSpeed * Time.deltaTime);
         }
     }
 
@@ -128,34 +137,94 @@ public class DroneAI : MonoBehaviour
             return;
         }
 
-        // --- 【核心修改】 ---
+        // --- 移动逻辑：既要攻击，又要保持旧版的手感 ---
+        // 我们不完全覆盖旧版逻辑，而是让它尝试向目标外围移动
 
-        // 1. 在索敌到的敌人身上，优先寻找我们设置的“被瞄准点”
-        Transform enemyAimTarget = currentTarget.transform.Find("AimTargetPoint");
-        // 如果敌人身上没有这个点（例如一些简单的敌人），则后备为攻击其根对象
-        if (enemyAimTarget == null)
+        Vector3 enemyPos = currentTarget.position;
+        Vector3 dirToEnemy = (enemyPos - transform.position).normalized;
+
+        // 目标悬停点：敌人反方向 idealDistance 处
+        Vector3 hoverPos = enemyPos - (dirToEnemy * idealDistance);
+        // 高度维持
+        hoverPos.y = this.flightAltitude;
+
+        // 移动
+        transform.position = Vector3.Lerp(transform.position, hoverPos, moveSpeed * 0.5f * Time.deltaTime); // 稍微慢一点，稳一点
+
+        // 转向：始终盯着敌人
+        Quaternion lookRot = Quaternion.LookRotation(dirToEnemy);
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, turnSpeed * Time.deltaTime);
+
+        // --- 开火逻辑 ---
+        if (!isFiringBarrage && currentAmmo > 0)
         {
-            enemyAimTarget = currentTarget.transform;
+            StartCoroutine(FireBarrageRoutine());
+        }
+    }
+
+    IEnumerator FireBarrageRoutine()
+    {
+        isFiringBarrage = true;
+        int shotsToFire = currentAmmo;
+
+        // --- 核心优化：强制重置 WeaponPart 的冷却 (如果能访问的话) ---
+        // 但最稳妥的还是你在 Inspector 里把 Fire Rate 设为 0.05
+
+        for (int i = 0; i < shotsToFire; i++)
+        {
+            // 如果目标没了，且没有上一个目标的残留位置，就停止
+            if (currentTarget == null) break;
+
+            // 1. 获取基础方向
+            Vector3 targetPoint = currentTarget.position;
+            Transform aimPoint = currentTarget.Find("AimTargetPoint");
+            if (aimPoint != null) targetPoint = aimPoint.position;
+
+            Vector3 baseDir = (targetPoint - transform.position).normalized;
+
+            // 2. 【核心修改】计算特定的钳形散射
+            // 我们不希望随机乱射，而是希望向“左右两侧”发射，并且稍微“向上”抬起，绝不向下
+
+            // Y轴 (左右)：大幅度随机，实现“向两侧发射”
+            // 比如 -80度 到 +80度，子弹会横着飞出去
+            float ySpread = Random.Range(-spreadAngle, spreadAngle);
+
+            // X轴 (上下)：限制只许往上飘，不许往下打
+            // 在 Unity 中，-X 是抬头 (Look Up)，+X 是低头。我们取 -30 到 -5 度。
+            // 这样子弹一定会有一个向上的初速度，防止打地
+            float xSpread = Random.Range(-30f, -5f);
+
+            // 组合旋转
+            Quaternion spreadRot = Quaternion.Euler(xSpread, ySpread, 0);
+
+            // 应用旋转
+            Vector3 finalDir = (Quaternion.LookRotation(baseDir) * spreadRot) * Vector3.forward;
+
+            // 3. 开火
+            if (myWeaponPart != null)
+            {
+                // 这里的 Fire 可能会被 WeaponPart 内部的 cooldown 拒绝
+                // 所以请务必确保 Weapon_DroneGun 的 FireRate 设置为了 0.05
+                myWeaponPart.Fire(finalDir);
+            }
+            currentAmmo--;
+
+            yield return new WaitForSeconds(burstInterval);
         }
 
-        // 2. 移动逻辑：无人机自身的位置计算，依然基于敌人的根对象
-        Vector3 directionToTarget2D = (currentTarget.position - transform.position);
-        directionToTarget2D.y = 0;
-        directionToTarget2D.Normalize();
-        Vector3 targetPosition = currentTarget.position - directionToTarget2D * idealDistance;
-        targetPosition.y = this.flightAltitude;
-        transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+        isFiringBarrage = false;
 
-        // 3. 转向和开火逻辑：使用我们找到的精确瞄准点 enemyAimTarget
-        Vector3 preciseDirection = (enemyAimTarget.position - transform.position).normalized;
-
-        if (preciseDirection.sqrMagnitude > 0.01f)
+        if (currentAmmo <= 0)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(preciseDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+            StartCoroutine(ReloadRoutine());
         }
+    }
 
-        // 将精确的3D方向传递给武器部件
-        myWeaponPart.Fire(preciseDirection);
+    IEnumerator ReloadRoutine()
+    {
+        currentState = DroneState.Reloading;
+        yield return new WaitForSeconds(reloadTime);
+        currentAmmo = maxAmmo;
+        currentState = DroneState.Orbiting; // 换弹完回巡航找人
     }
 }

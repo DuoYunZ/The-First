@@ -98,26 +98,24 @@ public class GoldPickup : MonoBehaviour
 
     void Update()
     {
-        if (isSpinning)
-        {
-            transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
-        }
+        if (isSpinning) transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
 
-        // --- vvv [修改] vvv ---
-        // 1. 将 isCollecting 检查移到前面
         if (isCollecting || !canBePickedUp || collectionTarget == null || isAbsorbFloating) return;
-        // --- ^^^ [修改] ^^^ ---
 
         float distanceToPlayer = Vector3.Distance(transform.position, collectionTarget.position);
-        if (!isCollecting && distanceToPlayer <= magnetRadius)
+
+        // --- 【修复】应用拾取范围加成 ---
+        float finalRadius = magnetRadius;
+        if (PlayerStats.Instance != null)
         {
-            StartAbsorbSequence(); //
+            finalRadius *= PlayerStats.Instance.pickupRadiusMultiplier;
         }
 
-        // --- vvv [修改] vvv ---
-        // (这段逻辑现在被 AbsorbFloatRoutine 协程的末尾接管了)
-        // if (isCollecting) ...
-        // --- ^^^ [修改] ^^^ ---
+        if (!isCollecting && distanceToPlayer <= finalRadius) // 使用 finalRadius
+        {
+            StartAbsorbSequence();
+        }
+        // -----------------------------
     }
 
     // 开始吸收序列（浮空 -> 飞向玩家）

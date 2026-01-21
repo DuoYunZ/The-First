@@ -1,85 +1,95 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class Health : MonoBehaviour
 {
-    [Header("¹éÊôÉèÖÃ")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬Èç¹ûÕâ¸öHealth×é¼şÊôÓÚÍæ¼Ò")]
+    [Header("å½’å±è®¾ç½®")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œå¦‚æœè¿™ä¸ªHealthç»„ä»¶å±äºç©å®¶")]
     public bool isPlayerHealth = false;
 
-    [Header("ÉúÃüÖµÉèÖÃ")]
-    [SerializeField] private int maxHealth = 100; // ÔÚ Inspector ÖĞÎªÔ¤ÖÆ¼şÉèÖÃÒ»¸öÄ¬ÈÏ×î´óÉúÃüÖµ
-    private int currentHealth;
+    [Header("ç”Ÿå‘½å€¼è®¾ç½®")]
+    [SerializeField] public int maxHealth = 100; // åœ¨ Inspector ä¸­ä¸ºé¢„åˆ¶ä»¶è®¾ç½®ä¸€ä¸ªé»˜è®¤æœ€å¤§ç”Ÿå‘½å€¼
+    public int currentHealth;
+
+    private int _baseMaxHealth = 0;
 
     private EnemyType enemyTypeData;
 
     [System.Serializable]
     public class HealthChangedEvent : UnityEvent<int, int> { }
-    [Header("ÊÂ¼ş")]
+    [Header("äº‹ä»¶")]
     public HealthChangedEvent OnHealthChanged;
 
-    [Header("ËÀÍöÊÂ¼ş")]
-    [Tooltip("µ±ÉúÃüÖµ¹éÁãÊ±´¥·¢µÄÊÂ¼ş")]
+    [Header("æ­»äº¡äº‹ä»¶")]
+    [Tooltip("å½“ç”Ÿå‘½å€¼å½’é›¶æ—¶è§¦å‘çš„äº‹ä»¶")]
     public UnityEvent OnDeath;
     public bool IsDead { get; private set; }
-    [Header("ÊÜÉËÎŞµĞÓëÊÓ¾õ (ĞÂÔö)")]
-    [Tooltip("Íæ¼ÒÊÜÉËºóµÄÎŞµĞÊ±¼ä (Ãë)")]
+    [Header("å—ä¼¤æ— æ•Œä¸è§†è§‰ (æ–°å¢)")]
+    [Tooltip("ç©å®¶å—ä¼¤åçš„æ— æ•Œæ—¶é—´ (ç§’)")]
     public float invincibilityDuration = 1.0f;
-    [Tooltip("ÊÜ»÷ÉÁË¸µÄ³ÖĞøÊ±¼ä (Ãë) - ½¨ÒéºÜ¶Ì£¬Èç 0.15")]
+    [Tooltip("å—å‡»é—ªçƒçš„æŒç»­æ—¶é—´ (ç§’) - å»ºè®®å¾ˆçŸ­ï¼Œå¦‚ 0.15")]
     public float flashDuration = 0.15f;
-    [Tooltip("ÊÜÉËÊ± Emission µÄÑÕÉ« (HDR)")]
-    [ColorUsage(true, true)] // ÔÊĞíÔÚInspectorÀïµ÷½ÚHDRÁÁ¶È
-    public Color damageEmissionColor = new Color(1f, 0f, 0f, 1f) * 3f; // Ä¬ÈÏºì¹â£¬Ç¿¶È3
+    [Tooltip("å—ä¼¤æ—¶ Emission çš„é¢œè‰² (HDR)")]
+    [ColorUsage(true, true)] // å…è®¸åœ¨Inspectoré‡Œè°ƒèŠ‚HDRäº®åº¦
+    public Color damageEmissionColor = new Color(1f, 0f, 0f, 1f) * 3f; // é»˜è®¤çº¢å…‰ï¼Œå¼ºåº¦3
 
-    private bool isPostHitInvincible = false; // ÊÇ·ñ´¦ÓÚÊÜ»÷ºóµÄ¶ÌÔİÎŞµĞ×´Ì¬
+    private bool isPostHitInvincible = false; // æ˜¯å¦å¤„äºå—å‡»åçš„çŸ­æš‚æ— æ•ŒçŠ¶æ€
     private Renderer modelRenderer;
-    private Color originalEmissionColor; // ¼ÇÂ¼Ô­Ê¼·¢¹âÑÕÉ«
+    private Color originalEmissionColor; // è®°å½•åŸå§‹å‘å…‰é¢œè‰²
 
 
-    [Header("µôÂäÉèÖÃ (¿ÉÑ¡)")]
-    [Tooltip("ËÀÍöÊ±µôÂäµÄ¾­Ñé±¦Ê¯Ô¤Éè")]
+    [Header("æ‰è½è®¾ç½® (å¯é€‰)")]
+    [Tooltip("æ­»äº¡æ—¶æ‰è½çš„ç»éªŒå®çŸ³é¢„è®¾")]
     public GameObject experienceGemPrefab;
-    [Tooltip("ËÀÍöÊ±µôÂäµÄ½ğ±ÒÔ¤Éè")] // <--- ĞÂÔö
+    [Tooltip("æ­»äº¡æ—¶æ‰è½çš„é‡‘å¸é¢„è®¾")] // <--- æ–°å¢
     public GameObject goldCoinPrefab;
-    [Tooltip("µôÂä½ğ±ÒµÄ¼¸ÂÊ (0µ½1Ö®¼ä)")] // <--- ĞÂÔö
+    [Tooltip("æ‰è½é‡‘å¸çš„å‡ ç‡ (0åˆ°1ä¹‹é—´)")] // <--- æ–°å¢
     [Range(0f, 1f)]
-    public float goldDropChance = 0.5f; // Ä¬ÈÏ50%¼¸ÂÊ
-        
-    [Header("ÊÓ¾õĞ§¹û (¿ÉÑ¡)")]
-    [Tooltip("ÊÜµ½ÉËº¦Ê±Éú³ÉµÄÌø×ÖÔ¤ÖÆ¼ş")]
+    public float goldDropChance = 0.5f; // é»˜è®¤50%å‡ ç‡
+
+    [Tooltip("æ­»äº¡æ—¶æ‰è½çš„è¡€åŒ…é¢„è®¾")]
+    public GameObject healthPickupPrefab; // <--- æ–°å¢
+    [Tooltip("æ‰è½è¡€åŒ…çš„å‡ ç‡ (0åˆ°1)")]
+    [Range(0f, 1f)]
+    public float healthDropChance = 0.005f; // <--- æ–°å¢ (é»˜è®¤10%)
+
+    [Header("è§†è§‰æ•ˆæœ (å¯é€‰)")]
+    [Tooltip("å—åˆ°ä¼¤å®³æ—¶ç”Ÿæˆçš„è·³å­—é¢„åˆ¶ä»¶")]
     public GameObject damagePopupPrefab;
 
-    [Header("ÒôĞ§ÉèÖÃ (¿ÉÑ¡)")]
-    [Tooltip("ÊÜµ½ÉËº¦Ê±²¥·ÅµÄÒôĞ§")]
+    [Header("éŸ³æ•ˆè®¾ç½® (å¯é€‰)")]
+    [Tooltip("å—åˆ°ä¼¤å®³æ—¶æ’­æ”¾çš„éŸ³æ•ˆ")]
     public AudioClip[] impactSounds;
     private AudioSource audioSource;
 
-    private StatusEffectReceiver statusReceiver; // <--- vvv [ĞÂÔö] vvv
+    private StatusEffectReceiver statusReceiver; // <--- vvv [æ–°å¢] vvv
 
-    [Header("ÊÓ¾õºÍÊÜ»÷µã")]
-    [Tooltip("×Óµ¯ºÍÌØĞ§ÃüÖĞµÄÊÓ¾õÄ¿±êµã")]
-    public Transform AimTargetPoint; // <--- vvv ĞÂÔö
+    [Header("è§†è§‰å’Œå—å‡»ç‚¹")]
+    [Tooltip("å­å¼¹å’Œç‰¹æ•ˆå‘½ä¸­çš„è§†è§‰ç›®æ ‡ç‚¹")]
+    public Transform AimTargetPoint; // <--- vvv æ–°å¢
 
 
     /// <summary>
-    /// Awake ÔÚ¶ÔÏóÊµÀı»¯ºóÁ¢¼´±»µ÷ÓÃ¡£
-    /// Õâ½«ÎªËùÓĞÊ¹ÓÃ´Ë½Å±¾µÄ¶ÔÏó£¨°üÀ¨Íæ¼ÒºÍµĞÈË£©Ìá¹©Ò»¸ö³õÊ¼µÄÂúÑª×´Ì¬¡£
+    /// Awake åœ¨å¯¹è±¡å®ä¾‹åŒ–åç«‹å³è¢«è°ƒç”¨ã€‚
+    /// è¿™å°†ä¸ºæ‰€æœ‰ä½¿ç”¨æ­¤è„šæœ¬çš„å¯¹è±¡ï¼ˆåŒ…æ‹¬ç©å®¶å’Œæ•Œäººï¼‰æä¾›ä¸€ä¸ªåˆå§‹çš„æ»¡è¡€çŠ¶æ€ã€‚
     /// </summary>
     void Awake()
     {
+        _baseMaxHealth = maxHealth; // è®°å½•åˆå§‹å€¼
         currentHealth = maxHealth;
+
         audioSource = GetComponent<AudioSource>();
         statusReceiver = GetComponent<StatusEffectReceiver>();
 
         modelRenderer = GetComponentInChildren<Renderer>();
         if (modelRenderer != null)
         {
-            // 1. È·±£ÆôÓÃ Emission ¹Ø¼ü×Ö (Èç¹ûÊÇ Standard/URP Lit Shader)
+            // 1. ç¡®ä¿å¯ç”¨ Emission å…³é”®å­— (å¦‚æœæ˜¯ Standard/URP Lit Shader)
             modelRenderer.material.EnableKeyword("_EMISSION");
 
-            // 2. ¼ÇÂ¼Ô­Ê¼ Emission ÑÕÉ« (ÓĞĞ©²ÄÖÊÄ¬ÈÏÎªºÚ)
+            // 2. è®°å½•åŸå§‹ Emission é¢œè‰² (æœ‰äº›æè´¨é»˜è®¤ä¸ºé»‘)
             if (modelRenderer.material.HasProperty("_EmissionColor"))
             {
                 originalEmissionColor = modelRenderer.material.GetColor("_EmissionColor");
@@ -92,7 +102,7 @@ public class Health : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 1.0f; // ÉèÎª3DÒôĞ§
+            audioSource.spatialBlend = 1.0f; // è®¾ä¸º3DéŸ³æ•ˆ
         }
         if (AimTargetPoint == null)
         {
@@ -102,14 +112,40 @@ public class Health : MonoBehaviour
 
     void Start()
     {
-        // ÓÎÏ·¿ªÊ¼Ê±£¬Á¢¼´Í¨ÖªÒ»´ÎUI£¬ÒÔ±ãÏÔÊ¾³õÊ¼ÑªÁ¿
+        
+        if (isPlayerHealth && PlayerStats.Instance != null)
+        {
+            
+        }
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
     /// <summary>
-    /// Ìá¹©Ò»¸ö¹«¹²·½·¨À´´ÓÍâ²¿³õÊ¼»¯»òÖØÖÃÉúÃüÖµ¡£
-    /// EnemySpawner ½«ÎªÃ¿¸öÉú³ÉµÄµĞÈËµ÷ÓÃ´Ë·½·¨£¬ÓÃ¼ÆËã³öµÄĞÂÖµ¸²¸Ç Awake ÖĞÉèÖÃµÄ³õÊ¼Öµ¡£
+    /// æä¾›ä¸€ä¸ªå…¬å…±æ–¹æ³•æ¥ä»å¤–éƒ¨åˆå§‹åŒ–æˆ–é‡ç½®ç”Ÿå‘½å€¼ã€‚
+    /// EnemySpawner å°†ä¸ºæ¯ä¸ªç”Ÿæˆçš„æ•Œäººè°ƒç”¨æ­¤æ–¹æ³•ï¼Œç”¨è®¡ç®—å‡ºçš„æ–°å€¼è¦†ç›– Awake ä¸­è®¾ç½®çš„åˆå§‹å€¼ã€‚
     /// </summary>
-    /// <param name="initialMaxHealth">¸ù¾İ²¨´Î¼ÆËã³öµÄ×î´óÉúÃüÖµ</param>
+    /// <param name="initialMaxHealth">æ ¹æ®æ³¢æ¬¡è®¡ç®—å‡ºçš„æœ€å¤§ç”Ÿå‘½å€¼</param>
+    /// 
+    public void SetBonusMaxHealth(int bonus)
+    {
+        if (_baseMaxHealth == 0) _baseMaxHealth = maxHealth; // ä¿é™©
+
+        int oldMax = maxHealth;
+        maxHealth = _baseMaxHealth + bonus;
+
+        // å¦‚æœä¸Šé™å¢åŠ äº†ï¼Œå½“å‰è¡€é‡ä¹ŸæŒ‰æ¯”ä¾‹å¢åŠ ï¼Œæˆ–è€…ç›´æ¥å¢åŠ å·®å€¼
+        if (maxHealth > oldMax)
+        {
+            int diff = maxHealth - oldMax;
+            currentHealth += diff;
+        }
+        // å¦‚æœä¸Šé™å‡å°‘äº†ï¼ˆä¾‹å¦‚å¸ä¸‹é“å…·ï¼‰ï¼Œè£å‰ªå½“å‰è¡€é‡
+        else if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth;
+        }
+
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);       
+    }
     public void InitializeHealth(int initialMaxHealth, EnemyType typeData)
     {
         maxHealth = initialMaxHealth;
@@ -121,139 +157,193 @@ public class Health : MonoBehaviour
     {
         InitializeHealth(initialMaxHealth, null);
     }
-
     public void AddMaxHealth(int amountToAdd)
     {
+        // æ—§æ–¹æ³•ä¿ç•™ï¼Œä½†å»ºè®®ä¸»è¦ä½¿ç”¨ SetBonusMaxHealth
         if (amountToAdd <= 0) return;
-
         maxHealth += amountToAdd;
-
-        // È·±£µ±Ç°ÉúÃüÖµ²»»áÒâÍâ³¬¹ıĞÂµÄ×î´óÖµ£¨ËäÈ»ÔÚ´ËÂß¼­ÖĞ²»»á·¢Éú£¬µ«ÕâÊÇ¸öºÃÏ°¹ß£©
-        if (currentHealth > maxHealth)
-        {
-            currentHealth = maxHealth;
-        }
-
-        Debug.Log($"{gameObject.name} µÄ×î´óÉúÃüÖµÔö¼ÓÁË {amountToAdd}£¬µ±Ç°ÉúÃüÖµÎª: {currentHealth}/{maxHealth}");
+        _baseMaxHealth += amountToAdd; // è§†ä¸ºæ°¸ä¹…å¢åŠ åŸºç¡€å€¼
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
-    public bool TakeDamage(int damageAmount, Vector3 hitPosition, GameObject attacker = null, AttackType type = AttackType.Standard, Projectile projectile = null, EnemyBeamController beamController = null, string sourceWeaponName = "")
+    public bool TakeDamage(int damageAmount, Vector3 hitPosition, GameObject attacker = null, AttackType type = AttackType.Standard, Projectile projectile = null, EnemyBeamController beamController = null, string sourceWeaponName = "", bool isCritical = false)
     {
+        if (isCritical)
+        {
+            // Debug.Log($"<color=orange>[Health] ğŸ©¸ æ”¶åˆ° TakeDamage! ä¼¤å®³: {damageAmount}, isCritical: {isCritical}</color>");
+        }
         if (IsDead) return false;
 
-        // 1. [ĞÂÔö] ¼ì²éÊÜ»÷ÎŞµĞ×´Ì¬ (Ö»¶ÔÍæ¼ÒÓĞĞ§£¬»òÕßÄã¿ÉÒÔÈ¥µô isPlayerHealth ÏŞÖÆÈÃµĞÈËÒ²ÓĞÎŞµĞÊ±¼ä)
-        if (isPlayerHealth && isPostHitInvincible)
-        {
-            return false; // ´¦ÓÚÎŞµĞ×´Ì¬£¬²»ÊÜÉËº¦
-        }
-
-        // 2. ¼ì²é¸¯Ê´Ò×ÉË
-        if (statusReceiver != null && statusReceiver.IsCorroded)
-        {
-            damageAmount = Mathf.RoundToInt(damageAmount * statusReceiver.corrodeDamageMultiplier);
-        }
-
-        // 3. ¼ì²éÈ«¾ÖÎŞµĞ (×÷±×/¾çÇé)
-        if (isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.isInvincible)
+        // 1. æ— æ•Œåˆ¤æ–­
+        if (isPlayerHealth && (isPostHitInvincible || (PlayerStats.Instance != null && PlayerStats.Instance.isInvincible)))
         {
             return false;
+        }
+
+        // 2. çŠ¶æ€æ•ˆæœè®¡ç®— (è…èš€ç­‰)
+        if (statusReceiver != null && statusReceiver.IsCorroded)
+            damageAmount = Mathf.RoundToInt(damageAmount * statusReceiver.corrodeDamageMultiplier);
+
+        // 3. ç©å®¶æŠ¤ç”²è®¡ç®—
+        if (isPlayerHealth && PlayerStats.Instance != null)
+        {
+            float armorValue = PlayerStats.Instance.armor;
+            if (armorValue > 0)
+            {
+                damageAmount -= Mathf.RoundToInt(armorValue);
+                if (damageAmount < 1) damageAmount = 1;
+            }
         }
 
         int remainingDamage = damageAmount;
         bool wasReflected = false;
 
-        // 4. »¤¶ÜÂß¼­
+        // 4. æŠ¤ç›¾è®¡ç®—
         if (isPlayerHealth && PlayerShield.Instance != null && PlayerShield.Instance.GetCurrentShield() > 0)
         {
             remainingDamage = PlayerShield.Instance.AbsorbDamage(damageAmount, hitPosition, type, projectile, beamController, out wasReflected);
         }
 
-        // 5. Êµ¼Ê¿ÛÑª
+        // 5. å®é™…æ‰£è¡€ä¸ç»éªŒå¤„ç†
         if (remainingDamage > 0)
         {
             currentHealth -= remainingDamage;
 
-            // Í³¼ÆÊı¾İ
-            if (!string.IsNullOrEmpty(sourceWeaponName) && !isPlayerHealth && BattleStatisticsManager.Instance != null)
+            // --- ã€æ ¸å¿ƒæ–°å¢ã€‘å°è¯•è·å–æ”»å‡»æºå¤´çš„ WeaponPart ---
+            WeaponPart sourcePart = null;
+
+            // A. å°è¯•ä»å‚æ•° projectile è·å–
+            if (projectile != null)
+                sourcePart = projectile.sourceWeapon;
+
+            // B. å°è¯•ä» attacker èº«ä¸Šè·å– Projectile ç»„ä»¶ (å¦‚æœæ˜¯ç¢°æ’ä½“è§¦å‘)
+            if (sourcePart == null && attacker != null)
             {
-                BattleStatisticsManager.Instance.AddDamage(sourceWeaponName, remainingDamage);
+                Projectile p = attacker.GetComponent<Projectile>();
+                if (p != null) sourcePart = p.sourceWeapon;
             }
 
-            // Æ®×Ö
+            // C. å°è¯•ä» attacker èº«ä¸Šè·å– VFXDamageController (å¦‚æœæ˜¯è¿‘æˆ˜ç‰¹æ•ˆ)
+            if (sourcePart == null && attacker != null)
+            {
+                VFXDamageController vfx = attacker.GetComponent<VFXDamageController>();
+                if (vfx != null) sourcePart = vfx.sourceWeapon;
+            }
+            // ----------------------------------------------------
+            if (sourcePart == null)
+            {
+                
+            }
+            else
+            {
+                
+
+                if (sourcePart.StatBlock == null) ;
+                else if (!sourcePart.StatBlock.usesProficiency) ;
+                else if (sourcePart.StatBlock.xpSource != WeaponXpSource.DamageDealt);
+            }
+
+            // --- ã€æ ¸å¿ƒæ–°å¢ã€‘é€ æˆä¼¤å®³è·å¾—ç»éªŒ ---
+            if (sourcePart != null && sourcePart.StatBlock != null &&
+                sourcePart.StatBlock.xpSource == WeaponXpSource.DamageDealt)
+            {
+                float xp = remainingDamage * sourcePart.StatBlock.xpGainFactor;               
+                sourcePart.GainProficiencyXP(xp);
+            }
+            // ------------------------------------
+
+            if (!string.IsNullOrEmpty(sourceWeaponName) && !isPlayerHealth && BattleStatisticsManager.Instance != null)
+                BattleStatisticsManager.Instance.AddDamage(sourceWeaponName, remainingDamage);
+
+            // è·³å­—é€»è¾‘
             if (damagePopupPrefab != null)
             {
-                // [ÓÅ»¯] Ìí¼ÓËæ»úÆ«ÒÆ£¬·ÀÖ¹¶à¶ÎÉËº¦(ÈçÀ×»÷)ÖØµş
-                // XÖáËæ»ú×óÓÒÆ«ÒÆ 0.5£¬YÖáËæ»úÏòÉÏ¸¡¶¯ 0.5
                 float randomX = Random.Range(-0.5f, 0.5f);
                 float randomY = Random.Range(0f, 0.5f);
-                Vector3 randomOffset = new Vector3(randomX, randomY, 0);
-
-                // »ù´¡¸ß¶È 1.5 + Ëæ»úÆ«ÒÆ
-                Vector3 popupPosition = transform.position + Vector3.up * 1.5f + randomOffset;
-
-                GameObject popupGO = Instantiate(damagePopupPrefab, popupPosition, Quaternion.identity);
+                GameObject popupGO = Instantiate(damagePopupPrefab, transform.position + Vector3.up * 1.5f + new Vector3(randomX, randomY, 0), Quaternion.identity);
                 DamagePopup damagePopup = popupGO.GetComponent<DamagePopup>();
-                if (damagePopup != null)
-                {
-                    damagePopup.Setup(remainingDamage, false);
-                }
+                if (damagePopup != null) damagePopup.InitPopup(remainingDamage, isCritical);
             }
 
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
             if (impactSounds != null && impactSounds.Length > 0)
-            {
-                AudioClip clipToPlay = impactSounds[Random.Range(0, impactSounds.Length)];
-                audioSource.PlayOneShot(clipToPlay);
-            }
+                audioSource.PlayOneShot(impactSounds[Random.Range(0, impactSounds.Length)]);
 
-            // --- [ĞÂÔö] ´¥·¢ÊÜ»÷ÎŞµĞĞ­³Ì ---
-            if (isPlayerHealth && !IsDead)
-            {
-                StartCoroutine(InvincibilitySequence());
-            }
-            // ---------------------------
+            if (isPlayerHealth && !IsDead) StartCoroutine(InvincibilitySequence());
 
+            // 6. æ­»äº¡å¤„ç†
             if (currentHealth <= 0)
             {
                 currentHealth = 0;
+
+                // --- ã€æ ¸å¿ƒæ–°å¢ã€‘å‡»æ€æ•Œäººè·å¾—ç»éªŒ ---
+                // åœ¨è°ƒç”¨ Die() ä¹‹å‰æˆ–ä¹‹åéƒ½å¯ä»¥ï¼Œåªè¦ç¡®è®¤æ­»é€äº†
+                if (sourcePart != null && sourcePart.StatBlock != null &&
+                    sourcePart.StatBlock.xpSource == WeaponXpSource.EnemyKilled)
+                {
+                    // å‡»æ€è·å¾—å›ºå®šç»éªŒ (é€šå¸¸æ˜¯ 1 * ç³»æ•°)
+                    sourcePart.GainProficiencyXP(1f * sourcePart.StatBlock.xpGainFactor);
+                }
+                // ------------------------------------
+
                 Die();
             }
         }
         return wasReflected;
     }
 
+    /// <summary>
+    /// æ¢å¤ç”Ÿå‘½å€¼
+    /// </summary>
+    /// <returns>å¦‚æœæˆåŠŸæ¢å¤äº†ç”Ÿå‘½ï¼ˆä¹‹å‰æ²¡æ»¡è¡€ï¼‰ï¼Œè¿”å› true</returns>
+    public bool Heal(int amount)
+    {
+        if (IsDead || currentHealth >= maxHealth) return false;
+
+        int oldHealth = currentHealth;
+        currentHealth += amount;
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
+
+        if (currentHealth != oldHealth)
+        {
+            OnHealthChanged?.Invoke(currentHealth, maxHealth);           
+            return true;
+        }
+        return false;
+    }
     private IEnumerator InvincibilitySequence()
     {
-        // 1. ¿ªÆôÎŞµĞ±ê¼Ç
+        // 1. å¼€å¯æ— æ•Œæ ‡è®°
         isPostHitInvincible = true;
 
-        // 2. ÉèÖÃ Emission Îª¸ßÁÁºì (Ö»ÉÁÒ»´Î)
+        // 2. è®¾ç½® Emission ä¸ºé«˜äº®çº¢ (åªé—ªä¸€æ¬¡)
         if (modelRenderer != null)
         {
             modelRenderer.material.SetColor("_EmissionColor", damageEmissionColor);
-            // Ç¿ÖÆË¢ĞÂÒ»ÏÂ Global Illumination (ÓĞÊ±ĞèÒª)
+            // å¼ºåˆ¶åˆ·æ–°ä¸€ä¸‹ Global Illumination (æœ‰æ—¶éœ€è¦)
             DynamicGI.UpdateEnvironment();
         }
 
-        // 3. µÈ´ıÉÁË¸Ê±¼ä (ÀıÈç 0.15Ãë)
+        // 3. ç­‰å¾…é—ªçƒæ—¶é—´ (ä¾‹å¦‚ 0.15ç§’)
         yield return new WaitForSeconds(flashDuration);
 
-        // 4. »Ö¸´ Emission ÑÕÉ«
+        // 4. æ¢å¤ Emission é¢œè‰²
         if (modelRenderer != null)
         {
             modelRenderer.material.SetColor("_EmissionColor", originalEmissionColor);
             DynamicGI.UpdateEnvironment();
         }
 
-        // 5. ¼ÆËãÊ£ÓàµÄÎŞµĞÊ±¼ä
+        // 5. è®¡ç®—å‰©ä½™çš„æ— æ•Œæ—¶é—´
         float remainingInvincibility = invincibilityDuration - flashDuration;
         if (remainingInvincibility > 0)
         {
             yield return new WaitForSeconds(remainingInvincibility);
         }
 
-        // 6. ½áÊøÎŞµĞ
+        // 6. ç»“æŸæ— æ•Œ
         isPostHitInvincible = false;
     }
 
@@ -266,14 +356,14 @@ public class Health : MonoBehaviour
         currentHealth = 0;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
-        // --- ÕûºÏÁËÄúµÄ¡°È¼ÉÕÊ±ËÀÍö»á±¬Õ¨¡±Âß¼­ ---
-        StatusEffectReceiver receiver = GetComponent<StatusEffectReceiver>();
+        // --- æ•´åˆäº†æ‚¨çš„â€œç‡ƒçƒ§æ—¶æ­»äº¡ä¼šçˆ†ç‚¸â€é€»è¾‘ ---
+        /*StatusEffectReceiver receiver = GetComponent<StatusEffectReceiver>();
         if (receiver != null && receiver.IsBurning)
         {
-            Debug.Log($"{gameObject.name} ÔÚÈ¼ŸıÖĞËÀÍö£¬Ó|°l±¬Õ¨£¡");
+            Debug.Log($"{gameObject.name} åœ¨ç‡ƒç‡’ä¸­æ­»äº¡ï¼Œè§¸ç™¼çˆ†ç‚¸ï¼");
             ExplodeOnDeath();
-        }
-        // --- ÕûºÏ½áÊø ---
+        }*/
+        // --- æ•´åˆç»“æŸ ---
 
         OnDeath?.Invoke();
 
@@ -288,7 +378,7 @@ public class Health : MonoBehaviour
        
         if (enemyTypeData != null && enemyTypeData.deathVfxPrefab != null)
         {
-            // ÔÚµ±Ç°ÎïÌåµÄÎ»ÖÃÉú³ÉËÀÍöÌØĞ§
+            // åœ¨å½“å‰ç‰©ä½“çš„ä½ç½®ç”Ÿæˆæ­»äº¡ç‰¹æ•ˆ
             Instantiate(enemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
         }
 
@@ -298,46 +388,46 @@ public class Health : MonoBehaviour
         }
 
         if (gameObject.CompareTag("Enemy") && BattleStatisticsManager.Instance != null)
-            BattleStatisticsManager.Instance.AddKill(); // [ĞÂÔö]
+            BattleStatisticsManager.Instance.AddKill(); // [æ–°å¢]
     }
     private void HandleDrops()
     {
-        // 1. (±£³Ö²»±ä) µôÂä¾­Ñé
+        // 1. (ä¿æŒä¸å˜) æ‰è½ç»éªŒ
         if (experienceGemPrefab != null) //
         {
             Instantiate(experienceGemPrefab, transform.position, Quaternion.identity); //
         }
 
-        // 2. (±£³Ö²»±ä) µôÂä½ğ±Ò
+        // 2. (ä¿æŒä¸å˜) æ‰è½é‡‘å¸
         if (goldCoinPrefab != null && Random.value <= goldDropChance) //
         {
             Instantiate(goldCoinPrefab, transform.position, Quaternion.identity); //
         }
 
-        // 3. (ĞÂÂß¼­) µôÂäÄÜÁ¿Ê¯
-        // ¼ì²é: (ÊÇ·ñ¿ÉÒÔµôÂä?)
+        // 3. (æ–°é€»è¾‘) æ‰è½èƒ½é‡çŸ³
+        // æ£€æŸ¥: (æ˜¯å¦å¯ä»¥æ‰è½?)
         if (GameManager.Instance == null || enemyTypeData == null) return; //
 
         List<EnergyStoneSO> lootTable = GameManager.Instance.energyStoneLootTable; //
         if (lootTable == null || lootTable.Count == 0) return; //
 
-        // A. ÖÀ÷»×Ó
+        // A. æ·éª°å­
         float dropChance = enemyTypeData.energyStoneDropChance; //
         if (Random.value <= dropChance)
         {
-            // B. Ëæ»úÑ¡ÔñÒ»¸öÊ¯Í· *Êı¾İ*
+            // B. éšæœºé€‰æ‹©ä¸€ä¸ªçŸ³å¤´ *æ•°æ®*
             EnergyStoneSO chosenStone = lootTable[Random.Range(0, lootTable.Count)]; //
             if (chosenStone == null) return;
 
-            // C. [ĞÂ] ´ÓÊ¯Í· *Êı¾İ* ÖĞ»ñÈ¡Ëü×¨ÊôµÄ *Ô¤ÖÆ¼ş*
+            // C. [æ–°] ä»çŸ³å¤´ *æ•°æ®* ä¸­è·å–å®ƒä¸“å±çš„ *é¢„åˆ¶ä»¶*
             GameObject prefabToDrop = chosenStone.pickupPrefab; //
 
             if (prefabToDrop != null)
             {
-                // D. ÊµÀı»¯×¨ÊôÔ¤ÖÆ¼ş
+                // D. å®ä¾‹åŒ–ä¸“å±é¢„åˆ¶ä»¶
                 GameObject stoneGO = Instantiate(prefabToDrop, transform.position, Quaternion.identity); //
 
-                // E. ½«Ê¯Í·Êı¾İ ¸³¸øµôÂäÎï
+                // E. å°†çŸ³å¤´æ•°æ® èµ‹ç»™æ‰è½ç‰©
                 EnergyStonePickup pickupScript = stoneGO.GetComponent<EnergyStonePickup>(); //
                 if (pickupScript != null)
                 {
@@ -345,14 +435,41 @@ public class Health : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"ÄÜÁ¿Ê¯µôÂäÊ§°Ü: Ô¤ÖÆ¼ş '{prefabToDrop.name}' È±ÉÙ 'EnergyStonePickup' ½Å±¾!", prefabToDrop);
+                    Debug.LogError($"èƒ½é‡çŸ³æ‰è½å¤±è´¥: é¢„åˆ¶ä»¶ '{prefabToDrop.name}' ç¼ºå°‘ 'EnergyStonePickup' è„šæœ¬!", prefabToDrop);
                 }
             }
             else
             {
-                Debug.LogWarning($"ÄÜÁ¿Ê¯µôÂäÊ§°Ü: 'EnergyStoneSO' ×Ê²ú '{chosenStone.stoneName}' Ã»ÓĞ·ÖÅä 'Pickup Prefab' ×Ö¶Î¡£", chosenStone);
+                Debug.LogWarning($"èƒ½é‡çŸ³æ‰è½å¤±è´¥: 'EnergyStoneSO' èµ„äº§ '{chosenStone.stoneName}' æ²¡æœ‰åˆ†é… 'Pickup Prefab' å­—æ®µã€‚", chosenStone);
             }
         }
+        if (healthPickupPrefab != null)
+        {
+            // ä½ ä¹Ÿå¯ä»¥ä¹˜ä¸Šå¹¸è¿å€¼: healthDropChance * PlayerStats.Instance.luck
+            if (Random.value <= healthDropChance)
+            {
+                Instantiate(healthPickupPrefab, transform.position, Quaternion.identity);
+            }
+        }
+    }
+
+    public void SetInvincible(float duration)
+    {
+        // å¦‚æœå·²ç»åœ¨æ— æ•Œä¸­ï¼Œä¸”æ–°æ—¶é—´æ›´é•¿ï¼Œåˆ™é‡ç½®
+        // è¿™é‡Œç®€å•èµ·è§ï¼Œç›´æ¥å¯åŠ¨æ–°åç¨‹
+        StartCoroutine(ManualInvincibilityRoutine(duration));
+    }
+
+    private IEnumerator ManualInvincibilityRoutine(float duration)
+    {
+        isPostHitInvincible = true;
+        // å¯é€‰ï¼šä½ å¯ä»¥åœ¨è¿™é‡ŒåŠ ä¸€äº›è§†è§‰æ•ˆæœï¼Œæ¯”å¦‚å˜é€æ˜æˆ–è€…æ®‹å½±
+        // if (modelRenderer != null) modelRenderer.material.color = new Color(1,1,1,0.5f); 
+
+        yield return new WaitForSeconds(duration);
+
+        isPostHitInvincible = false;
+        // if (modelRenderer != null) modelRenderer.material.color = Color.white;
     }
     private void ExplodeOnDeath()
     {
@@ -368,7 +485,7 @@ public class Health : MonoBehaviour
             Health healthComponent = hitCollider.GetComponent<Health>();
             if (healthComponent != null && !healthComponent.IsDead)
             {
-                // ¡¾ºËĞÄĞŞ¸´¡¿ÕâÀïµÄ TakeDamage µ÷ÓÃÒÑ¸üĞÂÎªĞÂ°æÇ©Ãû
+                // ã€æ ¸å¿ƒä¿®å¤ã€‘è¿™é‡Œçš„ TakeDamage è°ƒç”¨å·²æ›´æ–°ä¸ºæ–°ç‰ˆç­¾å
                 healthComponent.TakeDamage(explosionDamage, hitCollider.transform.position, this.gameObject, AttackType.Standard);
 
                 StatusEffectReceiver nearbyReceiver = healthComponent.GetComponent<StatusEffectReceiver>();
@@ -380,13 +497,13 @@ public class Health : MonoBehaviour
         }
     }
 
-    // --- ÓÃÓÚUI¸üĞÂµÄ¹«¹²·½·¨ ---
+    // --- ç”¨äºUIæ›´æ–°çš„å…¬å…±æ–¹æ³• ---
     public int GetCurrentHealth() => currentHealth;
     public int GetMaxHealth() => maxHealth;
     public float GetHealthPercentage() => maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
     public bool HasActiveShield()
     {
-        // Èç¹û»¤¶ÜÊµÀı´æÔÚ£¬²¢ÇÒµ±Ç°»¤¶ÜÖµ´óÓÚ0£¬Ôò·µ»Øtrue
+        // å¦‚æœæŠ¤ç›¾å®ä¾‹å­˜åœ¨ï¼Œå¹¶ä¸”å½“å‰æŠ¤ç›¾å€¼å¤§äº0ï¼Œåˆ™è¿”å›true
         return PlayerShield.Instance != null && PlayerShield.Instance.GetCurrentShield() > 0;
     }
 }

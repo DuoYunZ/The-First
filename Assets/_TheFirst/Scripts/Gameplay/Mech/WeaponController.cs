@@ -1,4 +1,3 @@
-// WeaponController.cs (最终角色选择流程版)
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,11 +15,9 @@ public class WeaponController : MonoBehaviour
 {
     public static WeaponController Instance { get; private set; }
 
-    // 【修改】我们不再需要将其设为 public，将在代码中自动查找
     private Transform weaponMountPoint;
 
     [Header("静态/自带武器")]
-    [Tooltip("将玩家身上自带的“刀光” 武器（即挂载了 PlayerBladeAttack 和 WeaponPart 脚本的那个GameObject）拖到这里")]
     public WeaponPart builtInBladeWeapon;
 
     [Header("自动开火设置")]
@@ -29,15 +26,17 @@ public class WeaponController : MonoBehaviour
     [Header("瞄准设置")]
     public float aimTurnSpeed = 25f;
 
+    [Header("武器库")]
     public List<OwnedWeapon> ownedWeapons = new List<OwnedWeapon>();
 
-    [Header("进化系统")]
-    [Tooltip("这里放入所有创建好的配方文件")]
-    public List<EvolutionRecipeSO> allEvolutionRecipes;
+    [Header("融合系统 (Fusion)")]
+    [Tooltip("在这里配置所有的融合配方 (A+B=C)")]
+    public List<FusionRecipeSO> fusionRecipes; // <--- 【修改】使用新的配方列表
+
+    public HashSet<WeaponStatBlock> banList = new HashSet<WeaponStatBlock>();
 
     private Camera mainCamera;
     private PlayerControls playerControls;
-    private Vector2 lookInput;
 
     void Awake()
     {
@@ -49,30 +48,20 @@ public class WeaponController : MonoBehaviour
         weaponMountPoint = transform.Find("WeaponMounts");
         if (weaponMountPoint == null)
         {
-            // 如果找不到挂载点，为了防止自带武器报错，我们临时用自己的 Transform
             weaponMountPoint = transform;
-            // Debug.LogWarning("[WeaponController] 未找到 'WeaponMounts'，将使用自身作为挂载点。");
         }
     }
 
-    private void OnEnable()
-    {
-        playerControls.Player.Enable();
-    }
-
-    private void OnDisable()
-    {
-        playerControls.Player.Disable();
-    }
+    private void OnEnable() => playerControls.Player.Enable();
+    private void OnDisable() => playerControls.Player.Disable();
 
     void Start()
     {
         mainCamera = Camera.main;
 
-        // --- 【核心重构】初始化自带武器 ---
+        // 初始化自带武器
         if (builtInBladeWeapon != null)
         {
-            // 检查是否已经在列表里了（防止重复）
             if (!ownedWeapons.Any(w => w.weaponPartInstance == builtInBladeWeapon))
             {
                 OwnedWeapon initialWeapon = new OwnedWeapon
@@ -81,19 +70,15 @@ public class WeaponController : MonoBehaviour
                     currentLevel = builtInBladeWeapon.currentLevel,
                     weaponPartInstance = builtInBladeWeapon
                 };
-
-                // 把它加到列表第一个位置
                 ownedWeapons.Insert(0, initialWeapon);
-                Debug.Log($"[WeaponController] 系统初始化：已将自带武器 '{initialWeapon.stats.weaponName}' 注册为 OwnedWeapon。");
+                builtInBladeWeapon.Activate(); // 确保激活
             }
         }
-        // ------------------------------
     }
 
+    // --- 升级逻辑 ---
     public void TryUpgradeWeapon(string weaponName)
     {
-        // --- 【核心重构】统一查找逻辑 ---
-        // 直接在列表里找，不需要分情况讨论了
         var targetWeaponData = ownedWeapons.FirstOrDefault(w => w.stats != null && w.stats.weaponName == weaponName);
 
         if (targetWeaponData == null)
@@ -103,49 +88,46 @@ public class WeaponController : MonoBehaviour
         }
 
         WeaponPart targetPart = targetWeaponData.weaponPartInstance;
-        if (targetPart == null) return;
 
-        // 1. 进化检查
-        if (targetPart.currentLevel >= 5 && targetPart.currentStone != null)
+        // 简单升级逻辑 (不再在这里检查进化，进化移交给了融合系统)
+        if (targetPart.currentLevel < targetWeaponData.stats.maxLevel)
         {
-            EvolutionRecipeSO recipe = FindValidRecipe(targetPart);
-            if (recipe != null)
-            {
-                EvolveWeapon(targetPart, recipe, targetWeaponData); // 传入数据引用以便更新
-                return;
-            }
+            targetPart.currentLevel++;
+            targetWeaponData.currentLevel++;
+            Debug.Log($"普通升级完成: {weaponName} -> Lv.{targetPart.currentLevel}");
         }
-
-        // 2. 普通升级
-        targetPart.currentLevel++;
-        targetWeaponData.currentLevel++; // 同步更新数据
-        Debug.Log($"普通升级完成: {weaponName} -> Lv.{targetPart.currentLevel}");
+        else
+        {
+            // 可以在这里给予金币或回血作为满级补偿
+            Debug.Log($"{weaponName} 已满级!");
+        }
     }
 
-    private EvolutionRecipeSO FindValidRecipe(WeaponPart weapon)
-    {
-        if (weapon.currentStone == null) return null;
-        foreach (var recipe in allEvolutionRecipes)
-        {
-            if (recipe.baseWeapon != weapon.StatBlock) continue;
-            if (weapon.currentStone.stoneEffects.Contains(recipe.requiredStoneType)) return recipe;
-        }
-        return null;
-    }
+    // --- 【核心新增】融合系统 API ---
 
-    public EvolutionRecipeSO GetPendingEvolution()
+    /// <summary>
+    /// 检查当前是否满足任意一个融合配方。
+    /// 通常由宝箱 (TreasureChest) 调用。
+    /// </summary>
+    /// <returns>返回满足条件的配方，如果没有则返回 null</returns>
+    public FusionRecipeSO CheckForAvailableFusion()
     {
-        foreach (var owned in ownedWeapons)
+        foreach (var recipe in fusionRecipes)
         {
-            // 必须满级 + 有石头
-            if (owned.weaponPartInstance != null &&
-                owned.weaponPartInstance.currentLevel >= 5 &&
-                owned.weaponPartInstance.currentStone != null)
+            // 1. 检查是否拥有配方中的武器 A 和 B
+            OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
+            OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
+
+            if (weaponA != null && weaponB != null)
             {
-                // 查找匹配的配方
-                EvolutionRecipeSO recipe = FindValidRecipe(owned.weaponPartInstance);
-                if (recipe != null)
+                // 2. 检查是否都达到满级 (假设满级是 8 或 WeaponStatBlock.maxLevel)
+                // 为了保险，我们检查它是否达到该武器设定的 maxLevel
+                bool isAMaxed = weaponA.currentLevel >= weaponA.stats.maxLevel;
+                bool isBMaxed = weaponB.currentLevel >= weaponB.stats.maxLevel;
+
+                if (isAMaxed && isBMaxed)
                 {
+                    Debug.Log($"<color=cyan>发现可融合配方: {recipe.weaponA.weaponName} + {recipe.weaponB.weaponName} -> {recipe.resultWeapon.weaponName}</color>");
                     return recipe;
                 }
             }
@@ -153,44 +135,87 @@ public class WeaponController : MonoBehaviour
         return null;
     }
 
-    private void EvolveWeapon(WeaponPart weaponPart, EvolutionRecipeSO recipe, OwnedWeapon weaponData)
+    /// <summary>
+    /// 执行融合：移除 A 和 B，添加 C。
+    /// </summary>
+    public void PerformFusion(FusionRecipeSO recipe)
     {
-        Debug.Log($"<color=cyan>【武器进化】{weaponPart.StatBlock.weaponName} -> {recipe.evolvedWeapon.weaponName}</color>");
+        if (recipe == null) return;
 
-        // 1. 替换核心数据
-        weaponPart.StatBlock = recipe.evolvedWeapon;
+        Debug.Log($"<color=yellow>开始执行融合: {recipe.resultWeapon.weaponName}</color>");
 
-        // 【重要】同步更新 OwnedWeapon 里的数据引用，防止下次升级找不到
-        if (weaponData != null) weaponData.stats = recipe.evolvedWeapon;
+        // 1. 查找并移除旧武器
+        OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
+        OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
 
-        // 2. 重置等级
-        weaponPart.currentLevel = 1;
-        if (weaponData != null) weaponData.currentLevel = 1;
+        // 【新增】将它们加入黑名单
+        if (weaponA != null) banList.Add(weaponA.stats);
+        if (weaponB != null) banList.Add(weaponB.stats);
 
-        // 3. 消耗石头
-        weaponPart.RemoveEnergyStone();
+        RemoveWeapon(weaponA);
+        RemoveWeapon(weaponB);
 
-        // 4. 刷新状态
-        weaponPart.RefreshWeaponStateFromStone();
+        // 2. 添加新武器 (超武)
+        AddNewWeapon(recipe.resultWeapon);
 
-        // 5. 【关键】禁用旧的挥砍脚本
-        // 这会让 AimAndFire 中的逻辑切换，开始调用 .Fire()
-        var meleeAttackScript = weaponPart.GetComponent<PlayerBladeAttack>();
-        if (meleeAttackScript != null)
+        // 3. 刷新 UI
+        if (WeaponUI.Instance != null)
         {
-            Debug.Log("禁用 PlayerBladeAttack，转由 WeaponPart 接管远程攻击。");
-            meleeAttackScript.enabled = false;
+            WeaponUI.Instance.UpdateWeaponIcons();
         }
     }
-    // AddNewWeapon 方法现在可以安全地使用 weaponMountPoint 了
+
+    private void RemoveWeapon(OwnedWeapon weaponToRemove)
+    {
+        if (weaponToRemove == null) return;
+
+        WeaponPart part = weaponToRemove.weaponPartInstance;
+
+        if (part != null)
+        {
+            // --- 【核心修复】防自杀检查 ---
+            // 检查这个武器的 GameObject 是否就是玩家自己 (WeaponController 所在的物体)
+            if (part.gameObject == this.gameObject)
+            {
+                Debug.LogWarning($"[WeaponController] 试图移除挂在玩家身上的初始武器: {part.name}。只禁用组件，不销毁物体！");
+
+                // 1. 禁用脚本组件 (停止 Update)
+                part.enabled = false;
+
+                // 2. 如果有 PlayerBladeAttack (近战脚本)，也禁用掉
+                var melee = part.GetComponent<PlayerBladeAttack>();
+                if (melee != null) melee.enabled = false;
+
+                // 3. 尝试隐藏视觉模型 (如果有独立引用的 FloatingVisual)
+                if (part.floatingVisual != null)
+                {
+                    // 只隐藏模型，不关整个物体
+                    part.floatingVisual.HideWeapon();
+                    part.floatingVisual.gameObject.SetActive(false);
+                }
+            }
+            // 如果是自带武器引用 (作为子物体)，通常我们只隐藏不销毁
+            else if (part == builtInBladeWeapon)
+            {
+                part.gameObject.SetActive(false);
+            }
+            // 其他情况：是后来生成的独立子物体，可以安全销毁
+            else
+            {
+                Destroy(part.gameObject);
+            }
+        }
+
+        // 从列表中移除
+        ownedWeapons.Remove(weaponToRemove);
+    }
+
+    // --- 武器管理 ---
+
     public void AddNewWeapon(WeaponStatBlock weaponData)
     {
         if (weaponData == null || weaponMountPoint == null) return;
-
-        // 这个检查现在变得至关重要，如果 Awake 中没找到，这里会直接返回
         if (ownedWeapons.Any(w => w.stats.weaponName == weaponData.weaponName)) return;
-
-        // ... (检查是否已拥有的逻辑保持不变) ...
 
         GameObject weaponPartGO = Instantiate(weaponData.weaponPartPrefab, weaponMountPoint);
         WeaponPart part = weaponPartGO.GetComponent<WeaponPart>();
@@ -207,16 +232,16 @@ public class WeaponController : MonoBehaviour
                 currentLevel = 1,
                 weaponPartInstance = part
             });
+
+            Debug.Log($"[WeaponController] 装备新武器: '{weaponData.weaponName}'。当前持有数量: {ownedWeapons.Count}");
         }
 
-            if (WeaponUI.Instance != null)
+        if (WeaponUI.Instance != null)
         {
             WeaponUI.Instance.UpdateWeaponIcons();
         }
-
-        part.Activate();
-        Debug.Log($"[WeaponController] 成功装备全新武器: '{weaponData.weaponName}'。");
     }
+
     public void RefreshAllWeaponStates()
     {
         foreach (OwnedWeapon owned in ownedWeapons)
@@ -227,11 +252,11 @@ public class WeaponController : MonoBehaviour
             }
         }
     }
-    // Update, AimAndFire 等其他方法保持不变...
+
+    // --- 战斗循环 ---
+
     void Update()
     {
-        // 【核心修复】现在只需要检查 ownedWeapons 数量即可
-        // 因为自带武器已经在列表里了，所以 Count 至少为 1
         if (!autoFire || ownedWeapons.Count == 0) return;
 
         Vector3 aimDirection = Vector3.zero;
@@ -245,7 +270,6 @@ public class WeaponController : MonoBehaviour
             if (groundPlane.Raycast(mouseRay, out float distance))
             {
                 Vector3 mouseWorldPos = mouseRay.GetPoint(distance);
-                // 使用 transform.position 更加稳定，防止挂载点旋转导致的抖动
                 aimDirection = mouseWorldPos - transform.position;
                 aimDirection.y = 0;
                 if (aimDirection.sqrMagnitude > 0.01f) hasAimInput = true;
@@ -264,39 +288,28 @@ public class WeaponController : MonoBehaviour
         targetDirection.Normalize();
         Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
 
-        // 旋转挂载点 (如果有)
         if (weaponMountPoint != null)
         {
             weaponMountPoint.rotation = Quaternion.Slerp(weaponMountPoint.rotation, targetRotation, aimTurnSpeed * Time.deltaTime);
         }
 
-        Vector3 fireDirection = targetDirection; // 直接使用瞄准方向
+        Vector3 fireDirection = targetDirection;
 
-        // --- 【核心重构】统一循环遍历 ---
-        // 不再单独处理 builtInBladeWeapon，所有人都在这个循环里
+        // 倒序遍历，防止如果在开火过程中列表发生变化（虽然不太可能）
         for (int i = 0; i < ownedWeapons.Count; i++)
         {
             var weapon = ownedWeapons[i];
-            if (weapon.weaponPartInstance != null && weapon.weaponPartInstance.enabled)
+            if (weapon.weaponPartInstance != null && weapon.weaponPartInstance.gameObject.activeInHierarchy && weapon.weaponPartInstance.enabled)
             {
-                // 【智能防冲突逻辑】
-                // 检查这个武器是否挂载了 PlayerBladeAttack (旧挥砍脚本)
+                // 兼容旧的 PlayerBladeAttack: 如果它存在且启用，让它自己控制，我们不调用 Fire
                 var meleeScript = weapon.weaponPartInstance.GetComponent<PlayerBladeAttack>();
-
-                // 如果旧脚本存在 且 开启中，说明还没进化
-                // 此时不调用 Fire()，让 PlayerBladeAttack 自己控制挥砍
                 if (meleeScript != null && meleeScript.enabled)
                 {
                     continue;
                 }
 
-                // 如果旧脚本不存在(是捡来的枪) 或者 被禁用了(已进化成风刃)
-                // 则由 Controller 统一控制开火！
                 weapon.weaponPartInstance.Fire(fireDirection);
             }
         }
     }
-
-    // 我们不再需要 RegisterExistingPart 方法，因为武器都是在新流程中动态添加的
-    // public void RegisterExistingPart(WeaponPart partInstance) { ... }
 }

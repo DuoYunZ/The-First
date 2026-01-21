@@ -15,6 +15,11 @@ public class UpgradeEffect
     [Tooltip("升级效果的行为类型")]
     public EffectActionType actionType = EffectActionType.ModifyStat;
 
+    // --- 核心新增：关联被动道具 ---
+    [Header("【如果这是一个被动道具卡片】")]
+    public PassiveItemData passiveItemData;
+    // ---------------------------
+
     [Header("【如果 Action Type 是 ModifyStat】")]
     [Tooltip("这个效果属于哪个属性")]
     public UpgradeType statToModify;
@@ -23,7 +28,7 @@ public class UpgradeEffect
     [Tooltip("数值的类型是固定值(Flat)还是百分比(Percentage)")]
     public ModifierType modType = ModifierType.Percentage;
 
-    [Header("【如果 Action Type 是 UnlockWeapon】")]
+    [Header("【如果 Action Type 是 UnlockWeapon/Evolve】")]
     [Tooltip("要解锁的武器数据")]
     public WeaponStatBlock weaponToUnlock;
 

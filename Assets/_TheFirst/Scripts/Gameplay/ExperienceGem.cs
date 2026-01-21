@@ -111,26 +111,23 @@ public class ExperienceGem : MonoBehaviour
 
     void Update()
     {
-        // --- vvv [修改] vvv ---
-        // 1. 将 isCollecting 检查移到前面
         if (isCollecting || !canBePickedUp || collectionTarget == null) return;
-        // --- ^^^ [修改] ^^^ ---
-
-        // 如果正在吸收浮空状态，不执行其他逻辑
         if (isAbsorbFloating) return;
 
-        // --- 磁铁吸附逻辑 ---
         float distanceToPlayer = Vector3.Distance(transform.position, collectionTarget.position);
 
-        if (distanceToPlayer <= magnetRadius) //
+        // --- 【修复】应用拾取范围加成 ---
+        float finalRadius = magnetRadius;
+        if (PlayerStats.Instance != null)
         {
-            StartAbsorbSequence(); //
+            finalRadius *= PlayerStats.Instance.pickupRadiusMultiplier;
         }
 
-        // --- vvv [修改] vvv ---
-        // (这段逻辑现在被 AbsorbFloatRoutine 协程的末尾接管了)
-        // if (isCollecting && !isAbsorbFloating) ...
-        // --- ^^^ [修改] ^^^ ---
+        if (distanceToPlayer <= finalRadius) // 使用 finalRadius
+        {
+            StartAbsorbSequence();
+        }
+        // -----------------------------
     }
     private void StartAbsorbSequence()
     {

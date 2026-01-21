@@ -1,60 +1,102 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class DamagePopup : MonoBehaviour
 {
     private TextMeshPro textMesh;
+    private float disappearTimer;
     private Color textColor;
+    private Vector3 moveVector;
+    private bool isCritical;
+    private float initialScale;
 
-    public float moveSpeed = 2f;    // ÏòÉÏÆ¯¸¡µÄËÙ¶È
-    public float fadeOutSpeed = 3f; // µ­³öËÙ¶È
-    public float lifetime = 0.7f;   // ´æ»îÊ±¼ä
+    [Header("åŸºç¡€è®¾ç½®")]
+    public float lifetime = 1f;
 
-    [Header("ÑÕÉ«ÉèÖÃ")]
-    public Color healthDamageColor = Color.white; // Ä¬ÈÏÉúÃüÉËº¦ÑÕÉ«
-    public Color shieldDamageColor = new Color(0.5f, 0.8f, 1f); // Ä¬ÈÏ»¤¶ÜÉËº¦ÑÕÉ« (µ­À¶É«)
+    [Header("é¢œè‰²ä¸å¤§å°é…ç½®")]
+    public Color normalColor = Color.white;
+    public float normalFontSize = 6f;
+    [Space(5)]
+    public Color critColor = new Color(1f, 0.6f, 0f); // é‡‘è‰²
+    public float critFontSize = 10f;
+
+    [Header("åŠ¨ç”»é…ç½®")]
+    public float normalUpSpeed = 1f;
+    public float critUpThrust = 5f;
+    public float critSideSpread = 1f;
+    public float drag = 1.5f;
+
+    [Header("æš´å‡»ç¼©æ”¾ç‰¹æ•ˆ")]
+    public float scalePunchAmount = 1.3f;
+    public float scalePunchDuration = 0.2f;
+    private float scaleTimer;
 
     void Awake()
     {
         textMesh = GetComponent<TextMeshPro>();
+        initialScale = transform.localScale.x;
     }
 
-    /// <summary>
-    /// ÉèÖÃÌø×ÖÏÔÊ¾µÄÉËº¦ÊıÖµ
-    /// </summary>
-    public void Setup(int damageAmount, bool isShieldDamage)
+    // ğŸ”¥ã€å…³é”®ä¿®æ”¹ã€‘æ”¹åä¸º InitPopupï¼Œé¿å…ä¸æ—§ä»£ç æ··æ·†
+    public void InitPopup(int damageAmount, bool isCrit)
     {
-        if (textMesh != null)
+        this.isCritical = isCrit;
+
+        // ç¡®ä¿ TextMesh ç»„ä»¶å­˜åœ¨
+        if (textMesh == null) textMesh = GetComponent<TextMeshPro>();
+
+        textMesh.text = damageAmount.ToString();
+        disappearTimer = lifetime;
+        
+        if (isCrit)
         {
-            textMesh.text = damageAmount.ToString();
-            // ¸ù¾İ isShieldDamage ²ÎÊıÑ¡ÔñÑÕÉ«
-            textColor = isShieldDamage ? shieldDamageColor : healthDamageColor;
+            textMesh.fontSize = critFontSize;
+            textColor = critColor;
             textMesh.color = textColor;
-        }
-        Destroy(gameObject, lifetime);
-    }
 
-    public void Setup(int damageAmount)
-    {
-        Setup(damageAmount, false); // Ä¬ÈÏµ÷ÓÃĞÂ·½·¨£¬²¢±ê¼ÇÎª·Ç»¤¶ÜÉËº¦
+            // æš´å‡»è¿åŠ¨ï¼šå‘ä¸Šå†² + éšæœºå·¦å³
+            moveVector = new Vector3(Random.Range(-critSideSpread, critSideSpread), critUpThrust, 0f);
+            scaleTimer = scalePunchDuration;
+        }
+        else
+        {
+            textMesh.fontSize = normalFontSize;
+            textColor = normalColor;
+            textMesh.color = textColor;
+
+            // æ™®é€šè¿åŠ¨ï¼šæ…¢é€Ÿå‘ä¸Š
+            moveVector = new Vector3(0, normalUpSpeed, 0f);
+            scaleTimer = 0f;
+        }
+
+        if (Camera.main != null)
+            transform.rotation = Camera.main.transform.rotation;
     }
 
     void Update()
     {
-        // ÏòÉÏÒÆ¶¯
-        transform.position += Vector3.up * moveSpeed * Time.deltaTime;
+        transform.position += moveVector * Time.deltaTime;
+        moveVector -= moveVector * drag * Time.deltaTime;
 
-        // µ­³öĞ§¹û
-        textColor.a -= fadeOutSpeed * Time.deltaTime;
-        if (textMesh != null)
+        if (isCritical && scaleTimer > 0)
         {
-            textMesh.color = textColor;
+            scaleTimer -= Time.deltaTime;
+            float scaleLerp = scaleTimer / scalePunchDuration;
+            float currentScale = Mathf.Lerp(initialScale, initialScale * scalePunchAmount, scaleLerp);
+            transform.localScale = Vector3.one * currentScale;
+        }
+        else
+        {
+            transform.localScale = Vector3.one * initialScale;
         }
 
-        // ÈÃÎÄ±¾Ê¼ÖÕ³¯ÏòÖ÷ÉãÏñ»ú
-        if (Camera.main != null)
+        disappearTimer -= Time.deltaTime;
+        if (disappearTimer < 0)
         {
-            transform.rotation = Camera.main.transform.rotation;
+            float fadeSpeed = 3f;
+            textColor.a -= fadeSpeed * Time.deltaTime;
+            textMesh.color = textColor;
+            if (textColor.a < 0) Destroy(gameObject);
         }
     }
 }

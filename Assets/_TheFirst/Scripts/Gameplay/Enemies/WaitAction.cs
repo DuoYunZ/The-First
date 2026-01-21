@@ -28,7 +28,14 @@ public class WaitAction : Node
 
             // 【核心修改】在等待开始时，强制停止AI和物理移动
             if (regularAI != null) regularAI.enabled = false;
-            if (rb != null) rb.velocity = Vector3.zero;
+            if (rb != null && !rb.isKinematic)
+            {
+                rb.velocity = Vector3.zero;
+            }
+            else
+            {
+                // 如果是 Kinematic (由动画控制)，我们可能不需要手动设速度，或者需要用 navMeshAgent.isStopped = true
+            }
 
             // 【可选】在这里也可以触发待机动画
             // Animator animator = GetComponentInParent<Animator>();

@@ -59,90 +59,129 @@ public class UpgradeManager : MonoBehaviour
         Time.timeScale = 0f;
         offeredUpgrades.Clear();
 
-        // --- 【核心修改】步骤 1: 优先检查进化 ---
-        EvolutionRecipeSO evolutionRecipe = null;
+        // 1. 优先检查融合 (宝箱逻辑通常不在这里，升级界面通常不直接给超武，除非你的设计允许)
+        // (保持你原有的逻辑，如果这是你想保留的“升级直接送超武”机制)
+        FusionRecipeSO fusionRecipe = null;
         if (WeaponController.Instance != null)
         {
-            evolutionRecipe = WeaponController.Instance.GetPendingEvolution();
+            fusionRecipe = WeaponController.Instance.CheckForAvailableFusion();
         }
 
-        if (evolutionRecipe != null)
+        if (fusionRecipe != null)
         {
-            // 如果有进化配方，我们创建一个临时的“进化节点”
-            // 这样 UI 就能显示它，而不需要我们在数据库里预先配置
-            SkillTreeNodeData evoNode = CreateEvolutionNode(evolutionRecipe);
+            SkillTreeNodeData evoNode = CreateFusionNode(fusionRecipe);
             offeredUpgrades.Add(evoNode);
-
-            // 策略选择：
-            // A. 进化时刻只显示这一张卡 (强制进化，类吸血鬼幸存者宝箱) -> 直接跳过后续抽卡
-            // B. 进化卡混在普通卡里 -> 继续下面的抽卡逻辑 (需注意 count - 1)
-
-            // 这里演示方案 A (更有仪式感):
-            Debug.Log($"[UpgradeManager] 发现进化配方: {evolutionRecipe.evolutionName}");
+            Debug.Log($"[UpgradeManager] 发现融合配方: {fusionRecipe.resultWeapon.weaponName}");
         }
         else
         {
-            // --- 如果没有进化，才执行常规抽卡 ---
-            List<SkillTreeNodeData> availableUpgrades = GetAvailableUpgrades();
-            if (availableUpgrades.Count > 0)
+            // --- 【核心修改】6:4 权重抽卡逻辑 ---
+
+            // A. 获取所有可用的武器升级
+            List<SkillTreeNodeData> validWeapons = GenerateWeaponNodes();
+
+            // B. 获取所有可用的被动升级
+            List<SkillTreeNodeData> validPassives = new List<SkillTreeNodeData>();
+            int currentPassiveCount = ownedUpgrades.Count;
+            int maxPassiveSlots = 6;
+
+            if (upgradeDatabase.passiveUpgrades != null)
             {
-                var shuffledUpgrades = availableUpgrades.OrderBy(a => Random.value).ToList();
-                int count = Mathf.Min(3, shuffledUpgrades.Count);
-                for (int i = 0; i < count; i++)
+                foreach (var node in upgradeDatabase.passiveUpgrades)
                 {
-                    offeredUpgrades.Add(shuffledUpgrades[i]);
+                    bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
+                    bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
+                    if (prerequisitesMet && notMaxed) validPassives.Add(node);
+                }
+            }
+
+            // 打乱列表
+            var shuffledWeapons = validWeapons.OrderBy(a => Random.value).ToList();
+            var shuffledPassives = validPassives.OrderBy(a => Random.value).ToList();
+
+            // C. 抽取 3 张卡
+            int slotsToFill = 3;
+
+            for (int i = 0; i < slotsToFill; i++)
+            {
+                // 判定权重：如果 随机数 < 0.6 (60%) 且 还有武器可升，就给武器
+                // 否则给被动。如果没有被动了，也得给武器。
+                bool wantWeapon = Random.value < 0.6f;
+
+                // 确保池子里有东西
+                bool hasWeapon = shuffledWeapons.Count > 0;
+                bool hasPassive = shuffledPassives.Count > 0;
+
+                SkillTreeNodeData pickedNode = null;
+
+                if (wantWeapon && hasWeapon)
+                {
+                    pickedNode = shuffledWeapons[0];
+                    shuffledWeapons.RemoveAt(0);
+                }
+                else if (hasPassive)
+                {
+                    pickedNode = shuffledPassives[0];
+                    shuffledPassives.RemoveAt(0);
+                }
+                else if (hasWeapon) // 没被动了，只能给武器
+                {
+                    pickedNode = shuffledWeapons[0];
+                    shuffledWeapons.RemoveAt(0);
+                }
+
+                if (pickedNode != null)
+                {
+                    offeredUpgrades.Add(pickedNode);
                 }
             }
         }
-        // ----------------------------------------
 
+        // ... 后续 UI 刷新逻辑保持不变 ...
         if (offeredUpgrades.Count == 0)
         {
-            Time.timeScale = 1f; // 没东西升了，直接恢复
+            Time.timeScale = 1f;
             return;
         }
 
-        // 刷新 UI
         foreach (Transform child in cardContainer) Destroy(child.gameObject);
         activeCardUIs.Clear();
         upgradePanel.SetActive(true);
         StartCoroutine(ShowCardsSequentially());
     }
 
-    private SkillTreeNodeData CreateEvolutionNode(EvolutionRecipeSO recipe)
+    private SkillTreeNodeData CreateFusionNode(FusionRecipeSO recipe)
     {
         // 在内存中创建一个临时的 ScriptableObject 实例
         SkillTreeNodeData node = ScriptableObject.CreateInstance<SkillTreeNodeData>();
 
-        node.skillName = recipe.evolutionName; // "疾风之刃"
-        node.skillIcon = recipe.evolvedWeapon.weaponIcon; // 用新武器的图标
+        // 显示结果武器的名字和图标 (例如 "炼狱风暴")
+        node.skillName = recipe.resultWeapon.weaponName;
+        node.skillIcon = recipe.resultWeapon.weaponIcon; // 或者是 recipe.fusionIcon
 
         // 创建一个选项
         UpgradeOption option = new UpgradeOption();
-        option.description = recipe.description; // "进化！发射穿透风刃..."
-        option.rarity = Rarity.Epic; // 进化通常是史诗级的金色
+        option.description = recipe.description; // "融合！烈焰与疾风的结合..."
+        option.rarity = Rarity.Epic; // 融合通常是史诗级的金色
         option.effects = new List<UpgradeEffect>();
 
-        // 这里我们需要一种新的 ActionType 来告诉系统“这是进化”
-        // 但为了不改动太多底层代码，我们可以复用 'UnlockWeapon' 
-        // 并把 evolvedWeapon 传进去。
-        // *或者* 最好是在 UpgradeEffect.cs 里加一个 'EvolveWeapon' 类型。
-        // 为了稳健，我们假设你还没有加那个枚举，我们先用 UnlockWeapon 变通一下，
-        // 或者我们直接在 ApplyEffect 里通过名字判断。
-
-        // 推荐方案：去 UpgradeEffect.cs 加一个 EffectActionType.EvolveWeapon
-        // 这里假设你已经加了 (稍后步骤会提示你加)
+        // 创建一个特殊的 Effect
         UpgradeEffect effect = new UpgradeEffect();
-        effect.actionType = EffectActionType.EvolveWeapon; // <--- 需新增枚举
-        effect.weaponToUnlock = recipe.baseWeapon; // 这里的逻辑是：我们要进化的是 BaseWeapon
-                                                   // 或者我们可以存 evolvedWeapon，这取决于 WeaponController 怎么处理
+        // 我们需要一种 ActionType 来告诉系统“执行融合”
+        // 既然你之前没有 EvolveWeapon 枚举，我们就用 ModifyStat + 特殊值来标记，
+        // 或者最好去加一个 EffectActionType.FuseWeapon
 
-        // 实际上 WeaponController.TryUpgradeWeapon 需要的是“基础武器的名字”
-        // 既然 UpgradeEffect 没有 string 字段，我们可以借用 weaponToUnlock.weaponName
-        effect.weaponToUnlock = recipe.baseWeapon;
+        // 假设我们在 UpgradeEffect.cs 里加了 FuseWeapon (强烈建议加一个)
+        effect.actionType = EffectActionType.EvolveWeapon; // 暂时复用 EvolveWeapon
+
+        // 这里稍微 hack 一下：
+        // 我们需要把 recipe 传给 OnUpgradeOptionSelected
+        // 但 UpgradeEffect 没有 FusionRecipeSO 字段。
+        // 既然这是临时的，我们可以把 recipe.resultWeapon 放在 weaponToUnlock 里
+        // 然后在 OnUpgradeOptionSelected 里通过 CheckForAvailableFusion 再次确认
+        effect.weaponToUnlock = recipe.resultWeapon;
 
         option.effects.Add(effect);
-
         node.possibleOptions = new List<UpgradeOption> { option };
 
         return node;
@@ -181,47 +220,208 @@ public class UpgradeManager : MonoBehaviour
     }
     private List<SkillTreeNodeData> GetAvailableUpgrades()
     {
-        // 获取玩家当前拥有的所有武器的 StatBlock
-        HashSet<WeaponStatBlock> ownedWeaponStats = new HashSet<WeaponStatBlock>();
-        if (WeaponController.Instance != null)
-        {
-            foreach (var ownedWeapon in WeaponController.Instance.ownedWeapons)
-            {
-                ownedWeaponStats.Add(ownedWeapon.stats);
-            }
-        }
-
         List<SkillTreeNodeData> availableNodes = new List<SkillTreeNodeData>();
-        foreach (var node in upgradeDatabase.allUpgrades)
+
+        // --- 1. 获取通用被动技能 (原逻辑) ---
+        // 以前是遍历 allUpgrades，现在遍历 passiveUpgrades
+        if (upgradeDatabase.passiveUpgrades != null)
         {
-            // --- 【核心修改】 ---
-            // 检查1：如果这是一个“解锁武器”的节点，先判断是否已拥有该武器
-            bool isUnlockWeaponNode = node.possibleOptions.Any(opt => opt.effects.Any(eff => eff.actionType == EffectActionType.UnlockWeapon));
-            if (isUnlockWeaponNode)
+            foreach (var node in upgradeDatabase.passiveUpgrades)
             {
-                var weaponToUnlock = node.possibleOptions.First().effects.First().weaponToUnlock;
-                if (ownedWeaponStats.Contains(weaponToUnlock))
-                {
-                    continue; // 如果已经拥有这把武器，则直接跳过这个节点
-                }
-            }
-            // --- 修改结束 ---
+                // 检查前置条件
+                bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
+                // 检查等级上限
+                bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
 
-            // 检查2：前置条件是否满足 (逻辑不变)
-            bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
-
-            if (prerequisitesMet)
-            {
-                // 检查3：是否达到最大等级 (逻辑不变)
-                if (!ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel)
+                if (prerequisitesMet && notMaxed)
                 {
                     availableNodes.Add(node);
                 }
             }
         }
+
+        // --- 2. 获取武器升级 (新逻辑 - 动态生成节点) ---
+        // 这里调用我们之前讨论的 GenerateWeaponNodes 方法
+        availableNodes.AddRange(GenerateWeaponNodes());
+
         return availableNodes;
     }
+    private List<SkillTreeNodeData> GenerateWeaponNodes()
+    {
+        List<SkillTreeNodeData> nodes = new List<SkillTreeNodeData>();
 
+        if (WeaponController.Instance == null) return nodes;
+
+        // [排查日志 1] 打印当前存档里所有的解锁物品，看看 "Molotov" 到底在不在里面
+        if (PlayerProgressManager.Instance != null)
+        {
+            string allUnlocked = string.Join(", ", PlayerProgressManager.Instance.unlockedItems);
+            // 【修改】去掉判空，强制打印，如果是空的就显示 "无"
+            Debug.Log($"[UpgradeManager排查] 当前存档已解锁物品: {(string.IsNullOrEmpty(allUnlocked) ? "无 (列表为空)" : allUnlocked)}");
+        }
+
+        // --- 1. 获取当前武器数量和上限 ---
+        int currentWeaponCount = WeaponController.Instance.ownedWeapons.Count;
+        int maxWeaponSlots = 6;
+
+        // 获取超武列表
+        HashSet<WeaponStatBlock> evolutionOnlyWeapons = new HashSet<WeaponStatBlock>();
+        if (WeaponController.Instance.fusionRecipes != null)
+        {
+            foreach (var recipe in WeaponController.Instance.fusionRecipes)
+            {
+                if (recipe.resultWeapon != null) evolutionOnlyWeapons.Add(recipe.resultWeapon);
+            }
+        }
+
+        // 遍历数据库
+        foreach (var chain in upgradeDatabase.weaponChains)
+        {
+            if (chain.targetWeapon == null) continue;
+
+            // 过滤掉超武
+            bool isEvoWeapon = evolutionOnlyWeapons.Contains(chain.targetWeapon);
+
+            // 过滤掉黑名单
+            if (WeaponController.Instance.banList.Contains(chain.targetWeapon)) continue;
+
+            // 获取拥有状态
+            var ownedWeapon = WeaponController.Instance.ownedWeapons
+                .FirstOrDefault(w => w.stats == chain.targetWeapon);
+
+            int currentLevel = (ownedWeapon != null) ? ownedWeapon.currentLevel : 0;
+            int maxLevel = chain.targetWeapon.maxLevel;
+            int dynamicMaxLevel = (ownedWeapon != null && ownedWeapon.weaponPartInstance != null)
+                                    ? ownedWeapon.weaponPartInstance.maxLevel
+                                    : chain.targetWeapon.maxLevel;
+
+            // ---------------------------------------------------------
+            // 情况 A: 尚未拥有 -> 提供解锁选项
+            // ---------------------------------------------------------
+            if (ownedWeapon == null)
+            {
+                // [排查日志 2] 针对燃烧瓶的专项检查
+                // 如果名字里包含 Molotov 或 燃烧，就打印详细日志
+                bool isTargetDebug = chain.weaponName.Contains("Molotov") || chain.weaponName.Contains("燃烧");
+
+                // 1. 检查格子
+                if (currentWeaponCount >= maxWeaponSlots)
+                {
+                    if (isTargetDebug) Debug.Log($"[UpgradeManager排查] 燃烧瓶被跳过：武器槽已满 ({currentWeaponCount}/{maxWeaponSlots})");
+                    continue;
+                }
+
+                // 2. 检查超武
+                if (isEvoWeapon) continue;
+
+                // =========================================================
+                // 3. 解锁资格检查 (带日志)
+                // =========================================================
+                bool isUnlocked = chain.isDefaultUnlocked;
+
+                string wID = chain.targetWeapon.weaponID;
+                string wName = chain.targetWeapon.weaponName;
+
+                if (!isUnlocked && PlayerProgressManager.Instance != null)
+                {
+                    // A. 检查 ID
+                    bool hasID = !string.IsNullOrEmpty(wID) && PlayerProgressManager.Instance.unlockedItems.Contains(wID);
+                    // B. 检查 Name
+                    bool hasName = PlayerProgressManager.Instance.unlockedItems.Contains(wName);
+
+                    if (isTargetDebug)
+                    {
+                        Debug.Log($"[UpgradeManager排查] 燃烧瓶解锁判定:\n" +
+                                  $"  - 目标ID: '{wID}'\n" +
+                                  $"  - 目标Name: '{wName}'\n" +
+                                  $"  - IsDefault: {chain.isDefaultUnlocked}\n" +
+                                  $"  - 存档含ID?: {hasID}\n" +
+                                  $"  - 存档含Name?: {hasName}");
+                    }
+
+                    if (hasID || hasName)
+                    {
+                        isUnlocked = true;
+                    }
+                }
+
+                // 最终判定
+                if (!isUnlocked)
+                {
+                    if (isTargetDebug) Debug.Log($"[UpgradeManager排查] 燃烧瓶最终判定: 【未解锁】，因此不生成卡片。");
+                    continue;
+                }
+
+                if (isTargetDebug) Debug.Log($"[UpgradeManager排查] 燃烧瓶最终判定: 【已解锁】，生成解锁卡片！");
+                // =========================================================
+
+                SkillTreeNodeData unlockNode = ScriptableObject.CreateInstance<SkillTreeNodeData>();
+                unlockNode.skillName = $"解锁 {chain.weaponName}";
+                unlockNode.skillIcon = chain.icon;
+                unlockNode.associatedWeapon = chain.targetWeapon;
+                unlockNode.possibleOptions = new List<UpgradeOption> { chain.unlockOption };
+                nodes.Add(unlockNode);
+            }
+            // ---------------------------------------------------------
+            // 情况 B: 已拥有 (升级)
+            // ---------------------------------------------------------
+            else if (currentLevel < maxLevel)
+            {
+                int upgradeIndex = currentLevel - 1;
+                if (upgradeIndex >= 0 && upgradeIndex < chain.levels.Count)
+                {
+                    LevelUpgradeData nextLevelData = chain.levels[upgradeIndex];
+                    SkillTreeNodeData upgradeNode = ScriptableObject.CreateInstance<SkillTreeNodeData>();
+                    upgradeNode.skillName = $"{chain.weaponName} Lv.{currentLevel + 1}";
+                    upgradeNode.skillIcon = chain.icon;
+                    upgradeNode.associatedWeapon = chain.targetWeapon;
+                    upgradeNode.possibleOptions = nextLevelData.options;
+                    nodes.Add(upgradeNode);
+                }
+            }
+            // ---------------------------------------------------------
+            // 情况 C: 进化 (满级)
+            // ---------------------------------------------------------
+            else if (ownedWeapon != null && currentLevel >= dynamicMaxLevel)
+            {
+                WeaponStatBlock evoTarget = ownedWeapon.stats.evolutionTarget;
+                if (evoTarget != null)
+                {
+                    bool metaEvoUnlocked = false;
+                    if (PlayerProgressManager.Instance != null)
+                    {
+                        if (ownedWeapon.stats.weaponID == "Fireball")
+                        {
+                            metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Fireball_Meta_Evolution");
+                        }
+                    }
+
+                    if (metaEvoUnlocked)
+                    {
+                        SkillTreeNodeData evoNode = ScriptableObject.CreateInstance<SkillTreeNodeData>();
+                        evoNode.skillName = $"进化: {evoTarget.weaponName}";
+                        evoNode.skillIcon = evoTarget.weaponIcon;
+                        evoNode.associatedWeapon = ownedWeapon.stats;
+
+                        UpgradeOption option = new UpgradeOption();
+                        option.description = "突破极限！";
+                        option.rarity = Rarity.Epic;
+                        option.effects = new List<UpgradeEffect>();
+
+                        UpgradeEffect effect = new UpgradeEffect();
+                        effect.actionType = EffectActionType.EvolveWeapon;
+                        effect.weaponToUnlock = evoTarget;
+                        option.effects.Add(effect);
+
+                        evoNode.possibleOptions = new List<UpgradeOption> { option };
+                        nodes.Add(evoNode);
+                    }
+                }
+            }
+        }
+
+        return nodes;
+    }
     private GameObject GetPrefabForOption(UpgradeOption option)
     {
         // 检查是否有解锁武器的效果，这类效果优先使用专属卡片样式
@@ -245,15 +445,102 @@ public class UpgradeManager : MonoBehaviour
     /// </summary>
     public void OnUpgradeOptionSelected(SkillTreeNodeData sourceNode, UpgradeOption chosenOption)
     {
+        // --- 1. 标记位：这次操作是否是解锁武器？ ---
+        bool isUnlockOperation = false;
+
         foreach (UpgradeEffect effect in chosenOption.effects)
         {
-            if (effect.actionType == EffectActionType.ModifyStat)
+            // 【修复关键点】在这里定义 appliedLocally 变量，默认是 false
+            bool appliedLocally = false;
+
+            if (sourceNode.associatedWeapon != null && WeaponController.Instance != null)
             {
-                if (PlayerStats.Instance != null) { PlayerStats.Instance.ApplyEffect(effect); }
+                // 尝试在背包里找到这把武器的实例
+                var weaponWrapper = WeaponController.Instance.ownedWeapons
+                    .FirstOrDefault(w => w.stats == sourceNode.associatedWeapon);
+
+                if (weaponWrapper != null && weaponWrapper.weaponPartInstance != null)
+                {
+                    WeaponPart part = weaponWrapper.weaponPartInstance;
+
+                    // 处理数值 (百分比转小数)
+                    float val = effect.value;
+                    if (effect.modType == ModifierType.Percentage) val /= 100f;
+
+                    // =========================================================
+                    // 【核心修复】拦截所有武器属性，存入局部变量
+                    // =========================================================
+                    switch (effect.statToModify)
+                    {
+                        case UpgradeType.WeaponDamage:
+                            part.localDamageBonus += val;
+                            appliedLocally = true;
+                            Debug.Log($"[局部升级] {sourceNode.associatedWeapon.weaponName} 伤害 +{val:P0}");
+                            break;
+
+                        case UpgradeType.WeaponFireRate:
+                            // 假设冷却缩减是正数 (如 0.1 代表 -10% CD)
+                            part.localFireRateBonus += val;
+                            appliedLocally = true;
+                            Debug.Log($"[局部升级] {sourceNode.associatedWeapon.weaponName} 冷却缩减 +{val:P0}");
+                            break;
+
+                        case UpgradeType.AoeRadius:
+                            part.localAreaBonus += val;
+                            appliedLocally = true;
+                            break;
+
+                        case UpgradeType.OrbitalSpeed:      // 轨道速度
+                        case UpgradeType.WeaponProjectileSpeed: // 或者子弹速度
+                            part.localSpeedBonus += val;
+                            appliedLocally = true;
+                            Debug.Log($"[局部升级] {sourceNode.associatedWeapon.weaponName} 速度 +{val:P0}");
+                            break;
+
+                        case UpgradeType.WeaponDuration:
+                            part.localDurationBonus += val;
+                            appliedLocally = true;
+                            break;
+
+                        case UpgradeType.CritRate:
+                            part.localCritRateBonus += val;
+                            appliedLocally = true;
+                            break;
+
+                        case UpgradeType.CritDamage:
+                            part.localCritDamageBonus += val;
+                            appliedLocally = true;
+                            break;
+
+                        case UpgradeType.OrbitalCount:
+                        case UpgradeType.AddProjectile:
+                        case UpgradeType.PierceCount:
+                            part.localOrbitalCountBonus += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            break;
+                        case UpgradeType.SlashCount:
+                            part.localSlashCountBonus += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            // 添加日志，确保存钱成功
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 刀光数量 +{effect.value}。当前总局部加成: {part.localSlashCountBonus}</color>");
+                            break;
+                    }
+                }
             }
+
+            // 如果没有局部应用（说明是通用属性，比如加血上限），则应用到全局 PlayerStats
+            if (!appliedLocally && PlayerStats.Instance != null && effect.actionType == EffectActionType.ModifyStat)
+            {
+                PlayerStats.Instance.ApplyEffect(effect);
+            }
+            // 处理特殊操作类型
             else if (effect.actionType == EffectActionType.UnlockWeapon)
             {
-                if (effect.weaponToUnlock != null && WeaponController.Instance != null) { WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock); }
+                isUnlockOperation = true;
+                if (effect.weaponToUnlock != null && WeaponController.Instance != null)
+                {
+                    WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock);
+                }
             }
             else if (effect.actionType == EffectActionType.UnlockShield)
             {
@@ -263,65 +550,99 @@ public class UpgradeManager : MonoBehaviour
             {
                 if (WeaponController.Instance != null && effect.weaponToUnlock != null)
                 {
-                    WeaponController.Instance.TryUpgradeWeapon(effect.weaponToUnlock.weaponName);
+                    // 1. 先尝试找融合配方 (保留原有超武逻辑)
+                    var recipe = WeaponController.Instance.fusionRecipes.FirstOrDefault(r => r.resultWeapon == effect.weaponToUnlock);
+                    if (recipe != null)
+                    {
+                        WeaponController.Instance.PerformFusion(recipe);
+                        Debug.Log($"<color=gold>[UpgradeManager] 融合进化成功！获得了: {effect.weaponToUnlock.weaponName}</color>");
+                    }
+                    else
+                    {
+                        // 2. 【核心修改】单体进化逻辑 (火球 -> 爆裂火球)
+                        // 寻找哪个旧武器可以进化成这个新武器
+                        var oldWeaponWrapper = WeaponController.Instance.ownedWeapons
+                            .FirstOrDefault(w => w.stats.evolutionTarget == effect.weaponToUnlock);
+
+                        if (oldWeaponWrapper != null && oldWeaponWrapper.weaponPartInstance != null)
+                        {
+                            Debug.Log($"[UpgradeManager] 单体进化执行: {oldWeaponWrapper.stats.weaponName} -> {effect.weaponToUnlock.weaponName}");
+
+                            // A. 替换数据 (变身!)
+                            oldWeaponWrapper.stats = effect.weaponToUnlock;
+                            oldWeaponWrapper.weaponPartInstance.StatBlock = effect.weaponToUnlock;
+                            oldWeaponWrapper.weaponPartInstance.currentLevel = 1; // 重置为 1 级
+                            oldWeaponWrapper.currentLevel = 1;
+
+                            // B. 刷新模型和数值
+                            oldWeaponWrapper.weaponPartInstance.RefreshWeaponStateFromStone();
+
+                            // ==========================================
+                            // C. 【新增】记账：记录一次进化成就
+                            // ==========================================
+                            // Key 的格式建议统一，比如 "Evolve_" + 武器名
+                            // 你的 SO 文件里解锁条件填的是什么 Key，这里就拼什么 Key
+                            string statKey = "Evolve_" + effect.weaponToUnlock.weaponID;
+
+                            if (string.IsNullOrEmpty(effect.weaponToUnlock.weaponID))
+                            {
+                                Debug.LogError($"[严重警告] 武器 {effect.weaponToUnlock.name} 未配置 weaponID！成就记录可能失败。");
+                            }
+
+                            if (PlayerProgressManager.Instance != null)
+                            {
+                                PlayerProgressManager.Instance.IncreaseAchievementStat(statKey, 1);
+                            }
+                            // ==========================================
+                        }
+                        else
+                        {
+                            // 如果找不到旧武器(理论上不该发生)，作为保底直接添加
+                            WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock);
+                        }
+                    }
                 }
             }
         }
 
-        if (WeaponController.Instance != null)
+        // --- 2. 只有当【不是】解锁操作时，才去增加武器等级 ---
+        if (!isUnlockOperation && WeaponController.Instance != null)
         {
-            // 遍历玩家手里的所有武器
             foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
             {
                 bool matchFound = false;
-
-                // 判定方式 A: 检查 ScriptableObject 里的 "Associated Weapon" 字段 (最准确)
-                // (注意：你需要确保 SkillTreeNodeData 脚本里有 associatedWeapon 这个 public 字段)
-                if (sourceNode.associatedWeapon != null && sourceNode.associatedWeapon == ownedWrapper.stats)
-                {
-                    matchFound = true;
-                }
-                // 判定方式 B: 如果没配字段，回退到名字匹配 (例如 "手雷Lv5" 包含 "手雷")
-                else if (sourceNode.skillName.Contains(ownedWrapper.stats.weaponName))
-                {
-                    matchFound = true;
-                }
+                if (sourceNode.associatedWeapon != null && sourceNode.associatedWeapon == ownedWrapper.stats) matchFound = true;
+                else if (sourceNode.skillName.Contains(ownedWrapper.stats.weaponName)) matchFound = true;
 
                 if (matchFound)
                 {
-                    // 只有当武器没满级时才加
-                    if (ownedWrapper.currentLevel < ownedWrapper.stats.maxLevel)
+                    int dynamicMaxLevel = ownedWrapper.stats.maxLevel;
+                    if (ownedWrapper.weaponPartInstance != null)
                     {
-                        ownedWrapper.currentLevel++; // 1. 提升数据层级
+                        dynamicMaxLevel = ownedWrapper.weaponPartInstance.maxLevel;
+                    }
 
-                        // 2. 同步给场景里的实体 WeaponPart
+                    // 使用动态上限进行判断
+                    if (ownedWrapper.currentLevel < dynamicMaxLevel)
+                    {
+                        ownedWrapper.currentLevel++;
                         if (ownedWrapper.weaponPartInstance != null)
                         {
                             ownedWrapper.weaponPartInstance.currentLevel = ownedWrapper.currentLevel;
                         }
-
-                        Debug.Log($"<color=green>[UpgradeManager] 武器同步升级: '{ownedWrapper.stats.weaponName}' 升到了 Lv.{ownedWrapper.currentLevel}</color>");
                     }
-                    else
-                    {
-                        // 如果已经是满级(Lv.5)，再升级可能是单纯加属性，这里不报错
-                        Debug.Log($"[UpgradeManager] '{ownedWrapper.stats.weaponName}' 已达等级上限，仅应用属性加成。");
-                    }
-
-                    // 找到一个匹配的就退出循环
                     break;
                 }
             }
         }
 
-        // 2. 更新升级记录 (保持不变)
+        // 3. 更新升级记录
         if (ownedUpgrades.ContainsKey(sourceNode)) { ownedUpgrades[sourceNode]++; }
         else { ownedUpgrades.Add(sourceNode, 1); }
-        Debug.Log($"升级 '{sourceNode.skillName}' 已应用，当前等级: {ownedUpgrades[sourceNode]}");       
 
-        // 4. 刷新状态并关闭面板 (保持不变)
-        // 刷新仍然重要，因为它会应用 PlayerStats 中可能改变的基础伤害/射速等
+        // 4. 刷新状态并关闭面板
         if (WeaponController.Instance != null) { WeaponController.Instance.RefreshAllWeaponStates(); }
+        if (PassiveItemsUI.Instance != null) { PassiveItemsUI.Instance.UpdateIcons(); }
         if (upgradePanel != null) upgradePanel.SetActive(false);
         Time.timeScale = 1f;
     }

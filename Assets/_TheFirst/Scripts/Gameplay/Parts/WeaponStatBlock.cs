@@ -4,24 +4,38 @@ using UnityEngine;
 // 定义武器的核心行为类型
 public enum WeaponBehaviorType
 {
-    Standard,   // 标准弹 (命中后消失)
-    Pierce,     // 穿透弹
-    ParabolicAOE, // 抛物线范围伤害弹 (我们的火炮)
-    Chain,       // 连锁弹
-    Orbital, // <--- 轨道武器
-    PersistentAOE,
-    SummonDrone, // 无人机
-    Beam,
-    Landmine,
-    MeleeAOE,
-    Boomerang,
-    Aura
+    Standard,       // 标准弹 (命中后消失)
+    Pierce,         // 穿透弹
+    ParabolicAOE,   // 抛物线范围伤害弹
+    Chain,          // 连锁弹
+    Orbital,        // 轨道武器
+    PersistentAOE,  // 持续区域 (空投)
+    SummonDrone,    // 无人机
+    Beam,           // 光束
+    Funnel,         //超武浮游炮
+    SuperMech,
+    Landmine,       // 地雷
+    MeleeAOE,       // 近战范围
+    Boomerang,      // 回旋镖
+    Aura,           // 光环
+    CreateAndForget // <--- 【新增】生成后不管 (用于游荡型超武)
+}
+
+public enum WeaponXpSource
+{
+    DamageDealt,  // 造成伤害时获得
+    EnemyKilled,  // 击杀敌人时获得
+    CastCount     // 释放技能时获得
 }
 
 
 [CreateAssetMenu(fileName = "Weapon_Cannon", menuName = "Weapons/Weapon Stat Block")]
 public class WeaponStatBlock : ScriptableObject
 {
+    [Header("核心标识")]
+    [Tooltip("程序逻辑专用的唯一ID，不随语言改变 (例如: Fireball, ExplosiveFireball)")]
+    public string weaponID; // <--- 【新增】这里填英文ID
+
     public string weaponName;
     public Sprite weaponIcon;
     [Tooltip("要挂载到机甲上的武器部件预制件 (WeaponPart Prefab)")]
@@ -56,6 +70,14 @@ public class WeaponStatBlock : ScriptableObject
 
     [Tooltip("抛物线发射角度 (仅当 isParabolic 为 true 时有效)")]
     public float launchAngle = 45f;
+
+    [Header("暴击属性 (Critical Stats)")]
+    [Tooltip("武器的基础暴击率 (会与角色暴击率相加)。0.1 代表 10%")]
+    [Range(0f, 1f)]
+    public float baseCritRate = 0f;
+
+    [Tooltip("武器的基础暴击伤害 (会与角色暴击伤害相加)。0.5 代表 +50%")]
+    public float baseCritDamage = 0f;
 
     [Tooltip("此AOE武器造成眩晕的基础几率 (0 到 1)")]
     [Range(0f, 1f)]
@@ -126,6 +148,10 @@ public class WeaponStatBlock : ScriptableObject
     [Tooltip("此武器的最高等级")]
     public int maxLevel = 8;
 
+    [Header("进阶与进化")]
+    [Tooltip("当达到最大等级且满足进化条件时，进化成这把武器")]
+    public WeaponStatBlock evolutionTarget; // 拖入“爆裂火球”的 SO 文件
+
     [Header("开火行为 (Firing Behavior)")] // 可以新建一个Header
     [Tooltip("如果勾选，此武器将自动瞄准范围内最近的敌人，忽略鼠标朝向")]
     public bool autoAimAtNearestEnemy = false; // <--- 新增
@@ -146,6 +172,14 @@ public class WeaponStatBlock : ScriptableObject
     public float baseOrbitalRadius = 3f;
     [Tooltip("基础持续时间（秒）。0 表示永久存在。")]
     public float baseDuration = 15f; // <--- 新增
+
+    [Header("元素效果 (Elemental Effects)")]
+    [Tooltip("点燃敌人的概率 (0 ~ 1)，例如 0.3 代表 30%")]
+    [Range(0f, 1f)]
+    public float ignitionChance = 0f; // 默认为0，只有火系武器填 0.2 或更高
+
+    [Tooltip("点燃伤害系数 (基于直击伤害的比例)，默认 0.2 (20%)")]
+    public float burnDamagePercent = 0.2f;
 
     [Header("持续伤害效果 (DoT)")]
     [Tooltip("每秒跳伤")]
@@ -315,4 +349,22 @@ public class WeaponStatBlock : ScriptableObject
     public float nativeCorrodeMultiplier = 1.2f;
     [Tooltip("原生腐蚀颜色")]
     public Color nativeCorrodeColor = new Color(0.5f, 1f, 0.5f); // 默认毒液绿
+
+    [Header("熟练度与成长 (Proficiency System)")]
+    public bool usesProficiency = true; // 是否启用熟练度系统
+    public WeaponXpSource xpSource = WeaponXpSource.DamageDealt;
+
+    [Tooltip("每造成1点伤害/击杀1个/释放1次 获得的经验值")]
+    public float xpGainFactor = 1.0f;
+
+    [Tooltip("升级所需经验曲线 (X轴=等级, Y轴=所需经验)")]
+    public AnimationCurve xpRequirementCurve;
+
+    [Header("每级成长属性 (Level Up Bonus)")]
+    [Tooltip("每级增加的伤害倍率 (0.1 = +10%)")]
+    public float damageGrowthPerLevel = 0.1f;
+    [Tooltip("每级增加的冷却缩减 (0.05 = -5%)")]
+    public float cooldownGrowthPerLevel = 0.05f;
+    [Tooltip("每级增加的范围 (0.1 = +10%)")]
+    public float areaGrowthPerLevel = 0.1f;
 }

@@ -52,6 +52,18 @@ public class WeaponPart : MonoBehaviour
 
     private AudioSource audioSource;
 
+    [Header("召唤物与特殊武器管理")]
+    // --- 【新增】修复 activeDrones 报错 ---
+    private List<GameObject> activeDrones = new List<GameObject>();
+
+    private List<GameObject> activeLaserTanks = new List<GameObject>();
+
+    private List<GameObject> activeFunneIs = new List<GameObject>(); // 浮游炮列表
+
+    private PlayerBeamController currentBeamInstance;
+
+    private GameObject currentSuperMech;
+
     [Header("能量石 (运行时)")]
     [Tooltip("此武器当前镶嵌的能量石")]
     public EnergyStoneSO currentStone { get; private set; }
@@ -59,6 +71,18 @@ public class WeaponPart : MonoBehaviour
     private float auraKnockbackTimer = 0f;
 
     private float auraMagnetTimer = 0f;
+
+    [Header("运行时局部属性 (Local Stats)")]
+    [HideInInspector] public float localCritRateBonus = 0f;
+    [HideInInspector] public float localCritDamageBonus = 0f;
+
+    [HideInInspector] public int localOrbitalCountBonus = 0;
+    [HideInInspector] public int localSlashCountBonus = 0;   // 【新增】给近战刀光用的
+    [HideInInspector] public float localDamageBonus = 0f;      // 局部伤害加成 (0.1 = +10%)
+    [HideInInspector] public float localFireRateBonus = 0f;    // 局部攻速/冷却加成
+    [HideInInspector] public float localAreaBonus = 0f;        // 局部范围加成
+    [HideInInspector] public float localSpeedBonus = 0f;       // 局部飞行/旋转速度加成 (OrbitalSpeed 用这个)
+    [HideInInspector] public float localDurationBonus = 0f;    // 局部持续时间加成
 
 
     // 由 WeaponController 在运行时赋值
@@ -81,6 +105,16 @@ public class WeaponPart : MonoBehaviour
     private float beamCooldownTimer = 0f;
     private Transform lockedBeamTarget = null;
 
+    [Header("运行时熟练度 (Runtime Proficiency)")]
+    public int currentProficiencyLevel = 1;
+    public float currentProficiencyXP = 0f;
+    public float xpToNextLevel = 100f; // 初始值，会被Curve覆盖
+
+    // 事件：当武器升级时触发 (用于播放特效、UI更新)
+    public System.Action<int> OnWeaponLevelUp;
+    // 事件：当经验变化时 (用于UI条)
+    public System.Action<float, float> OnWeaponXpChanged;
+
     #region Unity Lifecycle Methods
     void Awake()
     {
@@ -92,6 +126,17 @@ public class WeaponPart : MonoBehaviour
         }
 
         auraCollider = GetComponent<SphereCollider>();
+        if (StatBlock == null) return;
+
+        Debug.Log($"[武器检查] 名字: {StatBlock.weaponName}, ID: '{StatBlock.weaponID}'");
+        // 【修改】只判断 ID，不再关心名字叫中文还是英文
+        if (StatBlock.weaponID == "Fireball" && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
+        {
+            if (StatBlock.evolutionTarget != null)
+            {
+                StatBlock = StatBlock.evolutionTarget;
+            }
+        }
     }
     void Start()
     {
@@ -110,7 +155,198 @@ public class WeaponPart : MonoBehaviour
             if (StatBlock.weaponGlowColor.maxColorComponent > 0)
                 cooldownMaterial.SetEmissionColor(StatBlock.weaponGlowColor);
         }
+        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "火球术") && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
+        {
+            if (StatBlock.evolutionTarget != null)
+            {
+                Debug.Log("【局外加成】火球术初始进化生效！");
+                StatBlock = StatBlock.evolutionTarget; // 直接替换数据蓝图
+            }
+        }
+
+        // 3. 火球术可以升至十级
+        if (StatBlock != null)
+        {
+            maxLevel = StatBlock.maxLevel;
+
+            // 【修改】使用 ID 判断
+            if (StatBlock.weaponID == "Fireball")
+            {
+                maxLevel = 5;
+                if (IsMetaUnlocked("Fireball_Meta_LimitBreak"))
+                {
+                    maxLevel = 10;
+                }
+            }
+        }
+
+        // 1. 火球术攻击力提升 (作为局部加成)
+        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "火球术") && IsMetaUnlocked("Fireball_Meta_Damage"))
+        {
+            // 假设提升 20% 伤害
+            localDamageBonus += 0.2f;
+        }
+
+        if (StatBlock.weaponID == "Molotov")
+        {
+            ApplyMolotovMetaUpgrades();
+        }
         UpdateVisualModel();
+        CalculateNextLevelXP();
+    }
+
+    private void ApplyMolotovMetaUpgrades()
+    {
+        // 1. 伤害 (Damage)
+        // 假设节点文件叫 "Molotov_Meta_Damage"，提升 50%
+        if (IsMetaUnlocked("Molotov_Meta_Damage"))
+        {
+            localDamageBonus += 0.5f;
+            Debug.Log("[Molotov] 局外伤害升级生效!");
+        }
+
+        // 2. 冷却/攻速 (Cooldown / FireRate)
+        // 假设节点文件叫 "Molotov_Meta_Cooldown"，攻速提升 50%
+        if (IsMetaUnlocked("Molotov_Meta_Cooldown"))
+        {
+            localFireRateBonus += 0.5f;
+            Debug.Log("[Molotov] 局外冷却升级生效!");
+        }
+
+        // 3. 范围 (Area)
+        // 假设节点文件叫 "Molotov_Meta_Area"，范围扩大 100%
+        if (IsMetaUnlocked("Molotov_Meta_Area"))
+        {
+            localAreaBonus += 1f;
+            Debug.Log("[Molotov] 局外范围升级生效!");
+        }
+
+        // 4. 持续时间 (Duration)
+        // 假设节点文件叫 "Molotov_Meta_Duration"，持续时间增加 100%
+        if (IsMetaUnlocked("Molotov_Meta_Duration"))
+        {
+            localDurationBonus += 1f;
+            Debug.Log("[Molotov] 局外持续时间升级生效!");
+        }
+    }
+
+    public float GetIgnitionChance()
+    {
+        if (StatBlock == null) return 0f;
+
+        float chance = StatBlock.ignitionChance;
+
+        string nodeName = "Fireball_Meta_Ignite";
+        bool isNodeUnlocked = IsMetaUnlocked(nodeName);
+
+        bool isFireball = (StatBlock.weaponID == "Fireball" || StatBlock.weaponName == "火球术");
+        // ---------------------------------------------------------
+        // 3. 应用加成
+        // ---------------------------------------------------------
+        if (isFireball && isNodeUnlocked)
+        {
+            chance += 0.3f; // 加上 30%
+
+            // 成功日志
+            // Debug.Log($"[点燃概率] 加成生效！基础: {StatBlock.ignitionChance} + 局外: 0.3 = {chance}");
+        }
+        else
+        {
+            // 【调试日志】如果没生效，这行日志会告诉你原因！
+            // 只有当这是火球术，且原本应该有加成但没加成时，才打印，避免刷屏
+            if (isFireball && chance <= 0.15f) // 0.15f 是个阈值，如果是0.4说明已经生效了就不报了
+            {
+                Debug.LogWarning($"[点燃概率异常] 武器是火球术，但没有获得 0.3 加成。\n" +
+                                 $"检查 1 (节点解锁): 查找 '{nodeName}' -> 结果: {isNodeUnlocked}\n" +
+                                 $"检查 2 (武器ID): ID='{StatBlock.weaponID}', Name='{StatBlock.weaponName}'");
+            }
+        }
+
+        return chance;
+    }
+
+    public void GainProficiencyXP(float amount)
+    {
+        if (StatBlock == null || !StatBlock.usesProficiency) return;
+        if (currentProficiencyLevel >= StatBlock.maxLevel) return; // 满级了
+
+        currentProficiencyXP += amount;
+
+        // 通知 UI 更新
+        OnWeaponXpChanged?.Invoke(currentProficiencyXP, xpToNextLevel);
+
+        // 检查升级
+        if (currentProficiencyXP >= xpToNextLevel)
+        {
+            LevelUpWeapon();
+        }
+        Debug.Log($"[武器经验] {StatBlock.weaponName} 获得 {amount} 点经验! 当前: {currentProficiencyXP}/{xpToNextLevel}");
+
+    }
+
+    private void LevelUpWeapon()
+    {
+        currentProficiencyXP -= xpToNextLevel; // 溢出的经验保留
+        currentProficiencyLevel++;
+
+        // 应用成长属性 (简单粗暴地加到 localBonus 上)
+        // 这里的公式是：当前等级 * 成长系数
+        // 注意：你可能需要根据你的数值设计调整这个公式
+        localDamageBonus += StatBlock.damageGrowthPerLevel;
+        localFireRateBonus += StatBlock.cooldownGrowthPerLevel;
+        localAreaBonus += StatBlock.areaGrowthPerLevel;
+
+        if (currentProficiencyLevel >= 10 && StatBlock.evolutionTarget != null)
+        {
+            if (IsMetaUnlocked("Fireball_Meta_Evolution"))
+            {
+                EvolveWeapon(StatBlock.evolutionTarget);
+                return; // 进化后直接返回，不再执行后续普通升级逻辑
+            }
+        }
+
+        Debug.Log($"<color=cyan>武器升级! {StatBlock.weaponName} Lv.{currentProficiencyLevel}</color>");
+        OnWeaponLevelUp?.Invoke(currentProficiencyLevel);
+
+        CalculateNextLevelXP();
+
+        // 检查是否再次升级 (如果一次获得巨量经验)
+        if (currentProficiencyXP >= xpToNextLevel) LevelUpWeapon();
+    }
+
+    private void EvolveWeapon(WeaponStatBlock newBlock)
+    {
+        Debug.Log($"<color=orange>武器进化！{StatBlock.weaponName} -> {newBlock.weaponName}</color>");
+
+        // 1. 替换数据
+        StatBlock = newBlock;
+
+        // 2. 重置等级 (通常进化后变成新武器的 Lv1)
+        currentProficiencyLevel = 1;
+        CalculateNextLevelXP(); // 重新计算新武器的升级经验
+
+        // 3. 重置属性 (因为新武器的基础属性可能已经包含了旧武器的加成，或者你需要保留加成)
+        // 这里的策略看你：是“继承旧武器的加成”还是“重置为新武器白板”
+        // 建议：如果是数值进化，保留 localBonus；如果是形态改变，可能需要调整。
+        // 这里暂时保留 localBonus。
+
+        // 4. 刷新模型和特效
+        UpdateVisualModel();
+
+        // 5. 通知 UI
+        OnWeaponLevelUp?.Invoke(currentProficiencyLevel); // 触发刷新
+    }
+
+    private void CalculateNextLevelXP()
+    {
+        if (StatBlock.xpRequirementCurve != null && StatBlock.xpRequirementCurve.length > 0)
+        {
+            xpToNextLevel = StatBlock.xpRequirementCurve.Evaluate(currentProficiencyLevel);
+        }
+        else
+        {
+            xpToNextLevel = 100f * currentProficiencyLevel; // 保底公式
+        }
     }
     void Update()
     {
@@ -131,7 +367,8 @@ public class WeaponPart : MonoBehaviour
 
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital && orbitalPivot != null)
         {
-            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed; // Add player stats later if needed
+            // 使用 localSpeedBonus
+            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed * (1f + localSpeedBonus);
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
 
@@ -139,10 +376,10 @@ public class WeaponPart : MonoBehaviour
         {
             HandleLandminePlacement();
         }
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
+        /*if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             HandleBeamWeapon();
-        }
+        }*/
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
         {
             HandleAuraDamageTick();
@@ -151,79 +388,116 @@ public class WeaponPart : MonoBehaviour
             HandleAuraMagnet();
         }
     }
-
-    private void SetupAura()
+    public int GetTotalCount()
     {
-        if (StatBlock == null) return;
+        if (StatBlock == null) return 0;
 
-        if (auraCollider == null)
+        // 1. 基础数量 (WSB配置)
+        int baseCount = StatBlock.baseOrbitalCount;
+        // 如果你的无人机用的是 AddProjectile 字段，请把上面改成 StatBlock.projectileCount
+
+        // 2. 局部升级加成
+        int localBonus = localOrbitalCountBonus;
+
+        // 3. 全局被动加成 (PlayerStats)
+        int globalBonus = 0;
+        if (PlayerStats.Instance != null)
         {
-            Debug.LogError("Aura WeaponPart 预制件上缺少 SphereCollider!", this);
+            // 读取全局的 bonusOrbitalCount 或 bonusProjectileCount
+            globalBonus = PlayerStats.Instance.bonusOrbitalCount;
         }
 
-        // 立即刷新状态来设置半径和VFX
-        RefreshAura();
-
-        auraTickTimer = 0; // 立即触发第一次伤害
-        
+        return baseCount + localBonus + globalBonus;
     }
-
-
-   
-
-    public void RefreshAura()
+    private void SetupAura()
     {
-        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return; //
+        Debug.Log($"[SetupAura] 尝试生成光环: {StatBlock.weaponName}");
 
-        // 1. 计算最终半径 (计入玩家和石头加成)
-        float stoneScaleBonus = (currentStone != null) ? currentStone.scaleModifier : 0f;
-        float finalRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + stoneScaleBonus); //
+        if (StatBlock == null) { Debug.LogError("[SetupAura] StatBlock 是空的！"); return; }
+        if (StatBlock.orbitalPrefab == null) { Debug.LogError("[SetupAura] Orbital Prefab 没赋值！"); return; }
 
-        // 2. 更新碰撞器
-        if (auraCollider != null) { auraCollider.radius = finalRadius; } //
+        // 1. 清理旧光环
+        if (orbitalPivot != null) Destroy(orbitalPivot.gameObject);
 
-        // 3. 确定使用哪个VFX Prefab和缩放乘数
-        GameObject prefabToUse = StatBlock.auraVfxPrefab; //
-        float scaleMultiplier = StatBlock.vfxBaseScaleMultiplier; //
+        // 2. 找到挂载点
+        Transform anchor = FindStableAnchor();
 
-        if (currentStone != null)
+        // 3. 生成光环
+        GameObject auraGO = Instantiate(StatBlock.orbitalPrefab, anchor);
+        auraGO.transform.localPosition = Vector3.zero;
+        auraGO.transform.localRotation = Quaternion.identity;
+
+        orbitalPivot = auraGO.transform;
+
+        // 4. 初始化脚本
+        MagneticStormAura auraScript = auraGO.GetComponent<MagneticStormAura>();
+        if (auraScript != null)
         {
-            Debug.Log($"<color=cyan>[RefreshAura] 检查石头: {currentStone.stoneName}</color>"); //
+            // --- 【核心修复 1】计算伤害时加入 localDamageBonus ---
+            int finalBaseDamage = Mathf.RoundToInt(
+                StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + localDamageBonus) +
+                PlayerStats.Instance.flatDamageBonus
+            );
 
-            if (currentStone.auraVfxOverride != null) //
-            {
-                Debug.Log($"<color=green>[RefreshAura] 成功！找到覆盖VFX: {currentStone.auraVfxOverride.name}</color>"); //
-                prefabToUse = currentStone.auraVfxOverride; //
-                scaleMultiplier = currentStone.overrideVfxScaleMultiplier; //
-            }
-            else
-            {
-                // [!] 这就是 Bug 所在
-                Debug.LogWarning($"<color=yellow>[RefreshAura] 失败! 石头 '{currentStone.stoneName}' 的 AuraVfxOverride 字段是 NULL (None)。</color>");
-            }
+            // --- 【核心修复 2】计算范围时加入 localAreaBonus ---
+            float rangeMult = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
+
+            // --- 【核心修复 3】计算数量 (基础+全局+局部) ---
+            int finalCount = GetTotalCount();
+
+            // 传入所有参数
+            auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount);
+            Debug.Log($"[SetupAura] 初始化成功！伤害:{finalBaseDamage} 范围倍率:{rangeMult:F2} 落雷数:{finalCount}");
         }
         else
         {
-            Debug.Log("[RefreshAura] 检查: currentStone 为 null，使用默认VFX。");
+            Debug.LogError($"[SetupAura] 预制体 {auraGO.name} 上缺少 MagneticStormAura 脚本！");
+        }
+    }
+
+
+
+
+    public void RefreshAura()
+    {
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+
+        // --- 【核心修复 4】强制重建光环逻辑对象 ---
+        // 只有重建，才能把最新的 damage/range/count 传给 MagneticStormAura
+        SetupAura();
+
+        // (原本的 VFX 逻辑可以保留，用于处理武器自身的视觉效果，但核心逻辑必须由 SetupAura 重置)
+
+        // 1. 计算最终半径 (仅用于 WeaponPart 自身的碰撞器和 VFX，逻辑对象已在 SetupAura 处理)
+        float stoneScaleBonus = (currentStone != null) ? currentStone.scaleModifier : 0f;
+        float finalRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus + stoneScaleBonus);
+
+        // 2. 更新碰撞器 (用于 HandleAuraDamageTick，如果那个还在运行的话)
+        if (auraCollider != null) { auraCollider.radius = finalRadius; }
+
+        // 3. 更新 VFX (保持你原有的换皮逻辑)
+        GameObject prefabToUse = StatBlock.auraVfxPrefab;
+        float scaleMultiplier = StatBlock.vfxBaseScaleMultiplier;
+
+        if (currentStone != null && currentStone.auraVfxOverride != null)
+        {
+            prefabToUse = currentStone.auraVfxOverride;
+            scaleMultiplier = currentStone.overrideVfxScaleMultiplier;
         }
 
-        // 4. 检查是否需要更换VFX
-        // (我们使用 .name 比较，因为实例化的 '(Clone)' 后缀会被我们移除)
         bool isWrongVfx = (auraVfxInstance != null && (auraVfxInstance.name.StartsWith(prefabToUse.name) == false));
 
         if (auraVfxInstance == null || (isWrongVfx && prefabToUse != null))
         {
-            if (auraVfxInstance != null) Destroy(auraVfxInstance); // 销毁旧的
-
+            if (auraVfxInstance != null) Destroy(auraVfxInstance);
             if (prefabToUse != null)
             {
-                auraVfxInstance = Instantiate(prefabToUse, transform.position, Quaternion.identity, transform); //
-                auraVfxInstance.name = prefabToUse.name; // 存储预制件名称以供比较
+                auraVfxInstance = Instantiate(prefabToUse, transform.position, Quaternion.identity, transform);
+                auraVfxInstance.name = prefabToUse.name;
             }
         }
 
-        // 5. 更新VFX缩放
-        if (auraVfxInstance != null) //
+        if (auraVfxInstance != null)
         {
             auraVfxInstance.transform.localScale = Vector3.one * finalRadius * scaleMultiplier;
         }
@@ -295,40 +569,43 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
-    public void ChainLightningFromTarget(Transform startTarget, int maxChains, int damage, float range)
+    public void ChainLightningFromTarget(Transform startTarget, int maxChains, int damage, float range,
+                                          GameObject overrideChainVfx = null, GameObject overrideImpactVfx = null)
     {
-        // 1. 基础安全检查 (移除对 currentStone 的检查！)
-        if (startTarget == null || maxChains <= 0)
-        {
-            return;
-        }
+        // 1. 基础安全检查
+        if (startTarget == null || maxChains <= 0) return;
 
-        // 2. 决定使用哪个特效
-        // 优先使用石头特效；如果没有石头，使用 WeaponStatBlock 里的原生特效
         GameObject chainVfxToUse = null;
         GameObject impactVfxToUse = null;
 
-        if (currentStone != null && currentStone.chainVfxPrefab != null)
+        // --- 【核心修改】优先级判断 ---
+
+        // A. 如果传入了覆盖特效，拥有最高优先级 (MagneticOrbiter 专用)
+        if (overrideChainVfx != null)
         {
-            // 有石头，用石头的
-            chainVfxToUse = currentStone.chainVfxPrefab;
-            impactVfxToUse = currentStone.chainImpactVfxPrefab;
+            chainVfxToUse = overrideChainVfx;
+            impactVfxToUse = overrideImpactVfx; // 即使是 null 也会覆盖，所以 MagneticOrbiter 必须配置
         }
+        // B. 如果没有覆盖，则走原有逻辑 (检查石头 -> 检查 StatBlock)
         else
         {
-            // 没石头，用 StatBlock 原生的
-            // 注意：StatBlock 可能会空，所以加个 ?. 检查
-            chainVfxToUse = StatBlock?.nativeChainVfxPrefab;
-            impactVfxToUse = StatBlock?.defaultImpactEffectPrefab; // 或者是 nativeChainImpact，暂时用通用的
+            if (currentStone != null && currentStone.chainVfxPrefab != null)
+            {
+                chainVfxToUse = currentStone.chainVfxPrefab;
+                impactVfxToUse = currentStone.chainImpactVfxPrefab;
+            }
+            else
+            {
+                chainVfxToUse = StatBlock?.nativeChainVfxPrefab;
+                impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
+            }
+
+            // 保底逻辑
+            if (chainVfxToUse == null) chainVfxToUse = this.lightningChainPrefab;
+            if (impactVfxToUse == null) impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
         }
 
-        // 3. 如果连原生的都没配，尝试用 WeaponPart 自身 Inspector 里的备份 (你现有的 lightningChainPrefab)
-        if (chainVfxToUse == null)
-        {
-            chainVfxToUse = this.lightningChainPrefab;
-        }
-        if (impactVfxToUse == null) impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
-        // 4. 启动协程
+        // 2. 启动协程
         StartCoroutine(ChainLightningRoutine(startTarget, maxChains, damage, range, chainVfxToUse, impactVfxToUse));
     }
     private IEnumerator ChainLightningRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange, GameObject chainVfx, GameObject impactVfx)
@@ -729,11 +1006,54 @@ public class WeaponPart : MonoBehaviour
     #region Public Control Methods
     public void Activate() // Called when weapon is equipped/activated
     {
+        if (StatBlock != null)
+        {
+            Debug.Log($"[Activate检查] 正在激活武器: {StatBlock.weaponName}, 行为模式: {StatBlock.behavior}");
+        }
+        else
+        {
+            Debug.LogError("[Activate检查] StatBlock 是空的！");
+        }
+
+        gameObject.SetActive(true);
+
+        // --- 1. 这里是初始化实体模型的地方 ---
+        if (StatBlock.behavior == WeaponBehaviorType.Orbital)
+        {
+            SetupOrbiters();
+        }
+        // 【直接在这里添加 Aura 的判断】
+        else if (StatBlock.behavior == WeaponBehaviorType.Aura)
+        {
+            SetupAura();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
+        {
+            Debug.Log("[Activate检查] 检测到 SummonDrone，准备调用 SetupDrones..."); // <--- 这里的日志出了吗？
+            SetupDrones();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.Beam)
+        {
+            SetupAutoBeam();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // 假设你加了这个枚举，或者暂时复用 Beam
+        {
+            SetupFunnelSystem();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.SuperMech)
+        {
+            SetupSuperMech();
+        }
+        // --- 2. 初始化光束计时器 ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
             beamCooldownTimer = 0;
         }
+
+        // --- 3. 你原本的 Orbital 保护逻辑 (保留即可) ---
+        // 注意：因为上面已经判断过一次 SetupOrbiters 了，这里的 !isOrbitalActive 会起作用防止重复生成，
+        // 但如果 behavior 是 Aura，这里条件不满足，直接跳过，所以逻辑是安全的。
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
         {
             if (!isOrbitalActive && orbitalCooldownTimer <= 0)
@@ -741,147 +1061,179 @@ public class WeaponPart : MonoBehaviour
                 SetupOrbiters();
             }
         }
-        // 添加：激活时重置回旋镖状态（如果它是回旋镖）
+
+        // --- 4. 初始化回旋镖 ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             isBoomerangOut = false;
-            // 注意：catchStacks 现在由 PlayerStats 管理，这里不需要重置
         }
     }
 
     public void Fire(Vector3 initialDirection)
     {
-        Debug.Log($"[WeaponPart] Fire 被调用. IsReady: {IsReadyToFire}");
-        // Check generic cooldown first
+         
         if (!IsReadyToFire) return;
         // Then check specific boomerang state
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang && isBoomerangOut) return;
 
         StartCoroutine(FireRoutine(initialDirection));
-    }   
-    
+    }
+
 
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
+        // 1. 获取能量石加成
         float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
         float stoneScaleMod = (currentStone != null) ? currentStone.scaleModifier : 0f;
         float stoneFireRateMod = (currentStone != null) ? currentStone.fireRateModifier : 0f;
-        // --- 冷却和状态检查 (保持不变) ---
+
+        // 2. 检查回旋镖状态
         if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             if (isBoomerangOut) yield break;
-            isBoomerangOut = true; // 发射时不冷却，只标记
+            isBoomerangOut = true;
         }
         else
         {
-            // 冷却 = 基础 / (玩家乘数 * (1 + 能量石乘数))
-            float finalFireRateMultiplier = PlayerStats.Instance.fireRateMultiplier * (1f + stoneFireRateMod); //
-            // 防止除以零
-            if (finalFireRateMultiplier <= 0) finalFireRateMultiplier = PlayerStats.Instance.fireRateMultiplier; //
-
-            fireCooldown = (1f / StatBlock.baseFireRate) / finalFireRateMultiplier; //
+            // 计算冷却
+            float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus) * (1f + stoneFireRateMod);
+            if (finalFireRateMultiplier <= 0.1f) finalFireRateMultiplier = 0.1f;
+            fireCooldown = (1f / StatBlock.baseFireRate) * finalFireRateMultiplier;
         }
-        // --- 冷却结束 ---
 
+        // 3-6. 视觉、音效、特殊类型检查 (保持不变)
         if (cooldownMaterial != null) cooldownMaterial.StartCooldown(fireCooldown);
-
         if (floatingVisual != null) floatingVisual.HideWeapon();
-
-       
-
-        // 音效延迟...
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
-        // 特殊武器...
         if (StatBlock?.behavior == WeaponBehaviorType.Beam) yield break;
-        if (StatBlock?.behavior == WeaponBehaviorType.Orbital) { if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); } yield break; }
+        if (StatBlock?.behavior == WeaponBehaviorType.Orbital)
+        {
+            if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); }
+            yield break;
+        }
 
-        // 目标和方向...
+        // 7. 自动瞄准逻辑 (保持不变)
         Vector3 finalTargetDirection = initialDirection;
         Transform firstTarget = null;
         if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
         {
             Transform nearestEnemy = FindNearestEnemyTransform();
-            if (nearestEnemy != null) { finalTargetDirection = (nearestEnemy.position - firePoint.position); finalTargetDirection.y = 0; finalTargetDirection.Normalize(); firstTarget = nearestEnemy; }
+            if (nearestEnemy != null)
+            {
+                finalTargetDirection = (nearestEnemy.position - firePoint.position);
+                finalTargetDirection.y = 0;
+                finalTargetDirection.Normalize();
+                firstTarget = nearestEnemy;
+            }
             else if (StatBlock.behavior != WeaponBehaviorType.Boomerang) { yield break; }
         }
-        if (finalTargetDirection.sqrMagnitude < 0.01f) { if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false; yield break; }
+        if (finalTargetDirection.sqrMagnitude < 0.01f)
+        {
+            if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false;
+            yield break;
+        }
 
-        // --- Calculate Final Damage and Scale ---
-
+        // =========================================================
+        // 【核心修复】智能选择基础伤害值
+        // =========================================================
+        int baseDamageToUse = StatBlock.baseDirectDamage;
+        // 如果是 AOE 类武器，优先使用 AOE 面板伤害
+        if (StatBlock.behavior == WeaponBehaviorType.MeleeAOE ||
+            StatBlock.behavior == WeaponBehaviorType.ParabolicAOE ||
+            StatBlock.behavior == WeaponBehaviorType.Landmine ||
+            StatBlock.behavior == WeaponBehaviorType.PersistentAOE)
+        {
+            if (StatBlock.baseAoeDamage > 0) baseDamageToUse = StatBlock.baseAoeDamage;
+        }
 
         int baseDamage = 0;
-        float baseScale = 1f; // 基础体积乘数总是 1
+        float baseScale = 1f;
 
         if (StatBlock != null && PlayerStats.Instance != null)
         {
-            // 基础伤害 = (武器基础 * (玩家乘数 + 能量石乘数)) + 玩家固定值
+            // --- 计算基础伤害 (使用 baseDamageToUse) ---
             baseDamage = Mathf.RoundToInt(
-                StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + stoneDmgMod) + //
-                PlayerStats.Instance.flatDamageBonus //
+                baseDamageToUse * (PlayerStats.Instance.damageMultiplier + localDamageBonus + stoneDmgMod) +
+                PlayerStats.Instance.flatDamageBonus
             );
 
-            // 基础体积 = 玩家乘数 + 能量石乘数 (注意：基础是1，不是0)
-            baseScale = PlayerStats.Instance.aoeRadiusMultiplier + stoneScaleMod; //
+            // --- 计算基础体积 ---
+            baseScale = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus + stoneScaleMod;
         }
 
-        // 2. 如果是回旋镖，计算【加法】叠加乘数
+        // 8. 回旋镖叠加机制 (保持不变)
         float totalDamageMultiplier = 1f;
-        float totalScaleMultiplier = 1f; // 这个乘数应用在 PlayerStats 的基础体积上
-        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0) //
+        float totalScaleMultiplier = 1f;
+        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0)
         {
-            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent; //
-            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent; //
-
+            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent;
+            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent;
             totalDamageMultiplier = 1f + totalDamageBonusPercent;
             totalScaleMultiplier = 1f + totalScaleBonusPercent;
         }
-        // 3. 计算最终伤害和体积
-        // 最终伤害 = 基础伤害 * 叠加乘数
-        int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
-        // 最终体积 = 玩家基础体积 * 叠加乘数
-        float finalScale = baseScale * totalScaleMultiplier; // <-- 体积乘数应用在这里
 
-        Debug.Log($"[FireRoutine] 准备发射. 武器名: {StatBlock?.weaponName}, 行为模式: {StatBlock?.behavior}");
-        // --- Firing based on Behavior ---
+        int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
+        float finalScale = baseScale * totalScaleMultiplier;       
+
+        // 10. Switch 行为模式 (保持不变)
         switch (StatBlock?.behavior)
         {
-            case WeaponBehaviorType.Standard: //
-            case WeaponBehaviorType.Pierce: //
-                Debug.Log("[FireRoutine] 进入 Standard 分支");
-                InstantiateAndFireProjectile(finalTargetDirection, finalDamage); break;
+            case WeaponBehaviorType.Standard:
+            case WeaponBehaviorType.Pierce:
+                InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
+                break;
+
+            case WeaponBehaviorType.CreateAndForget:
+                InstantiateAndFireCreateAndForget(finalDamage, finalScale);
+                break;
 
             case WeaponBehaviorType.MeleeAOE:
-                // 必须调用 StartCoroutine 启动协程，才能实现“三连刺”
                 StartCoroutine(MeleeAttackRoutine(finalDamage, finalScale));
                 break;
-            case WeaponBehaviorType.ParabolicAOE: //
-                // (注意：AOE伤害也需要应用 stoneDmgMod)
-                int finalAoeDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + stoneDmgMod) + PlayerStats.Instance.flatAoeDamageBonus); //
-                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalAoeDamage); break;
-            case WeaponBehaviorType.Chain: //
-                if (firstTarget != null) { StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange)); } //
-                break;
-            case WeaponBehaviorType.SummonDrone: //
-                InstantiateAndInitializeDrones(); if (StatBlock.isOneShot) { this.enabled = false; } //
-                break;
-            case WeaponBehaviorType.PersistentAOE: //
-                Transform targetEnemy = FindNearestEnemyTransform();
-                if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); } //
-                break;
-            case WeaponBehaviorType.Boomerang: //
-                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale); break; //
-            case null: Debug.LogError("StatBlock is null!"); break;
-        }
-        
-        // --- Muzzle Flash & Delayed Sound ---
-        if (StatBlock != null && StatBlock.muzzleFlashPrefab != null) { Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation); }
 
+            case WeaponBehaviorType.ParabolicAOE:
+                // 抛物线因为有两个伤害参数(直接/范围)，我们这里需要特别处理一下 AOE 伤害的计算
+                // (虽然上面已经算了一个 finalDamage，但 ParabolicAOE 通常需要把 Direct 和 AOE 分开算)
+                // 这里为了简单，我们假设 finalDamage 传给 Direct，然后再算一个 AOE
+                int finalParabolicAoe = Mathf.RoundToInt(
+                    StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + localDamageBonus + stoneDmgMod) +
+                    PlayerStats.Instance.flatAoeDamageBonus
+                );
+                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalParabolicAoe);
+                break;
+
+            case WeaponBehaviorType.Chain:
+                if (firstTarget != null)
+                {
+                    StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange));
+                }
+                break;
+
+            case WeaponBehaviorType.PersistentAOE:
+                Transform targetEnemy = FindNearestEnemyTransform();
+                if (targetEnemy != null) { InstantiateAndFireAirdropDeployer(targetEnemy.position); }
+                break;
+
+            case WeaponBehaviorType.Boomerang:
+                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale);
+                break;
+        }
+
+        // 11-13. 枪口特效与后续 (保持不变)
+        if (StatBlock != null && StatBlock.muzzleFlashPrefab != null)
+        {
+            Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation);
+        }
         if (floatingVisual != null)
         {
             yield return new WaitForSeconds(hideVisualDuration);
             floatingVisual.ShowWeapon();
         }
-        if (fireSoundDelay >= 0) { yield return new WaitForSeconds(fireSoundDelay); PlayFireSound(); }
+        if (fireSoundDelay >= 0)
+        {
+            yield return new WaitForSeconds(fireSoundDelay);
+            PlayFireSound();
+        }
     }
 
     public void OnBoomerangCaught(Vector3 catchPosition)
@@ -959,42 +1311,82 @@ public class WeaponPart : MonoBehaviour
     }
 
     // Updated to accept finalDamage
-    private void InstantiateAndFireProjectile(Vector3 direction, int finalDamage)
+    private void InstantiateAndFireProjectile(Vector3 direction, int inputDamage)
     {
         if (firePoint == null)
-        {
-            Debug.LogError($"[发射失败] {gameObject.name} 的 WeaponPart 缺少 FirePoint！请在 Inspector 里赋值。");
+        {            
             return;
         }
         if (StatBlock?.projectilePrefab == null)
-        {
-            Debug.LogError($"[发射失败] {StatBlock?.weaponName} 的数据里没拖 ProjectilePrefab！");
+        {           
             return;
         }
+
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
+
+        bool isCrit = Random.value <= (PlayerStats.Instance.critRate + localCritRateBonus); // 【修正】加上局部暴击率
+        int finalDamage = isCrit ? Mathf.RoundToInt(inputDamage * (PlayerStats.Instance.critDamage + localCritDamageBonus)) : inputDamage; // 【修正】加上局部暴击伤害
+
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
+            // --- 【核心修复 1】计算速度 (全局 + 局部) ---
+            float finalSpeed = StatBlock.baseLaunchForce * (PlayerStats.Instance.projectileSpeedMultiplier + localSpeedBonus);
+
             int stonePierceBonus = (currentStone != null) ? (int)currentStone.pierceModifier : 0;
-            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus; //
-            // Get DoT/Slow stats (assuming they scale appropriately or have their own logic)
-            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage /* * ScalingFactorIfNeeded */);
+            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus;
+
+            // Get DoT/Slow stats
+            int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage);
             float finalDotDuration = StatBlock.baseDotDuration;
             float finalDotTickInterval = StatBlock.dotTickInterval;
             float finalSlowPercentage = StatBlock.baseSlowPercentage;
             float finalSlowDuration = StatBlock.baseSlowDuration;
 
+            // --- 【核心修复 2】计算持续时间 (全局 + 局部) ---
+            // 射程 = 速度 * 时间。这里把 Weapon Duration 升级卡的效果加进去。
+            float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
+
+            int finalAoeDamage = 0;
+            float finalAoeRadius = 0f;
+            GameObject explodeVfx = null;
+
+            // 只有当配置了爆炸范围 > 0 时，才传递这些参数
+            if (StatBlock.baseAoeRadius > 0)
+            {
+                // 计算范围 (保持不变)
+                finalAoeRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
+
+                // =========================================================
+                // 【核心修改】统一使用直击伤害
+                // =========================================================
+                // 直接使用上面已经算好的 finalDamage (它已经包含了面板基础 + 全局加成 + 局部加成 + 暴击倍率)
+                // 这样未来的任何“伤害提升”都会自动应用到爆炸上
+                finalAoeDamage = finalDamage;
+
+                explodeVfx = StatBlock.explosionEffectPrefab;
+            }
+
             projectileScript.InitializeAsStraight(
-              direction, finalSpeed, finalDamage, // Use passed finalDamage
-              false, finalPierceCount, StatBlock.baseProjectileLifetime,
+              direction, finalSpeed, finalDamage,
+              false, finalPierceCount,
+              finalLifetime,
               StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
               finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, finalSlowDuration,
               AttackType.Standard,
-              this // <--- [!] 传递 launcher 引用
+              this,
+              // 【新增】传入刚才计算的 AOE 参数
+              finalAoeDamage,
+              finalAoeRadius,
+              explodeVfx
             );
+            projectileScript.isCritical = isCrit;
+            if (isCrit)
+            {
+                // Debug.Log($"[WeaponPart] 发射了一颗暴击子弹！武器: {StatBlock.weaponName}");
+            }
         }
-        else { Destroy(bullet); } // Clean up if script missing
+        else { Destroy(bullet); }
     }
 
     // Updated to accept finalDirectDamage and finalAoeDamage
@@ -1012,8 +1404,11 @@ public class WeaponPart : MonoBehaviour
         float finalStunChance = statsToUse.baseStunChance + PlayerStats.Instance.parabolicAoeStunChance;
         // 最终时长 = 武器基础时长 (未来也可以让 PlayerStats 强化这个)
         float finalStunDuration = statsToUse.baseStunDuration;
+        float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
 
         GameObject bullet = Instantiate(statsToUse.projectilePrefab, firePoint.position, Quaternion.LookRotation(horizontalDir));
+        bool isCrit = Random.value <= PlayerStats.Instance.critRate;
+        int damageToUse = isCrit ? Mathf.RoundToInt(finalDirectDamage * PlayerStats.Instance.critDamage) : finalDirectDamage;
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
@@ -1030,6 +1425,7 @@ public class WeaponPart : MonoBehaviour
                 finalStunChance, finalStunDuration, //
                  this
              );
+            projectileScript.isCritical = isCrit;
         }
         else { Destroy(bullet); } // Clean up
     }
@@ -1051,7 +1447,8 @@ public class WeaponPart : MonoBehaviour
         bullet.transform.localScale = Vector3.one * finalScale;
 
         float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        float finalMaxDistance = StatBlock.maxDistance;
+        float finalMaxDistance = StatBlock.maxDistance * PlayerStats.Instance.durationMultiplier;
+        float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
         float finalCatchRadius = StatBlock.catchRadius * finalScale;
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
@@ -1064,7 +1461,7 @@ public class WeaponPart : MonoBehaviour
                 finalDamage,
                 finalMaxDistance,
                 finalCatchRadius,
-                StatBlock.baseProjectileLifetime,
+                finalLifetime,
                 StatBlock.shieldImpactEffectPrefab,
                 StatBlock.defaultImpactEffectPrefab,
                 this,
@@ -1077,6 +1474,127 @@ public class WeaponPart : MonoBehaviour
             isBoomerangOut = false;
             Debug.LogError($"[WeaponPart] Boomerang fire failed: Projectile script missing on prefab for {StatBlock?.weaponName}");
             Destroy(bullet);
+        }
+    }
+
+    private void InstantiateAndFireCreateAndForget(int finalDamage, float finalScale)
+    {
+        // --- [排查 1] 检查核心引用 ---
+        if (StatBlock == null)
+        {
+            Debug.LogError("[排查] 失败: StatBlock 是空的！");
+            return;
+        }
+        if (StatBlock.projectilePrefab == null)
+        {
+            Debug.LogError($"[排查] 失败: 武器 '{StatBlock.weaponName}' 的 ProjectilePrefab 是空的！请检查 ScriptableObject。");
+            return;
+        }
+        // ---------------------------
+
+        // 1. 确定生成位置
+        Vector3 spawnPos = transform.position; // 默认为武器位置
+        if (WeaponController.Instance != null)
+        {
+            spawnPos = WeaponController.Instance.transform.position; // 优先用玩家位置
+        }
+
+        // --- [排查 2] 检查 Raycast 地面检测 ---
+        Debug.Log($"[排查] 初始生成点: {spawnPos}。正在尝试 Raycast 找地面...");
+
+        RaycastHit hit;
+        // 尝试从玩家头顶 (y+2) 向下射线检测
+        if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground", "Default", "Terrain")))
+        {
+            spawnPos = hit.point;
+            Debug.Log($"[排查] 成功找到地面: {spawnPos}, 击中物体: {hit.collider.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"[排查] 警告: 未检测到地面！塔可能生成在半空或地底。当前位置 y={spawnPos.y}");
+        }
+        // -----------------------------------
+
+        // 2. 生成实例
+        GameObject obj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
+
+        // --- [排查 3] 检查生成后的物体状态 ---
+        if (obj == null)
+        {
+            Debug.LogError("[排查] 致命错误: Instantiate 返回了 null！");
+            return;
+        }
+        Debug.Log($"[排查] 已生成物体: '{obj.name}'，世界坐标: {obj.transform.position}，Active状态: {obj.activeSelf}");
+        // -----------------------------------
+
+        // 3. 应用缩放
+        // --- [排查 4] 检查缩放系数 ---
+        float configScale = StatBlock.vfxBaseScaleMultiplier;
+        if (configScale <= 0.01f)
+        {
+            Debug.LogError($"[排查] 严重警告: StatBlock.vfxBaseScaleMultiplier 为 {configScale}！物体将不可见。请在配置里设为 1。");
+        }
+
+        Vector3 targetScale = Vector3.one * (configScale * finalScale);
+        obj.transform.localScale = targetScale;
+        Debug.Log($"[排查] 应用缩放: {targetScale} (配置值: {configScale}, 动态值: {finalScale})");
+        // ---------------------------
+
+        // 4. 组件初始化逻辑
+        WanderingAOE wanderScript = obj.GetComponent<WanderingAOE>();
+        if (wanderScript != null)
+        {
+            if (WeaponController.Instance != null)
+                wanderScript.target = WeaponController.Instance.transform;
+            else
+                wanderScript.target = this.transform.root;
+        }
+
+        // --- [排查 5] 检查 FlamethrowerTurret 组件 ---
+        FlamethrowerTurret turret = obj.GetComponent<FlamethrowerTurret>();
+        if (turret != null)
+        {
+            float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
+            float finalRange = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
+            float finalInterval = StatBlock.dotTickInterval;
+
+            Debug.Log($"[排查] 找到 FlamethrowerTurret 组件，正在初始化... 存活时间: {finalLifetime}");
+
+            turret.Initialize(
+                finalDamage,
+                finalLifetime,
+                WeaponController.Instance != null ? WeaponController.Instance.gameObject : this.gameObject,
+                finalRange,
+                finalInterval,
+                StatBlock.weaponName
+            );
+        }
+        else
+        {
+            // 如果不是其他类型，也不是塔，那就可能是脚本挂错了
+            if (obj.GetComponent<TornadoController>() == null && obj.GetComponent<PersistentAoeField>() == null && obj.GetComponent<Projectile>() == null)
+            {
+                Debug.LogError($"[排查] 生成的物体 '{obj.name}' 上没有找到 FlamethrowerTurret 脚本！也没有其他已知脚本。请检查 Prefab。");
+            }
+        }
+        // ----------------------------------------
+
+        // ... (其他 Tornado/Persistent 逻辑保留) ...
+        TornadoController tc = obj.GetComponent<TornadoController>();
+        if (tc != null) tc.Setup(finalDamage, this);
+
+        PersistentAoeField aoe = obj.GetComponent<PersistentAoeField>();
+        if (aoe != null)
+        {
+            GameObject attackerObj = WeaponController.Instance != null ? WeaponController.Instance.gameObject : this.gameObject;
+            aoe.Setup(finalDamage, StatBlock.baseAreaTickInterval, StatBlock.baseAreaDuration, attackerObj);
+        }
+
+        // Projectile 初始化保底
+        Projectile p = obj.GetComponent<Projectile>();
+        if (p != null && turret == null) // 如果是塔，通常不需要初始化为 Projectile，除非你的塔同时是 Projectile
+        {
+            p.InitializeAsStraight(transform.forward, 0f, finalDamage, false, 999, StatBlock.baseProjectileLifetime, null, null, 0, 0, 0, 0, 0, AttackType.Standard, this);
         }
     }
 
@@ -1136,19 +1654,39 @@ public class WeaponPart : MonoBehaviour
         orbitalPivot.localRotation = Quaternion.identity;
 
         isOrbitalActive = true; // Mark as active *after* pivot creation
-        int finalOrbitalCount = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusOrbitalCount;
-        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * PlayerStats.Instance.aoeRadiusMultiplier;
-        // Orbital damage scales like direct damage
-        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier + PlayerStats.Instance.flatDamageBonus);
+        int finalOrbitalCount = GetTotalCount();
+        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
+        int finalDamage = Mathf.RoundToInt(
+        StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + localDamageBonus) +
+        PlayerStats.Instance.flatDamageBonus
+         );
 
         for (int i = 0; i < finalOrbitalCount; i++)
         {
             float angle = i * (360f / finalOrbitalCount);
             Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
+
             GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
-            orbiterGO.transform.localPosition = spawnPos; // Position relative to pivot
+            orbiterGO.transform.localPosition = spawnPos;
             orbiterGO.transform.localRotation = Quaternion.Euler(0, angle, 0);
-            orbiterGO.GetComponent<Orbiter>()?.Initialize(finalDamage, this);
+
+            // --- 【核心修改】区分普通盾和磁暴盾 ---
+
+            // 1. 优先尝试初始化为磁暴盾 (MagneticOrbiter)
+            MagneticOrbiter mag = orbiterGO.GetComponent<MagneticOrbiter>();
+            if (mag != null)
+            {
+                mag.Initialize(finalDamage, this);
+            }
+            // 2. 如果不是，则初始化为普通岩石盾 (Orbiter)
+            else
+            {
+                Orbiter orb = orbiterGO.GetComponent<Orbiter>();
+                if (orb != null)
+                {
+                    orb.Initialize(finalDamage, this);
+                }
+            }
         }
 
         float finalDuration = StatBlock.baseDuration; // Apply player bonuses if any
@@ -1215,24 +1753,32 @@ public class WeaponPart : MonoBehaviour
         return closestTarget;
     }
 
-    private void HandleBeamWeapon()
+    /*private void HandleBeamWeapon()
     {
-        if (StatBlock == null) return;
-        if (beamCooldownTimer > 0f) return;
-
-        ValidateOrFindTarget();
-
-        if (lockedBeamTarget != null)
+        // 确保激光实例存在
+        if (currentBeamInstance == null)
         {
-            if (beamEnergyTimer > 0f && activeBeamInstance == null) { StartBeam(); }
-            if (activeBeamInstance != null)
+            // 生成激光预制体
+            GameObject beamGO = Instantiate(StatBlock.projectilePrefab, firePoint.position, firePoint.rotation, firePoint); // 挂在枪口下
+            currentBeamInstance = beamGO.GetComponent<PlayerBeamController>();
+
+            // 初始化为【方向模式】
+            // 长度 20，层级 Enemy
+            if (currentBeamInstance != null)
             {
-                beamEnergyTimer -= Time.deltaTime;
-                if (beamEnergyTimer <= 0f) { StopBeamAndStartCooldown(); }
+                currentBeamInstance.InitializeDirectional(
+                    StatBlock,
+                    this,
+                    firePoint.forward,
+                    20f,
+                    LayerMask.GetMask("Enemies")
+                );
             }
         }
-        else { if (activeBeamInstance != null) { StopBeamForStandby(); } }
-    }
+
+        // 激光是一直存在的，PlayerBeamController 的 Update 会处理伤害
+        // 我们只需要确保它跟着枪口转 (因为做了 SetParent，所以自动跟了)
+    }*/
 
     private void ValidateOrFindTarget()
     {
@@ -1297,28 +1843,196 @@ public class WeaponPart : MonoBehaviour
         // Fallback to the WeaponController transform itself (player root)
         return WeaponController.Instance?.transform ?? transform; // Use own transform if controller missing
     }
-
-    private void InstantiateAndInitializeDrones()
+    private void SetupDrones()
     {
-        if (StatBlock == null || StatBlock.summonPrefab == null || StatBlock.summonWeaponStats == null || WeaponController.Instance == null) return;
+        Debug.Log("[SetupDrones] 开始尝试生成无人机...");
 
-        int finalSummonCount = StatBlock.summonCount;
-        float finalSummonDuration = StatBlock.summonDuration;
-        Transform playerRoot = WeaponController.Instance.transform;
-
-        for (int i = 0; i < finalSummonCount; i++)
+        if (StatBlock == null)
         {
-            Vector3 spawnOffset = Random.insideUnitSphere * 2f;
-            spawnOffset.y = StatBlock.summonSpawnHeight;
-            Vector3 spawnPosition = playerRoot.position + spawnOffset;
+            Debug.LogError("[SetupDrones] 失败: StatBlock 是空的！");
+            return;
+        }
 
-            GameObject droneGO = Instantiate(StatBlock.summonPrefab, spawnPosition, Quaternion.identity);
-            DroneAI droneAI = droneGO.GetComponent<DroneAI>();
-            if (droneAI != null) { droneAI.Initialize(StatBlock.summonWeaponStats, finalSummonDuration, playerRoot); }
-            else { Debug.LogWarning($"Summon prefab '{StatBlock.summonPrefab.name}' is missing DroneAI script.", droneGO); }
+        // 注意：这里保留你原来的 orbitalPrefab，不要改动
+        if (StatBlock.orbitalPrefab == null)
+        {
+            Debug.LogError($"[SetupDrones] 失败: 武器 '{StatBlock.weaponName}' 的 Orbital Prefab 为空！");
+            return;
+        }
+
+        // 1. 清理旧无人机 (这部分是对的，保留)
+        foreach (var drone in activeDrones)
+        {
+            if (drone != null) Destroy(drone);
+        }
+        activeDrones.Clear();
+
+        // =========================================================
+        // 【核心修改】计算数量时，加上 localOrbitalCountBonus
+        // =========================================================
+
+        // 方法 A: 如果你刚才在 WeaponPart 里加了 GetTotalCount() 方法，直接调用它：
+        int count = GetTotalCount();
+
+        // 方法 B: 如果你没加那个方法，就手动加上变量：
+        // int count = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
+
+        Debug.Log($"[SetupDrones] 计划生成数量: {count} (基础:{StatBlock.baseOrbitalCount} + 全局:{PlayerStats.Instance.bonusProjectileCount} + 局部:{localOrbitalCountBonus})");
+
+        // =========================================================
+
+        int dmg = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier);
+        float fr = PlayerStats.Instance.fireRateMultiplier;
+
+        // 3. 生成 (循环部分基本不用动，保持原样即可)
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 spawnPos = transform.position + Random.insideUnitSphere * 2f;
+            spawnPos.y = transform.position.y + 2f;
+
+            GameObject droneGO = Instantiate(StatBlock.orbitalPrefab, spawnPos, Quaternion.identity);
+
+            DroneAI droneScript = droneGO.GetComponent<DroneAI>();
+            if (droneScript != null)
+            {
+                WeaponStatBlock weaponToGive = StatBlock.summonWeaponStats;
+                if (weaponToGive == null)
+                {
+                    // 为了防止空指针报错，建议这里做一个保底，如果没有专属武器，就用本体属性
+                    weaponToGive = StatBlock;
+                }
+
+                // 初始化
+                droneScript.Initialize(weaponToGive, 0, transform.root, dmg, fr);
+            }
+            activeDrones.Add(droneGO);
         }
     }
+    public void RefreshDrones()
+    {
+        // 1. 安全检查：如果不是召唤类武器，直接退出，防止报错
+        if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.SummonDrone) return;
 
+        // 2. 直接调用我们刚才修改过的 SetupDrones
+        // (SetupDrones 里已经包含了“销毁旧飞机”和“重新生成”的逻辑，所以直接调它就行)
+        SetupDrones();
+    }
+    private void SetupAutoBeam()
+    {
+        if (StatBlock == null || StatBlock.projectilePrefab == null) return;
+
+        // 1. 清理旧坦克
+        foreach (var tank in activeLaserTanks)
+        {
+            if (tank != null) Destroy(tank);
+        }
+        activeLaserTanks.Clear();
+
+        // 2. --- 【核心修改】计算数量 ---
+        // 使用 GetTotalCount() 自动包含：基础 + 全局加成 + 局部加成(升级卡)
+        int count = GetTotalCount();
+        if (count < 1) count = 1; // 保底 1 辆
+
+        // 3. --- 【核心修改】计算伤害 ---
+        // 伤害公式：面板DPS / 频率 * (全局倍率 + 局部倍率 + 石头倍率)
+        float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
+        float finalDmgMult = PlayerStats.Instance.damageMultiplier + localDamageBonus + stoneDmgMod;
+
+        int damagePerTick = Mathf.CeilToInt((float)StatBlock.beamDamagePerSecond / StatBlock.beamDamageTickRate);
+        damagePerTick = Mathf.RoundToInt(damagePerTick * finalDmgMult);
+
+        // 4. --- 【核心修改】计算暴击 ---
+        float finalCritRate = PlayerStats.Instance.critRate + StatBlock.baseCritRate + localCritRateBonus;
+        float finalCritDmg = PlayerStats.Instance.critDamage + StatBlock.baseCritDamage + localCritDamageBonus;
+
+        // 5. 生成坦克
+        for (int i = 0; i < count; i++)
+        {
+            // 生成在玩家周围地面上
+            Vector3 spawnOffset = Quaternion.Euler(0, i * 360f / count, 0) * Vector3.forward * 3f;
+            Vector3 potentialPos = transform.position + spawnOffset;
+            RaycastHit hit;
+            if (Physics.Raycast(potentialPos + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Default", "Ground", "Terrain")))
+            {
+                potentialPos.y = hit.point.y;
+            }
+            else
+            {
+                potentialPos.y = 0;
+            }
+
+            GameObject tankGO = Instantiate(StatBlock.projectilePrefab, potentialPos, Quaternion.identity);
+
+            // 初始化脚本
+            AutoBeamTurret tankScript = tankGO.GetComponent<AutoBeamTurret>();
+            if (tankScript != null)
+            {
+                // 【修改】传入暴击参数
+                tankScript.Initialize(this, damagePerTick, StatBlock.beamDamageTickRate, transform.root, finalCritRate, finalCritDmg);
+            }
+            activeLaserTanks.Add(tankGO);
+        }
+    }
+    private void SetupFunnelSystem()
+    {
+        if (StatBlock == null || StatBlock.projectilePrefab == null) return;
+
+        // 1. 清理旧浮游炮
+        foreach (var f in activeFunneIs) { if (f != null) Destroy(f); }
+        activeFunneIs.Clear();
+
+        // 2. 设定数量 (固定6个，或者受加成影响)
+        int count = 6 + PlayerStats.Instance.bonusProjectileCount;
+
+        // 3. 计算伤害
+        int laserDmg = Mathf.RoundToInt(StatBlock.beamDamagePerSecond / StatBlock.beamDamageTickRate * PlayerStats.Instance.damageMultiplier);
+
+        // 4. 生成阵列
+        for (int i = 0; i < count; i++)
+        {
+            // 初始生成在玩家身后
+            Vector3 spawnPos = transform.position + Vector3.up * 5f;
+
+            GameObject funnelGO = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
+
+            OrbitalJudgmentFunnel script = funnelGO.GetComponent<OrbitalJudgmentFunnel>();
+            if (script != null)
+            {
+                // 初始化：传入 index 用于计算环绕角度
+                script.Initialize(this, laserDmg, StatBlock.beamDamageTickRate, transform.root, i, count);
+
+                // 可以在这里把导弹预制体传进去 (如果 WeaponStatBlock 里有槽位的话)
+                // script.missilePrefab = StatBlock.summonWeaponStats.projectilePrefab; 
+            }
+            activeFunneIs.Add(funnelGO);
+        }
+    }
+    private void SetupSuperMech()
+    {
+        if (StatBlock == null || StatBlock.projectilePrefab == null) return;
+
+        // 清理旧的
+        if (currentSuperMech != null) Destroy(currentSuperMech);
+
+        // 生成在玩家旁边
+        Vector3 spawnPos = transform.position + transform.right * 2f;
+
+        // Raycast 找地面，确保贴地生成
+        RaycastHit hit;
+        if (Physics.Raycast(spawnPos + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Default", "Ground")))
+        {
+            spawnPos.y = hit.point.y;
+        }
+
+        currentSuperMech = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
+
+        SuperMechAI mechScript = currentSuperMech.GetComponent<SuperMechAI>();
+        if (mechScript != null)
+        {
+            // 传入整个 StatBlock，让机甲自己读取伤害和持续时间配置
+            mechScript.Initialize(this, StatBlock, transform.root);
+        }
+    }
     private void InstantiateAndFireAirdropDeployer(Vector3 targetPosition)
     {
         if (StatBlock?.deployerProjectilePrefab == null || firePoint == null || WeaponController.Instance == null) return;
@@ -1446,6 +2160,10 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock.behavior == WeaponBehaviorType.Aura) RefreshAura();
         if (StatBlock.behavior == WeaponBehaviorType.Orbital) RefreshOrbiters();
 
+        if (StatBlock.behavior == WeaponBehaviorType.SummonDrone) RefreshDrones();
+
+        if (StatBlock.behavior == WeaponBehaviorType.Beam) SetupAutoBeam();
+
         // 进化/融合后，刷新模型
         UpdateVisualModel();
     }
@@ -1486,51 +2204,37 @@ public class WeaponPart : MonoBehaviour
         // ---------------------------------------------
     }
 
-    private IEnumerator MeleeAttackRoutine(int damage, float scale)
+    private IEnumerator MeleeAttackRoutine(int baseDamage, float scale)
     {
         int count = StatBlock.multiHitCount;
         if (count < 1) count = 1;
 
         for (int i = 0; i < count; i++)
         {
-            // 1. 处理锁敌转向
-            if (StatBlock.autoAimMelee)
-            {
-                RotateTowardsNearestEnemy();
-            }
+            if (StatBlock.autoAimMelee) RotateTowardsNearestEnemy();
 
-            // 2. 生成特效 (伤害由特效上的 VFXDamageController 负责)
-            SpawnMeleeVFX(damage, scale);
+            // 【修正】这里直接传 baseDamage，让 VFXDamageController 去碰瓷的时候自己算暴击
+            SpawnMeleeVFX(baseDamage, scale);
 
-            // 3. 播放音效 (如果有多段攻击，每次都播)
             PlayFireSound();
 
-            // 4. 如果是多段攻击，等待间隔
-            if (count > 1)
-            {
-                yield return new WaitForSeconds(StatBlock.multiHitInterval);
-            }
+            if (count > 1) yield return new WaitForSeconds(StatBlock.multiHitInterval);
         }
     }
-    private void SpawnMeleeVFX(int damage, float scale)
+    private void SpawnMeleeVFX(int damage, float scale) // 【注意】这里可以删掉上一轮加的 bool isCrit 参数了
     {
         if (StatBlock.slashEffectPrefab == null) return;
 
-        // 确定生成位置和旋转
         Vector3 spawnPos = firePoint.position;
-        Quaternion spawnRot = transform.rotation; // 跟随当前朝向
+        Quaternion spawnRot = transform.rotation;
 
-        // 实例化特效
         GameObject vfxObj = Instantiate(StatBlock.slashEffectPrefab, spawnPos, spawnRot);
-
-        // 应用体积缩放 (雷光刺变长/宽，爆炎斩变大)
         vfxObj.transform.localScale = Vector3.one * (StatBlock.baseAoeRadius * scale);
-        // 注意：这里我们利用 baseAoeRadius 作为特效的基础缩放基准
 
-        // 初始化伤害控制器
         VFXDamageController vfxCtrl = vfxObj.GetComponent<VFXDamageController>();
         if (vfxCtrl != null)
         {
+            // 【修正】去掉 isCrit 参数，只传 damage
             vfxCtrl.Initialize(damage, StatBlock.hitEffectPrefab, this.gameObject, this);
         }
     }
@@ -1586,7 +2290,7 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
-    private void PerformThrustHitCheck(int damage, float scale)
+    private void PerformThrustHitCheck(int baseDamage, float scale)
     {
         // 刺击参数：长方形判定
         // 宽度由 scale 决定，长度由 baseAoeRadius 决定
@@ -1607,18 +2311,55 @@ public class WeaponPart : MonoBehaviour
             Health h = hit.collider.GetComponentInParent<Health>();
             if (h != null)
             {
-                // 1. 造成伤害
-                h.TakeDamage(damage, hit.point, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
+                // --- 【核心修改】暴击判定 ---
+                bool isCrit = Random.value <= PlayerStats.Instance.critRate;
 
-                // 2. 触发闪电链 (如果是雷光刺)
-                // 这里的 currentStone 已经在 WeaponPart 中，我们直接检查属性
-                if (currentStone != null && (currentStone.applyChain || currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)))
+                // 计算最终伤害
+                int finalDamage = baseDamage;
+                if (isCrit)
                 {
-                    // 调用你现有的闪电链逻辑
-                    ChainLightningFromTarget(h.transform, StatBlock.baseChainCount, Mathf.RoundToInt(damage * 0.5f), StatBlock.chainRange);
+                    finalDamage = Mathf.RoundToInt(baseDamage * PlayerStats.Instance.critDamage);
                 }
 
-                // 3. 产生命中特效
+                // 造成伤害 (可以把 isCrit 传给 TakeDamage 用于飘字显示暴击颜色，如果你的 Health 支持的话)
+                // 这里暂时用 null 占位，或者你可以扩展 AttackType
+                h.TakeDamage(finalDamage, hit.point, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
+
+                // --- 【核心修改】触发逻辑：暴击触发闪电链 ---
+                bool triggerChain = false;
+
+                // 条件 1: 是雷霆长矛 (通过名字或 Tag 判断，暂时用名字示例) 且发生了暴击
+                // 或者你可以去 WeaponStatBlock 加个 bool triggerChainOnCrit;
+                if (StatBlock.weaponName.Contains("雷霆长矛") && isCrit)
+                {
+                    triggerChain = true;
+                }
+
+                // 条件 2: 原有的雷电石逻辑 (保持兼容)
+                if (currentStone != null && (currentStone.applyChain || currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)))
+                {
+                    triggerChain = true;
+                }
+
+                if (triggerChain)
+                {
+                    // 触发闪电链：伤害通常衰减 (比如 50% 或 100%)
+                    // 这里的 chainCount 和 range 可以从 StatBlock 读取
+                    int chainDmg = Mathf.RoundToInt(finalDamage * 0.5f); // 连锁伤害减半
+                    int chainCount = StatBlock.baseChainCount > 0 ? StatBlock.baseChainCount : 3; // 保底 3 个
+                    float chainRange = StatBlock.chainRange > 0 ? StatBlock.chainRange : 8f;
+
+                    // 调用现有的连锁方法
+                    ChainLightningFromTarget(h.transform, chainCount, chainDmg, chainRange);
+
+                    // 可选：暴击时的特殊音效或特效
+                    if (isCrit)
+                    {
+                        // PlayCritSound(); 
+                    }
+                }
+
+                // 产生命中特效
                 if (StatBlock.hitEffectPrefab != null)
                 {
                     Instantiate(StatBlock.hitEffectPrefab, hit.point, Quaternion.identity);
@@ -1668,6 +2409,37 @@ public class WeaponPart : MonoBehaviour
                 }
             }
         }
+    }
+    private bool IsMetaUnlocked(string nodeFileName)
+    {
+        if (PlayerProgressManager.Instance != null)
+        {
+            // 这里我们直接检查 unlockedNodeIDs 集合
+            // 注意：nodeFileName 必须和你创建的 WeaponUpgradeNode 文件名完全一致
+            return PlayerProgressManager.Instance.unlockedItems.Contains(nodeFileName) ||
+                   PlayerProgressManager.Instance.IsNodeUnlockedRaw(nodeFileName);
+        }
+        return false;
+    }
+
+    void OnDisable()
+    {
+        // 清理无人机
+        foreach (var drone in activeDrones)
+        {
+            if (drone != null) Destroy(drone);
+        }
+        activeDrones.Clear();
+
+        // 清理激光坦克 (如果你之前加了这个列表)
+        foreach (var tank in activeLaserTanks)
+        {
+            if (tank != null) Destroy(tank);
+        }
+        activeLaserTanks.Clear();
+
+        // 清理超武机甲 (防止机甲残留)
+        if (currentSuperMech != null) Destroy(currentSuperMech);
     }
     #endregion
 

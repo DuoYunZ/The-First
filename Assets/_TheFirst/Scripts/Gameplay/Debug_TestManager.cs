@@ -12,6 +12,9 @@ public class Debug_TestManager : MonoBehaviour
     [Header("护盾数据列表 (用于直接给予)")]
     public List<ShieldData> shieldDataAssets;
 
+    [Header("【新增】被动道具列表 (用于直接给予)")]
+    public List<PassiveItemData> passiveItems; // <--- 新增列表
+
     [Header("升级节点列表 (用于强制升级)")]
     public List<SkillTreeNodeData> allSkillNodes;
 
@@ -101,6 +104,31 @@ public class Debug_TestManager : MonoBehaviour
             Debug.LogError("WeaponController 未找到！");
         }
     }
+    public void GivePassiveItem(int itemIndex)
+    {
+        if (itemIndex < 0 || itemIndex >= passiveItems.Count)
+        {
+            Debug.LogError($"无效的被动道具索引: {itemIndex}");
+            return;
+        }
+
+        if (PlayerStats.Instance != null)
+        {
+            // 直接调用 PlayerStats 的装备方法
+            PlayerStats.Instance.EquipOrUpgradePassiveItem(passiveItems[itemIndex]);
+            Debug.Log($"调试指令：已给予玩家被动道具 {passiveItems[itemIndex].itemName}");
+
+            // 顺便刷新一下UI，确保图标立刻出现
+            if (PassiveItemsUI.Instance != null)
+            {
+                PassiveItemsUI.Instance.UpdateIcons();
+            }
+        }
+        else
+        {
+            Debug.LogError("PlayerStats 未找到！");
+        }
+    }
     public void ForceRandomUpgrade(int nodeIndex)
     {
         if (nodeIndex < 0 || nodeIndex >= allSkillNodes.Count)
@@ -160,6 +188,23 @@ public class Debug_TestManager : MonoBehaviour
         else
         {
             Debug.LogError("PlayerShield 未找到！");
+        }
+    }
+
+    public void TestFusion()
+    {
+        if (WeaponController.Instance != null)
+        {
+            var recipe = WeaponController.Instance.CheckForAvailableFusion();
+            if (recipe != null)
+            {
+                WeaponController.Instance.PerformFusion(recipe);
+                Debug.Log("融合测试成功！");
+            }
+            else
+            {
+                Debug.Log("当前没有满足条件的融合配方（需要两把满级武器）。");
+            }
         }
     }
 }

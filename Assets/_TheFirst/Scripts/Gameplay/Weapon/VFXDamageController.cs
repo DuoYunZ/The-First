@@ -1,4 +1,4 @@
-// --- VFXDamageController.cs (µ÷ÊÔ°æ) ---
+ï»¿// --- VFXDamageController.cs (è°ƒè¯•ç‰ˆ) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,20 +7,20 @@ using UnityEngine;
 public class VFXDamageController : MonoBehaviour
 {
 
-    private int finalDamage;
+    private int baseDamage; // ã€æ”¹åã€‘è¿™é‡Œå­˜çš„æ˜¯åŸºç¡€é¢æ¿ä¼¤å®³
     private GameObject attacker;
-    private WeaponPart launcher;
+    public WeaponPart sourceWeapon;
     private List<Health> hitTargets = new List<Health>();
-    private GameObject hitEffectPrefab; // <--- ĞÂÔö£ºÓÃÓÚ´æ´¢ÃüÖĞÌØĞ§
+    private GameObject hitEffectPrefab;
 
-    [Header("ÉúÃüÖÜÆÚÓëÉËº¦´°¿Ú")]
-    [Tooltip("ÌØĞ§µÄ×ÜÉúÃüÖÜÆÚ£¨Ãë£©£¬Ö®ºó½«Ïú»Ù×ÔÉí")]
+    [Header("ç”Ÿå‘½å‘¨æœŸä¸ä¼¤å®³çª—å£")]
     public float totalLifetime = 2f;
-    [Tooltip("Åö×²Ìå±£³ÖÓĞĞ§µÄÊ±¼ä£¨Ãë£©£¬¼´ÉËº¦ÅĞ¶¨µÄ´°¿ÚÆÚ")]
-    public float damageActiveDuration = 0.2f; // ÀıÈç£¬Ö»ÔÚÇ°0.2ÃëÔì³ÉÉËº¦
+    public float damageActiveDuration = 0.2f;
     private Collider col;
 
     private string weaponName;
+
+    
 
     void Awake()
     {
@@ -29,178 +29,155 @@ public class VFXDamageController : MonoBehaviour
 
     void Start()
     {
-        // Ô¤¶¨ÔÚ×ÜÉúÃüÖÜÆÚ½áÊøºóÏú»ÙÕû¸öGameObject
+        // é¢„å®šåœ¨æ€»ç”Ÿå‘½å‘¨æœŸç»“æŸåé”€æ¯æ•´ä¸ªGameObject
         Destroy(gameObject, totalLifetime);
 
-        // Æô¶¯Ò»¸öĞ­³Ì£¬ÔÚÖ¸¶¨µÄÉËº¦´°¿ÚÆÚºó£¬½ûÓÃÅö×²Ìå
+        // å¯åŠ¨ä¸€ä¸ªåç¨‹ï¼Œåœ¨æŒ‡å®šçš„ä¼¤å®³çª—å£æœŸåï¼Œç¦ç”¨ç¢°æ’ä½“
         StartCoroutine(DeactivateColliderRoutine());
     }
 
     private IEnumerator DeactivateColliderRoutine()
     {
-        // µÈ´ıÉËº¦´°¿ÚÆÚ½áÊø
         yield return new WaitForSeconds(damageActiveDuration);
-
-        // Ê±¼äÒ»µ½£¬Á¢¼´½ûÓÃÅö×²Ìå£¬Í£Ö¹ÉËº¦ÅĞ¶¨
-        if (col != null)
-        {
-            col.enabled = false;
-        }
+        if (col != null) col.enabled = false;
     }
-    // ĞŞ¸Ä Initialize ·½·¨£¬ÈÃËüÄÜ½ÓÊÕ WeaponStatBlock
-    public void Initialize(int calculatedDamage, GameObject hitVfx, GameObject attacker, WeaponPart launcher)
+    // ä¿®æ”¹ Initialize æ–¹æ³•ï¼Œè®©å®ƒèƒ½æ¥æ”¶ WeaponStatBlock
+    public void Initialize(int damageInput, GameObject hitVfx, GameObject attacker, WeaponPart weapon)
     {
-        this.finalDamage = calculatedDamage;
+        this.baseDamage = damageInput;
         this.hitEffectPrefab = hitVfx;
         this.attacker = attacker;
-        this.launcher = launcher;
 
-        if (launcher != null && launcher.StatBlock != null)
+        // ä¿å­˜å¼•ç”¨
+        this.sourceWeapon = weapon;
+
+        // ä½¿ç”¨ sourceWeapon è®¿é—®
+        if (this.sourceWeapon != null && this.sourceWeapon.StatBlock != null)
         {
-            this.weaponName = launcher.StatBlock.weaponName;
+            this.weaponName = this.sourceWeapon.StatBlock.weaponName;
         }
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (finalDamage <= 0) return;
+        if (baseDamage <= 0) return;
 
         Health targetHealth = other.GetComponentInParent<Health>();
 
-        // »ù´¡ÅĞ¶¨£ºÊÇµĞÈËÇÒÎ´ÊÜµ½¹ı¸ÃÌØĞ§ÉËº¦
         if (targetHealth != null && targetHealth.CompareTag("Enemy") && !hitTargets.Contains(targetHealth))
         {
-            // 1. ÃüÖĞÌØĞ§
+            hitTargets.Add(targetHealth);
+
+            // =========================================================
+            //  ã€è®¡ç®—æš´å‡»ï¼šå…¨å±€ + å±€éƒ¨ã€‘
+            // =========================================================
+            bool isCurrentHitCrit = false;
+            float totalCritRate = 0f;
+            float totalCritDmgMult = 1.5f; // åŸºç¡€çˆ†ä¼¤å€ç‡
+
+            // 1. è·å–å…¨å±€å±æ€§
+            if (PlayerStats.Instance != null)
+            {
+                totalCritRate += PlayerStats.Instance.critRate;
+                totalCritDmgMult = PlayerStats.Instance.critDamage;
+            }
+
+            // 2. è·å–å±€éƒ¨å±æ€§ (ç›´æ¥ä» launcher è¯»å–)
+            if (sourceWeapon != null)
+            {
+                totalCritRate += sourceWeapon.localCritRateBonus;
+                totalCritDmgMult += sourceWeapon.localCritDamageBonus;
+            }
+
+            int finalRealDamage = baseDamage;
+
+            // 3. éšæœºåˆ¤å®š
+            if (Random.value <= totalCritRate)
+            {
+                isCurrentHitCrit = true;
+                finalRealDamage = Mathf.RoundToInt(baseDamage * totalCritDmgMult);
+                Debug.Log($"[VFX] æš´å‡»! {weaponName} -> {targetHealth.name}, ä¼¤å®³: {finalRealDamage}");
+            }
+            // =========================================================
+
+            // äº§ç”Ÿå‘½ä¸­ç‰¹æ•ˆ
             if (hitEffectPrefab != null)
             {
                 Vector3 hitPoint = other.ClosestPoint(transform.position);
                 Instantiate(hitEffectPrefab, hitPoint, Quaternion.LookRotation(-transform.forward));
             }
 
-            // 2. ¿ÛÑª
-            hitTargets.Add(targetHealth);
-            targetHealth.TakeDamage(finalDamage, other.transform.position, attacker, AttackType.Standard, null, null, weaponName);
+            // æ‰£è¡€
+            targetHealth.TakeDamage(
+                finalRealDamage,
+                other.transform.position,
+                attacker,
+                AttackType.Standard,
+                null,
+                null,
+                weaponName,
+                isCurrentHitCrit
+            );
 
-            // 3. Í³¼Æ
+            // ç»Ÿè®¡
             if (BattleStatisticsManager.Instance != null && !string.IsNullOrEmpty(weaponName))
             {
-                BattleStatisticsManager.Instance.AddDamage(weaponName, finalDamage);
+                BattleStatisticsManager.Instance.AddDamage(weaponName, finalRealDamage);
             }
 
             // =========================================================
-            //  ºËĞÄÂß¼­£ºÔ­ÉúÊôĞÔ(Native) + ÄÜÁ¿Ê¯(Stone) »ìºÏÅĞ¶¨
+            //  ç‰¹æ•ˆä¸å…ƒç´ é€»è¾‘ (Smite, Burn, etc.)
             // =========================================================
-            if (launcher == null) return;
-            EnergyStoneSO stone = launcher.currentStone;
+            if (sourceWeapon == null || sourceWeapon.StatBlock == null) return;
+
+            WeaponStatBlock stats = sourceWeapon.StatBlock; // æ›¿æ¢ launcher
             StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
-            WeaponStatBlock stats = launcher.StatBlock; // »ñÈ¡Êı¾İÀ¶Í¼
 
-            if (receiver == null || stats == null) return;
-
-            // ---------------------------------------------------------
-            // 1. À×µçÂß¼­ (Chain / Smite)
-            // ---------------------------------------------------------
-            // ÅĞ¶¨£º(ÎäÆ÷×Ô´øChain > 0) OR (ÓĞÀ×Ê¯)
-            bool hasChain = (stats.baseChainCount > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain));
-
-            if (hasChain)
+            // æš´å‡»è§¦å‘è½é›·
+            if (isCurrentHitCrit)
             {
-                // ¼ÆËãÀ×»÷ÉËº¦£ºÓÅÏÈÓÃÊ¯Í·Êı¾İ£¬Ã»ÓĞÔòÓÃ»ù´¡ÉËº¦µÄÒ»°ë
-                int smiteDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain))
-                    ? Mathf.RoundToInt(stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier))
-                    : Mathf.RoundToInt(finalDamage * 0.5f);
-
-                GameObject smiteVfx = (stone != null && stone.smiteVfxPrefab != null)
-                      ? stone.smiteVfxPrefab
-                      : stats.nativeSmiteVfxPrefab;
-
-                // Ôì³ÉÀ×»÷
-                targetHealth.TakeDamage(smiteDmg, targetHealth.transform.position, launcher.gameObject, AttackType.Standard);
-                if (smiteVfx != null) Instantiate(smiteVfx, targetHealth.transform.position, Quaternion.identity);
-
-                // ¼ÆÊıÆ÷ÓëÁ¬Ëø
-                int chainStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
-                // Ö»ÒªÊÇÔ­ÉúÀ×Îä£¬»òÕßÓĞÀ×Ê¯£¬¾Í²ÎÓë¼ÆÊı
-                if (stats.baseChainCount > 0 || chainStoneCount >= 1)
+                if (stats.nativeSmiteVfxPrefab != null)
                 {
-                    PlayerStats.Instance.lightningSmiteCounter++;
-                    if (PlayerStats.Instance.lightningSmiteCounter >= 3)
-                    {
-                        PlayerStats.Instance.lightningSmiteCounter = 0;
-
-                        // È·¶¨Á¬Ëø²ÎÊı
-                        int cCount = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainTargets : stats.baseChainCount;
-                        float cRange = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainRange : stats.chainRange;
-
-                        launcher.ChainLightningFromTarget(targetHealth.transform, cCount, smiteDmg, cRange);
-                    }
+                    Instantiate(stats.nativeSmiteVfxPrefab, targetHealth.transform.position + Vector3.up * 1.5f, Quaternion.identity);
                 }
+                int lightningDamage = Mathf.RoundToInt(finalRealDamage * 0.5f);
+                if (lightningDamage < 1) lightningDamage = 1;
+                targetHealth.TakeDamage(lightningDamage, targetHealth.transform.position, attacker, AttackType.Standard);
+
+                // æš´å‡»å¼ºåˆ¶è§¦å‘è¿é”(å¯é€‰)
+                int chainCount = stats.baseChainCount > 0 ? stats.baseChainCount : 3;
+                sourceWeapon.ChainLightningFromTarget(targetHealth.transform, chainCount, lightningDamage, stats.chainRange);
+            }
+            // éæš´å‡»ä½†ä¹Ÿé…ç½®äº†è¿é”
+            else if (stats.baseChainCount > 0)
+            {
+                int chainDmg = Mathf.RoundToInt(finalRealDamage * 0.8f);
+                sourceWeapon.ChainLightningFromTarget(targetHealth.transform, stats.baseChainCount, chainDmg, stats.chainRange);
             }
 
-            // ---------------------------------------------------------
-            // 2. »ğÑæÂß¼­ (Burn)
-            // ---------------------------------------------------------
-            // ÅĞ¶¨£º(ÎäÆ÷×Ô´øBurn) OR (ÓĞ»ğÊ¯)
-            bool hasBurn = stats.nativeBurn || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn));
+            if (receiver == null) return;
 
-            if (hasBurn)
+            // å‡»é€€
+            if (stats.nativeKnockback)
             {
-                int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
-                // È·¶¨È¼ÉÕ²ÎÊı£ºÓÅÏÈÓÃÊ¯Í·£¬·ñÔòÓÃ StatBlock µÄ baseDotDamage
-                int bDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDamage : stats.baseDotDamage;
-                float bDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDuration : stats.baseDotDuration;
-                float bTick = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnTickInterval : stats.dotTickInterval;
-
-                // ¶ÑµşÒı±¬Âß¼­ (½öµ±ÓĞ»ğÊ¯¶ÑµşÊ±´¥·¢)
-                if (fireStoneCount >= 2 && receiver.IsBurning)
-                {
-                    receiver.Ignite();
-                }
-                else if (!receiver.IsBurning)
-                {
-                    receiver.ApplyBurn(bDmg, bDur, bTick, weaponName);
-                }
-            }
-
-            // ---------------------------------------------------------
-            // 3. »÷ÍËÂß¼­ (Knockback)
-            // ---------------------------------------------------------
-            // ÅĞ¶¨£º(ÎäÆ÷×Ô´øKnockback) OR (ÓĞ·çÊ¯)
-            bool hasKnockback = stats.nativeKnockback || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback));
-
-            if (hasKnockback)
-            {
-                float kForce = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback)) ? stone.knockbackForce : stats.nativeKnockbackForce;
-
-                // ¶Ñµş¼Ó³É
-                int windStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
-                if (windStoneCount >= 2 && stone != null) kForce = stone.knockbackForce_Stacked;
-
-                Vector3 pushDir = (targetHealth.transform.position - launcher.transform.position).normalized;
+                Vector3 pushDir = (targetHealth.transform.position - sourceWeapon.transform.position).normalized;
                 pushDir.y = 0;
-                receiver.ApplyKnockback(pushDir, kForce);
+                receiver.ApplyKnockback(pushDir, stats.nativeKnockbackForce);
             }
-
-            // ---------------------------------------------------------
-            // 4. º®±ù/¼õËÙÂß¼­ (Slow/Ice)
-            // ---------------------------------------------------------
-            // ÕâÀïÎÒÃÇ¸´ÓÃ baseSlowPercentage ×÷ÎªÔ­Éú¼õËÙ
-            bool hasSlow = (stats.baseSlowPercentage > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow));
-
-            if (hasSlow)
+            // ç‡ƒçƒ§
+            if (stats.nativeBurn && !receiver.IsBurning)
             {
-                float sPct = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowPercentage : stats.baseSlowPercentage;
-                float sDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowDuration : stats.baseSlowDuration;
-                Color sColor = (stone != null) ? stone.slowColor : Color.blue;
-
-                receiver.ApplySlow(sPct, sDur, sColor);
-
-                // ±ù¶³Ö»ÔÚÓĞÊ¯Í·¶ÑµşÊ±´¥·¢
-                int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
-                if (iceStoneCount >= 2 && receiver.IsSlowed && !receiver.IsStunned && stone != null)
-                {
-                    if (Random.value <= stone.freezeChance) receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab);
-                }
+                receiver.ApplyBurn(stats.baseDotDamage, stats.baseDotDuration, stats.dotTickInterval, weaponName);
+            }
+            // å‡é€Ÿ
+            if (stats.baseSlowPercentage > 0)
+            {
+                receiver.ApplySlow(stats.baseSlowPercentage, stats.baseSlowDuration, Color.blue);
+            }
+            // è…èš€
+            if (stats.nativeCorrode)
+            {
+                receiver.ApplyCorrode(stats.nativeCorrodeMultiplier, 5f, stats.nativeCorrodeColor, weaponName);
             }
         }
     }

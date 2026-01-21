@@ -1,53 +1,57 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using System.Security.Cryptography;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static UnityEngine.UI.GridLayoutGroup;
 
 public class Projectile : MonoBehaviour
 {
     public AttackType attackType = AttackType.Standard;
 
-    [Header("ÊÓ¾õĞ§¹û")]
+    [Header("è§†è§‰æ•ˆæœ")]
     public GameObject shieldImpactEffectPrefab;
     public GameObject defaultImpactEffectPrefab;
 
-    // --- µ¯µÀ¿ØÖÆ ---
-    private bool isParabolic = false; // ÏÖÔÚÄ¬ÈÏÎª false£¬ÒòÎªÄ£Ê½¸ü³£ÓÃ
+    // --- å¼¹é“æ§åˆ¶ ---
+    private bool isParabolic = false; // ç°åœ¨é»˜è®¤ä¸º falseï¼Œå› ä¸ºæ¨¡å¼æ›´å¸¸ç”¨
 
-    [Header("Ö±Ïß²ÎÊı")]
+    [Header("ç›´çº¿å‚æ•°")]
     private Vector3 direction;
-    private float speed;
+    public float speed;
 
-    // --- Å×ÎïÏß¹ì¼£²ÎÊı ---
+    // --- æŠ›ç‰©çº¿è½¨è¿¹å‚æ•° ---
     private Vector3 currentVelocity;
     public float gravity = 9.8f;
     public bool faceMovementDirection = true;
 
-    // --- Í¨ÓÃ×Óµ¯²ÎÊı ---
+    // --- é€šç”¨å­å¼¹å‚æ•° ---
     public float lifetime = 5f;
-    private int directDamage = 0;
+    public int damage = 0;
+    public GameObject owner;
     private int aoeDamage = 0;
     private bool hasExploded = false;
+    public bool isCritical = false;
 
-    [Header("Ğ§¹ûÓë·¶Î§ (ÓÉInitialize·½·¨ÉèÖÃ)")]
+    [Header("æ•ˆæœä¸èŒƒå›´ (ç”±Initializeæ–¹æ³•è®¾ç½®)")]
     public GameObject impactEffectPrefab;
     public GameObject explosionEffectPrefab;
     public float explosionRadius = 3f;
     public LayerMask damageableLayers;
     public LayerMask groundAndWallLayers;
 
-    private float trailSpawnTimer = 0f; // ÓÃÓÚ¿ØÖÆ»ğ¾¶Éú³ÉÆµÂÊµÄ¼ÆÊ±Æ÷
+    private float trailSpawnTimer = 0f; // ç”¨äºæ§åˆ¶ç«å¾„ç”Ÿæˆé¢‘ç‡çš„è®¡æ—¶å™¨
 
-    // --- ´©Í¸Ïà¹Ø±äÁ¿ ---
+    // --- ç©¿é€ç›¸å…³å˜é‡ ---
     private int pierceCount = 1;
     private int piercedEnemies = 0;
 
-    // --- Á¬ËøÏà¹Ø±äÁ¿ ---
+    // --- è¿é”ç›¸å…³å˜é‡ ---
     private int remainingChains = 0;
     private float _chainRange = 0f;
     private List<Health> hitEnemies = new List<Health>();
 
-    // --- DoT/Debuff ÊôĞÔ ---
+    // --- DoT/Debuff å±æ€§ ---
     private int dotDamage;
     private float dotDuration;
     private float dotTickInterval;
@@ -56,41 +60,41 @@ public class Projectile : MonoBehaviour
 
     private float stunChance = 0f;
     private float stunDuration = 0f;
-    // --- µ¯µÀºÍĞĞÎªÄ£Ê½ ---
-    private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang } // <-- Ìí¼Ó Boomerang
+    // --- å¼¹é“å’Œè¡Œä¸ºæ¨¡å¼ ---
+    private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang } // <-- æ·»åŠ  Boomerang
     private ProjectileMode mode;
     private bool isEnemyProjectile = false;
     private Transform homingTarget;
     private float homingTurnSpeed = 5f;
 
-    // --- ²¿ÊğÆ÷×¨ÓÃµÄ¡°ÓĞĞ§ÔØºÉ¡±ĞÅÏ¢ ---
+    // --- éƒ¨ç½²å™¨ä¸“ç”¨çš„â€œæœ‰æ•ˆè½½è·â€ä¿¡æ¯ ---
     private GameObject areaPrefabPayload;
     private int areaDamagePayload;
     private float areaDurationPayload;
     private float areaIntervalPayload;
     private GameObject creatorAttacker;
 
-    // --- vvv ĞÂÔö£º»ØĞıïÚÊôĞÔ vvv ---
+    // --- vvv æ–°å¢ï¼šå›æ—‹é•–å±æ€§ vvv ---
     private enum BoomerangState { Outbound, Inbound }
     private BoomerangState boomerangState;
-    private WeaponPart launcher; // ×¥È¡Ê±ĞèÒªÍ¨ÖªµÄ·¢ÉäÆ÷
-    private Vector3 spawnPoint; // ·¢Éäµã
-    private Transform playerTransform; // Íæ¼ÒÒıÓÃ£¬ÓÃÓÚ·µ»Ø
-    private float maxDistance; // ×î´ó·ÉĞĞ¾àÀë    
+    public WeaponPart sourceWeapon; // æŠ“å–æ—¶éœ€è¦é€šçŸ¥çš„å‘å°„å™¨
+    private Vector3 spawnPoint; // å‘å°„ç‚¹
+    private Transform playerTransform; // ç©å®¶å¼•ç”¨ï¼Œç”¨äºè¿”å›
+    private float maxDistance; // æœ€å¤§é£è¡Œè·ç¦»    
     private float catchRadius;
     private float rotationSpeed;
-    private float returnOvershootDistance; // <-- ĞÂÔö
-    private Vector3 returnTargetPoint;     // <-- ĞÂÔö: ×îÖÕ·µ»ØµÄÄ¿±êµã
-    private Vector3 returnDirection;       // <-- ĞÂÔö: ¹Ì¶¨µÄ·µ»Ø·½Ïò
+    private float returnOvershootDistance; // <-- æ–°å¢
+    private Vector3 returnTargetPoint;     // <-- æ–°å¢: æœ€ç»ˆè¿”å›çš„ç›®æ ‡ç‚¹
+    private Vector3 returnDirection;       // <-- æ–°å¢: å›ºå®šçš„è¿”å›æ–¹å‘
     private Vector3 currentReturnDirection;
 
-    private bool hasBeenCaught = false; // ÊÇ·ñÒÑ±»×¥È¡
+    private bool hasBeenCaught = false; // æ˜¯å¦å·²è¢«æŠ“å–
 
     private Rigidbody rb;
-    // --- ^^^ ĞÂÔö½áÊø ^^^ ---
+    // --- ^^^ æ–°å¢ç»“æŸ ^^^ ---
 
 
-    // --- ÉËº¦ÀäÈ´×Öµä ---
+    // --- ä¼¤å®³å†·å´å­—å…¸ ---
     private Dictionary<Health, float> hitCooldowns = new Dictionary<Health, float>();
     private float hitCooldown = 0.5f;
 
@@ -100,7 +104,7 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
-            // Èç¹û Awake Ê±ÕÒ²»µ½£¬³¢ÊÔÔÚ×ÓÎïÌåÕÒ (×÷Îªºó±¸)
+            // å¦‚æœ Awake æ—¶æ‰¾ä¸åˆ°ï¼Œå°è¯•åœ¨å­ç‰©ä½“æ‰¾ (ä½œä¸ºåå¤‡)
             rb = GetComponentInChildren<Rigidbody>();
             if (rb != null)
             {
@@ -108,26 +112,26 @@ public class Projectile : MonoBehaviour
             }
         }
 
-        // ×îÖÕ¼ì²é
+        // æœ€ç»ˆæ£€æŸ¥
         if (rb == null)
         {
             Debug.LogError("Projectile CRITICAL: Could not find Rigidbody component!", this);
         }
         else
         {
-            // »ù´¡ÉèÖÃ
+            // åŸºç¡€è®¾ç½®
             rb.useGravity = false;
         }
     }
     public void InitializeAsReflectable(Vector3 dir, float spd, int dmg, float life, GameObject vfx)
     {
-        this.mode = ProjectileMode.Straight; // ¼ÙÉè¼¤¹âÊÇÖ±Ïß
-        this.attackType = AttackType.Reflectable; // ¡¾¹Ø¼ü¡¿ÉèÖÃÀàĞÍ
-        this.isEnemyProjectile = true; // ¿É·´µ¯µÄ×Óµ¯À´×ÔµĞÈË
+        this.mode = ProjectileMode.Straight; // å‡è®¾æ¿€å…‰æ˜¯ç›´çº¿
+        this.attackType = AttackType.Reflectable; // ã€å…³é”®ã€‘è®¾ç½®ç±»å‹
+        this.isEnemyProjectile = true; // å¯åå¼¹çš„å­å¼¹æ¥è‡ªæ•Œäºº
 
         this.direction = dir;
         this.speed = spd;
-        this.directDamage = dmg;
+        this.damage = dmg;
         this.lifetime = life;
         this.impactEffectPrefab = vfx;
 
@@ -137,22 +141,22 @@ public class Projectile : MonoBehaviour
     public void MarkAsPlayerProjectile()
     {
         this.isEnemyProjectile = false;
-        this.tag = "PlayerProjectile"; // £¨¿ÉÑ¡£©¸Ä±ä±êÇ©ÒÔ±ãµ÷ÊÔ
-        // ¸üĞÂ¿ÉÉËº¦²ã£¬ÏÖÔÚËü¿ÉÒÔÉËº¦µĞÈËÁË
+        this.tag = "PlayerProjectile"; // ï¼ˆå¯é€‰ï¼‰æ”¹å˜æ ‡ç­¾ä»¥ä¾¿è°ƒè¯•
+        // æ›´æ–°å¯ä¼¤å®³å±‚ï¼Œç°åœ¨å®ƒå¯ä»¥ä¼¤å®³æ•Œäººäº†
         this.damageableLayers = LayerMask.GetMask("Enemies");
-        gameObject.layer = LayerMask.NameToLayer("PlayerProjectile");
+        gameObject.layer = LayerMask.NameToLayer("PlayerProjectiles");
         this.attackType = AttackType.Standard;
     }
 
     public void SetNewDirection(Vector3 newDirection)
     {
         this.direction = newDirection.normalized;
-        // ÈÃ×Óµ¯³¯ÏòĞÂ·½Ïò
+        // è®©å­å¼¹æœå‘æ–°æ–¹å‘
         transform.rotation = Quaternion.LookRotation(this.direction);
     }
 
     public void InitializeAsHoming(Transform target, float spd, int dmg, bool isEnemyBullet, float turnSpeed, float life,
-                               GameObject shieldVfx, GameObject defaultVfx) // <-- Í¬Ñù¸üĞÂ×·×Ùµ¯
+                               GameObject shieldVfx, GameObject defaultVfx) // <-- åŒæ ·æ›´æ–°è¿½è¸ªå¼¹
     {
         if (rb == null)
         {
@@ -164,7 +168,7 @@ public class Projectile : MonoBehaviour
         this.isParabolic = false;
         this.homingTarget = target;
         this.speed = spd;
-        this.directDamage = dmg;
+        this.damage = dmg;
         this.homingTurnSpeed = turnSpeed;
         this.isEnemyProjectile = isEnemyBullet;
         this.lifetime = life;
@@ -172,14 +176,14 @@ public class Projectile : MonoBehaviour
         this.defaultImpactEffectPrefab = defaultVfx;
         if (rb != null)
         {
-            rb.isKinematic = false; // È·±£·ÇÔË¶¯Ñ§
-                                    // ¿ÉÒÔÑ¡ÔñĞÔµØÉèÖÃ Constraints£¬Èç¹ûÖ±Ïßµ¯²»ĞèÒªĞı×ªµÄ»°
+            rb.isKinematic = false; // ç¡®ä¿éè¿åŠ¨å­¦
+                                    // å¯ä»¥é€‰æ‹©æ€§åœ°è®¾ç½® Constraintsï¼Œå¦‚æœç›´çº¿å¼¹ä¸éœ€è¦æ—‹è½¬çš„è¯
             rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         }
         Destroy(gameObject, life);
     }
     /// <summary>
-    /// ¡¾ĞÂ·½·¨¡¿£º³õÊ¼»¯Îª´ÓÌì¶ø½µµÄ¡°²¿ÊğÆ÷¡±
+    /// ã€æ–°æ–¹æ³•ã€‘ï¼šåˆå§‹åŒ–ä¸ºä»å¤©è€Œé™çš„â€œéƒ¨ç½²å™¨â€
     /// </summary>
     public void InitializeAsAirdropDeployer(Vector3 startPosition, Vector3 flightDirection, float fallSpeed, GameObject areaPrefab, int dmg, float dur, float interval, GameObject attacker)
     {
@@ -193,24 +197,27 @@ public class Projectile : MonoBehaviour
         this.areaDurationPayload = dur;
         this.areaIntervalPayload = interval;
         this.creatorAttacker = attacker;
-        this.groundAndWallLayers = LayerMask.GetMask("Enemies", "Ground"); // ĞŞÕı£º²¿ÊğÆ÷Ò²Ó¦¸ÃÄÜ´òµĞÈË
-        this.damageableLayers = LayerMask.GetMask("Enemies"); // ²¿ÊğÇøÓòÉËº¦µĞÈË
+        this.groundAndWallLayers = LayerMask.GetMask("Enemies", "Ground"); // ä¿®æ­£ï¼šéƒ¨ç½²å™¨ä¹Ÿåº”è¯¥èƒ½æ‰“æ•Œäºº
+        this.damageableLayers = LayerMask.GetMask("Enemies"); // éƒ¨ç½²åŒºåŸŸä¼¤å®³æ•Œäºº
         Destroy(gameObject, 10f);
     }
     /// <summary>
-    /// ÎªÖ±Ïßµ¯µÀÉè¼ÆµÄ³õÊ¼»¯·½·¨
+    /// ä¸ºç›´çº¿å¼¹é“è®¾è®¡çš„åˆå§‹åŒ–æ–¹æ³•
     /// </summary>
     public void InitializeAsStraight(Vector3 dir, float spd, int directDmg, bool isEnemyBullet,
                                           int pierce, float life, GameObject shieldVfx, GameObject defaultVfx,
                                           int dotDmg, float dotDur, float dotTick, float slowPct, float slowDur,
                                           AttackType type = AttackType.Standard,
-                                          WeaponPart launcher = null)
+                                          WeaponPart launcher = null,
+                                          int aoeDmg = 0,
+                                          float aoeRad = 0f,
+                                          GameObject explodeVfx = null)
     {
-        if (rb == null && spd > 0) // Ö»ÔÚĞèÒªÒÆ¶¯Ê±±¨´í
+
+        Debug.Log($"[Projectile Debug] ç›´çº¿åˆå§‹åŒ–ã€‚ä¼ å…¥çš„ launcher æ˜¯: {(launcher != null ? launcher.name : "NULL (ç©º)")}");
+        if (rb == null && spd > 0)
         {
-            Debug.LogError("[Projectile Init Straight] FAILED: Rigidbody reference is null (check Awake).", this);
-            // Destroy(gameObject); // ¿ÉÒÔÑ¡ÔñÏú»Ù»òÈÃËüÍ£ÔÚÔ­µØ
-            // return;
+            Debug.LogError("[Projectile Init Straight] FAILED: Rigidbody reference is null.", this);
         }
 
         this.mode = ProjectileMode.Straight;
@@ -220,7 +227,7 @@ public class Projectile : MonoBehaviour
         this.defaultImpactEffectPrefab = defaultVfx;
         this.direction = dir;
         this.speed = spd;
-        this.directDamage = directDmg;
+        this.damage = directDmg;
         this.isEnemyProjectile = isEnemyBullet;
         this.pierceCount = pierce > 0 ? pierce : 1;
         this.lifetime = life;
@@ -229,38 +236,78 @@ public class Projectile : MonoBehaviour
         this.dotTickInterval = dotTick;
         this.slowPercentage = slowPct;
         this.slowDuration = slowDur;
-        this.launcher = launcher; // <--- vvv [ĞÂÔö] vvv
-        this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies"); // ×Ô¶¯ÉèÖÃ
-        this.groundAndWallLayers = LayerMask.GetMask("Ground"); // Ä¬ÈÏÖ»ÓëµØÃæÅö×²Ïú»Ù
+        this.sourceWeapon = launcher;
+        this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies");
+        this.groundAndWallLayers = LayerMask.GetMask("Ground");
+
+        this.aoeDamage = aoeDmg;
+        this.explosionRadius = aoeRad;
+        this.explosionEffectPrefab = explodeVfx;
+        // ==========================================
+        // ã€æ–°å¢é€»è¾‘ã€‘è®¡ç®—æš´å‡»ï¼ˆå…¨å±€ + å±€éƒ¨ï¼‰
+        // ==========================================
+        float totalCritRate = 0f;
+        float totalCritDmgMult = 1.5f; // é»˜è®¤1.5å€
+
+        // 1. è·å–å…¨å±€ç©å®¶å±æ€§
+        if (PlayerStats.Instance != null)
+        {
+            totalCritRate += PlayerStats.Instance.critRate;
+            totalCritDmgMult = PlayerStats.Instance.critDamage;
+        }
+
+        // 2. è·å–æ­¦å™¨å±€éƒ¨å±æ€§ (localCritRateBonus)
+        if (this.sourceWeapon != null) // æ›¿æ¢ launcher
+        {
+            totalCritRate += this.sourceWeapon.localCritRateBonus;
+            totalCritDmgMult += this.sourceWeapon.localCritDamageBonus;
+        }
+
+        // 3. åˆ¤å®šæš´å‡»
+        // å¦‚æœéšæœºæ•°å°äºæ€»æš´å‡»ç‡ï¼Œåˆ™åˆ¤å®šä¸ºæš´å‡»
+        if (Random.value <= totalCritRate)
+        {
+            this.isCritical = true;
+            // ç›´æ¥åœ¨è¿™é‡ŒæŠŠä¼¤å®³ä¹˜ä¸Šå»
+            this.damage = Mathf.RoundToInt(this.damage * totalCritDmgMult);
+
+            // å¯ä»¥æŠŠå­å¼¹å˜å¤§ä¸€ç‚¹è¡¨ç¤ºæš´å‡»
+            transform.localScale *= 1.2f;
+        }
+        else
+        {
+            this.isCritical = false;
+        }
+        // ==========================================
+
         if (rb != null)
         {
-            rb.isKinematic = false; // È·±£·ÇÔË¶¯Ñ§
-                                    // ¿ÉÒÔÑ¡ÔñĞÔµØÉèÖÃ Constraints£¬Èç¹ûÖ±Ïßµ¯²»ĞèÒªĞı×ªµÄ»°
+            rb.isKinematic = false;
             rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         }
         Destroy(gameObject, this.lifetime);
     }
 
     /// <summary>
-    /// ³õÊ¼»¯Îª¡¾Å×ÎïÏß¡¿µ¯µÀ¡£ÓÉ WeaponPart µ÷ÓÃ¡£
+    /// åˆå§‹åŒ–ä¸ºã€æŠ›ç‰©çº¿ã€‘å¼¹é“ã€‚ç”± WeaponPart è°ƒç”¨ã€‚
     /// </summary>
     public void InitializeAsParabolic(Vector3 initialVelocity, int projectileDirectDamage, int projectileAoeDamage,
                                        float projectileLifetime, GameObject explosionVfxPrefab, float aoeRadius,
                                        LayerMask layersToDamage, LayerMask layersToExplodeOn,
                                        int dotDmg, float dotDur, float dotTick,
                                        float newStunChance, float newStunDuration,
-                                       WeaponPart weaponPart) // <--- vvv [ĞÂÔö] vvv
+                                       WeaponPart weaponPart) // <--- vvv [æ–°å¢] vvv
     {
         this.mode = ProjectileMode.Parabolic;
         this.isParabolic = true;
         this.currentVelocity = initialVelocity;
-        Rigidbody rb = GetComponent<Rigidbody>(); // Å×ÎïÏßĞèÒª Rigidbody
+        Rigidbody rb = GetComponent<Rigidbody>(); // æŠ›ç‰©çº¿éœ€è¦ Rigidbody
         if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
-        rb.isKinematic = false; // ±ØĞëÊÇ·ÇÔË¶¯Ñ§²ÅÄÜÊÜÁ¦
-        rb.useGravity = false; // ÎÒÃÇÊÖ¶¯Ä£ÄâÖØÁ¦
+        rb.isKinematic = false; // å¿…é¡»æ˜¯éè¿åŠ¨å­¦æ‰èƒ½å—åŠ›
+        rb.useGravity = false; // æˆ‘ä»¬æ‰‹åŠ¨æ¨¡æ‹Ÿé‡åŠ›
         rb.velocity = initialVelocity;
 
-        this.directDamage = projectileDirectDamage;
+        this.damage = projectileDirectDamage;
         this.aoeDamage = projectileAoeDamage;
         this.lifetime = projectileLifetime;
         this.explosionEffectPrefab = explosionVfxPrefab;
@@ -274,8 +321,8 @@ public class Projectile : MonoBehaviour
         this.stunChance = newStunChance;
         this.stunDuration = newStunDuration;
 
-        this.launcher = weaponPart; // <--- vvv [ĞÂÔö] vvv
-        Collider col = GetComponent<Collider>(); // Å×ÎïÏßĞèÒª·Ç´¥·¢Æ÷
+        this.sourceWeapon = weaponPart; // <--- vvv [æ–°å¢] vvv
+        Collider col = GetComponent<Collider>(); // æŠ›ç‰©çº¿éœ€è¦éè§¦å‘å™¨
         if (col != null) col.isTrigger = false;
 
         Destroy(gameObject, this.lifetime);
@@ -283,25 +330,25 @@ public class Projectile : MonoBehaviour
 
     public void InitializeAsChaining(Vector3 dir, float spd, int dmg, int chains, float range, float life, GameObject vfx)
     {
-        this.mode = ProjectileMode.Straight; // Á¬Ëø»ùÓÚÖ±Ïß
+        this.mode = ProjectileMode.Straight; // è¿é”åŸºäºç›´çº¿
         this.isParabolic = false;
         this.direction = dir;
         this.speed = spd;
-        this.directDamage = dmg;
+        this.damage = dmg;
         this.remainingChains = chains;
         this._chainRange = range;
         this.lifetime = life;
         this.impactEffectPrefab = vfx;
         this.pierceCount = 1;
         this.hitEnemies.Clear();
-        this.damageableLayers = LayerMask.GetMask("Enemies"); // Á¬Ëø´òµĞÈË
+        this.damageableLayers = LayerMask.GetMask("Enemies"); // è¿é”æ‰“æ•Œäºº
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
         Destroy(gameObject, this.lifetime);
     }
 
     public void InitializeAsBoomerang(Vector3 dir, float spd, int dmg, float maxDist, float catchRad, float life,
                                       GameObject shieldVFX, GameObject defaultVFX, WeaponPart launcherPart,
-                                      float rotSpeed, float overshootDist) // <-- ¼Ó»Ø overshootDist
+                                      float rotSpeed, float overshootDist) // <-- åŠ å› overshootDist
     {
 
         if (rb == null)
@@ -310,7 +357,7 @@ public class Projectile : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        // Ìí¼ÓÏêÏ¸ÈÕÖ¾
+        // æ·»åŠ è¯¦ç»†æ—¥å¿—
         Debug.Log($"[Projectile Init Boomerang] START - Dir:{dir}, Spd:{spd}, Dmg:{dmg}, MaxDist:{maxDist}, CatchRad:{catchRad}, Life:{life}, RotSpd:{rotSpeed}");
 
         this.mode = ProjectileMode.Boomerang;
@@ -318,18 +365,18 @@ public class Projectile : MonoBehaviour
         this.attackType = AttackType.Standard;
         this.shieldImpactEffectPrefab = shieldVFX;
         this.defaultImpactEffectPrefab = defaultVFX;
-        this.direction = dir.normalized; // ³õÊ¼·É³ö·½Ïò
-        this.speed = spd; // ±ØĞë´óÓÚ 0
-        this.directDamage = dmg;
+        this.direction = dir.normalized; // åˆå§‹é£å‡ºæ–¹å‘
+        this.speed = spd; // å¿…é¡»å¤§äº 0
+        this.damage = dmg;
         this.pierceCount = 999;
-        this.lifetime = life; // ×ÜÉúÃüÖÜÆÚ£¬±ØĞë´óÓÚ 0
+        this.lifetime = life; // æ€»ç”Ÿå‘½å‘¨æœŸï¼Œå¿…é¡»å¤§äº 0
         this.maxDistance = maxDist;
         this.catchRadius = catchRad;
         this.rotationSpeed = rotSpeed;
-        this.returnOvershootDistance = overshootDist; // <-- ´æ´¢¹ı³å¾àÀë
-        this.launcher = launcherPart;
-        // ¼ÇÂ¼·¢Éäµã
-        this.spawnPoint = transform.position; // Ê¹ÓÃ projectile ×Ô¼ºµÄ³õÊ¼Î»ÖÃ
+        this.returnOvershootDistance = overshootDist; // <-- å­˜å‚¨è¿‡å†²è·ç¦»
+        this.sourceWeapon = launcherPart;
+        // è®°å½•å‘å°„ç‚¹
+        this.spawnPoint = transform.position; // ä½¿ç”¨ projectile è‡ªå·±çš„åˆå§‹ä½ç½®
                                               // 
         this.boomerangState = BoomerangState.Outbound;
         this.hasBeenCaught = false;
@@ -337,12 +384,12 @@ public class Projectile : MonoBehaviour
         this.damageableLayers = LayerMask.GetMask("Enemies");
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
 
-        rb.isKinematic = false; // È·±£·ÇÔË¶¯Ñ§
+        rb.isKinematic = false; // ç¡®ä¿éè¿åŠ¨å­¦
         rb.velocity = Vector3.zero;
         rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
 
-        // ½áÊøÈÕÖ¾
+        // ç»“æŸæ—¥å¿—
         Debug.Log($"[Projectile Init Boomerang] FINISHED - Initial Velocity set in FixedUpdate. Lifetime={this.lifetime}");
     }
 
@@ -352,18 +399,18 @@ public class Projectile : MonoBehaviour
         {
             boomerangState = BoomerangState.Inbound;
 
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËã·µ»ØÄ¿±êµã (³öÉúµãºó·½) ---
-            // Ê¹ÓÃ³õÊ¼·É³ö·½ÏòµÄ·´·½Ïò (-direction) À´¼ÆËã¹ı³åµã
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—è¿”å›ç›®æ ‡ç‚¹ (å‡ºç”Ÿç‚¹åæ–¹) ---
+            // ä½¿ç”¨åˆå§‹é£å‡ºæ–¹å‘çš„åæ–¹å‘ (-direction) æ¥è®¡ç®—è¿‡å†²ç‚¹
             returnTargetPoint = spawnPoint - direction * returnOvershootDistance;
-            // --- ¼ÆËã½áÊø ---
+            // --- è®¡ç®—ç»“æŸ ---
 
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËã¡¾¹Ì¶¨¡¿µÄ·µ»Ø·½Ïò (´Óµ±Ç°µãÖ¸ÏòÄ¿±êµã) ---
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—ã€å›ºå®šã€‘çš„è¿”å›æ–¹å‘ (ä»å½“å‰ç‚¹æŒ‡å‘ç›®æ ‡ç‚¹) ---
             currentReturnDirection = (returnTargetPoint - transform.position).normalized;
-            // --- ¼ÆËã½áÊø ---
+            // --- è®¡ç®—ç»“æŸ ---
 
             Debug.Log($"[Projectile Boomerang] State changed to Inbound. TargetPoint={returnTargetPoint}, ReturnDir={currentReturnDirection}");
 
-            // Çå³ıµ±Ç°ËÙ¶È£¬ÒÔ±ãÁ¢¼´Ó¦ÓÃ·µ»ØËÙ¶È
+            // æ¸…é™¤å½“å‰é€Ÿåº¦ï¼Œä»¥ä¾¿ç«‹å³åº”ç”¨è¿”å›é€Ÿåº¦
             if (rb != null) rb.velocity = Vector3.zero;
         }
     }
@@ -371,7 +418,7 @@ public class Projectile : MonoBehaviour
     {
         if (isParabolic)
         {
-            Gizmos.color = new Color(1, 0.92f, 0.016f, 0.5f); // »ÆÉ«´ú±í±¬Õ¨·¶Î§
+            Gizmos.color = new Color(1, 0.92f, 0.016f, 0.5f); // é»„è‰²ä»£è¡¨çˆ†ç‚¸èŒƒå›´
             Gizmos.DrawWireSphere(transform.position, this.explosionRadius);
         }
     }
@@ -379,13 +426,13 @@ public class Projectile : MonoBehaviour
     {
         if (hasExploded) return;
 
-        // ×Ô×ªÂß¼­
+        // è‡ªè½¬é€»è¾‘
         if (mode == ProjectileMode.Boomerang)
         {
             transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
         }
 
-        // ÀäÈ´Âß¼­
+        // å†·å´é€»è¾‘
         if (hitCooldowns.Count > 0)
         {
             List<Health> keys = new List<Health>(hitCooldowns.Keys);
@@ -397,22 +444,23 @@ public class Projectile : MonoBehaviour
             }
         }
 
-        // ÉúÃüÖÜÆÚ
+        // ç”Ÿå‘½å‘¨æœŸ
         lifetime -= Time.deltaTime;
         if (lifetime <= 0)
         {
-            if (mode == ProjectileMode.Boomerang && !hasBeenCaught && launcher != null)
+            // æ›¿æ¢ launcher
+            if (mode == ProjectileMode.Boomerang && !hasBeenCaught && sourceWeapon != null)
             {
-                launcher.StartCooldownIfNotCaught();
+                sourceWeapon.StartCooldownIfNotCaught();
             }
             Destroy(gameObject);
         }
 
         // =========================================================
-        // ¡¾×îÖÕĞŞÕı¡¿ÔªËØÁª¶¯Âß¼­
+        // ã€æœ€ç»ˆä¿®æ­£ã€‘å…ƒç´ è”åŠ¨é€»è¾‘
         // =========================================================
 
-        WeaponStatBlock stats = (launcher != null) ? launcher.StatBlock : null;
+        WeaponStatBlock stats = (sourceWeapon != null) ? sourceWeapon.StatBlock : null;
 
         if (stats != null && stats.synergyFireTrailPrefab != null)
         {
@@ -420,36 +468,42 @@ public class Projectile : MonoBehaviour
 
             if (trailSpawnTimer >= stats.fireTrailSpawnRate)
             {
-                // ´ÓÌì¶ø½µµÄÉäÏß (È·±£ÄÜ´©Í¸»ğº£)
+                // ä»å¤©è€Œé™çš„å°„çº¿ (ç¡®ä¿èƒ½ç©¿é€ç«æµ·)
                 Vector3 rayOrigin = transform.position + Vector3.up * 5f;
+                // æ³¨æ„ï¼šå¿…é¡»åŒ…å« Triggerï¼Œå› ä¸ºç«æµ·é€šå¸¸æ˜¯ Trigger
                 RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 15f, ~0, QueryTriggerInteraction.Collide);
 
                 bool foundFire = false;
                 Vector3 groundPosition = Vector3.zero;
                 bool foundGround = false;
 
-                // --- µÚÒ»²½£º±éÀúËùÓĞ´òÖĞµÄ¶«Î÷£¬ÊÕ¼¯ĞÅÏ¢ ---
+                // --- ç¬¬ä¸€æ­¥ï¼šéå†æ‰€æœ‰æ‰“ä¸­çš„ä¸œè¥¿ï¼Œæ”¶é›†ä¿¡æ¯ ---
                 foreach (RaycastHit hit in hits)
                 {
+                    // ã€æ ¸å¿ƒä¿®å¤ã€‘åœ¨è¿™é‡Œæ£€æµ‹ç«æµ·ï¼
+                    if (hit.collider.CompareTag("BurningGround"))
+                    {
+                        foundFire = true;
+                    }
+
+                    // æ£€æµ‹åœ°é¢ (æ’é™¤ Triggerã€æ•Œäººã€ç©å®¶)
                     if (!hit.collider.isTrigger)
                     {
-                        // --- ¡¾ºËĞÄĞŞ¸´¡¿ÅÅ³ıµĞÈË£¡ ---
-                        // Èç¹û´òÖĞµÄÊÇµĞÈË£¬»òÕßÊÇ Player£¬¾ø¶Ô²»ÄÜµ±×öµØÃæ´¦Àí
+                        // æ’é™¤æ•Œäººå’Œç©å®¶
                         if (hit.collider.CompareTag("Enemy") || hit.collider.CompareTag("Player"))
                         {
                             continue;
                         }
 
-                        // Ë«ÖØ±£ÏÕ£º¼ì²é Layer ÊÇ·ñÎª Enemies (·ÀÖ¹ Tag Ã»Éè¶Ô)
+                        // åŒé‡ä¿é™©ï¼šæ£€æŸ¥ Layer
                         int enemyLayer = LayerMask.NameToLayer("Enemies");
                         if (hit.collider.gameObject.layer == enemyLayer)
                         {
                             continue;
                         }
-                        // ---------------------------
 
-                        // Ê£ÏÂµÄ²ÅÈÏÎªÊÇºÏ·¨µÄµØÃæ (Ground / Default / Terrain)
-                        // ÕÒ×î¸ßµã (·ÀÖ¹´òÖĞµØµ×ÏÂµÄ¶«Î÷)
+                        // å‰©ä¸‹çš„æ‰è®¤ä¸ºæ˜¯åˆæ³•çš„åœ°é¢
+                        // æ‰¾æœ€é«˜ç‚¹ (é˜²æ­¢æ‰“ä¸­åœ°åº•ä¸‹çš„ä¸œè¥¿)
                         if (!foundGround || hit.point.y > groundPosition.y)
                         {
                             groundPosition = hit.point;
@@ -458,24 +512,30 @@ public class Projectile : MonoBehaviour
                     }
                 }
 
-                // --- µÚ¶ş²½£ºÖ»ÓĞµ±¡°ÓĞ»ğ¡±ÇÒ¡°ÓĞµØÃæ¡±Ê±²ÅÉú³É ---
+                // --- ç¬¬äºŒæ­¥ï¼šåªæœ‰å½“â€œæœ‰ç«â€ä¸”â€œæœ‰åœ°é¢â€æ—¶æ‰ç”Ÿæˆ ---
                 if (foundFire && foundGround)
                 {
                     trailSpawnTimer = 0f;
                     Vector3 spawnPos = groundPosition + Vector3.up * 0.05f;
+                    Vector3 flatForward = transform.forward;
 
-                    GameObject trailObj = Instantiate(stats.synergyFireTrailPrefab, spawnPos, Quaternion.identity);
-                    // Debug.Log($"<color=green>[Synergy] ·ç»ğÁª¶¯£¡À©É¢»ğº£ (Y={spawnPos.y})</color>");
+                    flatForward.y = 0;
+
+                    Quaternion spawnRot = Quaternion.identity;
+                    if (flatForward.sqrMagnitude > 0.01f)
+                    {
+                        spawnRot = Quaternion.LookRotation(flatForward.normalized);
+                    }
+
+                    GameObject trailObj = Instantiate(stats.synergyFireTrailPrefab, spawnPos, spawnRot);
 
                     GroundHazard newTrailScript = trailObj.GetComponent<GroundHazard>();
                     if (newTrailScript != null)
                     {
-                        // --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼Ì³ĞÉËº¦Âß¼­ ---
+                        // --- ç»§æ‰¿ä¼¤å®³é€»è¾‘ ---
                         int finalTrailDamage = 0;
 
-                        // 1. ³¢ÊÔ´Ó±»´òÖĞµÄ»ğº£Àï¶ÁÈ¡Ô­±¾µÄÉËº¦
-                        // ÎÒÃÇÖ®Ç°±éÀú hits Ê±£¬¿Ï¶¨´òÖĞ¹ı BurningGround
-                        // ÎÒÃÇÖØĞÂÕÒÒ»ÏÂÄÇ¸ö»ğº£×é¼ş
+                        // é‡æ–°éå†å¯»æ‰¾é‚£ä¸ªç«æµ·ç»„ä»¶æ¥è¯»å–ä¼¤å®³
                         foreach (var hit in hits)
                         {
                             if (hit.collider.CompareTag("BurningGround"))
@@ -483,28 +543,26 @@ public class Projectile : MonoBehaviour
                                 GroundHazard originalFire = hit.collider.GetComponentInParent<GroundHazard>();
                                 if (originalFire != null)
                                 {
-                                    // ÍêÃÀ¼Ì³Ğ£ºÔ­À´µÄ»ğÊÇ¶àÉÙÉË£¬À©É¢³öÈ¥µÄ»ğ¾ÍÊÇ¶àÉÙÉË
+                                    // å®Œç¾ç»§æ‰¿ï¼šåŸæ¥çš„ç«æ˜¯å¤šå°‘ä¼¤ï¼Œæ‰©æ•£å‡ºå»çš„ç«å°±æ˜¯å¤šå°‘ä¼¤
                                     finalTrailDamage = originalFire.DamagePerTick;
                                     break;
                                 }
                             }
                         }
 
-                        // 2. ±£µ×Âß¼­£ºÈç¹ûÍòÒ»Ã»¶Áµ½£¨±ÈÈç½Å±¾¶ªÊ§£©£¬²ÅÓÃ·çÈĞÉËº¦µÄ 30%
+                        // ä¿åº•é€»è¾‘
                         if (finalTrailDamage == 0)
                         {
-                            finalTrailDamage = Mathf.RoundToInt(directDamage * 0.3f);
+                            finalTrailDamage = Mathf.RoundToInt(damage * 0.3f);
                             if (finalTrailDamage < 1) finalTrailDamage = 1;
                         }
 
-                        // 3. ³õÊ¼»¯ĞÂ»ğ¾¶
-                        // ³ÖĞøÊ±¼äÒÀÈ»ÓÉ·çÈĞ¾ö¶¨£¨±ÈÈç·ç´µ¹ıÈ¥µÄ»ğÁô´æ 3Ãë£©£¬»òÕßÄã¿ÉÒÔ¸Ä³É¼Ì³Ğ originalFire.duration
-                        string weaponName = stats.weaponName; // ÕâÀïÓÃ·çÈĞµÄÃû×Ö£¬»òÕßÊÇ "À©É¢ÁÒÑæ"
-                        GameObject ownerObj = (launcher != null) ? launcher.gameObject : this.gameObject;
+                        string weaponName = stats.weaponName;
+                        GameObject ownerObj = (sourceWeapon != null) ? sourceWeapon.gameObject : this.gameObject;
 
                         newTrailScript.Initialize(finalTrailDamage, 3f, weaponName, ownerObj);
                     }
-                }                
+                }
             }
         }
     }
@@ -540,41 +598,41 @@ public class Projectile : MonoBehaviour
             case ProjectileMode.Boomerang:
                 if (boomerangState == BoomerangState.Outbound)
                 {
-                    rb.velocity = direction * speed; // ±£³Ö·É³öËÙ¶È
+                    rb.velocity = direction * speed; // ä¿æŒé£å‡ºé€Ÿåº¦
                     float distanceTraveled = Vector3.Distance(spawnPoint, rb.position);
                     if (distanceTraveled >= maxDistance)
                     {
-                        SetReturnState(); // µ½´ï¾àÀë£¬ÇĞ»»×´Ì¬
+                        SetReturnState(); // åˆ°è¾¾è·ç¦»ï¼Œåˆ‡æ¢çŠ¶æ€
                     }
                 }
                 else if (boomerangState == BoomerangState.Inbound)
                 {
-                    // --- ¡¾ºËĞÄĞŞ¸Ä¡¿Ê¹ÓÃ¹Ì¶¨µÄ·µ»Ø·½Ïò ---
+                    // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä½¿ç”¨å›ºå®šçš„è¿”å›æ–¹å‘ ---
                     rb.velocity = currentReturnDirection * speed;
-                    // --- ¡¾ºËĞÄĞŞ¸Ä½áÊø¡¿ ---
+                    // --- ã€æ ¸å¿ƒä¿®æ”¹ç»“æŸã€‘ ---
 
-                    // ¡¾ÖØÒª¡¿ÒÆ³ı FixedUpdate ÖĞµÄÏú»ÙÂß¼­£¬ÍêÈ«½»¸ø Update ºÍ OnTriggerEnter
-                    // if (!hasBeenCaught) { /* ... ÒÆ³ı¾àÀëÅĞ¶ÏºÍ Destroy ... */ }
+                    // ã€é‡è¦ã€‘ç§»é™¤ FixedUpdate ä¸­çš„é”€æ¯é€»è¾‘ï¼Œå®Œå…¨äº¤ç»™ Update å’Œ OnTriggerEnter
+                    // if (!hasBeenCaught) { /* ... ç§»é™¤è·ç¦»åˆ¤æ–­å’Œ Destroy ... */ }
                 }
                 break;
-                // --- ^^^ ºËĞÄĞŞ¸Ä½áÊø ^^^ ---
+                // --- ^^^ æ ¸å¿ƒä¿®æ”¹ç»“æŸ ^^^ ---
         }
     }
     void OnCollisionEnter(Collision collision)
     {
         if (hasExploded) return;
 
-        // ½öÔÚÅ×ÎïÏßÄ£Ê½ÏÂ´¦ÀíÎïÀíÅö×²
+        // ä»…åœ¨æŠ›ç‰©çº¿æ¨¡å¼ä¸‹å¤„ç†ç‰©ç†ç¢°æ’
         if (mode == ProjectileMode.Parabolic)
         {
-            // ¼ì²éÊÇ·ñÅö×²µ½ÁËÎÒÃÇ¹ØĞÄµÄ²ã (µØÃæ/Ç½±Ú »ò ¿ÉÉËº¦²ã)
+            // æ£€æŸ¥æ˜¯å¦ç¢°æ’åˆ°äº†æˆ‘ä»¬å…³å¿ƒçš„å±‚ (åœ°é¢/å¢™å£ æˆ– å¯ä¼¤å®³å±‚)
             int hitLayer = collision.gameObject.layer;
 
-            // Ê¹ÓÃÄãÔÚ InitializeAsParabolic ÖĞÉèÖÃµÄ²ãÑÚÂë
+            // ä½¿ç”¨ä½ åœ¨ InitializeAsParabolic ä¸­è®¾ç½®çš„å±‚æ©ç 
             if (((1 << hitLayer) & groundAndWallLayers) != 0 || ((1 << hitLayer) & damageableLayers) != 0)
             {
-                // ÔÚµÚÒ»¸öÅö×²µã±¬Õ¨£¬²¢´«µİÃüÖĞµÄ collider
-                // Explode ·½·¨»á´¦ÀíÖ±½ÓÉËº¦ºÍ AOE ÉËº¦
+                // åœ¨ç¬¬ä¸€ä¸ªç¢°æ’ç‚¹çˆ†ç‚¸ï¼Œå¹¶ä¼ é€’å‘½ä¸­çš„ collider
+                // Explode æ–¹æ³•ä¼šå¤„ç†ç›´æ¥ä¼¤å®³å’Œ AOE ä¼¤å®³
                 Explode(collision.contacts[0].point, collision.collider);
             }
         }
@@ -585,61 +643,69 @@ public class Projectile : MonoBehaviour
 
         if (mode == ProjectileMode.Parabolic)
         {
-            // ¼ì²éÊÇ·ñÅöµ½ÁË¿ÉÉËº¦²ã (¼´µĞÈË)
+            // æ£€æŸ¥æ˜¯å¦ç¢°åˆ°äº†å¯ä¼¤å®³å±‚ (å³æ•Œäºº)
             if (((1 << other.gameObject.layer) & damageableLayers) != 0)
             {
-                // ÔÚµĞÈËÉíÉÏ±¬Õ¨
+                // åœ¨æ•Œäººèº«ä¸Šçˆ†ç‚¸
                 Explode(other.ClosestPoint(transform.position), other);
             }
-            // ÎŞÂÛÅöµ½Ê²Ã´£¬Å×ÎïÏßÄ£Ê½¶¼²»Ó¦Ö´ĞĞÏÂÃæµÄÆäËûÂß¼­£¨Èç»ØĞıïÚ×¥È¡£©
+            // æ— è®ºç¢°åˆ°ä»€ä¹ˆï¼ŒæŠ›ç‰©çº¿æ¨¡å¼éƒ½ä¸åº”æ‰§è¡Œä¸‹é¢çš„å…¶ä»–é€»è¾‘ï¼ˆå¦‚å›æ—‹é•–æŠ“å–ï¼‰
             return;
         }
 
-        // ×¥È¡Âß¼­
+        // æŠ“å–é€»è¾‘
         if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
         {
             Transform currentPlayerTransform = GameManager.Instance?.playerTransform;
             if (!hasBeenCaught && currentPlayerTransform != null && Vector3.Distance(transform.position, currentPlayerTransform.position) < catchRadius)
             {
                 hasBeenCaught = true;
-                Debug.Log("Boomerang Caught!");
-                if (launcher != null)
+                
+                if (sourceWeapon != null)
                 {
-                    launcher.OnBoomerangCaught(transform.position); // Í¨Öª WeaponPart (Ëü»áÖØĞÂ·¢Éä)
+                    sourceWeapon.OnBoomerangCaught(transform.position); // æ›¿æ¢ launcher
                 }
-                // ¡¾È·ÈÏ¡¿×¥×¡ºóÁ¢¿ÌÏú»Ùµ±Ç°ÊµÀı
+                // ã€ç¡®è®¤ã€‘æŠ“ä½åç«‹åˆ»é”€æ¯å½“å‰å®ä¾‹
                 Destroy(gameObject);
             }
-            return; // Åöµ½Íæ¼Ò²»ÔÙ´¦ÀíÆäËû
-        }
-
-        // ÉËº¦µĞÈË (±£³Ö²»±ä)
+            return; // ç¢°åˆ°ç©å®¶ä¸å†å¤„ç†å…¶ä»–
+        }       
+        // ä¼¤å®³æ•Œäºº (ä¿æŒä¸å˜)
         int targetLayer = isEnemyProjectile ? LayerMask.NameToLayer("Player") : LayerMask.NameToLayer("Enemies");
         if (other.gameObject.layer == targetLayer)
         {
             Health targetHealth = other.GetComponentInParent<Health>();
             if (targetHealth != null) { HandleHit(targetHealth, other); }
         }
-        // ×²Ç½/µØÃæ (±£³Ö²»±ä)
+        // æ’å¢™/åœ°é¢ (ä¿æŒä¸å˜)
         else if (((1 << other.gameObject.layer) & groundAndWallLayers) != 0)
         {
             if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Outbound)
             {
-                SetReturnState(); // ×²Ç½¿ªÊ¼·µ»Ø
+                SetReturnState(); // æ’å¢™å¼€å§‹è¿”å›
             }
             else if (mode != ProjectileMode.Boomerang)
             {
-                HandleImpactEffect(false, other.ClosestPoint(transform.position));
-                Destroy(gameObject);
+                // ã€æ ¸å¿ƒä¿®æ”¹ã€‘å¦‚æœæ˜¯çˆ†è£‚å¼¹ï¼Œæ’å¢™ä¹Ÿè¦çˆ†ç‚¸
+                if (explosionRadius > 0)
+                {
+                    Explode(other.ClosestPoint(transform.position), other);
+                }
+                else
+                {
+                    // æ™®é€šå­å¼¹ï¼šæ’­ä¸ªæ’å‡»ç‰¹æ•ˆç„¶åé”€æ¯
+                    HandleImpactEffect(false, other.ClosestPoint(transform.position));
+                    Destroy(gameObject);
+                }
             }
         }
     }
 
     void HandleEnemyHit(Health enemyHealth)
     {
-        // --- ¡¾ĞŞ¸Ä¡¿Ê¹ÓÃÕıÈ·µÄÇ©Ãû´«µİÃû³Æ£¬¾¡¹ÜÕâ¸ö·½·¨¿ÉÄÜÎ´±»µ÷ÓÃ ---
-        string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "";
-        enemyHealth.TakeDamage(directDamage, enemyHealth.transform.position, this.gameObject, AttackType.Standard, null, null, weaponName);
+        // --- ã€ä¿®æ”¹ã€‘ä½¿ç”¨æ­£ç¡®çš„ç­¾åä¼ é€’åç§°ï¼Œå°½ç®¡è¿™ä¸ªæ–¹æ³•å¯èƒ½æœªè¢«è°ƒç”¨ ---
+        string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "";
+        enemyHealth.TakeDamage(damage, enemyHealth.transform.position, this.gameObject, AttackType.Standard, null, null, weaponName);
 
         hitEnemies.Add(enemyHealth);
         if (impactEffectPrefab != null) Instantiate(impactEffectPrefab, enemyHealth.transform.position, Quaternion.identity);
@@ -660,7 +726,7 @@ public class Projectile : MonoBehaviour
             Transform nextTarget = FindNextTarget(enemyHealth.transform.position);
             if (nextTarget != null)
             {
-                Debug.Log($"Á¬Ëøµ½ĞÂÄ¿±ê: {nextTarget.name}");
+                Debug.Log($"è¿é”åˆ°æ–°ç›®æ ‡: {nextTarget.name}");
                 this.direction = (nextTarget.position - transform.position).normalized;
             }
             else
@@ -682,7 +748,7 @@ public class Projectile : MonoBehaviour
         foreach (var col in nearbyColliders)
         {
             Health potentialTargetHealth = col.GetComponentInParent<Health>();
-            // ¼ì²é£ºÊÇµĞÈË£¬»î×Å£¬²¢ÇÒÃ»±»Õâ¿Å×Óµ¯´ò¹ı
+            // æ£€æŸ¥ï¼šæ˜¯æ•Œäººï¼Œæ´»ç€ï¼Œå¹¶ä¸”æ²¡è¢«è¿™é¢—å­å¼¹æ‰“è¿‡
             if (potentialTargetHealth != null && !potentialTargetHealth.IsDead && !hitEnemies.Contains(potentialTargetHealth))
             {
                 float distSqr = (currentPosition - col.transform.position).sqrMagnitude;
@@ -701,26 +767,29 @@ public class Projectile : MonoBehaviour
         if (hasExploded) return;
         hasExploded = true;
 
-        // 0. ×¼±¸Êı¾İ
+        // 0. å‡†å¤‡æ•°æ®
         string weaponName = "";
         WeaponStatBlock stats = null;
-        if (launcher != null && launcher.StatBlock != null)
+        if (sourceWeapon != null && sourceWeapon.StatBlock != null)
         {
-            stats = launcher.StatBlock;
+            stats = sourceWeapon.StatBlock;
             weaponName = stats.weaponName;
         }
 
-        // ²¥·Å±¬Õ¨ÌØĞ§
+        // æ’­æ”¾çˆ†ç‚¸ç‰¹æ•ˆ
         if (explosionEffectPrefab != null)
         {
             Instantiate(explosionEffectPrefab, explosionPoint, Quaternion.identity);
         }
 
+        bool hasCreatedHazard = false;
         // =========================================================
-        //  Âß¼­ 1: Äı¹ÌÆûÓÍµ¯ (Éú³ÉµØÃæ»ğº£)
+        //  é€»è¾‘ 1: å‡å›ºæ±½æ²¹å¼¹ (ç”Ÿæˆåœ°é¢ç«æµ·)
         // =========================================================
         if (stats != null && stats.groundHazardPrefab != null)
         {
+            hasCreatedHazard = true;
+
             Vector3 spawnPos = explosionPoint;
             bool snapToGround = !stats.isBlackHole;
 
@@ -736,41 +805,79 @@ public class Projectile : MonoBehaviour
             }
             else
             {
-                spawnPos += Vector3.up * 1.0f; // ºÚ¶´Ğü¸¡
+                spawnPos += Vector3.up * 1.0f; // é»‘æ´æ‚¬æµ®
+            }
+
+            float scaleFactor = 1f;
+            if (stats.baseAoeRadius > 0)
+            {
+                //scaleFactor = this.explosionRadius / stats.baseAoeRadius;
+
+                float areaBonus = 0f;
+                if (sourceWeapon != null)
+                {
+                    areaBonus = sourceWeapon.localAreaBonus; // è·å–å±€å¤–å‡çº§çš„èŒƒå›´åŠ æˆ
+                }
+
+                // è·å–å…¨å±€åŠ æˆ (é˜²æ­¢æ¼æ‰ PlayerStats)
+                float globalMult = (PlayerStats.Instance != null) ? PlayerStats.Instance.aoeRadiusMultiplier : 1f;
+
+                // å…¬å¼ï¼šåŸºç¡€ * (å…¨å±€å€ç‡ + å±€éƒ¨åŠ æˆ)
+                float finalRadius = stats.baseAoeRadius * (globalMult + areaBonus);
+
+                // ç®—å‡ºæœ€ç»ˆç¼©æ”¾æ¯”
+                scaleFactor = finalRadius / stats.baseAoeRadius;
+
+                // [è°ƒè¯•]
+                // Debug.Log($"[èŒƒå›´ä¿®æ­£] åŸºç¡€:{stats.baseAoeRadius}, åŠ æˆ:{areaBonus}, æœ€ç»ˆç¼©æ”¾:{scaleFactor}");
             }
 
             GameObject hazardObj = Instantiate(stats.groundHazardPrefab, spawnPos, Quaternion.identity);
 
-            // --- ¡¾ºËĞÄĞŞ¸´¡¿Âß¼­·ÖÁ÷£º»¥³â¼ì²é ---
+            hazardObj.transform.localScale = Vector3.one * scaleFactor;
+            // ==========================================
+            // ã€æ ¸å¿ƒä¿®æ”¹ Bã€‘åº”ç”¨ç«æµ·æŒç»­æ—¶é—´
+            // ==========================================
+            float finalDuration = stats.groundHazardDuration;
 
-            // 1. ÏÈÕÒ»ğÑæ½Å±¾
+            // å¿…é¡»æŠŠ sourceWeapon (WeaponPart) é‡Œçš„ durationBonus ä¹˜è¿›å»
+            if (sourceWeapon != null)
+            {
+                // å…¨å±€æŒç»­æ—¶é—´åŠ æˆ + ç‡ƒçƒ§ç“¶å±€å¤–æŒç»­æ—¶é—´åŠ æˆ
+                float totalDurationMult = PlayerStats.Instance.durationMultiplier + sourceWeapon.localDurationBonus;
+                finalDuration *= totalDurationMult;
+            }
+
+
             GroundHazard fireScript = hazardObj.GetComponentInChildren<GroundHazard>();
-            // 2. ÔÙÕÒºÚ¶´½Å±¾
+            // 2. å†æ‰¾é»‘æ´è„šæœ¬
             BlackHoleField blackHoleScript = hazardObj.GetComponentInChildren<BlackHoleField>();
 
             if (fireScript != null)
             {
-                // ÊÇ»ğÑæ£º³õÊ¼»¯»ğÑæ
-                int hazardDmg = Mathf.RoundToInt(aoeDamage * 0.2f);
+                // ã€æ ¸å¿ƒä¿®æ”¹ 1ã€‘å»æ‰ 0.2f çš„é™åˆ¶ï¼Œè®©ç«æµ·ç»§æ‰¿ 100% çš„ AOE ä¼¤å®³
+                // åŸä»£ç : int hazardDmg = Mathf.RoundToInt(aoeDamage * 0.2f);
+                int hazardDmg = aoeDamage; // ç›´æ¥ä½¿ç”¨å…¨é¢ä¼¤å®³ (40)
+
                 if (hazardDmg < 1) hazardDmg = 1;
-                fireScript.Initialize(hazardDmg, stats.groundHazardDuration, weaponName, launcher != null ? launcher.gameObject : null);
+                fireScript.Initialize(hazardDmg, finalDuration, weaponName, sourceWeapon != null ? sourceWeapon.gameObject : null);
             }
             else if (blackHoleScript != null)
             {
-                // ÊÇºÚ¶´£º³õÊ¼»¯ºÚ¶´
+                // æ˜¯é»‘æ´ï¼šåˆå§‹åŒ–é»‘æ´
                 blackHoleScript.Initialize(stats.blackHoleForce, stats.groundHazardDuration);
             }
             else
             {
-                // ¼È²»ÊÇ»ğÑæÒ²²»ÊÇºÚ¶´£¬²ÅÏú»Ù²¢±¨´í (»òÕßÖ»×÷Îª´¿ÌØĞ§)
-                Debug.LogWarning($"[Explode] Éú³ÉÁË {hazardObj.name}£¬µ«ÉÏÃæ¼ÈÃ»ÓĞ GroundHazard Ò²Ã»ÓĞ BlackHoleField ½Å±¾¡£´¿ÊÓ¾õÏú»Ù¡£");
+                // æ—¢ä¸æ˜¯ç«ç„°ä¹Ÿä¸æ˜¯é»‘æ´ï¼Œæ‰é”€æ¯å¹¶æŠ¥é”™ (æˆ–è€…åªä½œä¸ºçº¯ç‰¹æ•ˆ)
+                Debug.LogWarning($"[Explode] ç”Ÿæˆäº† {hazardObj.name}ï¼Œä½†ä¸Šé¢æ—¢æ²¡æœ‰ GroundHazard ä¹Ÿæ²¡æœ‰ BlackHoleField è„šæœ¬ã€‚çº¯è§†è§‰é”€æ¯ã€‚");
                 Destroy(hazardObj, stats.groundHazardDuration);
             }
         }
 
 
         // =========================================================
-        //  Âß¼­ 2: ·ÖÁÑ¶¾±¬ (Éú³É×·×Ù³æ)
+        //  é€»è¾‘ 2: åˆ†è£‚æ¯’çˆ† (ç”Ÿæˆè¿½è¸ªè™«)
         // =========================================================
         if (stats != null && stats.subProjectilePrefab != null && stats.subProjectileCount > 0)
         {
@@ -778,59 +885,59 @@ public class Projectile : MonoBehaviour
         }
 
         // =========================================================
-        //  Âß¼­ 3: ÉËº¦ÓëÎïÀíĞ§¹û (º¬ÆæµãÊÖÀ×)
+        //  é€»è¾‘ 3: ä¼¤å®³ä¸ç‰©ç†æ•ˆæœ (å«å¥‡ç‚¹æ‰‹é›·)
         // =========================================================
 
-        // A. ´¦ÀíÖ±½ÓÃüÖĞ (Èç¹ûÓĞ)
+        // A. å¤„ç†ç›´æ¥å‘½ä¸­ (å¦‚æœæœ‰)
         Health directlyHitEnemyHealth = null;
         if (initiallyHitCollider != null && initiallyHitCollider.CompareTag("Enemy"))
         {
             directlyHitEnemyHealth = initiallyHitCollider.GetComponentInParent<Health>();
             if (directlyHitEnemyHealth != null && !directlyHitEnemyHealth.IsDead)
             {
-                directlyHitEnemyHealth.TakeDamage(directDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
+                directlyHitEnemyHealth.TakeDamage(damage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
                 ApplyElementalEffects(directlyHitEnemyHealth, weaponName);
             }
         }
-
-        // B. ´¦Àí AOE ·¶Î§Ä¿±ê
-        Collider[] collidersInRange = Physics.OverlapSphere(explosionPoint, explosionRadius, damageableLayers);
-        foreach (Collider hitCollider in collidersInRange)
+        if (!hasCreatedHazard)
         {
-            if (hitCollider.CompareTag("Player")) continue;
-
-            Health healthComponent = hitCollider.GetComponentInParent<Health>();
-
-            // ±ÜÃâÖØ¸´ÉËº¦Ö±½ÓÃüÖĞµÄµ¥Î»
-            if (healthComponent != null && healthComponent == directlyHitEnemyHealth) continue;
-
-            if (healthComponent != null)
+            // B. å¤„ç† AOE èŒƒå›´ç›®æ ‡
+            Collider[] collidersInRange = Physics.OverlapSphere(explosionPoint, explosionRadius, damageableLayers);
+            foreach (Collider hitCollider in collidersInRange)
             {
-                // 1. Ôì³É AOE ÉËº¦
-                healthComponent.TakeDamage(aoeDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
+                if (hitCollider.CompareTag("Player")) continue;
 
-                // 2. Ó¦ÓÃÔªËØÌØĞ§ (´óÒ»Í³Âß¼­)
-                ApplyElementalEffects(healthComponent, weaponName);
+                Health healthComponent = hitCollider.GetComponentInParent<Health>();
 
-                // 3. ´¦Àí¡¾ÆæµãÊÖÀ× (Black Hole)¡¿ vs ÆÕÍ¨»÷ÍË
-                StatusEffectReceiver receiver = healthComponent.GetComponent<StatusEffectReceiver>();
-                if (receiver != null && stats != null)
+                // é¿å…é‡å¤ä¼¤å®³ç›´æ¥å‘½ä¸­çš„å•ä½
+                if (healthComponent != null && healthComponent == directlyHitEnemyHealth) continue;
+
+                if (healthComponent != null)
                 {
-                    if (stats.isBlackHole)
+                    // 1. é€ æˆ AOE ä¼¤å®³
+                    healthComponent.TakeDamage(aoeDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
+                    ApplyElementalEffects(healthComponent, weaponName);
+
+                    // 3. å¤„ç†ã€å¥‡ç‚¹æ‰‹é›· (Black Hole)ã€‘ vs æ™®é€šå‡»é€€
+                    StatusEffectReceiver receiver = healthComponent.GetComponent<StatusEffectReceiver>();
+                    if (receiver != null && stats != null)
                     {
-                        // --- ÆæµãÂß¼­£ºÎüÁ¦ ---
-                        // ·½Ïò£º´ÓµĞÈËÎ»ÖÃ -> Ö¸Ïò±¬Õ¨ÖĞĞÄ
-                        Vector3 pullDir = (explosionPoint - healthComponent.transform.position).normalized;
-                        pullDir.y = 0; // ±£³ÖË®Æ½
-                        // Ê©¼ÓÎüÁ¦ (¸´ÓÃ ApplyKnockback£¬ÒòÎª±¾ÖÊ¶¼ÊÇÎ»ÒÆ)
-                        receiver.ApplyKnockback(pullDir, stats.blackHoleForce);
-                    }
-                    else
-                    {
-                        // --- ÆÕÍ¨Âß¼­£º±¬Õ¨»÷ÍË (¿ÉÑ¡) ---
-                        // Èç¹ûÄãÒ²ÏëÈÃÆÕÍ¨ÊÖÀ×ÓĞ»÷ÍË£¬¿ÉÒÔÔÚÕâÀïĞ´£º
-                        // Vector3 pushDir = (healthComponent.transform.position - explosionPoint).normalized;
-                        // receiver.ApplyKnockback(pushDir, 5f); 
+                        if (stats.isBlackHole)
+                        {
+                            // --- å¥‡ç‚¹é€»è¾‘ï¼šå¸åŠ› ---
+                            // æ–¹å‘ï¼šä»æ•Œäººä½ç½® -> æŒ‡å‘çˆ†ç‚¸ä¸­å¿ƒ
+                            Vector3 pullDir = (explosionPoint - healthComponent.transform.position).normalized;
+                            pullDir.y = 0; // ä¿æŒæ°´å¹³
+                                           // æ–½åŠ å¸åŠ› (å¤ç”¨ ApplyKnockbackï¼Œå› ä¸ºæœ¬è´¨éƒ½æ˜¯ä½ç§»)
+                            receiver.ApplyKnockback(pullDir, stats.blackHoleForce);
+                        }
+                        else
+                        {
+                            // --- æ™®é€šé€»è¾‘ï¼šçˆ†ç‚¸å‡»é€€ (å¯é€‰) ---
+                            // å¦‚æœä½ ä¹Ÿæƒ³è®©æ™®é€šæ‰‹é›·æœ‰å‡»é€€ï¼Œå¯ä»¥åœ¨è¿™é‡Œå†™ï¼š
+                            // Vector3 pushDir = (healthComponent.transform.position - explosionPoint).normalized;
+                            // receiver.ApplyKnockback(pushDir, 5f); 
+                        }
                     }
                 }
             }
@@ -841,70 +948,70 @@ public class Projectile : MonoBehaviour
 
     private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats)
     {
-        // 1. --- Ñ°ÕÒµØÃæÉú³Éµã ---
+        // 1. --- å¯»æ‰¾åœ°é¢ç”Ÿæˆç‚¹ ---
         Vector3 spawnBasePos = origin;
-        // ¶¨ÒåµØÃæ²ã¼¶ (ÅÅ³ıµĞÈËºÍÍæ¼Ò£¬·ÀÖ¹Éú³ÉÔÚÍ·¶¥)
+        // å®šä¹‰åœ°é¢å±‚çº§ (æ’é™¤æ•Œäººå’Œç©å®¶ï¼Œé˜²æ­¢ç”Ÿæˆåœ¨å¤´é¡¶)
         int groundMask = LayerMask.GetMask("Ground",  "Terrain");
         if (groundMask == 0) groundMask = ~(LayerMask.GetMask("Enemies", "Player", "PlayerProjectile"));
 
         RaycastHit hit;
-        // ´Ó±¬Õ¨µãÉÏ·½Ò»µãÏòÏÂÉä£¬ÕÒµØÃæ
+        // ä»çˆ†ç‚¸ç‚¹ä¸Šæ–¹ä¸€ç‚¹å‘ä¸‹å°„ï¼Œæ‰¾åœ°é¢
         if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out hit, 50f, groundMask))
         {
-            // ÕÒµ½ÁËµØÃæ£¬»ù×¼µãÉèÎªµØÃæµã
+            // æ‰¾åˆ°äº†åœ°é¢ï¼ŒåŸºå‡†ç‚¹è®¾ä¸ºåœ°é¢ç‚¹
             spawnBasePos = hit.point;
         }
         else
         {
-            // Ã»ÕÒµ½µØÃæ (¿ÕÖĞ±¬Õ¨)£¬¾ÍÃãÇ¿ÓÃ¿ÕÖĞµã£¬µ«×îºÃÈ·±£ÄãµÄµØÍ¼ÓĞµØÃæ²ã
+            // æ²¡æ‰¾åˆ°åœ°é¢ (ç©ºä¸­çˆ†ç‚¸)ï¼Œå°±å‹‰å¼ºç”¨ç©ºä¸­ç‚¹ï¼Œä½†æœ€å¥½ç¡®ä¿ä½ çš„åœ°å›¾æœ‰åœ°é¢å±‚
             // spawnBasePos = origin; 
         }
 
         for (int i = 0; i < stats.subProjectileCount; i++)
         {
-            // 2. --- ¼ÆËãËæ»úÉ¢²¼·½Ïò (½öË®Æ½Ãæ) ---
-            Vector3 spreadDir = Random.onUnitSphere; // Éú³ÉÒ»¸öËæ»úÇòÌå·½Ïò
-            spreadDir.y = 0; // Ñ¹Æ½µ½Ë®Æ½Ãæ£¬ÈÃÖ©ÖëÔÚµØÉÏÅÀÉ¢¿ª
+            // 2. --- è®¡ç®—éšæœºæ•£å¸ƒæ–¹å‘ (ä»…æ°´å¹³é¢) ---
+            Vector3 spreadDir = Random.onUnitSphere; // ç”Ÿæˆä¸€ä¸ªéšæœºçƒä½“æ–¹å‘
+            spreadDir.y = 0; // å‹å¹³åˆ°æ°´å¹³é¢ï¼Œè®©èœ˜è››åœ¨åœ°ä¸Šçˆ¬æ•£å¼€
             spreadDir.Normalize();
 
-            // Éú³ÉµãÉÔÎ¢Ì§¸ßÒ»µãµã£¬·ÀÖ¹¿¨½øµØÀï
+            // ç”Ÿæˆç‚¹ç¨å¾®æŠ¬é«˜ä¸€ç‚¹ç‚¹ï¼Œé˜²æ­¢å¡è¿›åœ°é‡Œ
             Vector3 finalSpawnPos = spawnBasePos + Vector3.up * 0.1f;
 
-            // 3. --- Éú³É×Óµ¯ ---
+            // 3. --- ç”Ÿæˆå­å¼¹ ---
             GameObject subObj = Instantiate(stats.subProjectilePrefab, finalSpawnPos, Quaternion.LookRotation(spreadDir));
 
-            // ¿ÉÑ¡£ºÈÃ·ÖÁÑ³öÀ´µÄĞ¡Ö©Öë¿´ÆğÀ´Ğ¡Ò»µã
+            // å¯é€‰ï¼šè®©åˆ†è£‚å‡ºæ¥çš„å°èœ˜è››çœ‹èµ·æ¥å°ä¸€ç‚¹
             subObj.transform.localScale = transform.localScale * 0.6f;
 
-            // 4. --- ³õÊ¼»¯×Óµ¯ ---
+            // 4. --- åˆå§‹åŒ–å­å¼¹ ---
             Projectile subScript = subObj.GetComponent<Projectile>();
             if (subScript != null)
             {
-                // ÔÚµØÃæ»ù×¼µã¸½½üÕÒÄ¿±ê
+                // åœ¨åœ°é¢åŸºå‡†ç‚¹é™„è¿‘æ‰¾ç›®æ ‡
                 Transform target = FindRandomNearbyEnemy(spawnBasePos, 15f);
 
-                // ÉËº¦¼õ°ë
+                // ä¼¤å®³å‡åŠ
                 int subDmg = Mathf.RoundToInt(aoeDamage * 0.5f);
                 if (subDmg < 1) subDmg = 1;
 
-                // È·¶¨ÌØĞ§£ºÓÅÏÈÓÃ×¨ÊôÌØĞ§£¬Ã»ÓĞ¾ÍÓÃÄ¬ÈÏ±£µ×
+                // ç¡®å®šç‰¹æ•ˆï¼šä¼˜å…ˆç”¨ä¸“å±ç‰¹æ•ˆï¼Œæ²¡æœ‰å°±ç”¨é»˜è®¤ä¿åº•
                 GameObject vfxToUse = stats.subProjectileHitVfx != null ? stats.subProjectileHitVfx : defaultImpactEffectPrefab;
 
-                // ³õÊ¼»¯Îª×·×Ùµ¯ (Homing)
-                // ×¢Òâ£º×îºóÁ½¸ö²ÎÊı´«ÈëÎÒÃÇÈ·¶¨µÄ vfxToUse
+                // åˆå§‹åŒ–ä¸ºè¿½è¸ªå¼¹ (Homing)
+                // æ³¨æ„ï¼šæœ€åä¸¤ä¸ªå‚æ•°ä¼ å…¥æˆ‘ä»¬ç¡®å®šçš„ vfxToUse
                 subScript.InitializeAsHoming(
                     target,
-                    8f,  // ËÙ¶ÈÉÔÎ¢Âıµã£¬ÏñÅÀĞĞ
+                    8f,  // é€Ÿåº¦ç¨å¾®æ…¢ç‚¹ï¼Œåƒçˆ¬è¡Œ
                     subDmg,
                     false,
-                    15f, // ×ªÏòËÙ¶È¿ìµã£¬¸üÁé»î
-                    4f,  // ´æ»îÊ±¼äÂÔ³¤
-                    vfxToUse, // ÃüÖĞÌØĞ§ (Hit VFX)
-                    vfxToUse  // ÕÏ°­ÎïÌØĞ§ (Obstacle VFX) - Ö©ÖëÍ¨³£ÓÃÍ¬Ò»¸ö
+                    15f, // è½¬å‘é€Ÿåº¦å¿«ç‚¹ï¼Œæ›´çµæ´»
+                    4f,  // å­˜æ´»æ—¶é—´ç•¥é•¿
+                    vfxToUse, // å‘½ä¸­ç‰¹æ•ˆ (Hit VFX)
+                    vfxToUse  // éšœç¢ç‰©ç‰¹æ•ˆ (Obstacle VFX) - èœ˜è››é€šå¸¸ç”¨åŒä¸€ä¸ª
                 );
 
-                // ¡¾ºËĞÄ¡¿£º´«µİ·¢ÉäÆ÷ÒıÓÃ£¬ÕâÈÃ×Óµ¯ÄÜ¼Ì³Ğ¶¾Ê¯ÊôĞÔ£¡
-                subScript.launcher = this.launcher;
+                // ã€æ ¸å¿ƒã€‘ï¼šä¼ é€’å‘å°„å™¨å¼•ç”¨ï¼Œè¿™è®©å­å¼¹èƒ½ç»§æ‰¿æ¯’çŸ³å±æ€§ï¼
+                subScript.sourceWeapon = this.sourceWeapon;
             }
         }
     }
@@ -914,7 +1021,7 @@ public class Projectile : MonoBehaviour
         Collider[] hits = Physics.OverlapSphere(center, radius, damageableLayers);
         if (hits.Length == 0) return null;
 
-        // Ëæ»úÑ¡Ò»¸ö
+        // éšæœºé€‰ä¸€ä¸ª
         Collider randomCol = hits[Random.Range(0, hits.Length)];
         return randomCol.transform;
     }
@@ -925,21 +1032,50 @@ public class Projectile : MonoBehaviour
         hitCooldowns[targetHealth] = hitCooldown;
 
         Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
-        bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();
-        GameObject attacker = creatorAttacker ?? launcher?.gameObject;
+        bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();        
 
-        string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "";
-        bool wasReflected = targetHealth.TakeDamage(directDamage, hitPoint, attacker, this.attackType, this, null, weaponName);
+        GameObject attacker = owner;
+
+        // 2. å¦‚æœæ²¡æœ‰ ownerï¼Œå†å°è¯•ç”¨ creatorAttacker (éƒ¨ç½²å™¨)
+        if (attacker == null) attacker = creatorAttacker;
+
+        // 3. æœ€åå°è¯•ç”¨ launcher (æ™®é€šæ­¦å™¨)
+        if (attacker == null && sourceWeapon != null)
+        {
+            attacker = sourceWeapon.gameObject;
+        }
+        // ------------------
+        if (explosionRadius > 0)
+        {
+            // åœ¨æ¥è§¦ç‚¹å¼•çˆ† (Explode æ–¹æ³•é‡Œå·²ç»åŒ…å«äº† AOE ä¼¤å®³ã€ç‰¹æ•ˆå’Œé”€æ¯è‡ªèº«çš„é€»è¾‘)
+            Explode(hitCollider.ClosestPoint(transform.position), hitCollider);
+            return; // çˆ†ç‚¸åå­å¼¹é”€æ¯ï¼Œä¸å†æ‰§è¡Œç©¿é€/è¿é”é€»è¾‘
+        }
+
+        string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "";
+        bool wasReflected = targetHealth.TakeDamage(
+            damage,
+            hitCollider.ClosestPoint(transform.position),
+            attacker,
+            this.attackType,
+            this,
+            null,
+            weaponName,
+            this.isCritical // <--- è¡¥ä¸Šè¿™ä¸€å—ï¼
+        );
 
         if (!wasReflected)
         {
-            ApplyElementalEffects(targetHealth, weaponName);
+            // åœ¨åº”ç”¨å…ƒç´ æ•ˆæœå‰ï¼Œå†æ¬¡å®‰å…¨æ£€æŸ¥
+            if (sourceWeapon != null)
+            {
+                ApplyElementalEffects(targetHealth, weaponName);
+            }
 
             StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
             if (receiver != null)
             {
                 if (dotDamage > 0) receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval, weaponName);
-               
             }
             HandleImpactEffect(targetHasShield, hitPoint);
             hitEnemies.Add(targetHealth);
@@ -952,7 +1088,7 @@ public class Projectile : MonoBehaviour
             }
         }
     }
-    
+
     private void HandleBoomerangOutbound()
     {
         transform.position += direction * speed * Time.deltaTime;
@@ -974,37 +1110,37 @@ public class Projectile : MonoBehaviour
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
         transform.position += directionToPlayer * speed * Time.deltaTime;
 
-        // ¡¾ÓÅ»¯¡¿Ö»ÓĞÔÚÎ´±»×¥È¡Ê±²Å¼ì²â¾àÀë²¢Ïú»Ù
+        // ã€ä¼˜åŒ–ã€‘åªæœ‰åœ¨æœªè¢«æŠ“å–æ—¶æ‰æ£€æµ‹è·ç¦»å¹¶é”€æ¯
         if (!hasBeenCaught)
         {
             float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-            if (distanceToPlayer < 0.5f) // ·Éµ½Íæ¼Ò¸½½üµ«Ã»´¥·¢×¥È¡£¨¿ÉÄÜÍæ¼ÒÒÆËÙÌ«¿ì£©£¬Ïú»Ù
+            if (distanceToPlayer < 0.5f) // é£åˆ°ç©å®¶é™„è¿‘ä½†æ²¡è§¦å‘æŠ“å–ï¼ˆå¯èƒ½ç©å®¶ç§»é€Ÿå¤ªå¿«ï¼‰ï¼Œé”€æ¯
             {
                 Destroy(gameObject);
             }
         }
-        // Èç¹ûÒÑ±»×¥È¡£¬Ëü»á¼ÌĞø°´µ±Ç°·½Ïò·É£¬Ö±µ½ÉúÃüÖÜÆÚ½áÊø
+        // å¦‚æœå·²è¢«æŠ“å–ï¼Œå®ƒä¼šç»§ç»­æŒ‰å½“å‰æ–¹å‘é£ï¼Œç›´åˆ°ç”Ÿå‘½å‘¨æœŸç»“æŸ
     }
-    // --- ^^^ ĞÂÔö½áÊø ^^^ ---
+    // --- ^^^ æ–°å¢ç»“æŸ ^^^ ---
     void HandleChaining(Vector3 hitPoint)
     {
         remainingChains--;
         Transform nextTarget = FindNextTarget(hitPoint);
         if (nextTarget != null)
         {
-            Debug.Log($"Á¬Ëøµ½ĞÂÄ¿±ê: {nextTarget.name}");
+            Debug.Log($"è¿é”åˆ°æ–°ç›®æ ‡: {nextTarget.name}");
             this.direction = (nextTarget.position - transform.position).normalized;
-            // ÖØÖÃÃüÖĞ¼ÆÊıÆ÷£¬ÔÊĞíÔÙ´Î´©Í¸
+            // é‡ç½®å‘½ä¸­è®¡æ•°å™¨ï¼Œå…è®¸å†æ¬¡ç©¿é€
             piercedEnemies = 0;
-            // ¿ÉÑ¡£ºÖØÖÃÀäÈ´×Öµä£¬ÔÊĞíÔÙ´ÎÉËº¦Ö®Ç°ÃüÖĞµÄµĞÈË
+            // å¯é€‰ï¼šé‡ç½®å†·å´å­—å…¸ï¼Œå…è®¸å†æ¬¡ä¼¤å®³ä¹‹å‰å‘½ä¸­çš„æ•Œäºº
             // hitCooldowns.Clear();
         }
         else
         {
-            Destroy(gameObject); // Ã»ÓĞÏÂÒ»¸öÄ¿±ê
+            Destroy(gameObject); // æ²¡æœ‰ä¸‹ä¸€ä¸ªç›®æ ‡
         }
     }
-    private void HandleImpactEffect(bool hitShield, Vector3 position) // Ìí¼Ó´Ë·½·¨
+    private void HandleImpactEffect(bool hitShield, Vector3 position) // æ·»åŠ æ­¤æ–¹æ³•
     {
         GameObject effectToPlay = hitShield ? shieldImpactEffectPrefab : defaultImpactEffectPrefab;
         if (effectToPlay != null)
@@ -1015,145 +1151,116 @@ public class Projectile : MonoBehaviour
 
     private void ApplyElementalEffects(Health target, string weaponName)
     {
-        if (target == null || launcher == null || launcher.StatBlock == null) return;
+        // 1. å®‰å…¨æ£€æŸ¥
+        if (target == null || sourceWeapon == null || sourceWeapon.StatBlock == null) return; // æ›¿æ¢ launcher
 
+        WeaponStatBlock stats = sourceWeapon.StatBlock;
         StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>();
-        if (receiver == null) return;
 
-        WeaponStatBlock stats = launcher.StatBlock;
-        EnergyStoneSO stone = launcher.currentStone;
-
-        // ---------------------------------------------------------
-        // 1. À×µçÂß¼­ (Smite / Chain)
-        // ---------------------------------------------------------
-        // ÅĞ¶¨£º(ÎäÆ÷×Ô´øChain > 0) OR (ÓĞÀ×Ê¯)
-        bool hasChain = (stats.baseChainCount > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain));
-
-        if (hasChain)
+        // =========================================================
+        // 1. é›·å‡»é€»è¾‘ (Thunder Strike / Smite) - åŸºäºæš´å‡»è§¦å‘      
+       
+        if (this.isCritical)
         {
-            // ¼ÆËãÀ×»÷ÉËº¦
-            int smiteDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain))
-                ? Mathf.RoundToInt(stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier))
-                : Mathf.RoundToInt(directDamage * 0.5f); // Ô­ÉúÀ×»÷£º»ù´¡ÉËº¦µÄÒ»°ë
-
-            GameObject smiteVfx = (stone != null && stone.smiteVfxPrefab != null)
-                      ? stone.smiteVfxPrefab
-                      : stats.nativeSmiteVfxPrefab;
-
-            // Ôì³ÉÀ×»÷ÉËº¦
-            target.TakeDamage(smiteDmg, target.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
-            if (smiteVfx != null) Instantiate(smiteVfx, target.transform.position, Quaternion.identity);
-
-            // ¼ÆÊıÆ÷Âß¼­
-            int chainStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
-
-            // Ö»ÒªÊÇÔ­ÉúÀ×Îä£¬»òÕßÓĞÀ×Ê¯£¬¾Í²ÎÓë¼ÆÊı
-            if (stats.baseChainCount > 0 || chainStoneCount >= 1)
+            // A. æ’­æ”¾é›·å‡»ç‰¹æ•ˆ (Smite)
+            if (stats.nativeSmiteVfxPrefab != null)
             {
-                PlayerStats.Instance.lightningSmiteCounter++;
-                if (PlayerStats.Instance.lightningSmiteCounter >= 3)
+                // ç”Ÿæˆä½ç½®ï¼šæ•Œäººä½ç½®ä¸Šæ–¹
+                Instantiate(stats.nativeSmiteVfxPrefab, target.transform.position + Vector3.up * 2f, Quaternion.identity);
+            }
+
+            // B. è§¦å‘é—ªç”µé“¾ (å¦‚æœè¿™æ˜¯ä½ æƒ³è¦çš„ï¼šæš´å‡»å¿…å®šè§¦å‘é—ªç”µé“¾)
+            // å³ä½¿ StatBlock é‡Œ ChainCount æ˜¯ 0ï¼Œåªè¦æš´å‡»äº†ï¼Œæˆ‘ä»¬ä¹Ÿå¼ºåˆ¶è§¦å‘ä¸€æ¬¡è¿é”
+            // ä½ å¯ä»¥æ ¹æ®éœ€æ±‚è°ƒæ•´è¿™é‡Œçš„å‚æ•° (ä¾‹å¦‚è¿é” 3 æ¬¡)
+            int chainCount = stats.baseChainCount > 0 ? stats.baseChainCount : 3;
+            int chainDmg = Mathf.RoundToInt(damage * 0.5f); // è¿é”ä¼¤å®³å‡åŠ
+            if (chainDmg < 1) chainDmg = 1;
+
+            // è°ƒç”¨å‘å°„å™¨çš„è¿é”é€»è¾‘
+            sourceWeapon.ChainLightningFromTarget(target.transform, chainCount, chainDmg, stats.chainRange); // æ›¿æ¢ launcher
+        }
+
+        // =========================================================
+        // 2. é—ªç”µé“¾é€»è¾‘ (Chain Lightning) - ç‹¬ç«‹é€»è¾‘
+        // =========================================================
+        // åªæœ‰åœ¨æ­¦å™¨é…ç½®äº† baseChainCount > 0 æ—¶æ‰è§¦å‘ï¼Œä¸æš´å‡»æ— å…³
+        if (stats.baseChainCount > 0)
+        {
+            // è°ƒç”¨ WeaponPart é‡Œçš„è¿é”æ–¹æ³• (ä»£ç è§ä¸‹æ–¹ Part 2)
+            // ä¼ é€’å‚æ•°ï¼šç›®æ ‡ï¼Œè¿é”æ¬¡æ•°ï¼Œè¿é”ä¼¤å®³(é€šå¸¸æ¯”ç›´ä¼¤ä½)ï¼Œè¿é”èŒƒå›´
+            int chainDmg = Mathf.RoundToInt(damage * 0.8f); // å‡è®¾è¿é”ä¼¤å®³æ˜¯æœ¬ä½“çš„ 80%
+            if (chainDmg < 1) chainDmg = 1;
+
+            sourceWeapon.ChainLightningFromTarget(target.transform, stats.baseChainCount, chainDmg, stats.chainRange); // æ›¿æ¢ launcher
+        }
+
+        if (receiver == null) return; // å¦‚æœç›®æ ‡æ²¡æœ‰çŠ¶æ€æ¥æ”¶å™¨ï¼Œåé¢å°±ä¸éœ€è¦å¤„ç†äº†
+
+        // =========================================================
+        // 3. å‡»é€€ (Knockback)
+        // =========================================================
+        if (stats.nativeKnockback)
+        {
+            Vector3 pushDir = (target.transform.position - transform.position).normalized;
+            pushDir.y = 0;
+            receiver.ApplyKnockback(pushDir, stats.nativeKnockbackForce);
+        }
+
+        // =========================================================
+        // 4. ç‡ƒçƒ§ (Burn)
+        float finalChance = (sourceWeapon != null) ? sourceWeapon.GetIgnitionChance() : stats.ignitionChance;
+
+        // è°ƒè¯•æ—¥å¿—ï¼šçœ‹çœ‹ç°åœ¨çš„æ¦‚ç‡åˆ°åº•æ˜¯ 0.1 è¿˜æ˜¯ 0.4
+        Debug.Log($"[ç‡ƒçƒ§åˆ¤å®š] æ¥æº: {weaponName}, æœ€ç»ˆæ¦‚ç‡: {finalChance}");
+
+        bool appliedBurn = false;
+
+        // 2. æ¦‚ç‡åˆ¤å®š
+        if (finalChance > 0)
+        {
+            // æ·éª°å­
+            if (Random.value <= finalChance)
+            {
+                // è®¡ç®—ç™¾åˆ†æ¯”ä¼¤å®³ (æ¯”å¦‚ç›´å‡»çš„ 20%)
+                int burnDmg = Mathf.CeilToInt(this.damage * stats.burnDamagePercent);
+                if (burnDmg < 1) burnDmg = 1; 
+
+                // åº”ç”¨ç‡ƒçƒ§ (å»æ‰äº† !IsBurning é™åˆ¶ï¼Œå…è®¸åˆ·æ–°)
+                receiver.ApplyBurn(burnDmg, stats.baseDotDuration, stats.dotTickInterval, weaponName);
+                appliedBurn = true;
+
+                if (PlayerProgressManager.Instance != null)
                 {
-                    PlayerStats.Instance.lightningSmiteCounter = 0;
-
-                    // È·¶¨Á¬Ëø²ÎÊı
-                    int cCount = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainTargets : stats.baseChainCount;
-                    float cRange = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) ? stone.chainRange : stats.chainRange;
-
-                    launcher.ChainLightningFromTarget(target.transform, cCount, smiteDmg, cRange);
+                    // "Ignite_Count" å¿…é¡»å’Œ PlayerProgressManager.CheckUnlocks é‡Œçš„ Key ä¸€è‡´
+                    PlayerProgressManager.Instance.AddStat("Ignite_Count", 1);
                 }
             }
         }
 
-        // ---------------------------------------------------------
-        // 2. »÷ÍËÂß¼­ (Knockback) - ·çÈĞĞŞ¸´ÖØµã
-        // ---------------------------------------------------------
-        bool hasKnockback = stats.nativeKnockback || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback));
-
-        if (hasKnockback)
+        // 3. å‘ä¸‹å…¼å®¹ï¼šå¦‚æœæ²¡è§¦å‘æ¦‚ç‡ï¼Œä½†å‹¾é€‰äº† nativeBurn (å¿…ç‡ƒ)ï¼Œåˆ™è¡¥ä¸Š
+        if (!appliedBurn && stats.nativeBurn)
         {
-            float kForce = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback)) ? stone.knockbackForce : stats.nativeKnockbackForce;
-
-            // ¶Ñµş¼Ó³É
-            int windStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
-            if (windStoneCount >= 2 && stone != null) kForce = stone.knockbackForce_Stacked;
-
-            Vector3 pushDir = (target.transform.position - transform.position).normalized; // ´Ó×Óµ¯ÍÆÏòµĞÈË
-            pushDir.y = 0;
-            receiver.ApplyKnockback(pushDir, kForce);
-        }
-
-        // ---------------------------------------------------------
-        // 3. »ğÑæÂß¼­ (Burn)
-        // ---------------------------------------------------------
-        bool hasBurn = stats.nativeBurn || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn));
-        if (hasBurn)
-        {
-            int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
-            int bDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDamage : stats.baseDotDamage;
-            float bDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDuration : stats.baseDotDuration;
-            float bTick = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnTickInterval : stats.dotTickInterval;
-
-            if (fireStoneCount >= 2 && receiver.IsBurning) receiver.Ignite();
-            else if (!receiver.IsBurning) receiver.ApplyBurn(bDmg, bDur, bTick, weaponName);
-        }
-
-        // ---------------------------------------------------------
-        // 4. º®±ù/¼õËÙ (Slow)
-        // ---------------------------------------------------------
-        bool hasSlow = (stats.baseSlowPercentage > 0) || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow));
-        if (hasSlow)
-        {
-            float sPct = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowPercentage : stats.baseSlowPercentage;
-            float sDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) ? stone.slowDuration : stats.baseSlowDuration;
-            Color sColor = (stone != null) ? stone.slowColor : Color.blue;
-
-            receiver.ApplySlow(sPct, sDur, sColor);
-
-            int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
-            if (iceStoneCount >= 2 && receiver.IsSlowed && !receiver.IsStunned && stone != null)
+            // æ—§é€»è¾‘ä¿ç•™é˜²è¦†ç›–æ£€æŸ¥ (æˆ–è€…ä½ ä¹Ÿæƒ³è®©å®ƒèƒ½åˆ·æ–°ï¼Œå°±å»æ‰ if)
+            if (!receiver.IsBurning)
             {
-                if (Random.value <= stone.freezeChance) receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab);
+                receiver.ApplyBurn(stats.baseDotDamage, stats.baseDotDuration, stats.dotTickInterval, weaponName);
             }
         }
 
-        // 5. ¸¯Ê´ (Corrode)
-        bool hasCorrode = stats.nativeCorrode || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode));
-
-        if (hasCorrode)
+        // =========================================================
+        // 5. å‡é€Ÿ (Slow)
+        // =========================================================
+        if (stats.baseSlowPercentage > 0)
         {
-            // È·¶¨Ò×ÉË±¶ÂÊ
-            float mult = 1.0f;
-
-            // ÓÅÏÈ¼ì²éÊ¯Í·¶Ñµş
-            int poisonStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode);
-
-            if (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
-            {
-                // Èç¹ûÓĞÊ¯Í·£¬ÓÃÊ¯Í·µÄÊıÖµ
-                mult = (poisonStoneCount >= 2) ? stone.corrodeMultiplier_Stacked : stone.corrodeMultiplier;
-            }
-            else
-            {
-                // Èç¹ûÃ»Ê¯Í·(ÊÇÔ­ÉúÊôĞÔ)£¬ÓÃ StatBlock µÄÊıÖµ
-                mult = stats.nativeCorrodeMultiplier;
-            }
-
-            // È·¶¨ÑÕÉ« (ÓÅÏÈÓÃÊ¯Í·ÑÕÉ«£¬Ã»ÓĞÔòÓÃÔ­ÉúÑÕÉ«)
-            Color cColor = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode))
-                           ? stone.corrodeColor
-                           : stats.nativeCorrodeColor;
-
-            // Ê©¼Ó¸¯Ê´ (Ä¬ÈÏ³ÖĞø 5Ãë)
-            receiver.ApplyCorrode(mult, 5f, cColor, weaponName);
+            receiver.ApplySlow(stats.baseSlowPercentage, stats.baseSlowDuration, Color.blue);
         }
 
-        // 6. Ñ£ÔÎ (Stun - ´óµØ)
-        bool hasStun = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun));
-        if (hasStun)
+        // =========================================================
+        // 6. è…èš€ (Corrode)
+        // =========================================================
+        if (stats.nativeCorrode)
         {
-            float chance = stone.stunChance;
-            if (PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyStun) >= 2) chance = stone.stunChance_Stacked;
-            if (Random.value <= chance) receiver.ApplyStun(stone.stunDuration);
+            receiver.ApplyCorrode(stats.nativeCorrodeMultiplier, 5f, stats.nativeCorrodeColor, weaponName);
         }
     }
 }

@@ -118,55 +118,86 @@ public class MechController : MonoBehaviour
         // 1. 设置状态
         isDashing = true;
         lastDashTime = Time.time;
-        PlayerStats.Instance.isInvincible = true;
 
+        // 启用无敌状态（先开始）
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.isInvincible = true;
+        }
+
+        // 同时设置 Health 组件的无敌状态
+        Health playerHealth = GetComponent<Health>();
+        if (playerHealth != null && playerHealth.isPlayerHealth)
+        {
+            playerHealth.SetInvincible(invincibilityDuration);
+        }
+
+        // 播放音效
         if (dashAudioSource != null && dashSfx != null && dashSfx.Length > 0)
         {
             AudioClip clipToPlay = dashSfx[Random.Range(0, dashSfx.Length)];
             dashAudioSource.PlayOneShot(clipToPlay);
         }
 
+        // 播放冲刺特效
         if (dashVfxPrefab != null)
         {
-            // 在机甲的视觉模型位置生成，并使用其朝向
             Instantiate(dashVfxPrefab, visualsTransform.position, visualsTransform.rotation);
         }
 
         // 2. 计算冲刺方向
-        // 如果玩家有移动输入，则朝输入方向冲刺；否则朝机甲正前方冲刺
         Vector3 dashDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
         if (dashDirection.sqrMagnitude < 0.01f)
         {
             dashDirection = visualsTransform.forward;
         }
 
-        // 3. 施加力
-        // 我们清除现有速度，以获得更可预测的冲刺距离
+        // 3. 施加冲刺力
         rb.velocity = Vector3.zero;
         rb.AddForce(dashDirection * dashForce, ForceMode.Impulse);
 
-        // （可选）触发冲刺动画
-        animator?.SetTrigger("Dash");
+        // 触发冲刺动画
+        animator?.SetTrigger("Dash");        
 
-        // 4. 等待无敌时间结束
-        yield return new WaitForSeconds(invincibilityDuration);
-        PlayerStats.Instance.isInvincible = false;
+        // 4. 等待冲刺持续时间结束（停止移动）
+        yield return new WaitForSeconds(dashDuration);
 
-        // 5. 等待冲刺总持续时间结束
-        yield return new WaitForSeconds(dashDuration - invincibilityDuration);
-
-        // 6. 重置状态
+        // 冲刺动作结束，但无敌状态可能还在继续
         isDashing = false;
-        // 冲刺结束后将速度清零，以防止“滑冰”
-        rb.velocity = Vector3.zero;
+        rb.velocity = Vector3.zero; // 停止冲刺移动
+
+        Debug.Log($"冲刺移动结束，但无敌状态还将持续 {invincibilityDuration - dashDuration} 秒");
+
+        // 5. 计算剩余的无敌时间并继续等待
+        float remainingInvincibility = invincibilityDuration - dashDuration;
+        if (remainingInvincibility > 0)
+        {
+            yield return new WaitForSeconds(remainingInvincibility);
+        }
+
+        // 6. 结束无敌状态
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.isInvincible = false;
+        }       
+        
+
+        Debug.Log("无敌状态结束");
     }
     void Move()
     {
-        // ... 移动和旋转逻辑保持不变 ...
         if (visualsTransform == null) return;
 
+        // --- 【修复】应用移速加成 ---
+        float finalSpeed = moveSpeed;
+        if (PlayerStats.Instance != null)
+        {
+            finalSpeed *= PlayerStats.Instance.moveSpeedMultiplier;
+        }
+        // -------------------------
+
         Vector3 moveDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
-        Vector3 targetVelocity = moveDirection * moveSpeed;
+        Vector3 targetVelocity = moveDirection * finalSpeed; // 使用计算后的速度
         rb.velocity = targetVelocity;
 
         if (moveDirection.sqrMagnitude > 0.01f)

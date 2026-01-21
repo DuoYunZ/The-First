@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // 【关键】引入新的输入系统命名空间
+using UnityEngine.InputSystem;
 
 public class NPCInteraction : MonoBehaviour
 {
@@ -12,23 +12,20 @@ public class NPCInteraction : MonoBehaviour
     public GameObject interactionPromptUI;
 
     private bool playerIsInRange = false;
-    private PlayerControls playerControls; // 【新增】PlayerControls的引用
+    private PlayerControls playerControls;
 
     void Awake()
     {
-        // 【新增】在Awake中初始化PlayerControls
         playerControls = new PlayerControls();
     }
 
     private void OnEnable()
     {
-        // 【新增】启用输入操作
         playerControls.Player.Enable();
     }
 
     private void OnDisable()
     {
-        // 【新增】禁用输入操作，防止内存泄漏
         playerControls.Player.Disable();
     }
 
@@ -39,20 +36,29 @@ public class NPCInteraction : MonoBehaviour
 
     void Update()
     {
-        // 【核心修正】将 Input.GetKeyDown 替换为新的输入系统检测方式
-        // 我们假设您在PlayerControls中有一个名为 "Interact" 的 Action
         if (playerIsInRange && playerControls.Player.Interact.WasPressedThisFrame())
         {
-            Debug.Log("--- 1. E键按下，准备调用UIManager ---"); // <-- 新增
+            Debug.Log("--- E键按下，准备处理技能树界面 ---");
 
-            // 确保UIManager和其下的skillTreeUIManager都已设置
             if (UIManager.Instance != null && UIManager.Instance.skillTreeUIManager != null)
             {
-                UIManager.Instance.skillTreeUIManager.OpenPanel(skillTreeToOpen);
+                // 【关键修改】检查技能树界面是否已经打开
+                if (UIManager.Instance.skillTreeUIManager.IsPanelOpen())
+                {
+                    // 如果界面已经打开，则关闭它
+                    UIManager.Instance.skillTreeUIManager.ClosePanel();
+                    Debug.Log("--- 技能树界面已关闭 ---");
+                }
+                else
+                {
+                    // 如果界面没有打开，则打开它
+                    UIManager.Instance.skillTreeUIManager.OpenPanel();
+                    Debug.Log("--- 技能树界面已打开 ---");
+                }
             }
             else
             {
-                Debug.LogError("UIManager 或 SkillTreeUIManager 未找到！无法打开技能树。");
+                Debug.LogError("UIManager 或 SkillTreeUIManager 未找到！无法打开/关闭技能树。");
             }
         }
     }
@@ -72,6 +78,16 @@ public class NPCInteraction : MonoBehaviour
         {
             playerIsInRange = false;
             if (interactionPromptUI != null) interactionPromptUI.SetActive(false);
+
+            // 【可选】当玩家离开NPC范围时，如果技能树界面是打开的，则关闭它
+            // 这取决于你的设计需求
+            if (UIManager.Instance != null &&
+                UIManager.Instance.skillTreeUIManager != null &&
+                UIManager.Instance.skillTreeUIManager.IsPanelOpen())
+            {
+                UIManager.Instance.skillTreeUIManager.ClosePanel();
+                Debug.Log("--- 玩家离开NPC范围，技能树界面已关闭 ---");
+            }
         }
     }
 }

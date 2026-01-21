@@ -25,6 +25,9 @@ public class UIManager : MonoBehaviour
     [Header("UI 面板引用")]
     [Tooltip("对 SkillTreeUIManager 脚本的引用")]
     public SkillTreeUIManager skillTreeUIManager;
+
+    public Transform weaponUiContainer; // 拖入 Canvas 里的一个 Layout Group
+    public GameObject weaponSlotPrefab; // 拖入上面做好的 Prefab
     void Start()
     {
         if (PlayerProgressManager.Instance != null)
@@ -187,5 +190,14 @@ public class UIManager : MonoBehaviour
         {
             goldDisplayText.text = $"{amount}";
         }
+    }
+
+    public void CreateUiForWeapon(WeaponPart weapon)
+    {
+        GameObject slotObj = Instantiate(weaponSlotPrefab, weaponUiContainer);
+        WeaponStatusSlot slotScript = slotObj.GetComponent<WeaponStatusSlot>();
+
+        // 【关键】绑定
+        slotScript.BindWeapon(weapon);
     }
 }

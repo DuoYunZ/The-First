@@ -81,10 +81,44 @@ public class PlayerBladeAttack : MonoBehaviour
     void Update()
     {
         if (isAttacking) return;
+
+        // --- 动态应用冷却缩减 (Fire Rate) ---
+        float fireRateMult = 1f;
+        if (PlayerStats.Instance != null)
+        {
+            fireRateMult = PlayerStats.Instance.fireRateMultiplier;
+        }
+
+        // 【新增】应用局部攻速/冷却加成
+        if (myWeaponPart != null)
+        {
+            // 假设 localFireRateBonus 是正数 (如 0.1 代表冷却缩减 10%)
+            // 所以这里是减法
+            fireRateMult -= myWeaponPart.localFireRateBonus;
+
+            // 叠加能量石
+            if (myWeaponPart.currentStone != null)
+            {
+                fireRateMult *= (1f + myWeaponPart.currentStone.fireRateModifier);
+            }
+        }
+
+        // 限制最高射速 (防止冷却变成 0 或负数)
+        if (fireRateMult < 0.1f) fireRateMult = 0.1f;
+
+        // 重新计算当前帧的冷却速度
+        if (attackData != null && attackData.baseFireRate > 0)
+        {
+            // Duration = BaseDuration * Multiplier (系数越小，冷却越快)
+            cooldownDuration = (1f / attackData.baseFireRate) * fireRateMult;
+        }
+
         cooldownTimer -= Time.deltaTime;
+
         if (cooldownTimer <= 0 && attackData != null && attackData.baseFireRate > 0)
         {
             StartCoroutine(AttackSequence());
+            // 重置计时器
             cooldownTimer = cooldownDuration;
         }
     }
@@ -94,156 +128,172 @@ public class PlayerBladeAttack : MonoBehaviour
         isAttacking = true;
         weaponCooldownMaterial?.StartCooldown(cooldownDuration);
 
-        if (floatingWeapon != null)
-        {
-            floatingWeapon.HideWeapon();
-        }
+        if (floatingWeapon != null) floatingWeapon.HideWeapon();
 
-        Transform effectTransform = transform; // 默认值
-        if (floatingWeapon != null)
-        {
-            effectTransform = floatingWeapon.transform;
-        }
-        else if (slashSpawnPoint != null)
-        {
-            effectTransform = slashSpawnPoint;
-        }
+        Transform effectTransform = floatingWeapon != null ? floatingWeapon.transform :
+                                   (slashSpawnPoint != null ? slashSpawnPoint : transform);
+
         if (flashEffectPrefab != null)
-        {
             Instantiate(flashEffectPrefab, effectTransform.position, effectTransform.rotation);
-        }
 
-        // --- 音效时序逻辑 ---
-        // 1. 如果设置为提前播放音效
         if (soundEffectDelay < 0)
         {
-            PlaySlashSound(); // 先播放声音
-            yield return new WaitForSeconds(Mathf.Abs(soundEffectDelay)); // 再等待
+            PlaySlashSound();
+            yield return new WaitForSeconds(Mathf.Abs(soundEffectDelay));
         }
 
-        // 2. 生成刀光特效 (这部分逻辑不变)
         GenerateSlashVFX();
 
-        // 3. 如果设置为延迟或同时播放音效
         if (soundEffectDelay >= 0)
         {
-            yield return new WaitForSeconds(soundEffectDelay); // 先等待
-            PlaySlashSound(); // 再播放声音
+            yield return new WaitForSeconds(soundEffectDelay);
+            PlaySlashSound();
         }
-        // --- 音效时序逻辑结束 ---
 
-        yield return new WaitForSeconds(0.5f); // 攻击动作的整体持续时间
+        yield return new WaitForSeconds(0.5f);
         if (floatingWeapon != null) floatingWeapon.ShowWeapon();
         isAttacking = false;
     }
     private void GenerateSlashVFX()
     {
         if (attackData == null) return;
-
         attackCounter++;
 
-        bool hasImprovedFrequency = false;
-        bool hasUnlockedProjectile = false;
-
-        if (PlayerProgressManager.Instance != null)
-        {
-            hasImprovedFrequency = PlayerProgressManager.Instance.IsNodeUnlocked(improveFrequencyNode);
-            hasUnlockedProjectile = PlayerProgressManager.Instance.IsNodeUnlocked(unlockProjectileNode);
-        }
+        bool hasImprovedFrequency = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.IsNodeUnlocked(improveFrequencyNode);
+        bool hasUnlockedProjectile = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.IsNodeUnlocked(unlockProjectileNode);
 
         if (attackData.slashEffectPrefab != null)
         {
-            int slashCount = 1 + PlayerStats.Instance.bonusSlashCount;
-            List<SlashPattern> currentPattern = GetCurrentSlashPattern(slashCount);
+            // --- 【核心修复 3】 ---
 
-            if (currentPattern.Count > 0)
+            // 1. 基础数量
+            int baseCount = attackData.multiHitCount;
+
+            // 2. 全局加成 (PlayerStats)
+            int globalBonus = 0;
+            if (PlayerStats.Instance != null)
             {
-                foreach (var slash in currentPattern)
-                {
-                    SpawnSlashVFX(slash.positionOffset, slash.angleOffset);
+                globalBonus = PlayerStats.Instance.bonusSlashCount;
+            }
 
-                    // --- 4. 【核心新增】在生成每一道刀光时，判断是否要发射刃气 ---
-                    if (hasImprovedFrequency)
-                    {
-                        // 如果解锁了最高级技能，每一道刀光都发射刃气
-                        FireBladeEnergyProjectile(slash.angleOffset);
-                    }                    
+            // 3. 局部加成 (WeaponPart)
+            int localBonus = 0;
+            if (myWeaponPart != null)
+            {
+                // 读取我们刚刚加的变量
+                localBonus = myWeaponPart.localSlashCountBonus;
+
+                // 如果有能量石加成，也在这里读
+                if (myWeaponPart.currentStone != null)
+                {
+                    // localBonus += myWeaponPart.currentStone.slashCountModifier; 
                 }
             }
-        }
-        // --- 5. 处理非最高级的刃气技能 ---
-        // (放在循环外，确保无论有多少道刀光，一次攻击只判定一次)
-        if (hasUnlockedProjectile && !hasImprovedFrequency)
-        {
-            if (attackCounter % 3 == 0)
+
+            // 4. 计算总数
+            int totalSlashCount = baseCount + globalBonus + localBonus;
+
+            // --- 调试日志 ---
+            if (localBonus > 0)
             {
-                Debug.Log($"攻击次数达到 {attackCounter}，触发“刃气斩”！");
-                // 从基础方向发射一道刃气
-                FireBladeEnergyProjectile(0);
+                Debug.Log($"[BladeAttack] 发起攻击: 基础{baseCount} + 全局{globalBonus} + 局部{localBonus} = 总计 {totalSlashCount} 道刀光");
             }
+            // ----------------
+
+            // 5. 生成刀光
+            List<SlashPattern> currentPattern = GetCurrentSlashPattern(totalSlashCount);
+
+            foreach (var slash in currentPattern)
+            {
+                SpawnSlashVFX(slash.positionOffset, slash.angleOffset);
+                if (hasImprovedFrequency) FireBladeEnergyProjectile(slash.angleOffset);
+            }
+        }
+
+        if (hasUnlockedProjectile && !hasImprovedFrequency && attackCounter % 3 == 0)
+        {
+            FireBladeEnergyProjectile(0);
         }
     }
 
     private void FireBladeEnergyProjectile(float angleOffset)
     {
-        if (attackData.bladeEnergyPrefab == null)
-        {
-            Debug.LogWarning("想要发射刃气，但 WeaponStatBlock 中的 BladeEnergyPrefab 未设置！");
-            return;
-        }
+        if (attackData.bladeEnergyPrefab == null) return;
 
         Transform spawnPoint = bladeEnergySpawnPoint != null ? bladeEnergySpawnPoint : this.transform;
+        Quaternion finalRotation = visualsTransform.rotation * Quaternion.Euler(0, angleOffset, 0);
 
-        Quaternion baseRotation = visualsTransform.rotation;
-        Quaternion finalRotation = baseRotation * Quaternion.Euler(0, angleOffset, 0);
-
-        // 【修改】使用新的预制件
         GameObject projectileGO = Instantiate(attackData.bladeEnergyPrefab, spawnPoint.position, finalRotation);
         Projectile projectileScript = projectileGO.GetComponent<Projectile>();
 
         if (projectileScript != null)
         {
-            // --- 【核心修改】从 WeaponStatBlock 读取属性并初始化子弹 ---
-
-            // 1. 获取基础属性
+            // 1. 计算伤害
             int finalDamage = attackData.bladeEnergyDamage;
+            float damageMult = 1f;
+
+            if (PlayerStats.Instance != null) damageMult = PlayerStats.Instance.damageMultiplier;
+            if (myWeaponPart != null) damageMult += myWeaponPart.localDamageBonus;
+
+            finalDamage = Mathf.RoundToInt(finalDamage * damageMult);
+
+            // 2. 计算速度
             float finalSpeed = attackData.bladeEnergySpeed;
+            // (可选) speedMult 计算...
+
             int finalPierce = attackData.bladeEnergyPierceCount;
 
-            // 2. （可选）应用玩家全局属性加成
-            finalDamage = Mathf.RoundToInt(finalDamage * PlayerStats.Instance.damageMultiplier);
+            // =========================================================
+            // 【核心调试区域】 - 看看数值到底是多少
+            // =========================================================
 
-            // 3. （可选）应用刃气距离增长的技能树效果
-            // bool hasRangeUpgrade = DataManager.Instance.IsUpgradeUnlocked("Blade_ImproveRange");
-            // if(hasRangeUpgrade) finalSpeed *= 1.3f; // 假设距离增长30%是通过提速实现
+            // A. 获取基础寿命
+            float baseLife = attackData.baseProjectileLifetime > 0 ? attackData.baseProjectileLifetime : 0.25f;
 
-            // 4. 调用 Projectile.cs 的初始化方法
+            // B. 获取倍率
+            float durationMult = 1f;
+            float globalMult = (PlayerStats.Instance != null) ? PlayerStats.Instance.durationMultiplier : 1f;
+            float localBonus = 0f;
+
+            if (myWeaponPart != null)
+            {
+                localBonus = myWeaponPart.localDurationBonus;
+                durationMult = globalMult + localBonus; // 逻辑：全局(1.0) + 局部(0.x)
+            }
+            else
+            {
+                Debug.LogError($"[BladeAttack调试] 警告！myWeaponPart 是空的！无法读取局部升级！");
+                durationMult = globalMult;
+            }
+
+            // C. 计算最终寿命
+            float finalLifetime = baseLife * durationMult;
+
+            // --- 打印日志 (请在控制台查看这个) ---
+            Debug.Log($"[BladeAttack调试] 基础时间:{baseLife} * (全局:{globalMult} + 局部:{localBonus}) = 最终:{finalLifetime} | WeaponPart存在? {myWeaponPart != null}");
+            // =========================================================
+
             projectileScript.InitializeAsStraight(
-                finalRotation * Vector3.forward, // 发射方向
-                finalSpeed,                      // 飞行速度
-                finalDamage,                     // 伤害
-                false,                           // isEnemyBullet = false
-                finalPierce,                     // 穿透次数
-                5f,                              // 子弹生存时间
-                attackData.shieldImpactEffectPrefab, // 命中护盾特效
-                attackData.defaultImpactEffectPrefab, // 默认命中特效
-                0, 0, 0, 0, 0,                   //
-                AttackType.Standard,
-                myWeaponPart
-            );
-
-            // 【重要】设置刃气弹的物理层
-            projectileGO.layer = LayerMask.NameToLayer("PlayerProjectiles");
-
-            Debug.Log($"发射了一道刃气！伤害: {finalDamage}, 速度: {finalSpeed}");
+                 finalRotation * Vector3.forward,
+                 finalSpeed,
+                 finalDamage,
+                 false,
+                 finalPierce,
+                 finalLifetime, // 传入计算后的时间
+                 attackData.shieldImpactEffectPrefab,
+                 attackData.defaultImpactEffectPrefab,
+                 0, 0, 0, 0, 0,
+                 AttackType.Standard,
+                 myWeaponPart
+             );
+            projectileGO.layer = LayerMask.NameToLayer("PlayerProjectile");
         }
     }
     private void PlaySlashSound()
     {
         if (slashSounds != null && slashSounds.Length > 0 && attackAudioSource != null)
         {
-            AudioClip clipToPlay = slashSounds[Random.Range(0, slashSounds.Length)];
-            attackAudioSource.PlayOneShot(clipToPlay);
+            attackAudioSource.PlayOneShot(slashSounds[Random.Range(0, slashSounds.Length)]);
         }
     }
     private List<SlashPattern> GetCurrentSlashPattern(int slashLevel)
@@ -270,37 +320,64 @@ public class PlayerBladeAttack : MonoBehaviour
         Vector3 finalPosition = spawnPoint.position + worldPositionOffset;
 
         GameObject slashVFX = Instantiate(attackData.slashEffectPrefab, finalPosition, finalRotation);
+
+        // --- 应用范围/大小加成 (Scale) ---
+        float scaleMultiplier = 1f;
+        if (PlayerStats.Instance != null)
+        {
+            scaleMultiplier = PlayerStats.Instance.aoeRadiusMultiplier;
+        }
+
+        // 【新增】应用局部范围加成
+        if (myWeaponPart != null)
+        {
+            scaleMultiplier += myWeaponPart.localAreaBonus;
+
+            // 叠加能量石
+            if (myWeaponPart.currentStone != null)
+            {
+                scaleMultiplier += myWeaponPart.currentStone.scaleModifier;
+            }
+        }
+        slashVFX.transform.localScale *= scaleMultiplier;
+
+        // --- 应用伤害加成 ---
         VFXDamageController damageController = slashVFX.GetComponent<VFXDamageController>();
         if (damageController != null)
         {
             int baseDamage = attackData.baseAoeDamage;
+            int permanentBonus = (PlayerProgressManager.Instance != null) ? PlayerProgressManager.Instance.permanentMeleeAoeFlatDamageBonus : 0;
 
-            // 2. 从 PlayerProgressManager 获取已解锁的永久固定伤害加成
-            //    (添加安全检查，以防 PlayerProgressManager 不存在)
-            int permanentBonus = 0;
-            if (PlayerProgressManager.Instance != null)
-            {
-                permanentBonus = PlayerProgressManager.Instance.permanentMeleeAoeFlatDamageBonus;
-            }
+            float damageMult = 1f;
+            float localDmgBonus = 0f; // 【新增】
+            float stoneDmgMod = 0f;
 
-            // 3. 计算应用了永久加成后的伤害值
-            int totalDamage = baseDamage + permanentBonus;
-
-            // 4. (重要!) 再应用 PlayerStats 中的当局伤害乘数
-            //    (同样添加安全检查)
             if (PlayerStats.Instance != null)
             {
-                totalDamage = Mathf.RoundToInt(totalDamage * PlayerStats.Instance.aoeDamageMultiplier);
+                damageMult = PlayerStats.Instance.damageMultiplier;
             }
 
-            // 5. 调用 VFXDamageController 的【新版】Initialize 方法
+            // 【新增】读取局部变量
+            if (myWeaponPart != null)
+            {
+                localDmgBonus = myWeaponPart.localDamageBonus;
+                if (myWeaponPart.currentStone != null)
+                {
+                    stoneDmgMod = myWeaponPart.currentStone.damageModifier;
+                }
+            }
+
+            // 基础计算：(基础 + 永久) * (玩家加成 + 局部加成 + 石头加成)
+            float calculatedDamage = (baseDamage + permanentBonus) * (damageMult + localDmgBonus + stoneDmgMod);
+            int damageInput = Mathf.RoundToInt(calculatedDamage);
+
+            // 初始化控制器
             damageController.Initialize(
-                totalDamage,                 // 第一个参数：最终计算出的伤害值
-                attackData.hitEffectPrefab,  // 第二个参数：命中特效
-                this.gameObject,              // 第三个参数：攻击者
+                damageInput,
+                attackData.hitEffectPrefab,
+                this.gameObject,
                 myWeaponPart
             );
-
         }
     }
 

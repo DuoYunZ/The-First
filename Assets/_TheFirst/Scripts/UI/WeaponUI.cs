@@ -95,7 +95,9 @@ public class WeaponUI : MonoBehaviour
         List<Sprite> iconsToShow = new List<Sprite>();
 
         // A. ×Ô´øµ¶¹â
-        if (controller.builtInBladeWeapon != null && controller.builtInBladeWeapon.StatBlock != null)
+        if (controller.builtInBladeWeapon != null &&
+             controller.builtInBladeWeapon.StatBlock != null &&
+             controller.builtInBladeWeapon.isActiveAndEnabled)
         {
             iconsToShow.Add(controller.builtInBladeWeapon.StatBlock.weaponIcon);
         }

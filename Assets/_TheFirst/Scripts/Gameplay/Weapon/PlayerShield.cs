@@ -109,7 +109,7 @@ public class PlayerShield : MonoBehaviour
             if (shieldDamagePopupPrefab != null)
             {
                 GameObject popupGO = Instantiate(shieldDamagePopupPrefab, hitPosition + Vector3.up, Quaternion.identity);
-                popupGO.GetComponent<DamagePopup>()?.Setup(absorbedDamage, true);
+                popupGO.GetComponent<DamagePopup>()?.InitPopup(absorbedDamage, true);
             }
         }
 

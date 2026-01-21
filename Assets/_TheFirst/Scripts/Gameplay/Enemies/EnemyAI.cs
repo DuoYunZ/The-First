@@ -152,18 +152,10 @@ public class EnemyAI : MonoBehaviour
 
         // 2. 启用 Rigidbody 并施加力
         rb.isKinematic = false;
-        rb.AddForce(force, ForceMode.Impulse);
-
-        // --- vvv 新增 Debug 2 vvv ---
-        Debug.Log($"<color=orange>KnockbackRoutine: AddForce 已执行！当前 Rigidbody 速度: {rb.velocity.magnitude}</color>");
-        // --- ^^^ 新增结束 ^^^ ---
+        rb.AddForce(force, ForceMode.Impulse);       
 
         // 3. 等待击退效果结束
-        yield return new WaitForSeconds(duration);
-
-        // --- vvv 新增 Debug 3 vvv ---
-        Debug.Log($"<color=orange>KnockbackRoutine: {duration}秒 结束，准备恢复 Agent</color>");
-        // --- ^^^ 新增结束 ^^^ ---
+        yield return new WaitForSeconds(duration);        
 
         // 4. 恢复 Rigidbody 和 NavMeshAgent
         rb.isKinematic = true;

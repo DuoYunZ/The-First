@@ -18,7 +18,7 @@ public class UpgradeNodeUI : MonoBehaviour
     public Color canPurchaseColor = Color.white;
 
     // 内部数据
-    private WeaponUpgradeNode nodeData;
+    public WeaponUpgradeNode nodeData { get; private set; }
     private SkillTreeUIManager uiManager;
 
     public void Initialize(WeaponUpgradeNode data, SkillTreeUIManager manager)
@@ -30,6 +30,7 @@ public class UpgradeNodeUI : MonoBehaviour
 
         if (nodeNameText != null) nodeNameText.text = nodeData.upgradeName;
         if (nodeCostText != null) nodeCostText.text = nodeData.cost.ToString();
+        if (iconImage != null) iconImage.sprite = data.icon;
 
         // 绑定按钮点击事件
         purchaseButton.onClick.AddListener(OnNodeClicked);
