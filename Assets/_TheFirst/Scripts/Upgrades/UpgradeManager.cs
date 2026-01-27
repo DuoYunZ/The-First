@@ -1,7 +1,8 @@
-using UnityEngine;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
 
 public class UpgradeManager : MonoBehaviour
 {
@@ -365,7 +366,7 @@ public class UpgradeManager : MonoBehaviour
             // ---------------------------------------------------------
             // 情况 B: 已拥有 (升级)
             // ---------------------------------------------------------
-            else if (currentLevel < maxLevel)
+            else if (currentLevel < dynamicMaxLevel)
             {
                 int upgradeIndex = currentLevel - 1;
                 if (upgradeIndex >= 0 && upgradeIndex < chain.levels.Count)
@@ -390,9 +391,21 @@ public class UpgradeManager : MonoBehaviour
                     bool metaEvoUnlocked = false;
                     if (PlayerProgressManager.Instance != null)
                     {
+                        string wID = ownedWeapon.stats.weaponID;
+
                         if (ownedWeapon.stats.weaponID == "Fireball")
                         {
                             metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Fireball_Meta_Evolution");
+                        }
+                        else if (wID == "LightningStrike")
+                        {
+                            // 必须在技能树里解锁了 "Lightning_Meta_Evolution" 节点
+                            metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Lightning_Meta_Evolution");
+                        }
+                        else if (wID == "IceShard")
+                        {
+                            // 必须确保你有一个叫 "Ice_Meta_Evolution" 的局外升级文件，并且已解锁
+                            metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Ice_Meta_Evolution");
                         }
                     }
 
@@ -524,6 +537,7 @@ public class UpgradeManager : MonoBehaviour
                             // 添加日志，确保存钱成功
                             Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 刀光数量 +{effect.value}。当前总局部加成: {part.localSlashCountBonus}</color>");
                             break;
+                        
                     }
                 }
             }
@@ -550,7 +564,7 @@ public class UpgradeManager : MonoBehaviour
             {
                 if (WeaponController.Instance != null && effect.weaponToUnlock != null)
                 {
-                    // 1. 先尝试找融合配方 (保留原有超武逻辑)
+                    // 1. 尝试融合 (保持不变)
                     var recipe = WeaponController.Instance.fusionRecipes.FirstOrDefault(r => r.resultWeapon == effect.weaponToUnlock);
                     if (recipe != null)
                     {
@@ -559,45 +573,21 @@ public class UpgradeManager : MonoBehaviour
                     }
                     else
                     {
-                        // 2. 【核心修改】单体进化逻辑 (火球 -> 爆裂火球)
-                        // 寻找哪个旧武器可以进化成这个新武器
+                        // 2. 【核心修改】单体进化逻辑
+                        // 不再自己处理数据替换，而是委托给 WeaponController 彻底换枪
+
+                        // 找到是谁进化成这个新武器
                         var oldWeaponWrapper = WeaponController.Instance.ownedWeapons
                             .FirstOrDefault(w => w.stats.evolutionTarget == effect.weaponToUnlock);
 
-                        if (oldWeaponWrapper != null && oldWeaponWrapper.weaponPartInstance != null)
+                        if (oldWeaponWrapper != null)
                         {
-                            Debug.Log($"[UpgradeManager] 单体进化执行: {oldWeaponWrapper.stats.weaponName} -> {effect.weaponToUnlock.weaponName}");
-
-                            // A. 替换数据 (变身!)
-                            oldWeaponWrapper.stats = effect.weaponToUnlock;
-                            oldWeaponWrapper.weaponPartInstance.StatBlock = effect.weaponToUnlock;
-                            oldWeaponWrapper.weaponPartInstance.currentLevel = 1; // 重置为 1 级
-                            oldWeaponWrapper.currentLevel = 1;
-
-                            // B. 刷新模型和数值
-                            oldWeaponWrapper.weaponPartInstance.RefreshWeaponStateFromStone();
-
-                            // ==========================================
-                            // C. 【新增】记账：记录一次进化成就
-                            // ==========================================
-                            // Key 的格式建议统一，比如 "Evolve_" + 武器名
-                            // 你的 SO 文件里解锁条件填的是什么 Key，这里就拼什么 Key
-                            string statKey = "Evolve_" + effect.weaponToUnlock.weaponID;
-
-                            if (string.IsNullOrEmpty(effect.weaponToUnlock.weaponID))
-                            {
-                                Debug.LogError($"[严重警告] 武器 {effect.weaponToUnlock.name} 未配置 weaponID！成就记录可能失败。");
-                            }
-
-                            if (PlayerProgressManager.Instance != null)
-                            {
-                                PlayerProgressManager.Instance.IncreaseAchievementStat(statKey, 1);
-                            }
-                            // ==========================================
+                            // 调用我们刚才写的新方法
+                            WeaponController.Instance.EvolveWeapon(oldWeaponWrapper.stats, effect.weaponToUnlock);
                         }
                         else
                         {
-                            // 如果找不到旧武器(理论上不该发生)，作为保底直接添加
+                            // 保底：找不到旧的直接给新的
                             WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock);
                         }
                     }

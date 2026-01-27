@@ -165,6 +165,50 @@ public class WeaponController : MonoBehaviour
         }
     }
 
+    public void EvolveWeapon(WeaponStatBlock baseStats, WeaponStatBlock targetStats)
+    {
+        // 1. 找到旧武器
+        var oldWeaponWrapper = ownedWeapons.FirstOrDefault(w => w.stats == baseStats);
+
+        if (oldWeaponWrapper != null)
+        {
+            Debug.Log($"[WeaponController] 执行进化: {baseStats.weaponName} -> {targetStats.weaponName}");
+
+            // 2. 彻底销毁旧武器的物体
+            // 这一点至关重要！因为闪电链的 Prefab 和雷击的 Prefab 结构完全不同
+            if (oldWeaponWrapper.weaponPartInstance != null)
+            {
+                Destroy(oldWeaponWrapper.weaponPartInstance.gameObject);
+            }
+
+            // 3. 从列表中移除旧数据
+            ownedWeapons.Remove(oldWeaponWrapper);
+
+            // 4. 添加新武器 (会自动实例化新的 Prefab)
+            AddNewWeapon(targetStats);
+
+            // 5. 【可选】局外解锁逻辑 (保存到 PlayerProgressManager)
+            if (PlayerProgressManager.Instance != null)
+            {
+                // 确保新武器的 ID 记录到存档
+                string newID = targetStats.weaponID;
+                if (!string.IsNullOrEmpty(newID) && !PlayerProgressManager.Instance.unlockedItems.Contains(newID))
+                {
+                    Debug.Log($"[系统] 进化解锁新图鉴: {targetStats.weaponName}");
+                    PlayerProgressManager.Instance.UnlockItem(newID);
+                }
+
+                // 记录成就 (如 Evolve_ChainLightning)
+                string achievementKey = "Evolve_" + newID;
+                PlayerProgressManager.Instance.IncreaseAchievementStat(achievementKey, 1);
+            }
+        }
+        else
+        {
+            Debug.LogError($"[WeaponController] 进化失败：找不到基础武器 {baseStats.weaponName}");
+        }
+    }
+
     private void RemoveWeapon(OwnedWeapon weaponToRemove)
     {
         if (weaponToRemove == null) return;

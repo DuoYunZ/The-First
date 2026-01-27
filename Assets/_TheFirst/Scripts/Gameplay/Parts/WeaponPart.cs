@@ -83,6 +83,9 @@ public class WeaponPart : MonoBehaviour
     [HideInInspector] public float localAreaBonus = 0f;        // 局部范围加成
     [HideInInspector] public float localSpeedBonus = 0f;       // 局部飞行/旋转速度加成 (OrbitalSpeed 用这个)
     [HideInInspector] public float localDurationBonus = 0f;    // 局部持续时间加成
+    [HideInInspector] public float localStunChanceBonus = 0f; // 局部麻痹概率
+    [HideInInspector] public float localFreezeChanceBonus = 0f; // 【新增】冰冻概率加成
+    [HideInInspector] public int localPierceCountBonus = 0; // 这个你应该早就有了，如果没有请加上
 
 
     // 由 WeaponController 在运行时赋值
@@ -116,6 +119,82 @@ public class WeaponPart : MonoBehaviour
     public System.Action<float, float> OnWeaponXpChanged;
 
     #region Unity Lifecycle Methods
+
+    public void Activate()
+    {
+        if (StatBlock != null)
+        {
+            // 雷击升级
+            if (StatBlock.weaponID == "LightningStrike")
+            {
+                ApplyLightningStrikeMetaUpgrades();
+            }
+
+            // 燃烧瓶升级 (虽然它在Start也能跑，但为了统一建议也搬过来)
+            if (StatBlock.weaponID == "Molotov")
+            {
+                ApplyMolotovMetaUpgrades();
+            }
+            if (StatBlock.weaponID == "IceShard")
+            {
+                ApplyIceShardMetaUpgrades();
+            }
+        }
+
+        gameObject.SetActive(true);
+
+        // --- 1. 这里是初始化实体模型的地方 ---
+        if (StatBlock.behavior == WeaponBehaviorType.Orbital)
+        {
+            SetupOrbiters();
+        }
+        // 【直接在这里添加 Aura 的判断】
+        else if (StatBlock.behavior == WeaponBehaviorType.Aura)
+        {
+            SetupAura();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
+        {
+            Debug.Log("[Activate检查] 检测到 SummonDrone，准备调用 SetupDrones..."); // <--- 这里的日志出了吗？
+            SetupDrones();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.Beam)
+        {
+            SetupAutoBeam();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // 假设你加了这个枚举，或者暂时复用 Beam
+        {
+            SetupFunnelSystem();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.SuperMech)
+        {
+            SetupSuperMech();
+        }
+        // --- 2. 初始化光束计时器 ---
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
+        {
+            beamEnergyTimer = StatBlock.beamDuration;
+            beamCooldownTimer = 0;
+        }
+
+        // --- 3. 你原本的 Orbital 保护逻辑 (保留即可) ---
+        // 注意：因为上面已经判断过一次 SetupOrbiters 了，这里的 !isOrbitalActive 会起作用防止重复生成，
+        // 但如果 behavior 是 Aura，这里条件不满足，直接跳过，所以逻辑是安全的。
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
+        {
+            if (!isOrbitalActive && orbitalCooldownTimer <= 0)
+            {
+                SetupOrbiters();
+            }
+        }
+
+        // --- 4. 初始化回旋镖 ---
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
+        {
+            isBoomerangOut = false;
+        }
+    }
+
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
@@ -135,6 +214,22 @@ public class WeaponPart : MonoBehaviour
             if (StatBlock.evolutionTarget != null)
             {
                 StatBlock = StatBlock.evolutionTarget;
+            }
+        }
+        if (StatBlock.weaponID == "LightningStrike" && IsMetaUnlocked("Lightning_Meta_StartEvolved"))
+        {
+            if (StatBlock.evolutionTarget != null)
+            {
+                Debug.Log("【局外加成】雷击初始进化生效！变身为闪电链");
+                StatBlock = StatBlock.evolutionTarget;
+            }
+        }
+        if (StatBlock.weaponID == "IceShard" && IsMetaUnlocked("Ice_Meta_StartEvolved"))
+        {
+            if (StatBlock.evolutionTarget != null)
+            {
+                StatBlock = StatBlock.evolutionTarget;
+                Debug.Log("[WeaponPart] 冰锥术初始进化生效！");
             }
         }
     }
@@ -178,6 +273,23 @@ public class WeaponPart : MonoBehaviour
                     maxLevel = 10;
                 }
             }
+            if (StatBlock.weaponID == "LightningStrike")
+            {
+                // 1. 默认锁在 5 级
+                maxLevel = 5;
+
+                // 2. 检查是否有“等级突破”局外升级
+                // 假设节点文件名叫 "Lightning_Meta_LimitBreak"
+                if (IsMetaUnlocked("Lightning_Meta_LimitBreak"))
+                {
+                    maxLevel = 10;
+                }
+            }
+            if (StatBlock.weaponID == "IceShard")
+            {
+                maxLevel = 5;
+                if (IsMetaUnlocked("Ice_Meta_LimitBreak")) maxLevel = 10;
+            }
         }
 
         // 1. 火球术攻击力提升 (作为局部加成)
@@ -186,15 +298,50 @@ public class WeaponPart : MonoBehaviour
             // 假设提升 20% 伤害
             localDamageBonus += 0.2f;
         }
-
-        if (StatBlock.weaponID == "Molotov")
-        {
-            ApplyMolotovMetaUpgrades();
-        }
+                
         UpdateVisualModel();
         CalculateNextLevelXP();
     }
 
+    private void ApplyLightningStrikeMetaUpgrades()
+    {
+        // 1. 初始伤害 +30% (Lv1 节点)
+        // 假设节点名叫 "Lightning_Meta_Damage"
+        if(IsMetaUnlocked("Lightning_Meta_Damage"))
+        {
+            // 原来是 localDamageBonus += 0.3f;
+            // 现在改为加暴击率 (例如 +10% 或 +20%)
+            localCritRateBonus += 0.2f;
+            Debug.Log("[Lightning] 暴击率升级生效 (+20%)");
+        }
+
+        // 2. 麻痹概率 +10% (假设这是 Lv3 或 Lv5 节点)
+        // 假设节点名叫 "Lightning_Meta_Stun"
+        if (IsMetaUnlocked("Lightning_Meta_Stun"))
+        {
+            localCritRateBonus += 0.3f; 
+            Debug.Log("[Lightning] 进阶暴击/麻痹升级生效 (+30%)");
+        }
+
+        // 如果还有其他升级(如范围、频率)，按同样方式写
+    }
+
+    private void ApplyIceShardMetaUpgrades()
+    {
+        // 1. 增加穿透 (Lv1)
+        if (IsMetaUnlocked("Ice_Meta_Pierce"))
+        {
+            localPierceCountBonus += 1; // 假设你有这个变量，如果没有，请定义它
+            Debug.Log("[IceShard] 穿透升级生效 (+1)");
+        }
+
+        // 2. 增加冰冻概率 (Lv3)
+        if (IsMetaUnlocked("Ice_Meta_Freeze"))
+        {
+            localFreezeChanceBonus += 0.15f; // +15% 概率
+            Debug.Log("[IceShard] 冰冻概率升级生效 (+15%)");
+        }
+    }
     private void ApplyMolotovMetaUpgrades()
     {
         // 1. 伤害 (Damage)
@@ -298,10 +445,28 @@ public class WeaponPart : MonoBehaviour
 
         if (currentProficiencyLevel >= 10 && StatBlock.evolutionTarget != null)
         {
-            if (IsMetaUnlocked("Fireball_Meta_Evolution"))
+            bool canEvolve = false;
+
+            // 1. 检查火球术进化
+            if (StatBlock.weaponID == "Fireball" && IsMetaUnlocked("Fireball_Meta_Evolution"))
+            {
+                canEvolve = true;
+            }
+
+            // ==========================================
+            // 【新增】2. 检查雷击进化
+            // ==========================================
+            // 假设节点文件名叫 "Lightning_Meta_Evolution"
+            if (StatBlock.weaponID == "LightningStrike" && IsMetaUnlocked("Lightning_Meta_Evolution"))
+            {
+                canEvolve = true;
+            }
+
+            // 执行进化
+            if (canEvolve)
             {
                 EvolveWeapon(StatBlock.evolutionTarget);
-                return; // 进化后直接返回，不再执行后续普通升级逻辑
+                return;
             }
         }
 
@@ -432,26 +597,22 @@ public class WeaponPart : MonoBehaviour
         // 4. 初始化脚本
         MagneticStormAura auraScript = auraGO.GetComponent<MagneticStormAura>();
         if (auraScript != null)
-        {
-            // --- 【核心修复 1】计算伤害时加入 localDamageBonus ---
+        {            
             int finalBaseDamage = Mathf.RoundToInt(
-                StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + localDamageBonus) +
+                StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier +
                 PlayerStats.Instance.flatDamageBonus
             );
 
-            // --- 【核心修复 2】计算范围时加入 localAreaBonus ---
             float rangeMult = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
-
-            // --- 【核心修复 3】计算数量 (基础+全局+局部) ---
             int finalCount = GetTotalCount();
 
-            // 传入所有参数
-            auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount);
-            Debug.Log($"[SetupAura] 初始化成功！伤害:{finalBaseDamage} 范围倍率:{rangeMult:F2} 落雷数:{finalCount}");
-        }
-        else
-        {
-            Debug.LogError($"[SetupAura] 预制体 {auraGO.name} 上缺少 MagneticStormAura 脚本！");
+            // 【核心修改】计算麻痹概率 (基础概率 + 局部加成)
+            // 你可以在 SO 里加一个 baseStunChance，或者默认 0
+            float finalCritRate = PlayerStats.Instance.critRate + localCritRateBonus;
+            Debug.Log($"[Debug] 雷击初始化: 全局暴击({PlayerStats.Instance.critRate}) + 局部加成({localCritRateBonus}) = 最终({finalCritRate})");
+
+            // 传入 finalCritRate
+            auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount, finalCritRate);
         }
     }
 
@@ -1004,70 +1165,7 @@ public class WeaponPart : MonoBehaviour
     #endregion
 
     #region Public Control Methods
-    public void Activate() // Called when weapon is equipped/activated
-    {
-        if (StatBlock != null)
-        {
-            Debug.Log($"[Activate检查] 正在激活武器: {StatBlock.weaponName}, 行为模式: {StatBlock.behavior}");
-        }
-        else
-        {
-            Debug.LogError("[Activate检查] StatBlock 是空的！");
-        }
-
-        gameObject.SetActive(true);
-
-        // --- 1. 这里是初始化实体模型的地方 ---
-        if (StatBlock.behavior == WeaponBehaviorType.Orbital)
-        {
-            SetupOrbiters();
-        }
-        // 【直接在这里添加 Aura 的判断】
-        else if (StatBlock.behavior == WeaponBehaviorType.Aura)
-        {
-            SetupAura();
-        }
-        else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
-        {
-            Debug.Log("[Activate检查] 检测到 SummonDrone，准备调用 SetupDrones..."); // <--- 这里的日志出了吗？
-            SetupDrones();
-        }
-        else if (StatBlock.behavior == WeaponBehaviorType.Beam)
-        {
-            SetupAutoBeam();
-        }
-        else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // 假设你加了这个枚举，或者暂时复用 Beam
-        {
-            SetupFunnelSystem();
-        }
-        else if (StatBlock.behavior == WeaponBehaviorType.SuperMech)
-        {
-            SetupSuperMech();
-        }
-        // --- 2. 初始化光束计时器 ---
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
-        {
-            beamEnergyTimer = StatBlock.beamDuration;
-            beamCooldownTimer = 0;
-        }
-
-        // --- 3. 你原本的 Orbital 保护逻辑 (保留即可) ---
-        // 注意：因为上面已经判断过一次 SetupOrbiters 了，这里的 !isOrbitalActive 会起作用防止重复生成，
-        // 但如果 behavior 是 Aura，这里条件不满足，直接跳过，所以逻辑是安全的。
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
-        {
-            if (!isOrbitalActive && orbitalCooldownTimer <= 0)
-            {
-                SetupOrbiters();
-            }
-        }
-
-        // --- 4. 初始化回旋镖 ---
-        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
-        {
-            isBoomerangOut = false;
-        }
-    }
+   
 
     public void Fire(Vector3 initialDirection)
     {
@@ -1173,14 +1271,57 @@ public class WeaponPart : MonoBehaviour
         }
 
         int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
-        float finalScale = baseScale * totalScaleMultiplier;       
+        float finalScale = baseScale * totalScaleMultiplier;
 
         // 10. Switch 行为模式 (保持不变)
         switch (StatBlock?.behavior)
         {
             case WeaponBehaviorType.Standard:
             case WeaponBehaviorType.Pierce:
-                InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
+                // ==========================================
+                // 【核心修改】支持多重射击与扇形散射 (极寒冰锥逻辑)
+                // ==========================================
+
+                // 1. 计算总子弹数
+                // 基础数量 + 全局加成 + 局部加成(用来支持"数量+1"这种局外升级)
+                // 注意：如果 StatBlock 还没加 projectileCount 字段，请务必去加上！
+                int finalProjCount = StatBlock.projectileCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
+
+                // 特殊保底：如果是极寒冰锥，强制至少 3 发 (防止配置表没填对)
+                if (StatBlock.weaponID == "ExtremeIceShard" && finalProjCount < 3)
+                {
+                    finalProjCount = 3;
+                }
+
+                // 2. 准备发射
+                if (finalProjCount <= 1)
+                {
+                    // 单发逻辑 (保持原样)
+                    InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
+                }
+                else
+                {
+                    // 多发散射逻辑
+                    float totalSpread = StatBlock.spreadAngle; // 读取配置的散射角度 (如 30)
+
+                    // 扇形算法：从 -Spread/2 开始，到 +Spread/2 结束
+                    float startAngle = -totalSpread / 2f;
+                    // 防止除以 0
+                    float stepAngle = (finalProjCount > 1) ? (totalSpread / (finalProjCount - 1)) : 0f;
+
+                    for (int i = 0; i < finalProjCount; i++)
+                    {
+                        // 计算当前子弹的偏转角
+                        float currentAngle = startAngle + (stepAngle * i);
+
+                        // 绕 Y 轴旋转基准方向
+                        Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
+                        Vector3 spreadDirection = rotation * finalTargetDirection;
+
+                        // 发射子弹
+                        InstantiateAndFireProjectile(spreadDirection, finalDamage);
+                    }
+                }
                 break;
 
             case WeaponBehaviorType.CreateAndForget:
@@ -1192,9 +1333,6 @@ public class WeaponPart : MonoBehaviour
                 break;
 
             case WeaponBehaviorType.ParabolicAOE:
-                // 抛物线因为有两个伤害参数(直接/范围)，我们这里需要特别处理一下 AOE 伤害的计算
-                // (虽然上面已经算了一个 finalDamage，但 ParabolicAOE 通常需要把 Direct 和 AOE 分开算)
-                // 这里为了简单，我们假设 finalDamage 传给 Direct，然后再算一个 AOE
                 int finalParabolicAoe = Mathf.RoundToInt(
                     StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + localDamageBonus + stoneDmgMod) +
                     PlayerStats.Instance.flatAoeDamageBonus
@@ -1313,73 +1451,79 @@ public class WeaponPart : MonoBehaviour
     // Updated to accept finalDamage
     private void InstantiateAndFireProjectile(Vector3 direction, int inputDamage)
     {
-        if (firePoint == null)
-        {            
-            return;
-        }
-        if (StatBlock?.projectilePrefab == null)
-        {           
-            return;
-        }
+        if (firePoint == null) return;
+        if (StatBlock?.projectilePrefab == null) return;
 
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
 
-        bool isCrit = Random.value <= (PlayerStats.Instance.critRate + localCritRateBonus); // 【修正】加上局部暴击率
-        int finalDamage = isCrit ? Mathf.RoundToInt(inputDamage * (PlayerStats.Instance.critDamage + localCritDamageBonus)) : inputDamage; // 【修正】加上局部暴击伤害
+        bool isCrit = Random.value <= (PlayerStats.Instance.critRate + localCritRateBonus);
+        int finalDamage = isCrit ? Mathf.RoundToInt(inputDamage * (PlayerStats.Instance.critDamage + localCritDamageBonus)) : inputDamage;
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            // --- 【核心修复 1】计算速度 (全局 + 局部) ---
+            // --- 速度与寿命 ---
             float finalSpeed = StatBlock.baseLaunchForce * (PlayerStats.Instance.projectileSpeedMultiplier + localSpeedBonus);
+            float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
 
+            // ==========================================
+            // 【核心修改 1】穿透计算 (加入冰锥术逻辑)
+            // ==========================================
             int stonePierceBonus = (currentStone != null) ? (int)currentStone.pierceModifier : 0;
-            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus;
 
-            // Get DoT/Slow stats
+            // 基础穿透 + 玩家全局穿透 + 能量石穿透 + 局外升级穿透(localPierceCountBonus)
+            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus + localPierceCountBonus; // <--- 加上 localPierceCountBonus
+
+            // 特殊逻辑：极寒冰锥 (进化后) 无限穿透
+            // 可以判断 ID (ExtremeIceShard) 或者名字
+            if (StatBlock.weaponID == "ExtremeIceShard")
+            {
+                finalPierceCount = 999;
+            }
+
+            // ==========================================
+            // 【核心修改 2】冰冻概率计算
+            // ==========================================
+            // 基础概率 + 局外升级概率
+            float finalFreezeChance = StatBlock.baseFreezeChance + localFreezeChanceBonus;
+
+
+            // --- 其他参数 (保持不变) ---
             int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage);
             float finalDotDuration = StatBlock.baseDotDuration;
             float finalDotTickInterval = StatBlock.dotTickInterval;
             float finalSlowPercentage = StatBlock.baseSlowPercentage;
             float finalSlowDuration = StatBlock.baseSlowDuration;
 
-            // --- 【核心修复 2】计算持续时间 (全局 + 局部) ---
-            // 射程 = 速度 * 时间。这里把 Weapon Duration 升级卡的效果加进去。
-            float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
-
             int finalAoeDamage = 0;
             float finalAoeRadius = 0f;
             GameObject explodeVfx = null;
 
-            // 只有当配置了爆炸范围 > 0 时，才传递这些参数
             if (StatBlock.baseAoeRadius > 0)
             {
-                // 计算范围 (保持不变)
                 finalAoeRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
-
-                // =========================================================
-                // 【核心修改】统一使用直击伤害
-                // =========================================================
-                // 直接使用上面已经算好的 finalDamage (它已经包含了面板基础 + 全局加成 + 局部加成 + 暴击倍率)
-                // 这样未来的任何“伤害提升”都会自动应用到爆炸上
                 finalAoeDamage = finalDamage;
-
                 explodeVfx = StatBlock.explosionEffectPrefab;
             }
 
+            // ==========================================
+            // 【核心修改 3】传递参数 (注意最后加了 freezeChance)
+            // ==========================================
+            // 此时你需要去 Projectile.cs 修改 InitializeAsStraight 的参数列表，接收这个 float
             projectileScript.InitializeAsStraight(
-              direction, finalSpeed, finalDamage,
-              false, finalPierceCount,
-              finalLifetime,
-              StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
-              finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, finalSlowDuration,
-              AttackType.Standard,
-              this,
-              // 【新增】传入刚才计算的 AOE 参数
-              finalAoeDamage,
-              finalAoeRadius,
-              explodeVfx
+               direction, finalSpeed, finalDamage,
+               false, finalPierceCount,
+               finalLifetime,
+               StatBlock.shieldImpactEffectPrefab, StatBlock.defaultImpactEffectPrefab,
+               finalDotDamage, finalDotDuration, finalDotTickInterval, finalSlowPercentage, finalSlowDuration,
+               AttackType.Standard,
+               this,
+               finalAoeDamage,
+               finalAoeRadius,
+               explodeVfx,
+               finalFreezeChance // <--- 【新增】传入冰冻概率
             );
+
             projectileScript.isCritical = isCrit;
             if (isCrit)
             {

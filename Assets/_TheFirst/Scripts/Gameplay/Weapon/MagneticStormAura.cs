@@ -26,6 +26,10 @@ public class MagneticStormAura : MonoBehaviour
     public GameObject thunderStrikeVfxPrefab;
     public GameObject electricSparkVfxPrefab;
 
+    private float critRate = 0f; // 【修改】以前是 stunChance，现在存暴击率
+    private float critMultiplier = 1.5f; // 暴击伤害倍率 (可配置)
+    private float stunDuration = 1.0f;   // 眩晕时间
+
     [Header("目标层级")]
     public LayerMask enemyLayer;
 
@@ -38,16 +42,18 @@ public class MagneticStormAura : MonoBehaviour
     private float strikeTimer;
     private WeaponPart ownerWeapon;
 
-    public void Initialize(int baseWeaponDamage, float rangeMult, WeaponPart weapon, int count)
+    public void Initialize(int baseWeaponDamage, float rangeMult, WeaponPart weapon, int count, float critRateParam)
     {
         this.ownerWeapon = weapon;
         this.lightningCount = count;
+        this.critRate = critRateParam; // 【修改】保存暴击率
 
         this.finalDotDamage = Mathf.RoundToInt(baseWeaponDamage * dotDamageMultiplier);
         this.finalLightningDamage = Mathf.RoundToInt(baseWeaponDamage * lightningDamageMultiplier);
 
         this.radius *= rangeMult;
         transform.localScale = Vector3.one * (this.radius * 0.7f);
+        Debug.Log($"[光环初始化] 暴击率: {this.critRate:P0}");
     }
 
     void Update()
@@ -113,16 +119,12 @@ public class MagneticStormAura : MonoBehaviour
         // 4. 执行连环落雷
         foreach (var target in strikeQueue)
         {
-            // 【安全检查】因为有延迟，轮到它时可能已经被上一道雷劈死了
             if (target == null || target.IsDead) continue;
 
             Vector3 strikePos = target.transform.position;
 
-            // A. 播放特效
-            if (thunderStrikeVfxPrefab != null)
-            {
-                Instantiate(thunderStrikeVfxPrefab, strikePos, Quaternion.identity);
-            }
+            // A. 特效 (不变)
+            if (thunderStrikeVfxPrefab != null) Instantiate(thunderStrikeVfxPrefab, strikePos, Quaternion.identity);
 
             // B. 造成溅射伤害 (AOE)
             Collider[] nearby = Physics.OverlapSphere(strikePos, lightningSplashRadius, enemyLayer);
@@ -130,13 +132,49 @@ public class MagneticStormAura : MonoBehaviour
             {
                 if (hit == null) continue;
                 Health h = hit.GetComponentInParent<Health>();
+                StatusEffectReceiver receiver = h.GetComponentInParent<StatusEffectReceiver>();
+
                 if (h != null && !h.IsDead)
                 {
-                    h.TakeDamage(finalLightningDamage, strikePos, ownerWeapon.gameObject, AttackType.Standard);
+                    // ==========================================
+                    // 【核心修改】暴击判定逻辑
+                    // ==========================================
+
+                    // 1. 获取当前的目标的实际暴击率
+                    // (如果你的感电 Debuff 会增加怪物被暴击的概率，在这里加上逻辑)
+                    // 比如: float effectiveCrit = this.critRate + (receiver.HasShock ? 0.1f : 0f);
+                    float effectiveCrit = this.critRate;
+
+                    bool isCrit = Random.value <= this.critRate;
+                    int actualDamage = finalLightningDamage;
+
+                    if (isCrit)
+                    {
+                        // 暴击：伤害增加 + 必定眩晕
+                        actualDamage = Mathf.RoundToInt(finalLightningDamage * critMultiplier);
+
+                        // 触发眩晕
+                        if (receiver != null)
+                        {
+                            // 假设你有 ApplyStun，如果没有就用 ApplySlow 替代
+                            receiver.ApplyStun(stunDuration, electricSparkVfxPrefab);
+                            // Debug.Log("雷击暴击！触发眩晕！");
+                        }
+                    }
+
+                    // 造成伤害
+                    // 注意：如果你的 TakeDamage 支持传入 isCrit 参数来飘黄字，记得传进去
+                    h.TakeDamage(actualDamage,                       // 1. 伤害
+        strikePos,                          // 2. 位置
+        ownerWeapon.gameObject,             // 3. 攻击者
+        AttackType.Standard,                // 4. 类型
+        projectile: null,                   // 5. Projectile (光环没有子弹脚本)
+        beamController: null,               // 6. BeamController (光环没有射线脚本)
+        sourceWeaponName: ownerWeapon.StatBlock.weaponName, // 7. 武器名
+        isCritical: isCrit                  // 8. 暴击状态 (传进去!)
+    );
                 }
             }
-
-            // C. 间隔
             yield return new WaitForSeconds(lightningStrikeDelay);
         }
     }
@@ -171,14 +209,16 @@ public class MagneticStormAura : MonoBehaviour
 
             if (h != null && !h.IsDead)
             {
+                // 【修复】只有当伤害大于 0 (即开启了 DOT 模式) 时，才造成伤害并施加感电
                 if (finalDotDamage > 0)
                 {
                     h.TakeDamage(finalDotDamage, col.transform.position, ownerWeapon.gameObject, AttackType.Standard);
-                }
 
-                if (status != null)
-                {
-                    status.ApplyShock(1.0f, electricSparkVfxPrefab);
+                    // 将 ApplyShock 移到这里面
+                    if (status != null)
+                    {
+                        status.ApplyShock(1.0f, electricSparkVfxPrefab);
+                    }
                 }
             }
         }

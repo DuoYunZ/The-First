@@ -1,26 +1,26 @@
-ï»¿using UnityEngine;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewPassiveItem", menuName = "Gameplay/Passive Item Data")]
 public class PassiveItemData : ScriptableObject
 {
-    [Header("UI ä¿¡æ¯")]
+    [Header("UI ĞÅÏ¢")]
     public string itemName;
     public Sprite icon;
     [TextArea] public string description;
 
-    [Header("å±æ€§å½±å“")]
-    [Tooltip("è¯¥é“å…·å½±å“å“ªé¡¹å±æ€§")]
+    [Header("ÊôĞÔÓ°Ïì")]
+    [Tooltip("¸ÃµÀ¾ßÓ°ÏìÄÄÏîÊôĞÔ")]
     public UpgradeType statType;
 
-    [Tooltip("æ¯å‡ä¸€çº§å¢åŠ çš„æ•°å€¼ (ç™¾åˆ†æ¯”è¯·ç”¨å°æ•°ï¼Œå¦‚ 0.1 ä»£è¡¨ 10%)")]
+    [Tooltip("Ã¿ÉıÒ»¼¶Ôö¼ÓµÄÊıÖµ (°Ù·Ö±ÈÇëÓÃĞ¡Êı£¬Èç 0.1 ´ú±í 10%)")]
     public float valuePerLevel;
 
-    [Header("ç­‰çº§é™åˆ¶")]
+    [Header("µÈ¼¶ÏŞÖÆ")]
     public int maxLevel = 5;
 
     public string GetDescription(int level)
     {
-        // ç®€å•æ ¼å¼åŒ–æè¿°ï¼Œä¾‹å¦‚ "ä¼¤å®³ +10%"
+        // ¼òµ¥¸ñÊ½»¯ÃèÊö£¬ÀıÈç "ÉËº¦ +10%"
         bool isPercent = statType != UpgradeType.MaxHealth && statType != UpgradeType.Armor && statType != UpgradeType.PierceCount && statType != UpgradeType.Revival;
         float val = valuePerLevel * level;
 

@@ -90,6 +90,8 @@ public class Projectile : MonoBehaviour
 
     private bool hasBeenCaught = false; // 是否已被抓取
 
+    private float freezeChance = 0f; // 【新增】
+
     private Rigidbody rb;
     // --- ^^^ 新增结束 ^^^ ---
 
@@ -211,7 +213,8 @@ public class Projectile : MonoBehaviour
                                           WeaponPart launcher = null,
                                           int aoeDmg = 0,
                                           float aoeRad = 0f,
-                                          GameObject explodeVfx = null)
+                                          GameObject explodeVfx = null,
+                                          float freezeChance = 0f)
     {
 
         Debug.Log($"[Projectile Debug] 直线初始化。传入的 launcher 是: {(launcher != null ? launcher.name : "NULL (空)")}");
@@ -243,6 +246,7 @@ public class Projectile : MonoBehaviour
         this.aoeDamage = aoeDmg;
         this.explosionRadius = aoeRad;
         this.explosionEffectPrefab = explodeVfx;
+        this.freezeChance = freezeChance;
         // ==========================================
         // 【新增逻辑】计算暴击（全局 + 局部）
         // ==========================================
@@ -1157,6 +1161,7 @@ public class Projectile : MonoBehaviour
         WeaponStatBlock stats = sourceWeapon.StatBlock;
         StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>();
 
+
         // =========================================================
         // 1. 雷击逻辑 (Thunder Strike / Smite) - 基于暴击触发      
        
@@ -1196,6 +1201,38 @@ public class Projectile : MonoBehaviour
 
         if (receiver == null) return; // 如果目标没有状态接收器，后面就不需要处理了
 
+        if (this.freezeChance > 0)
+        {
+            // A. 施加减速
+            float slowPct = (stats.baseSlowPercentage > 0) ? stats.baseSlowPercentage : 0.5f;
+            float slowDur = (stats.baseSlowDuration > 0) ? stats.baseSlowDuration : 2.0f;
+
+            // 记录打中前的状态
+            bool wasAlreadyCold = receiver.IsSlowed || receiver.IsFrozen;
+
+            // 先给减速 (这会触发 SlowRoutine，现在它会把 IsSlowed 设为 true 了)
+            receiver.ApplySlow(slowPct, slowDur, Color.cyan);
+
+            // B. 连携判定
+            if (wasAlreadyCold)
+            {
+                // 只有处于减速状态的敌人才会判定冰冻
+                if (Random.value <= this.freezeChance)
+                {
+                    Debug.Log($"<color=cyan>[冰锥连携] 成功冻结敌人! (概率: {this.freezeChance:P0})</color>");
+                    receiver.ApplyFreeze(2.0f, null);
+                }
+                else
+                {
+                    Debug.Log($"[冰锥连携] 冰冻判定失败 (概率: {this.freezeChance:P0})");
+                }
+            }
+            else
+            {
+                Debug.Log($"[冰锥] 第一击：已施加减速。再次攻击可触发冰冻。");
+            }
+        }
+
         // =========================================================
         // 3. 击退 (Knockback)
         // =========================================================
@@ -1208,10 +1245,7 @@ public class Projectile : MonoBehaviour
 
         // =========================================================
         // 4. 燃烧 (Burn)
-        float finalChance = (sourceWeapon != null) ? sourceWeapon.GetIgnitionChance() : stats.ignitionChance;
-
-        // 调试日志：看看现在的概率到底是 0.1 还是 0.4
-        Debug.Log($"[燃烧判定] 来源: {weaponName}, 最终概率: {finalChance}");
+        float finalChance = (sourceWeapon != null) ? sourceWeapon.GetIgnitionChance() : stats.ignitionChance;        
 
         bool appliedBurn = false;
 
@@ -1262,5 +1296,6 @@ public class Projectile : MonoBehaviour
         {
             receiver.ApplyCorrode(stats.nativeCorrodeMultiplier, 5f, stats.nativeCorrodeColor, weaponName);
         }
+
     }
 }

@@ -4,67 +4,71 @@ using System.Collections.Generic;
 
 public class StatusEffectReceiver : MonoBehaviour
 {
-    [Header("ÒıÓÃ")]
-    private Health health; // »ñÈ¡ AimTargetPoint ÓÃ
+    [Header("å¼•ç”¨")]
+    private Health health; // è·å– AimTargetPoint ç”¨
 
     private Health enemyHealth;
-    private EnemyAI enemyAI; // Èç¹ûĞèÒªÌÀíœpËÙµÈÓ°í‘AIµÄĞ§¹û
+    private EnemyAI enemyAI; // å¦‚æœéœ€è¦è™•ç†æ¸›é€Ÿç­‰å½±éŸ¿AIçš„æ•ˆæœ
     private StraightMoverAI straightMoverAI;
-    private Animator animator; // <--- vvv ĞÂÔö
+    private Animator animator; // <--- vvv æ–°å¢
 
     private EnemyMeleeAttack meleeAttackScript;
-    private EnemyProjectileAttack projectileAttackScript; // <--- [ĞÂÔö]
+    private EnemyProjectileAttack projectileAttackScript; // <--- [æ–°å¢]
 
-    private Renderer enemyRenderer; // <--- vvv ĞÂÔö
-    private Color originalColor; // <--- vvv ĞÂÔö
+    private Renderer enemyRenderer; // <--- vvv æ–°å¢
+    private Color originalColor; // <--- vvv æ–°å¢
 
 
     private HashSet<object> persistentSlowSources = new HashSet<object>();
     private HashSet<object> persistentWeakenSources = new HashSet<object>();
-    private HashSet<object> persistentCorrodeSources = new HashSet<object>(); // <--- [ĞÂÔö]
+    private HashSet<object> persistentCorrodeSources = new HashSet<object>(); // <--- [æ–°å¢]
 
     private Color activePersistentSlowColor;
     private Color activePersistentCorrodeColor;
 
-    // ÓÃì¶×·Û™ÕıÔÚßMĞĞµÄ î‘B…f³Ì£¬±ÜÃâÍ¬Ò» î‘BÖØÑ}¯B¼Ó
+    // ç”¨æ–¼è¿½è¹¤æ­£åœ¨é€²è¡Œçš„ç‹€æ…‹å”ç¨‹ï¼Œé¿å…åŒä¸€ç‹€æ…‹é‡è¤‡ç–ŠåŠ 
     private Dictionary<DebuffType, Coroutine> activeStatusCoroutines = new Dictionary<DebuffType, Coroutine>();
 
-    public bool IsSlowed { get; private set; } = false; // <--- [ĞÂÔö]
+    public bool IsSlowed { get; private set; } = false; // <--- [æ–°å¢]
     public bool IsBurning { get; private set; } = false;
     public bool IsStunned { get; private set; } = false;
 
-    [Header("×´Ì¬ÊôĞÔ (ÔËĞĞÊ±)")]
+    [Header("çŠ¶æ€å±æ€§ (è¿è¡Œæ—¶)")]
     public bool IsWeakened { get; private set; } = false;
-    [Tooltip("Èõ»¯×´Ì¬ÏÂµÄÉËº¦³ËÊı")]
-    public float weakenDamageMultiplier { get; private set; } = 1.0f; // 1.0 = 100% ÉËº¦
+    [Tooltip("å¼±åŒ–çŠ¶æ€ä¸‹çš„ä¼¤å®³ä¹˜æ•°")]
+    public float weakenDamageMultiplier { get; private set; } = 1.0f; // 1.0 = 100% ä¼¤å®³
 
-    public bool IsCorroded { get; private set; } = false; // <--- [ĞÂÔö]
-    [Tooltip("¸¯Ê´×´Ì¬ÏÂµÄÉËº¦³ËÊı")]
-    public float corrodeDamageMultiplier { get; private set; } = 1.0f; // <--- [ĞÂÔö]
+    public bool IsCorroded { get; private set; } = false; // <--- [æ–°å¢]
+    [Tooltip("è…èš€çŠ¶æ€ä¸‹çš„ä¼¤å®³ä¹˜æ•°")]
+    public float corrodeDamageMultiplier { get; private set; } = 1.0f; // <--- [æ–°å¢]
 
 
     private float burnDurationRemaining = 0f;
     private int currentBurnDamagePerTick = 0;
     private float currentBurnTickInterval = 1f;
 
-    [Header("ÌØĞ§Ô¤ÖÆ¼ş (¿ÉÑ¡)")]
+    [Header("ç‰¹æ•ˆé¢„åˆ¶ä»¶ (å¯é€‰)")]
     public GameObject stunVfxPrefab;
-    public GameObject burnVfxPrefab; // <--- vvv ĞÂÔö
+    public GameObject burnVfxPrefab; // <--- vvv æ–°å¢
 
-    [Tooltip("±¬È¼ (»ğÑæÊ¯¶Ñµş) ´¥·¢Ê±µÄ×¨ÊôÌØĞ§")]
+    [Tooltip("çˆ†ç‡ƒ (ç«ç„°çŸ³å †å ) è§¦å‘æ—¶çš„ä¸“å±ç‰¹æ•ˆ")]
     public GameObject ignitionVfxPrefab;
 
-    private GameObject stunVfxInstance; // (ÎÒÃÇ°ÑÕâ¸öÒ²¸Ä³ÉË½ÓĞ±äÁ¿)
-    private GameObject burnVfxInstance; // <--- vvv ĞÂÔö
+    private GameObject stunVfxInstance; // (æˆ‘ä»¬æŠŠè¿™ä¸ªä¹Ÿæ”¹æˆç§æœ‰å˜é‡)
+    private GameObject burnVfxInstance; // <--- vvv æ–°å¢
 
-    public bool IsElectrified { get; private set; } = false; // [ĞÂÔö] ¸Ğµç×´Ì¬
-    public GameObject electrifiedVfxPrefab; // [ĞÂÔö] ¸ĞµçÌØĞ§
+    public bool IsElectrified { get; private set; } = false; // [æ–°å¢] æ„Ÿç”µçŠ¶æ€
+    public GameObject electrifiedVfxPrefab; // [æ–°å¢] æ„Ÿç”µç‰¹æ•ˆ
     private GameObject electrifiedVfxInstance;
 
-    [Header("¸Ğµç×´Ì¬ (Shock)")]
+    [Header("æ„Ÿç”µçŠ¶æ€ (Shock)")]
     public bool IsShocked { get; private set; }
     private float shockTimer = 0f;
     private GameObject currentShockVfx;
+
+    public bool IsFrozen { get; private set; } = false;
+    public GameObject freezeVfxPrefab; // ã€æ–°å¢ã€‘åœ¨ Inspector é‡Œæ‹–ä¸€ä¸ªå†°å—ç‰¹æ•ˆ
+    private GameObject freezeVfxInstance;
 
     private string currentBurnSource = "";
     private string currentCorrodeSource = "";
@@ -77,14 +81,14 @@ public class StatusEffectReceiver : MonoBehaviour
         enemyHealth = GetComponent<Health>();
         enemyAI = GetComponent<EnemyAI>();
         straightMoverAI = GetComponent<StraightMoverAI>();
-        animator = GetComponentInChildren<Animator>(); // <--- vvv ĞÂÔö
+        animator = GetComponentInChildren<Animator>(); // <--- vvv æ–°å¢
         meleeAttackScript = GetComponent<EnemyMeleeAttack>();
-        projectileAttackScript = GetComponent<EnemyProjectileAttack>(); // <--- [ĞÂÔö]
-        enemyRenderer = GetComponentInChildren<Renderer>(); // <--- vvv ĞÂÔö
+        projectileAttackScript = GetComponent<EnemyProjectileAttack>(); // <--- [æ–°å¢]
+        enemyRenderer = GetComponentInChildren<Renderer>(); // <--- vvv æ–°å¢
 
         if (enemyRenderer != null)
         {
-            originalColor = enemyRenderer.material.color; // <--- vvv ĞÂÔö (±£´æÔ­Ê¼ÑÕÉ«)
+            originalColor = enemyRenderer.material.color; // <--- vvv æ–°å¢ (ä¿å­˜åŸå§‹é¢œè‰²)
         }
     }
 
@@ -94,14 +98,14 @@ public class StatusEffectReceiver : MonoBehaviour
         // HandleBurnState(); 
     }
     /// <summary>
-    /// ‘ªÓÃÈ¼ŸıĞ§¹û
+    /// æ‡‰ç”¨ç‡ƒç‡’æ•ˆæœ
     /// </summary>
     public void ApplyBurn(int damagePerTick, float duration, float tickInterval, string sourceWeaponName = "")
     {
-        // 1. ´æ´¢È¼ÉÕÊı¾İ (ÓÃÓÚ±¬È¼)
+        // 1. å­˜å‚¨ç‡ƒçƒ§æ•°æ® (ç”¨äºçˆ†ç‡ƒ)
         currentBurnDamagePerTick = damagePerTick;
         currentBurnTickInterval = (tickInterval > 0) ? tickInterval : 1f;
-        // (Èç¹ûÒÑ¾­È¼ÉÕ£¬ÎÒÃÇË¢ĞÂ(Ë¢ĞÂ/µş¼Ó)³ÖĞøÊ±¼ä£¬¶ø²»ÊÇÖØÖÃ)
+        // (å¦‚æœå·²ç»ç‡ƒçƒ§ï¼Œæˆ‘ä»¬åˆ·æ–°(åˆ·æ–°/å åŠ )æŒç»­æ—¶é—´ï¼Œè€Œä¸æ˜¯é‡ç½®)
         burnDurationRemaining = Mathf.Max(burnDurationRemaining, duration);
 
         if (!string.IsNullOrEmpty(sourceWeaponName)) currentBurnSource = sourceWeaponName;
@@ -115,7 +119,7 @@ public class StatusEffectReceiver : MonoBehaviour
             Coroutine burnCoroutine = StartCoroutine(BurnRoutine());
             activeStatusCoroutines[DebuffType.Burn] = burnCoroutine;
         }
-        if (sourceWeaponName == "»ğÇòÊõ" || sourceWeaponName == "Fireball")
+        if (sourceWeaponName == "ç«çƒæœ¯" || sourceWeaponName == "Fireball")
         {
             if (PlayerProgressManager.Instance != null)
             {
@@ -127,26 +131,26 @@ public class StatusEffectReceiver : MonoBehaviour
     {
         if (!IsBurning || enemyHealth == null) return; //
 
-        // 1. ¼ÆËãÊ£ÓàÉËº¦
+        // 1. è®¡ç®—å‰©ä½™ä¼¤å®³
         int remainingTicks = Mathf.FloorToInt(burnDurationRemaining / currentBurnTickInterval); //
         int ignitionDamage = remainingTicks * currentBurnDamagePerTick; //
 
         if (ignitionDamage > 0)
         {
-            // 2. Ôì³É±¬È¼ÉËº¦ (Ê¹ÓÃ Standard »ò Ignition ÀàĞÍ)
+            // 2. é€ æˆçˆ†ç‡ƒä¼¤å®³ (ä½¿ç”¨ Standard æˆ– Ignition ç±»å‹)
             enemyHealth.TakeDamage(ignitionDamage, transform.position, null, AttackType.Standard); //
 
-            // --- vvv [ĞÂÔö] vvv ---
-            // 3. ²¥·Å±¬È¼ÌØĞ§
+            // --- vvv [æ–°å¢] vvv ---
+            // 3. æ’­æ”¾çˆ†ç‡ƒç‰¹æ•ˆ
             if (ignitionVfxPrefab != null)
             {
-                // ÔÚµĞÈËµ±Ç°Î»ÖÃ²¥·ÅÒ»´ÎĞÔµÄ±¬È¼ÌØĞ§
+                // åœ¨æ•Œäººå½“å‰ä½ç½®æ’­æ”¾ä¸€æ¬¡æ€§çš„çˆ†ç‡ƒç‰¹æ•ˆ
                 Instantiate(ignitionVfxPrefab, transform.position, Quaternion.identity);
             }
-            // --- ^^^ [ĞÂÔö] ^^^ ---
+            // --- ^^^ [æ–°å¢] ^^^ ---
         }
 
-        // 4. Í£Ö¹È¼ÉÕ
+        // 4. åœæ­¢ç‡ƒçƒ§
         StopBurn(); //
     }
 
@@ -171,7 +175,7 @@ public class StatusEffectReceiver : MonoBehaviour
     }
 
 
-    // --- ĞÂÔö£ºÓ¦ÓÃ¼õËÙĞ§¹ûµÄ·½·¨ ---
+    // --- æ–°å¢ï¼šåº”ç”¨å‡é€Ÿæ•ˆæœçš„æ–¹æ³• ---
     public void ApplySlow(float slowPercentage, float duration)
     {
         Color defaultSlowColor = Color.cyan;
@@ -188,11 +192,118 @@ public class StatusEffectReceiver : MonoBehaviour
         activeStatusCoroutines[DebuffType.Slow] = slowCoroutine;
     }
 
+    public void ApplyFreeze(float duration, GameObject vfxOverride = null)
+    {
+        // 1. æ‰“æ–­æ”»å‡»
+        if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
+        if (projectileAttackScript != null) projectileAttackScript.InterruptAttack();
+
+        // ==========================================
+        // ã€æ ¸å¿ƒä¿®å¤ 1ã€‘åœæ­¢æ—§å†°å†»æ—¶ï¼Œå¿…é¡»å¼ºåˆ¶è§£å†»ï¼
+        // ==========================================
+        // é˜²æ­¢æ—§åç¨‹è¢« Kill åï¼Œæ€ªç‰©å¡åœ¨çœ©æ™•çŠ¶æ€
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Freeze))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Freeze]);
+            activeStatusCoroutines.Remove(DebuffType.Freeze);
+
+            // å¼ºåˆ¶æ¸…ç†æ®‹ç•™çŠ¶æ€ (ä¿é™©èµ·è§)
+            if (freezeVfxInstance != null) Destroy(freezeVfxInstance);
+            IsFrozen = false;
+            if (enemyAI != null) enemyAI.SetStunned(false); // <--- å…³é”®ï¼
+            if (straightMoverAI != null) straightMoverAI.SetStunned(false);
+        }
+
+        // 2. ç¡®å®šç‰¹æ•ˆ
+        GameObject vfxToUse = (vfxOverride != null) ? vfxOverride : freezeVfxPrefab;
+
+        // 3. å¯åŠ¨æ–°åç¨‹
+        var freezeCoroutine = StartCoroutine(FreezeRoutine(duration, vfxToUse));
+        activeStatusCoroutines[DebuffType.Freeze] = freezeCoroutine;
+    }
+    private IEnumerator FreezeRoutine(float duration, GameObject vfxToUse)
+    {
+        IsFrozen = true;
+
+        // --- æ§åˆ¶ ---
+        if (enemyAI != null) enemyAI.SetStunned(true);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(true);
+        if (animator != null) animator.speed = 0f;
+
+        // --- è§†è§‰ (å˜è“) ---
+        if (enemyRenderer != null)
+        {
+            enemyRenderer.material.color = new Color(0.3f, 0.6f, 1f);
+        }
+
+        // ==========================================
+        // ã€æ ¸å¿ƒä¿®å¤ 2ã€‘ç‰¹æ•ˆä½ç½®ä¿®æ­£ (ç”Ÿæˆåœ¨è„šåº•)
+        // ==========================================
+        if (vfxToUse != null)
+        {
+            try
+            {
+                // ç›´æ¥ç”Ÿæˆåœ¨ transform.position (è„šåº•)ï¼Œä¸è¦å» AimTargetPoint äº†
+                freezeVfxInstance = Instantiate(vfxToUse, transform.position, Quaternion.identity, transform);
+
+                // å¦‚æœéœ€è¦ç¡®ä¿ç‰¹æ•ˆä¸éšæ€ªç‰©æ—‹è½¬ï¼Œå¯ä»¥æŠŠæœ€åä¸€å‚æ•° transform å»æ‰ï¼Œ
+                // æˆ–è€…ç”Ÿæˆå reset rotation:
+                // freezeVfxInstance.transform.rotation = Quaternion.identity;
+            }
+            catch (System.Exception e)
+            {
+                // æ•è·é”™è¯¯ï¼Œé˜²æ­¢å› ä¸ºç‰¹æ•ˆé—®é¢˜å¯¼è‡´åç»­è§£å†»é€»è¾‘ä¸æ‰§è¡Œ
+                Debug.LogError($"[Freeze] ç‰¹æ•ˆç”Ÿæˆå¤±è´¥: {e.Message}");
+            }
+        }
+
+        // --- ç­‰å¾… ---
+        yield return new WaitForSeconds(duration);
+
+        // ==========================================
+        // ã€æ ¸å¿ƒä¿®å¤ 3ã€‘ç¨³å¥çš„æ¢å¤é€»è¾‘
+        // ==========================================
+        IsFrozen = false;
+
+        // æ¢å¤è¡ŒåŠ¨
+        if (enemyAI != null) enemyAI.SetStunned(false);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(false);
+
+        // é”€æ¯ç‰¹æ•ˆ
+        if (freezeVfxInstance != null)
+        {
+            Destroy(freezeVfxInstance);
+            freezeVfxInstance = null;
+        }
+
+        // æ¢å¤é¢œè‰²å’ŒåŠ¨ç”»
+        // æ£€æŸ¥ï¼šå¦‚æœæ­¤æ—¶æ€ªç‰©èº«ä¸Šè¿˜æœ‰ã€å‡é€Ÿã€‘çŠ¶æ€ (æ¥è‡ªå­å¼¹ IsSlowed æˆ– å…‰ç¯ persistentSlowSources)
+        // åº”è¯¥æ¢å¤æˆå‡é€Ÿçš„æ ·å­ï¼Œè€Œä¸æ˜¯å®Œå…¨æ¢å¤åŸæ ·
+        bool isStillSlowed = IsSlowed || persistentSlowSources.Count > 0;
+
+        if (isStillSlowed)
+        {
+            UpdateSlowState(); // æ¢å¤ä¸ºå‡é€ŸçŠ¶æ€ (é¢œè‰²å˜é’ï¼ŒåŠ¨ç”»å˜æ…¢)
+        }
+        else
+        {
+            // å®Œå…¨æ¢å¤
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor;
+            if (animator != null) animator.speed = 1f;
+        }
+
+        // ç§»é™¤è®°å½•
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Freeze))
+        {
+            activeStatusCoroutines.Remove(DebuffType.Freeze);
+        }
+    }
+
     public void ApplyPersistentSlow(object source, float percentage, Color color)
     {
         if (persistentSlowSources.Add(source))
         {
-            activePersistentSlowColor = color; // [!] ´æ´¢ÑÕÉ«
+            activePersistentSlowColor = color; // [!] å­˜å‚¨é¢œè‰²
             UpdateSlowState();
         }
     }
@@ -211,11 +322,11 @@ public class StatusEffectReceiver : MonoBehaviour
             if (IsSlowed) return;
             IsSlowed = true;
 
-            float speedMultiplier = 1.0f - 0.3f; // (TODO: 0.3f Ó¦´Ó source ¶ÁÈ¡)
+            float speedMultiplier = 1.0f - 0.3f; // (TODO: 0.3f åº”ä» source è¯»å–)
 
             if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed() * speedMultiplier);
             if (animator != null) animator.speed = speedMultiplier;
-            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentSlowColor; // [!] Ê¹ÓÃ´æ´¢µÄÑÕÉ«
+            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentSlowColor; // [!] ä½¿ç”¨å­˜å‚¨çš„é¢œè‰²
         }
         else
         {
@@ -224,7 +335,7 @@ public class StatusEffectReceiver : MonoBehaviour
 
             if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed());
             if (animator != null) animator.speed = 1f;
-            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] »Ö¸´Ô­Ê¼ÑÕÉ«
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] æ¢å¤åŸå§‹é¢œè‰²
         }
     }
     public void ApplyStun(float duration) //
@@ -235,24 +346,24 @@ public class StatusEffectReceiver : MonoBehaviour
         }
 
         if (projectileAttackScript != null)
-            projectileAttackScript.InterruptAttack(); // <--- [ĞÂÔö]
+            projectileAttackScript.InterruptAttack(); // <--- [æ–°å¢]
 
-        // --- vvv [ ºËĞÄĞŞ¸Ä 4 ] vvv ---
-        // Ê¹ÓÃ DebuffType.Stun ×÷Îª Key
+        // --- vvv [ æ ¸å¿ƒä¿®æ”¹ 4 ] vvv ---
+        // ä½¿ç”¨ DebuffType.Stun ä½œä¸º Key
         if (activeStatusCoroutines.ContainsKey(DebuffType.Stun))
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.Stun]);
         }
 
         var stunCoroutine = StartCoroutine(StunRoutine(duration, stunVfxPrefab)); //
-        // --- ^^^ [ĞŞ¸Ä] ^^^ ---
+        // --- ^^^ [ä¿®æ”¹] ^^^ ---
         activeStatusCoroutines[DebuffType.Stun] = stunCoroutine; //
-        // --- ^^^ [ ºËĞÄĞŞ¸Ä 4 ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ 4 ] ^^^ ---
     }
 
     public void ApplyStun(float duration, GameObject vfxOverride)
     {
-        // (´ò¶ÏÂß¼­±£³Ö²»±ä)
+        // (æ‰“æ–­é€»è¾‘ä¿æŒä¸å˜)
         if (meleeAttackScript != null)
             meleeAttackScript.InterruptAttack(); //
         if (projectileAttackScript != null)
@@ -263,18 +374,18 @@ public class StatusEffectReceiver : MonoBehaviour
             StopCoroutine(activeStatusCoroutines[DebuffType.Stun]); //
         }
 
-        // (µ÷ÓÃĞ­³Ì£¬²¢´«µİ *×Ô¶¨Òå* µÄ vfxOverride)
+        // (è°ƒç”¨åç¨‹ï¼Œå¹¶ä¼ é€’ *è‡ªå®šä¹‰* çš„ vfxOverride)
         var stunCoroutine = StartCoroutine(StunRoutine(duration, vfxOverride)); //
         activeStatusCoroutines[DebuffType.Stun] = stunCoroutine; //
     }
 
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
-        // 1. ´ò¶Ï¹¥»÷
+        // 1. æ‰“æ–­æ”»å‡»
         if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
         if (projectileAttackScript != null) projectileAttackScript.InterruptAttack();
 
-        // 2. ×ª·¢¸ø AI
+        // 2. è½¬å‘ç»™ AI
         if (enemyAI != null)
         {
             enemyAI.ApplyKnockback(forceDirection, forceAmount, duration);
@@ -287,8 +398,8 @@ public class StatusEffectReceiver : MonoBehaviour
 
     public void ApplyWeaken(float percentage, float duration) //
     {
-        // --- vvv [ ºËĞÄĞŞ¸Ä 5 - ÕâĞŞ¸´ÁËÄãµÄ Bug ] vvv ---
-        // Ê¹ÓÃ DebuffType.Weaken ×÷Îª Key
+        // --- vvv [ æ ¸å¿ƒä¿®æ”¹ 5 - è¿™ä¿®å¤äº†ä½ çš„ Bug ] vvv ---
+        // ä½¿ç”¨ DebuffType.Weaken ä½œä¸º Key
         if (activeStatusCoroutines.ContainsKey(DebuffType.Weaken))
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.Weaken]);
@@ -296,24 +407,24 @@ public class StatusEffectReceiver : MonoBehaviour
 
         var weakenCoroutine = StartCoroutine(WeakenRoutine(percentage, duration));
         activeStatusCoroutines[DebuffType.Weaken] = weakenCoroutine;
-        // --- ^^^ [ ºËĞÄĞŞ¸Ä 5 ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ 5 ] ^^^ ---
     }
 
     private IEnumerator WeakenRoutine(float percentage, float duration) //
     {
-        // ... (Ğ­³ÌÄÚ²¿Âß¼­±£³Ö²»±ä) ...
+        // ... (åç¨‹å†…éƒ¨é€»è¾‘ä¿æŒä¸å˜) ...
         IsWeakened = true; //
         weakenDamageMultiplier = 1.0f - percentage; //
         yield return new WaitForSeconds(duration);
         IsWeakened = false; //
         weakenDamageMultiplier = 1.0f; //
 
-        // (È·±£ Key Æ¥Åä)
+        // (ç¡®ä¿ Key åŒ¹é…)
         activeStatusCoroutines.Remove(DebuffType.Weaken); //
     }
     public void ApplyCorrode(float multiplier, float duration)
     {
-        ApplyCorrode(multiplier, duration, new Color(0.5f, 1f, 0.5f)); // [!] Ê¹ÓÃÄ¬ÈÏÂÌÉ«
+        ApplyCorrode(multiplier, duration, new Color(0.5f, 1f, 0.5f)); // [!] ä½¿ç”¨é»˜è®¤ç»¿è‰²
     }
     public void ApplyCorrode(float multiplier, float duration, Color color, string sourceWeaponName = "")
     {
@@ -321,14 +432,14 @@ public class StatusEffectReceiver : MonoBehaviour
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.Corrode]);
         }
-        var corrodeCoroutine = StartCoroutine(CorrodeRoutine(multiplier, duration, color)); // [!] ´«µİÑÕÉ«
+        var corrodeCoroutine = StartCoroutine(CorrodeRoutine(multiplier, duration, color)); // [!] ä¼ é€’é¢œè‰²
         activeStatusCoroutines[DebuffType.Corrode] = corrodeCoroutine; //
     }
-    public void ApplyPersistentCorrode(object source, float multiplier, Color color) // [!] ´«µİÑÕÉ«
+    public void ApplyPersistentCorrode(object source, float multiplier, Color color) // [!] ä¼ é€’é¢œè‰²
     {
         if (persistentCorrodeSources.Add(source)) //
         {
-            activePersistentCorrodeColor = color; // [!] ´æ´¢ÑÕÉ«
+            activePersistentCorrodeColor = color; // [!] å­˜å‚¨é¢œè‰²
             UpdateCorrodeState(multiplier); //
         }
     }
@@ -336,7 +447,7 @@ public class StatusEffectReceiver : MonoBehaviour
     {
         if (persistentCorrodeSources.Remove(source))
         {
-            UpdateCorrodeState(1.0f); // (TODO: Ó¦¸ÄÎª¶ÁÈ¡Ê£ÓàÔ´ÖĞµÄ×î´óÖµ)
+            UpdateCorrodeState(1.0f); // (TODO: åº”æ”¹ä¸ºè¯»å–å‰©ä½™æºä¸­çš„æœ€å¤§å€¼)
         }
     }
     private void UpdateCorrodeState(float multiplier) //
@@ -345,26 +456,26 @@ public class StatusEffectReceiver : MonoBehaviour
         {
             IsCorroded = true; //
             corrodeDamageMultiplier = multiplier; //
-            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentCorrodeColor; // [!] Ó¦ÓÃÑÕÉ«
+            if (enemyRenderer != null) enemyRenderer.material.color = activePersistentCorrodeColor; // [!] åº”ç”¨é¢œè‰²
         }
         else
         {
             IsCorroded = false; //
             corrodeDamageMultiplier = 1.0f; //
-            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] »Ö¸´ÑÕÉ«
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] æ¢å¤é¢œè‰²
         }
     }
-    private IEnumerator CorrodeRoutine(float multiplier, float duration, Color color) // [!] ´«µİÑÕÉ«
+    private IEnumerator CorrodeRoutine(float multiplier, float duration, Color color) // [!] ä¼ é€’é¢œè‰²
     {
         IsCorroded = true; //
         corrodeDamageMultiplier = multiplier; //
-        if (enemyRenderer != null) enemyRenderer.material.color = color; // [!] Ó¦ÓÃÑÕÉ«
+        if (enemyRenderer != null) enemyRenderer.material.color = color; // [!] åº”ç”¨é¢œè‰²
 
         yield return new WaitForSeconds(duration);
 
         IsCorroded = false; //
         corrodeDamageMultiplier = 1.0f; //
-        if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] »Ö¸´ÑÕÉ«
+        if (enemyRenderer != null) enemyRenderer.material.color = originalColor; // [!] æ¢å¤é¢œè‰²
 
         activeStatusCoroutines.Remove(DebuffType.Corrode); //
     }
@@ -387,7 +498,7 @@ public class StatusEffectReceiver : MonoBehaviour
         if (persistentWeakenSources.Count > 0)
         {
             IsWeakened = true; //
-            weakenDamageMultiplier = 1.0f - 0.2f; // ¼ÙÉè¼õÉË20% (TODO: ´Ó source ¶ÁÈ¡)
+            weakenDamageMultiplier = 1.0f - 0.2f; // å‡è®¾å‡ä¼¤20% (TODO: ä» source è¯»å–)
         }
         else
         {
@@ -417,12 +528,12 @@ public class StatusEffectReceiver : MonoBehaviour
 
         if (persistentSlowSources.Count > 0) //
         {
-            // ÖØĞÂÓ¦ÓÃ¹â»· µÄ¼õËÙ Ğ§¹û
+            // é‡æ–°åº”ç”¨å…‰ç¯ çš„å‡é€Ÿ æ•ˆæœ
             UpdateSlowState(); //
         }
         else
         {
-            // (Èç¹ûÃ»ÓĞÈÎºÎ¹â»· Ğ§¹û£¬Ôò°²È«µØÖØÖÃ¶¯»­ËÙ¶È)
+            // (å¦‚æœæ²¡æœ‰ä»»ä½•å…‰ç¯ æ•ˆæœï¼Œåˆ™å®‰å…¨åœ°é‡ç½®åŠ¨ç”»é€Ÿåº¦)
             if (animator != null) animator.speed = 1f;
         }
 
@@ -437,56 +548,39 @@ public class StatusEffectReceiver : MonoBehaviour
 
     private IEnumerator SlowRoutine(float slowPercentage, float duration, Color newColor)
     {
-        // (¼ì²é enemyAI ºÍ straightMoverAI ÊÇ·ñÎª null)
+        // 1. æ ‡è®°çŠ¶æ€ (æ ¸å¿ƒä¿®å¤!)
+        IsSlowed = true;
+
+        // 2. å‡é€Ÿé€»è¾‘ (ä¿æŒä¸å˜)
         if (enemyAI == null && straightMoverAI == null) yield break;
 
         float speedMultiplier = Mathf.Max(0, 1f - slowPercentage);
 
-        // 1. ¼õËÙÒÆ¶¯
-        if (enemyAI != null)
-        {
-            float originalSpeed = enemyAI.GetOriginalMoveSpeed(); //
-            enemyAI.SetMoveSpeed(originalSpeed * speedMultiplier); //
-        }
-        if (straightMoverAI != null)
-        {
-            // (È·±£ÄãµÄ StraightMoverAI Ò²ÓĞ GetOriginalMoveSpeed ºÍ SetMoveSpeed)
-        }
+        if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed() * speedMultiplier);
+        // if (straightMoverAI != null) ...
 
-        // 2. ¼õËÙ¶¯»­
-        if (animator != null)
-        {
-            animator.speed = speedMultiplier;
-        }
+        if (animator != null) animator.speed = speedMultiplier;
 
-        // 3. ¸Ä±äÑÕÉ«
-        if (enemyRenderer != null)
-        {
-            enemyRenderer.material.color = newColor;
-        }
+        if (enemyRenderer != null) enemyRenderer.material.color = newColor;
 
+        // 3. ç­‰å¾…
         yield return new WaitForSeconds(duration);
 
-        if (persistentSlowSources.Count > 0) //
+        // 4. æ¢å¤çŠ¶æ€ (æ ¸å¿ƒä¿®å¤!)
+        // å¦‚æœæ²¡æœ‰å…‰ç¯åœ¨ä½œç”¨ï¼Œæ‰å–æ¶ˆ IsSlowed
+        if (persistentSlowSources.Count == 0)
         {
-            // (¹â»· ÈÔÔÚ¼¤»î£¬ËùÒÔÕâ¸öË²Ê±Ğ­³Ì²»Ó¦¸ÃÖØÖÃ×´Ì¬£¬
-            //  ËüÖ»ĞèÒªÍ£Ö¹×Ô¼º¼´¿É)
-            activeStatusCoroutines.Remove(DebuffType.Slow); //
-            yield break; // ÌáÇ°ÍË³ö
-        }
+            IsSlowed = false;
 
-        // ³ÖĞøÊ±¼ä½áÊøºó£¬»Ö¸´
-        if (enemyAI != null)
-        {
-            enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed()); //
+            // æ¢å¤é€Ÿåº¦å’Œé¢œè‰²
+            if (enemyAI != null) enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed());
+            if (animator != null) animator.speed = 1f;
+            if (enemyRenderer != null) enemyRenderer.material.color = originalColor;
         }
-        if (animator != null)
+        else
         {
-            animator.speed = 1f;
-        }
-        if (enemyRenderer != null)
-        {
-            enemyRenderer.material.color = originalColor;
+            // å¦‚æœè¿˜æœ‰å…‰ç¯ï¼Œå°±è½¬äº¤ç»™å…‰ç¯é€»è¾‘å¤„ç†
+            UpdateSlowState();
         }
 
         activeStatusCoroutines.Remove(DebuffType.Slow);
@@ -496,25 +590,25 @@ public class StatusEffectReceiver : MonoBehaviour
     {
         IsBurning = true;
 
-        // 1. Æô¶¯ÌØĞ§
+        // 1. å¯åŠ¨ç‰¹æ•ˆ
         if (burnVfxPrefab != null && burnVfxInstance == null)
         {
             burnVfxInstance = Instantiate(burnVfxPrefab, transform.position, Quaternion.identity, transform);
         }
 
-        // (Ê¹ÓÃÀà¼¶±äÁ¿)
+        // (ä½¿ç”¨ç±»çº§å˜é‡)
         float tickTimer = currentBurnTickInterval;
 
         while (burnDurationRemaining > 0)
         {
-            // 1. µÈ´ı
+            // 1. ç­‰å¾…
             float waitTime = Mathf.Min(tickTimer, burnDurationRemaining);
             yield return new WaitForSeconds(waitTime);
 
             burnDurationRemaining -= waitTime;
             tickTimer -= waitTime;
 
-            // 2. Ôì³ÉÉËº¦
+            // 2. é€ æˆä¼¤å®³
             if (tickTimer <= 0.01f)
             {
                 if (enemyHealth != null && !enemyHealth.IsDead)
@@ -523,18 +617,18 @@ public class StatusEffectReceiver : MonoBehaviour
                 }
                 else
                 {
-                    break; // Ä¿±êËÀÍö
+                    break; // ç›®æ ‡æ­»äº¡
                 }
-                tickTimer = currentBurnTickInterval; // ÖØÖÃÌø×Ö¼ÆÊ±Æ÷
+                tickTimer = currentBurnTickInterval; // é‡ç½®è·³å­—è®¡æ—¶å™¨
             }
         }
 
-        // 3. ½áÊøÈ¼ÉÕ
+        // 3. ç»“æŸç‡ƒçƒ§
         StopBurn();
     }
     public void ApplyElectrified(float duration)
     {
-        if (activeStatusCoroutines.ContainsKey(DebuffType.Electrified)) // ĞèÔÚÃ¶¾ÙÀï¼Ó Electrified
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Electrified)) // éœ€åœ¨æšä¸¾é‡ŒåŠ  Electrified
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.Electrified]);
         }
@@ -543,7 +637,7 @@ public class StatusEffectReceiver : MonoBehaviour
     private IEnumerator ElectrifiedRoutine(float duration)
     {
         IsElectrified = true;
-        // Éú³É¸ĞµçÌØĞ§ (×Ì×Ì×ÌµÄµçÁ÷)
+        // ç”Ÿæˆæ„Ÿç”µç‰¹æ•ˆ (æ»‹æ»‹æ»‹çš„ç”µæµ)
         if (electrifiedVfxPrefab != null && electrifiedVfxInstance == null)
         {
             electrifiedVfxInstance = Instantiate(electrifiedVfxPrefab, transform.position, Quaternion.identity, transform);
@@ -557,36 +651,36 @@ public class StatusEffectReceiver : MonoBehaviour
     }
     public void ApplyShock(float duration, GameObject vfxPrefab)
     {
-        // 1. Ë¢ĞÂ³ÖĞøÊ±¼ä
+        // 1. åˆ·æ–°æŒç»­æ—¶é—´
         shockTimer = duration;
 
-        // 2. Èç¹ûÖ®Ç°Ã»ÓĞ´¦ÓÚ¸Ğµç×´Ì¬£¬»òÕßÊÇÌØĞ§¶ªÊ§ÁË£¬¾ÍÉú³ÉÒ»¸öĞÂµÄ
+        // 2. å¦‚æœä¹‹å‰æ²¡æœ‰å¤„äºæ„Ÿç”µçŠ¶æ€ï¼Œæˆ–è€…æ˜¯ç‰¹æ•ˆä¸¢å¤±äº†ï¼Œå°±ç”Ÿæˆä¸€ä¸ªæ–°çš„
         if (!IsShocked || currentShockVfx == null)
         {
             IsShocked = true;
 
             if (vfxPrefab != null)
             {
-                // --- ¡¾Î»ÖÃĞŞÕıÂß¼­¡¿ ---
-                Transform mountParent = transform; // Ä¬ÈÏ¹ÒÔÚ×Ô¼ºÉíÉÏ
+                // --- ã€ä½ç½®ä¿®æ­£é€»è¾‘ã€‘ ---
+                Transform mountParent = transform; // é»˜è®¤æŒ‚åœ¨è‡ªå·±èº«ä¸Š
                 Vector3 offset = Vector3.zero;
 
-                // ³¢ÊÔÕÒ Health ÀïµÄÃé×¼µã
+                // å°è¯•æ‰¾ Health é‡Œçš„ç„å‡†ç‚¹
                 if (health != null && health.AimTargetPoint != null)
                 {
                     mountParent = health.AimTargetPoint;
                 }
                 else
                 {
-                    // ¡¾±£µ×·½°¸¡¿£ºÈç¹ûÃ»ÓĞ AimTargetPoint£¬Ç¿ÖÆÏòÉÏÆ«ÒÆ 1.0 Ã× (´ó¸ÅĞØ¿ÚÎ»ÖÃ)
-                    // ×¢Òâ£ºÕâÀïÎÒÃÇ²»¹ÒÔØµ½ AimTargetPoint£¬¶øÊÇ¹ÒÔØµ½ root£¬µ«ĞŞ¸Ä±¾µØ×ø±ê
+                    // ã€ä¿åº•æ–¹æ¡ˆã€‘ï¼šå¦‚æœæ²¡æœ‰ AimTargetPointï¼Œå¼ºåˆ¶å‘ä¸Šåç§» 1.0 ç±³ (å¤§æ¦‚èƒ¸å£ä½ç½®)
+                    // æ³¨æ„ï¼šè¿™é‡Œæˆ‘ä»¬ä¸æŒ‚è½½åˆ° AimTargetPointï¼Œè€Œæ˜¯æŒ‚è½½åˆ° rootï¼Œä½†ä¿®æ”¹æœ¬åœ°åæ ‡
                     offset = Vector3.up * 1.0f;
                 }
 
-                // Éú³ÉÌØĞ§
+                // ç”Ÿæˆç‰¹æ•ˆ
                 currentShockVfx = Instantiate(vfxPrefab, mountParent.position + offset, Quaternion.identity, mountParent);
 
-                // È·±£ËüÈ·Êµ¹ÒÉÏÈ¥ÁË£¬²¢ÇÒÎ»ÖÃÕıÈ·
+                // ç¡®ä¿å®ƒç¡®å®æŒ‚ä¸Šå»äº†ï¼Œå¹¶ä¸”ä½ç½®æ­£ç¡®
                 currentShockVfx.transform.localPosition = (health != null && health.AimTargetPoint != null) ? Vector3.zero : offset;
             }
         }
@@ -598,12 +692,12 @@ public class StatusEffectReceiver : MonoBehaviour
         {
             shockTimer -= Time.deltaTime;
 
-            // 1. µ¹¼ÆÊ±½áÊøÇåÀí
+            // 1. å€’è®¡æ—¶ç»“æŸæ¸…ç†
             if (shockTimer <= 0)
             {
                 ClearShockEffect();
             }
-            // 2. Èç¹û¹ÖÎïËÀÁË£¬Ò²ÒªÇåÀí (·ÀÖ¹ÌØĞ§ÒÅÁôÔÚÊ¬ÌåÉÏ)
+            // 2. å¦‚æœæ€ªç‰©æ­»äº†ï¼Œä¹Ÿè¦æ¸…ç† (é˜²æ­¢ç‰¹æ•ˆé—ç•™åœ¨å°¸ä½“ä¸Š)
             else if (health != null && health.IsDead)
             {
                 ClearShockEffect();
@@ -620,7 +714,7 @@ public class StatusEffectReceiver : MonoBehaviour
         }
     }
 
-    // --- ¡¾¹Ø¼ü¡¿µ±ÎïÌå±»½ûÓÃ/Ïú»ÙÊ±£¬Ç¿ÖÆÇåÀíÌØĞ§ ---
+    // --- ã€å…³é”®ã€‘å½“ç‰©ä½“è¢«ç¦ç”¨/é”€æ¯æ—¶ï¼Œå¼ºåˆ¶æ¸…ç†ç‰¹æ•ˆ ---
     void OnDisable()
     {
         ClearShockEffect();

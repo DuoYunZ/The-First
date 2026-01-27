@@ -8,19 +8,19 @@ public class PlayerProgressManager : MonoBehaviour
 {
     public static PlayerProgressManager Instance { get; private set; }
 
-    [Header("È«¾ÖÅäÖÃÒıÓÃ")]   
+    [Header("å…¨å±€é…ç½®å¼•ç”¨")]   
     public List<WeaponSkillTree> allSkillTrees;
 
-    [Header("Íæ¼ÒÊı¾İ")]
-    public int startingGold = 1000; // ¸øÓèÒ»Ğ©³õÊ¼½ğ±ÒÓÃÓÚ²âÊÔ
+    [Header("ç©å®¶æ•°æ®")]
+    public int startingGold = 1000; // ç»™äºˆä¸€äº›åˆå§‹é‡‘å¸ç”¨äºæµ‹è¯•
     public int currentGold;
 
     public Dictionary<string, int> progressStats = new Dictionary<string, int>();
     public Dictionary<string, int> achievementStats = new Dictionary<string, int>();
 
     public List<string> unlockedItems = new List<string>();
-    // Ê¹ÓÃÒ»¸öHashSetÀ´´æ´¢ÒÑ½âËø½ÚµãµÄID (Ò²¾ÍÊÇËüÃÇµÄScriptableObjectÎÄ¼şÃû)
-    // HashSetµÄ²éÕÒËÙ¶È·Ç³£¿ì
+    // ä½¿ç”¨ä¸€ä¸ªHashSetæ¥å­˜å‚¨å·²è§£é”èŠ‚ç‚¹çš„ID (ä¹Ÿå°±æ˜¯å®ƒä»¬çš„ScriptableObjectæ–‡ä»¶å)
+    // HashSetçš„æŸ¥æ‰¾é€Ÿåº¦éå¸¸å¿«
     private HashSet<string> unlockedNodeIDs = new HashSet<string>();
 
     public bool IsNodeUnlockedRaw(string nodeID)
@@ -28,14 +28,14 @@ public class PlayerProgressManager : MonoBehaviour
         return unlockedNodeIDs.Contains(nodeID);
     }
 
-    [Header("ÓÀ¾ÃÊôĞÔ¼Ó³É (ÓÉ¼¼ÄÜÊ÷½âËø)")]
+    [Header("æ°¸ä¹…å±æ€§åŠ æˆ (ç”±æŠ€èƒ½æ ‘è§£é”)")]
     public int permanentFlatDamageBonus = 0;
 
     public int permanentMeleeAoeFlatDamageBonus = 0;
 
-    public float permanentDamagePercentBonus = 0f; // 0.1 ´ú±í +10%
+    public float permanentDamagePercentBonus = 0f; // 0.1 ä»£è¡¨ +10%
 
-    public float permanentFireRateBonus = 0f;      // 0.1 ´ú±í +10%
+    public float permanentFireRateBonus = 0f;      // 0.1 ä»£è¡¨ +10%
 
     [System.Serializable]
     private class SaveData
@@ -47,10 +47,10 @@ public class PlayerProgressManager : MonoBehaviour
         public float savedDamagePercentBonus;
         public float savedFireRateBonus;
 
-        // --- ¡¾ĞÂÔö¡¿±£´æÎïÆ·½âËø½ø¶È ---
+        // --- ã€æ–°å¢ã€‘ä¿å­˜ç‰©å“è§£é”è¿›åº¦ ---
         public List<string> savedUnlockedItems;
 
-        // --- ¡¾ĞÂÔö¡¿±£´æ³É¾Í¼ÆÊı (×Öµä²ğ·ÖÎªÁ½¸öList±£´æ) ---
+        // --- ã€æ–°å¢ã€‘ä¿å­˜æˆå°±è®¡æ•° (å­—å…¸æ‹†åˆ†ä¸ºä¸¤ä¸ªListä¿å­˜) ---
         public List<string> savedStatKeys;
         public List<int> savedStatValues;
     }
@@ -76,18 +76,18 @@ public class PlayerProgressManager : MonoBehaviour
     void Start()
     {
         ValidateRetroactiveUnlocks();
-        // ÓÎÏ·Ò»¿ªÊ¼£¬¾Í¸üĞÂÒ»´Î½ğ±ÒÏÔÊ¾
+        // æ¸¸æˆä¸€å¼€å§‹ï¼Œå°±æ›´æ–°ä¸€æ¬¡é‡‘å¸æ˜¾ç¤º
 
         int currentIgnite = achievementStats.ContainsKey("Ignite_Count") ? achievementStats["Ignite_Count"] : 0;
-        Debug.Log($"[´æµµ¼ì²é] ÓÎÏ·Æô¶¯¡£µ±Ç° Ignite_Count: {currentIgnite}");
-        Debug.Log($"[´æµµ¼ì²é] µ±Ç° unlockedItems ÊıÁ¿: {unlockedItems.Count}");
+        Debug.Log($"[å­˜æ¡£æ£€æŸ¥] æ¸¸æˆå¯åŠ¨ã€‚å½“å‰ Ignite_Count: {currentIgnite}");
+        Debug.Log($"[å­˜æ¡£æ£€æŸ¥] å½“å‰ unlockedItems æ•°é‡: {unlockedItems.Count}");
 
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateGoldDisplay(currentGold);
         }
     }
-    // --- ½ğ±Ò¹ÜÀí ---
+    // --- é‡‘å¸ç®¡ç† ---
     public bool CanAfford(int amount)
     {
         return currentGold >= amount;
@@ -96,9 +96,9 @@ public class PlayerProgressManager : MonoBehaviour
     public void AddGold(int amount)
     {
         currentGold += amount;
-        Debug.Log($"»ñµÃÁË {amount} ½ğ±Ò£¬µ±Ç°×Ü¼Æ: {currentGold}");
+        Debug.Log($"è·å¾—äº† {amount} é‡‘å¸ï¼Œå½“å‰æ€»è®¡: {currentGold}");
 
-        // ¡¾ĞŞ¸Ä¡¿ÔÚ½ğ±ÒÔö¼ÓÊ±£¬¸üĞÂUIÏÔÊ¾
+        // ã€ä¿®æ”¹ã€‘åœ¨é‡‘å¸å¢åŠ æ—¶ï¼Œæ›´æ–°UIæ˜¾ç¤º
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateGoldDisplay(currentGold);
@@ -109,14 +109,14 @@ public class PlayerProgressManager : MonoBehaviour
     {
         currentGold -= amount;
 
-        // ¡¾ĞŞ¸Ä¡¿ÔÚ½ğ±Ò»¨·ÑÊ±£¬¸üĞÂUIÏÔÊ¾
+        // ã€ä¿®æ”¹ã€‘åœ¨é‡‘å¸èŠ±è´¹æ—¶ï¼Œæ›´æ–°UIæ˜¾ç¤º
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateGoldDisplay(currentGold);
         }
     }
 
-    // --- ¼¼ÄÜ½Úµã¹ÜÀí ---
+    // --- æŠ€èƒ½èŠ‚ç‚¹ç®¡ç† ---
     public bool IsNodeUnlocked(WeaponUpgradeNode node)
     {
         if (node == null) return false;
@@ -128,7 +128,7 @@ public class PlayerProgressManager : MonoBehaviour
         if (node == null || IsNodeUnlocked(node)) return;
 
         unlockedNodeIDs.Add(node.name);
-        Debug.Log($"<color=yellow>ÒÑ½âËøĞÂ¼¼ÄÜ: {node.upgradeName}</color>");
+        Debug.Log($"<color=yellow>å·²è§£é”æ–°æŠ€èƒ½: {node.upgradeName}</color>");
 
         ApplyNodeEffects(node);
 
@@ -141,64 +141,64 @@ public class PlayerProgressManager : MonoBehaviour
 
     private void ApplyNodeEffects(WeaponUpgradeNode node)
     {
-        Debug.Log($"ÕıÔÚÓ¦ÓÃ½Úµã '{node.upgradeName}' µÄÓÀ¾ÃĞ§¹û...");
+        Debug.Log($"æ­£åœ¨åº”ç”¨èŠ‚ç‚¹ '{node.upgradeName}' çš„æ°¸ä¹…æ•ˆæœ...");
         foreach (var effect in node.effects)
         {
             switch (effect.upgradeType)
             {
                 case PermanentUpgradeType.FlatDamage:
                     permanentFlatDamageBonus += (int)effect.value;
-                    Debug.Log($"ÓÀ¾Ã¹Ì¶¨ÉËº¦¼Ó³ÉÔö¼Ó: +{(int)effect.value}£¬µ±Ç°×Ü¼Æ: {permanentFlatDamageBonus}");
+                    Debug.Log($"æ°¸ä¹…å›ºå®šä¼¤å®³åŠ æˆå¢åŠ : +{(int)effect.value}ï¼Œå½“å‰æ€»è®¡: {permanentFlatDamageBonus}");
                     break;
 
                 case PermanentUpgradeType.MeleeAoeFlatDamage:
                     permanentMeleeAoeFlatDamageBonus += (int)effect.value;
-                    Debug.Log($"ÓÀ¾Ã½üÕ½·¶Î§ÉËº¦¼Ó³ÉÔö¼Ó: +{(int)effect.value}£¬µ±Ç°×Ü¼Æ: {permanentMeleeAoeFlatDamageBonus}");
+                    Debug.Log($"æ°¸ä¹…è¿‘æˆ˜èŒƒå›´ä¼¤å®³åŠ æˆå¢åŠ : +{(int)effect.value}ï¼Œå½“å‰æ€»è®¡: {permanentMeleeAoeFlatDamageBonus}");
                     break;
 
                 case PermanentUpgradeType.DamagePercent:
                     permanentDamagePercentBonus += effect.value;
-                    Debug.Log($"ÓÀ¾Ã°Ù·Ö±ÈÉËº¦¼Ó³ÉÔö¼Ó: +{effect.value * 100}%£¬µ±Ç°×Ü¼Æ: {permanentDamagePercentBonus * 100}%");
+                    Debug.Log($"æ°¸ä¹…ç™¾åˆ†æ¯”ä¼¤å®³åŠ æˆå¢åŠ : +{effect.value * 100}%ï¼Œå½“å‰æ€»è®¡: {permanentDamagePercentBonus * 100}%");
                     break;
 
                 case PermanentUpgradeType.FireRatePercent:
                     permanentFireRateBonus += effect.value;
-                    Debug.Log($"ÓÀ¾ÃÉäËÙ¼Ó³ÉÔö¼Ó: +{effect.value * 100}%£¬µ±Ç°×Ü¼Æ: {permanentFireRateBonus * 100}%");
+                    Debug.Log($"æ°¸ä¹…å°„é€ŸåŠ æˆå¢åŠ : +{effect.value * 100}%ï¼Œå½“å‰æ€»è®¡: {permanentFireRateBonus * 100}%");
                     break;
 
-                // --- ÔÚÕâÀï´¦Àí¡°ÈĞÆø¡±µÈ»úÖÆĞÔ½âËø ---
+                // --- åœ¨è¿™é‡Œå¤„ç†â€œåˆƒæ°”â€ç­‰æœºåˆ¶æ€§è§£é” ---
                 case PermanentUpgradeType.UnlockBladeEnergyProjectile:
-                    // ÕâÖÖ¡°¿ª¹Ø¡±ĞÍµÄ½âËø£¬ÎÒÃÇÒÑ¾­ÔÚ PlayerProgressManager ÖĞÍ¨¹ı IsNodeUnlocked(node) ¼ÇÂ¼ÁË
-                    // Õ½¶·Âß¼­½Å±¾¿ÉÒÔÖ±½Ó²éÑ¯ PlayerProgressManager.Instance.IsNodeUnlocked(...)
-                    Debug.Log("»úÖÆ½âËø£ºÈĞÆøÕ¶£¡");
+                    // è¿™ç§â€œå¼€å…³â€å‹çš„è§£é”ï¼Œæˆ‘ä»¬å·²ç»åœ¨ PlayerProgressManager ä¸­é€šè¿‡ IsNodeUnlocked(node) è®°å½•äº†
+                    // æˆ˜æ–—é€»è¾‘è„šæœ¬å¯ä»¥ç›´æ¥æŸ¥è¯¢ PlayerProgressManager.Instance.IsNodeUnlocked(...)
+                    Debug.Log("æœºåˆ¶è§£é”ï¼šåˆƒæ°”æ–©ï¼");
                     break;
 
-                    // ... ÆäËû case ...
+                    // ... å…¶ä»– case ...
             }
         }
     }
 
     public void AddStat(string statKey, int amount)
     {
-        // 1. Ôö¼ÓÊıÖµ
+        // 1. å¢åŠ æ•°å€¼
         if (!achievementStats.ContainsKey(statKey)) achievementStats[statKey] = 0;
         achievementStats[statKey] += amount;
 
-        // ¡¾¹Ø¼üµ÷ÊÔ¡¿¿´¿´ÓĞÃ»ÓĞÕæµÄÔÚÕÇ
-        Debug.Log($"[Í³¼Æ] {statKey}: {achievementStats[statKey]}");
+        // ã€å…³é”®è°ƒè¯•ã€‘çœ‹çœ‹æœ‰æ²¡æœ‰çœŸçš„åœ¨æ¶¨
+        Debug.Log($"[ç»Ÿè®¡] {statKey}: {achievementStats[statKey]}");
 
-        // 2. ¡¾ºËĞÄ¡¿¼ì²éÊÇ·ñ´ïµ½½âËøÌõ¼ş
+        // 2. ã€æ ¸å¿ƒã€‘æ£€æŸ¥æ˜¯å¦è¾¾åˆ°è§£é”æ¡ä»¶
         CheckUnlocks(statKey);
 
-        // 3. ¡¾ºËĞÄ¡¿±£´æ£¡Èç¹û²»±£´æ£¬ÏÂ´Î½øÓÎÏ·½ø¶È¾Í¶ªÁË
-        // Èç¹û¾õµÃÃ¿´Î¼Ó¶¼±£´æÌ«ºÄĞÔÄÜ£¬¿ÉÒÔ·Åµ½ CheckUnlocks ÀïÈ¥±£´æ£¬»òÕß¹Ø¿¨½áÊø±£´æ
-        // µ«ÎªÁË²âÊÔ£¬ÏÈÔÚÕâÀï±£´æ
+        // 3. ã€æ ¸å¿ƒã€‘ä¿å­˜ï¼å¦‚æœä¸ä¿å­˜ï¼Œä¸‹æ¬¡è¿›æ¸¸æˆè¿›åº¦å°±ä¸¢äº†
+        // å¦‚æœè§‰å¾—æ¯æ¬¡åŠ éƒ½ä¿å­˜å¤ªè€—æ€§èƒ½ï¼Œå¯ä»¥æ”¾åˆ° CheckUnlocks é‡Œå»ä¿å­˜ï¼Œæˆ–è€…å…³å¡ç»“æŸä¿å­˜
+        // ä½†ä¸ºäº†æµ‹è¯•ï¼Œå…ˆåœ¨è¿™é‡Œä¿å­˜
         // SaveGame(); 
     }
 
     public void IncreaseAchievementStat(string statKey, int amount = 1)
     {
-        // 1. ¸üĞÂ×ÖµäÊı¾İ
+        // 1. æ›´æ–°å­—å…¸æ•°æ®
         if (achievementStats.ContainsKey(statKey))
         {
             achievementStats[statKey] += amount;
@@ -208,9 +208,9 @@ public class PlayerProgressManager : MonoBehaviour
             achievementStats.Add(statKey, amount);
         }
 
-        Debug.Log($"[³É¾Í¼ÇÂ¼] {statKey} ½ø¶ÈÔö¼Ó! µ±Ç°×Ü¼Æ: {achievementStats[statKey]}");
+        Debug.Log($"[æˆå°±è®°å½•] {statKey} è¿›åº¦å¢åŠ ! å½“å‰æ€»è®¡: {achievementStats[statKey]}");
 
-        // 2. ¡¾¹Ø¼ü¡¿Á¢¼´±£´æ½ø¶È£¬È·±£½âËøÌõ¼ş±»Ğ´Èë´ÅÅÌ
+        // 2. ã€å…³é”®ã€‘ç«‹å³ä¿å­˜è¿›åº¦ï¼Œç¡®ä¿è§£é”æ¡ä»¶è¢«å†™å…¥ç£ç›˜
         SaveGame();
     }
     public int GetStat(string key)
@@ -223,21 +223,21 @@ public class PlayerProgressManager : MonoBehaviour
 
         foreach (var tree in allSkillTrees)
         {
-            // 1. Èç¹ûÕâ¸öÊ÷ÒÑ¾­½âËøÁË£¬Ìø¹ı
-            // (×¢Òâ£ºÕâÀï¼ÙÉè weaponID ÊÇ½âËøÆ¾Ö¤)
+            // 1. å¦‚æœè¿™ä¸ªæ ‘å·²ç»è§£é”äº†ï¼Œè·³è¿‡
+            // (æ³¨æ„ï¼šè¿™é‡Œå‡è®¾ weaponID æ˜¯è§£é”å‡­è¯)
             string id = tree.associatedWeapon.weaponID;
             if (unlockedItems.Contains(id)) continue;
 
-            // 2. ¼ì²éÕâ¸öÊ÷ÊÇ·ñ¹ØĞÄµ±Ç°±ä»¯µÄ StatKey
-            // ±ÈÈç ignite_count ±äÁË£¬ÎÒÃÇÖ»¼ì²é¹ØĞÄµãÈ¼µÄÊ÷
+            // 2. æ£€æŸ¥è¿™ä¸ªæ ‘æ˜¯å¦å…³å¿ƒå½“å‰å˜åŒ–çš„ StatKey
+            // æ¯”å¦‚ ignite_count å˜äº†ï¼Œæˆ‘ä»¬åªæ£€æŸ¥å…³å¿ƒç‚¹ç‡ƒçš„æ ‘
             if (tree.unlockStatKey == changedStatKey)
             {
-                // 3. ¼ì²éÊıÖµÊÇ·ñ´ï±ê (Ö±½Ó¶ÁÅäÖÃÀïµÄ Threshold!)
+                // 3. æ£€æŸ¥æ•°å€¼æ˜¯å¦è¾¾æ ‡ (ç›´æ¥è¯»é…ç½®é‡Œçš„ Threshold!)
                 int currentVal = achievementStats.ContainsKey(changedStatKey) ? achievementStats[changedStatKey] : 0;
 
                 if (currentVal >= tree.unlockThreshold)
                 {
-                    Debug.Log($"[³É¾Í´ï³É] {tree.name} Ìõ¼şÂú×ã£¡×Ô¶¯½âËø: {id}");
+                    Debug.Log($"[æˆå°±è¾¾æˆ] {tree.name} æ¡ä»¶æ»¡è¶³ï¼è‡ªåŠ¨è§£é”: {id}");
                     UnlockItem(id);
                 }
             }
@@ -249,8 +249,8 @@ public class PlayerProgressManager : MonoBehaviour
         if (!unlockedItems.Contains(itemName))
         {
             unlockedItems.Add(itemName);
-            Debug.Log($"<color=yellow>ĞÂÎïÆ·½âËø: {itemName}!</color>");
-            SaveGame(); // ¼ÇµÃ±£´æ£¡
+            Debug.Log($"<color=yellow>æ–°ç‰©å“è§£é”: {itemName}!</color>");
+            SaveGame(); // è®°å¾—ä¿å­˜ï¼
         }
     }
     private string GetSaveFilePath()
@@ -270,10 +270,10 @@ public class PlayerProgressManager : MonoBehaviour
         data.savedDamagePercentBonus = this.permanentDamagePercentBonus;
         data.savedFireRateBonus = this.permanentFireRateBonus;
 
-        // --- ¡¾ĞÂÔö¡¿±£´æĞÂÊı¾İ ---
+        // --- ã€æ–°å¢ã€‘ä¿å­˜æ–°æ•°æ® ---
         data.savedUnlockedItems = this.unlockedItems;
 
-        // °Ñ×Öµä²ğ¿ª´æ
+        // æŠŠå­—å…¸æ‹†å¼€å­˜
         data.savedStatKeys = new List<string>(this.achievementStats.Keys);
         data.savedStatValues = new List<int>(this.achievementStats.Values);
         // -------------------------
@@ -281,7 +281,7 @@ public class PlayerProgressManager : MonoBehaviour
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetSaveFilePath(), json);
 
-        Debug.Log("<color=green>ÓÎÏ·½ø¶ÈÒÑ±£´æµ½: " + GetSaveFilePath() + "</color>");
+        Debug.Log("<color=green>æ¸¸æˆè¿›åº¦å·²ä¿å­˜åˆ°: " + GetSaveFilePath() + "</color>");
     }
 
     public void LoadGame()
@@ -299,7 +299,7 @@ public class PlayerProgressManager : MonoBehaviour
             this.permanentDamagePercentBonus = data.savedDamagePercentBonus;
             this.permanentFireRateBonus = data.savedFireRateBonus;
 
-            // --- ¡¾ĞÂÔö¡¿¶ÁÈ¡ÎïÆ·½âËø ---
+            // --- ã€æ–°å¢ã€‘è¯»å–ç‰©å“è§£é” ---
             if (data.savedUnlockedItems != null)
             {
                 this.unlockedItems = data.savedUnlockedItems;
@@ -309,11 +309,11 @@ public class PlayerProgressManager : MonoBehaviour
                 this.unlockedItems = new List<string>();
             }
 
-            // --- ¡¾ĞÂÔö¡¿¶ÁÈ¡³É¾Í¼ÆÊı (×é×°»Ø×Öµä) ---
+            // --- ã€æ–°å¢ã€‘è¯»å–æˆå°±è®¡æ•° (ç»„è£…å›å­—å…¸) ---
             this.achievementStats = new Dictionary<string, int>();
             if (data.savedStatKeys != null && data.savedStatValues != null)
             {
-                // È·±£ key ºÍ value ÊıÁ¿Ò»ÖÂ£¬·ÀÖ¹±¨´í
+                // ç¡®ä¿ key å’Œ value æ•°é‡ä¸€è‡´ï¼Œé˜²æ­¢æŠ¥é”™
                 int count = Mathf.Min(data.savedStatKeys.Count, data.savedStatValues.Count);
                 for (int i = 0; i < count; i++)
                 {
@@ -322,12 +322,12 @@ public class PlayerProgressManager : MonoBehaviour
             }
             // ----------------------------------------
 
-            Debug.Log("<color=yellow>ÓÎÏ·½ø¶ÈÒÑ´Ó " + path + " ¼ÓÔØ¡£</color>");
+            Debug.Log("<color=yellow>æ¸¸æˆè¿›åº¦å·²ä» " + path + " åŠ è½½ã€‚</color>");
         }
         else
         {
-            Debug.Log("Î´ÕÒµ½´æµµÎÄ¼ş£¬½«ÒÔ³õÊ¼×´Ì¬¿ªÊ¼ÓÎÏ·¡£");
-            ResetProgressToDefault(); // ½¨Òé¼ÓÉÏÕâ¸ö³õÊ¼»¯µ÷ÓÃ
+            Debug.Log("æœªæ‰¾åˆ°å­˜æ¡£æ–‡ä»¶ï¼Œå°†ä»¥åˆå§‹çŠ¶æ€å¼€å§‹æ¸¸æˆã€‚");
+            ResetProgressToDefault(); // å»ºè®®åŠ ä¸Šè¿™ä¸ªåˆå§‹åŒ–è°ƒç”¨
         }
         ValidateRetroactiveUnlocks();
     }
@@ -345,32 +345,32 @@ public class PlayerProgressManager : MonoBehaviour
     {
         if (allSkillTrees == null) return;
 
-        Debug.Log("[´æµµÌå¼ì] ¿ªÊ¼¸ù¾İ SkillTree ÅäÖÃ½øĞĞÈ«Á¿¼ì²é...");
+        Debug.Log("[å­˜æ¡£ä½“æ£€] å¼€å§‹æ ¹æ® SkillTree é…ç½®è¿›è¡Œå…¨é‡æ£€æŸ¥...");
 
         foreach (var tree in allSkillTrees)
         {
-            // 1. Ìø¹ıÄ¬ÈÏ½âËøµÄ
+            // 1. è·³è¿‡é»˜è®¤è§£é”çš„
             if (tree.isDefaultUnlocked) continue;
 
             string id = tree.associatedWeapon.weaponID;
 
-            // 2. Èç¹ûÒÑ¾­½âËøÁË£¬Ìø¹ı
+            // 2. å¦‚æœå·²ç»è§£é”äº†ï¼Œè·³è¿‡
             if (unlockedItems.Contains(id)) continue;
 
-            // 3. ¼ì²éÌõ¼şÊÇ·ñ´æÔÚ
+            // 3. æ£€æŸ¥æ¡ä»¶æ˜¯å¦å­˜åœ¨
             if (string.IsNullOrEmpty(tree.unlockStatKey)) continue;
 
-            // 4. »ñÈ¡µ±Ç°½ø¶È
+            // 4. è·å–å½“å‰è¿›åº¦
             int currentVal = 0;
             if (achievementStats.ContainsKey(tree.unlockStatKey))
             {
                 currentVal = achievementStats[tree.unlockStatKey];
             }
 
-            // 5. ¡¾ºËĞÄ¡¿Ö±½Ó¶Ô±ÈÅäÖÃÀïµÄ Threshold
+            // 5. ã€æ ¸å¿ƒã€‘ç›´æ¥å¯¹æ¯”é…ç½®é‡Œçš„ Threshold
             if (currentVal >= tree.unlockThreshold)
             {
-                Debug.LogWarning($"[×Ô¶¯ĞŞ¸´] ·¢ÏÖ {id} Ìõ¼şÒÑ´ï±ê ({currentVal}/{tree.unlockThreshold}) µ«Î´½âËø£¬ÕıÔÚ²¹Æ±...");
+                Debug.LogWarning($"[è‡ªåŠ¨ä¿®å¤] å‘ç° {id} æ¡ä»¶å·²è¾¾æ ‡ ({currentVal}/{tree.unlockThreshold}) ä½†æœªè§£é”ï¼Œæ­£åœ¨è¡¥ç¥¨...");
                 UnlockItem(id);
             }
         }
@@ -381,17 +381,17 @@ public class PlayerProgressManager : MonoBehaviour
         if (File.Exists(path))
         {
             File.Delete(path);
-            Debug.Log("<color=red>´æµµÎÄ¼şÒÑÉ¾³ı: " + path + "</color>");
+            Debug.Log("<color=red>å­˜æ¡£æ–‡ä»¶å·²åˆ é™¤: " + path + "</color>");
         }
         else
         {
-            Debug.Log("ÎŞĞèÉ¾³ı£¬´æµµÎÄ¼ş²»´æÔÚ¡£");
+            Debug.Log("æ— éœ€åˆ é™¤ï¼Œå­˜æ¡£æ–‡ä»¶ä¸å­˜åœ¨ã€‚");
         }
 
-        // É¾³ıÎÄ¼şºó£¬Á¢¿Ì½«ÄÚ´æÖĞµÄÊı¾İÒ²ÖØÖÃ
+        // åˆ é™¤æ–‡ä»¶åï¼Œç«‹åˆ»å°†å†…å­˜ä¸­çš„æ•°æ®ä¹Ÿé‡ç½®
         ResetProgressToDefault();
 
-        // £¨¿ÉÑ¡£©Èç¹ûUIÔÚÖ÷²Ëµ¥¿É¼û£¬Á¢¼´¸üĞÂ
+        // ï¼ˆå¯é€‰ï¼‰å¦‚æœUIåœ¨ä¸»èœå•å¯è§ï¼Œç«‹å³æ›´æ–°
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateGoldDisplay(currentGold);

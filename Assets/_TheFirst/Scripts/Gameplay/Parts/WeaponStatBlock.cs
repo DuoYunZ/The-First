@@ -71,6 +71,12 @@ public class WeaponStatBlock : ScriptableObject
     [Tooltip("抛物线发射角度 (仅当 isParabolic 为 true 时有效)")]
     public float launchAngle = 45f;
 
+    [Tooltip("每次攻击发射的子弹数量")]
+    public int projectileCount = 1;
+
+    [Tooltip("多发子弹的总散射角度 (例如 30 度)")]
+    public float spreadAngle = 0f;
+
     [Header("暴击属性 (Critical Stats)")]
     [Tooltip("武器的基础暴击率 (会与角色暴击率相加)。0.1 代表 10%")]
     [Range(0f, 1f)]
@@ -216,6 +222,7 @@ public class WeaponStatBlock : ScriptableObject
     public float baseSlowPercentage = 0f;
     [Tooltip("基础减速持续时间（秒）")]
     public float baseSlowDuration = 0f;
+    public float baseFreezeChance = 0f;
 
     [Header("召唤设置 (Summon Settings)")]
     [Tooltip("要召唤的无人机/召唤物预制件")]

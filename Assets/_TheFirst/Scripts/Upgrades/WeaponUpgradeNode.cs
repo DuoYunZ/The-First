@@ -1,21 +1,21 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// Õâ¸öÃ¶¾Ù½«¶¨ÒåÉı¼¶µÄ¾ßÌåĞ§¹ûÀàĞÍ
+// è¿™ä¸ªæšä¸¾å°†å®šä¹‰å‡çº§çš„å…·ä½“æ•ˆæœç±»å‹
 public enum PermanentUpgradeType
 {
     FlatDamage,
     DamagePercent,
     FireRatePercent,
     ProjectileSpeedPercent,
-    // ... Î´À´¿ÉÒÔÌí¼Ó¸ü¶à£¬Èç±©»÷ÂÊ¡¢´©Í¸+1µÈ
-    MeleeAoeFlatDamage,         // ½üÕ½·¶Î§¹Ì¶¨ÉËº¦ (ÎªÄúµÄµ¶¹âÁ¿Éí¶¨×ö)
-    UnlockBladeEnergyProjectile,     // ½âËø¡°ÈĞÆøµ¯¡±»úÖÆ
-    ImproveBladeEnergyFrequency,   // ÌáÉı¡°ÈĞÆøµ¯¡±´¥·¢ÆµÂÊ
-    ImproveBladeEnergyRange        // ÌáÉı¡°ÈĞÆøµ¯¡±¾àÀë/ËÙ¶È
+    // ... æœªæ¥å¯ä»¥æ·»åŠ æ›´å¤šï¼Œå¦‚æš´å‡»ç‡ã€ç©¿é€+1ç­‰
+    MeleeAoeFlatDamage,         // è¿‘æˆ˜èŒƒå›´å›ºå®šä¼¤å®³ (ä¸ºæ‚¨çš„åˆ€å…‰é‡èº«å®šåš)
+    UnlockBladeEnergyProjectile,     // è§£é”â€œåˆƒæ°”å¼¹â€æœºåˆ¶
+    ImproveBladeEnergyFrequency,   // æå‡â€œåˆƒæ°”å¼¹â€è§¦å‘é¢‘ç‡
+    ImproveBladeEnergyRange        // æå‡â€œåˆƒæ°”å¼¹â€è·ç¦»/é€Ÿåº¦
 }
 
-// Õâ¸ö½á¹¹Ìå¶¨ÒåÁËµ¥´ÎÉı¼¶µÄ¾ßÌåĞ§¹û
+// è¿™ä¸ªç»“æ„ä½“å®šä¹‰äº†å•æ¬¡å‡çº§çš„å…·ä½“æ•ˆæœ
 [System.Serializable]
 public struct PermanentUpgradeEffect
 {
@@ -26,22 +26,22 @@ public struct PermanentUpgradeEffect
 [CreateAssetMenu(fileName = "NewWeaponUpgradeNode", menuName = "Skill Tree/Weapon Upgrade Node")]
 public class WeaponUpgradeNode : ScriptableObject
 {
-    [Header("UI & ÃèÊö")]
+    [Header("UI & æè¿°")]
     public string upgradeName;
     [TextArea(3, 5)]
     public string description;
     public Sprite icon;
 
-    [Header("Éı¼¶Ğ§¹û")]
+    [Header("å‡çº§æ•ˆæœ")]
     public List<PermanentUpgradeEffect> effects;
 
-    [Header("½âËøÓëÏûºÄ")]
+    [Header("è§£é”ä¸æ¶ˆè€—")]
     public int cost;
-    [Tooltip("½âËø´Ë½ÚµãÇ°£¬±ØĞëÏÈ½âËøµÄÇ°ÖÃ½Úµã")]
+    [Tooltip("è§£é”æ­¤èŠ‚ç‚¹å‰ï¼Œå¿…é¡»å…ˆè§£é”çš„å‰ç½®èŠ‚ç‚¹")]
     public WeaponUpgradeNode prerequisiteNode;
 
-    // Õâ¸ö×Ö¶ÎÎÒÃÇÔİÊ±²»ÓÃ£¬µ«ÔÚÎ´À´¹¹½¨UIÊ±»áºÜÓĞÓÃ
+    // è¿™ä¸ªå­—æ®µæˆ‘ä»¬æš‚æ—¶ä¸ç”¨ï¼Œä½†åœ¨æœªæ¥æ„å»ºUIæ—¶ä¼šå¾ˆæœ‰ç”¨
     [HideInInspector]
 
-    public Vector2 nodePosition; // ÓÃÓÚÔÚUIÖĞ¶¨Î»½ÚµãµÄÎ»ÖÃ
+    public Vector2 nodePosition; // ç”¨äºåœ¨UIä¸­å®šä½èŠ‚ç‚¹çš„ä½ç½®
 }
