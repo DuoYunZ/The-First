@@ -1,24 +1,24 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class MagneticOrbiter : MonoBehaviour
 {
-    [Header("´Å±©ÊôĞÔ")]
+    [Header("ç£æš´å±æ€§")]
     public int damagePerSecond = 20;
     public float damageInterval = 0.2f;
     public float pullRadius = 5f;
     public float pullSpeed = 10f;
 
-    [Header("ÉÁµçÌØĞ§")]
-    [Tooltip("ÉÁµçÁ´ÌõµÄÌØĞ§ (Á¬Ïß)")]
+    [Header("é—ªç”µç‰¹æ•ˆ")]
+    [Tooltip("é—ªç”µé“¾æ¡çš„ç‰¹æ•ˆ (è¿çº¿)")]
     public GameObject chainLightningVfxPrefab;
-    [Tooltip("ÉÁµçÃüÖĞµĞÈËµÄÌØĞ§ (»ğ»¨)")]
-    public GameObject impactVfxPrefab; // <--- ¡¾ĞÂÔö¡¿ÊÜ»÷ÌØĞ§×Ö¶Î
+    [Tooltip("é—ªç”µå‘½ä¸­æ•Œäººçš„ç‰¹æ•ˆ (ç«èŠ±)")]
+    public GameObject impactVfxPrefab; // <--- ã€æ–°å¢ã€‘å—å‡»ç‰¹æ•ˆå­—æ®µ
 
     public int maxChainTargets = 3;
     public float chainRange = 6f;
 
-    [Header("²ã¼¶ÉèÖÃ")]
+    [Header("å±‚çº§è®¾ç½®")]
     public LayerMask enemyLayer;
 
     private float damageTimer;
@@ -44,7 +44,7 @@ public class MagneticOrbiter : MonoBehaviour
 
     void PullEnemies()
     {
-        // ... (Îü¸½Âß¼­±£³Ö²»±ä£¬²»ĞèÒª¸Ä) ...
+        // ... (å¸é™„é€»è¾‘ä¿æŒä¸å˜ï¼Œä¸éœ€è¦æ”¹) ...
         Collider[] enemies = Physics.OverlapSphere(transform.position, pullRadius, enemyLayer);
         foreach (var col in enemies)
         {
@@ -86,18 +86,18 @@ public class MagneticOrbiter : MonoBehaviour
             Health targetHealth = bestTarget.GetComponent<Health>();
             if (targetHealth != null && !targetHealth.IsDead)
             {
-                // 1. Ôì³ÉÖ÷ÉËº¦
+                // 1. é€ æˆä¸»ä¼¤å®³
                 targetHealth.TakeDamage(damagePerSecond, bestTarget.position, ownerWeapon != null ? ownerWeapon.gameObject : gameObject, AttackType.Standard);
 
-                // --- ¡¾ºËĞÄĞŞ¸Ä¡¿½«ÌØĞ§¹ÒÔØµ½µĞÈËÉíÉÏ (bestTarget) ---
+                // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘å°†ç‰¹æ•ˆæŒ‚è½½åˆ°æ•Œäººèº«ä¸Š (bestTarget) ---
                 if (impactVfxPrefab != null)
                 {
-                    // µÚËÄ¸ö²ÎÊı bestTarget ±íÊ¾½«ÌØĞ§ÉèÎªµĞÈËµÄ×ÓÎïÌå
+                    // ç¬¬å››ä¸ªå‚æ•° bestTarget è¡¨ç¤ºå°†ç‰¹æ•ˆè®¾ä¸ºæ•Œäººçš„å­ç‰©ä½“
                     Instantiate(impactVfxPrefab, bestTarget.position, Quaternion.identity, bestTarget);
                 }
                 // ------------------------------------------------
 
-                // 2. ´¥·¢Á¬ËøÉÁµç
+                // 2. è§¦å‘è¿é”é—ªç”µ
                 if (ownerWeapon != null)
                 {
                     ownerWeapon.ChainLightningFromTarget(

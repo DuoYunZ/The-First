@@ -1,14 +1,14 @@
-// TestLightning.cs
+ï»¿// TestLightning.cs
 using UnityEngine;
 public class TestLightning : MonoBehaviour
 {
-    public GameObject lightningPrefab; // ÍÏÈëÄãµÄÉÁµçÁ´Ô¤ÖÆ¼ş
-    public Transform targetA; // ÍÏÈë³¡¾°ÖĞµÄÇòÌåA
-    public Transform targetB; // ÍÏÈë³¡¾°ÖĞµÄÇòÌåB
+    public GameObject lightningPrefab; // æ‹–å…¥ä½ çš„é—ªç”µé“¾é¢„åˆ¶ä»¶
+    public Transform targetA; // æ‹–å…¥åœºæ™¯ä¸­çš„çƒä½“A
+    public Transform targetB; // æ‹–å…¥åœºæ™¯ä¸­çš„çƒä½“B
 
     void Update()
     {
-        // °´ÏÂ¿Õ¸ñ¼üÊ±£¬ÔÚÁ½¸öÇòÌåÖ®¼äÉú³ÉÒ»ÌõÉÁµç
+        // æŒ‰ä¸‹ç©ºæ ¼é”®æ—¶ï¼Œåœ¨ä¸¤ä¸ªçƒä½“ä¹‹é—´ç”Ÿæˆä¸€æ¡é—ªç”µ
         if (Input.GetKeyDown(KeyCode.Space))
         {
             GameObject chain = Instantiate(lightningPrefab);

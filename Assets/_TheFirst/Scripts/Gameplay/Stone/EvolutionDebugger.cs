@@ -1,59 +1,59 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 public class EvolutionDebugger : MonoBehaviour
 {
-    [Header("²âÊÔ×ÊÔ´")]
-    [Tooltip("°´Y¼üÊ±£¬ÒªÇ¿ĞĞÈû¸øÎäÆ÷µÄÊ¯Í·")]
+    [Header("æµ‹è¯•èµ„æº")]
+    [Tooltip("æŒ‰Yé”®æ—¶ï¼Œè¦å¼ºè¡Œå¡ç»™æ­¦å™¨çš„çŸ³å¤´")]
     public EnergyStoneSO stoneToGive;
 
     void Update()
     {
-        // --- 1. °´ T ¼ü£º½«ËùÓĞÒÑÓµÓĞµÄÎäÆ÷Ö±½ÓÉıµ½ 5 ¼¶ ---
+        // --- 1. æŒ‰ T é”®ï¼šå°†æ‰€æœ‰å·²æ‹¥æœ‰çš„æ­¦å™¨ç›´æ¥å‡åˆ° 5 çº§ ---
         if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
             if (WeaponController.Instance != null)
             {
-                Debug.Log($"<color=yellow>[²âÊÔ] °´ÏÂT¼ü -> Ç¿ĞĞÌáÉıËùÓĞÎäÆ÷µÈ¼¶...</color>");
+                Debug.Log($"<color=yellow>[æµ‹è¯•] æŒ‰ä¸‹Té”® -> å¼ºè¡Œæå‡æ‰€æœ‰æ­¦å™¨ç­‰çº§...</color>");
 
-                // ±éÀúËùÓĞ³ÖÓĞµÄÎäÆ÷Êı¾İ (OwnedWeapon)
+                // éå†æ‰€æœ‰æŒæœ‰çš„æ­¦å™¨æ•°æ® (OwnedWeapon)
                 foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
                 {
-                    // 1. ĞŞ¸ÄÊı¾İ²ãÃæµÄµÈ¼¶
-                    // (×¢Òâ£ºOwnedWeapon Í¨³£ÓĞ stats »ò data ×Ö¶Î£¬Ò²Ó¦¸ÃÓĞ currentLevel)
+                    // 1. ä¿®æ”¹æ•°æ®å±‚é¢çš„ç­‰çº§
+                    // (æ³¨æ„ï¼šOwnedWeapon é€šå¸¸æœ‰ stats æˆ– data å­—æ®µï¼Œä¹Ÿåº”è¯¥æœ‰ currentLevel)
                     if (ownedWrapper.currentLevel < 8)
                     {
                         ownedWrapper.currentLevel = 8;
                     }
 
-                    // 2. Í¬²½¸ø³¡¾°ÀïµÄÊµÌå (WeaponPart)
-                    // ¡¾¹Ø¼üĞŞ¸´¡¿ÕâÀïĞèÒªÍ¨¹ı assignedPart (»òÄã´úÂëÀïµÄÃû×Ö) À´·ÃÎÊ WeaponPart
+                    // 2. åŒæ­¥ç»™åœºæ™¯é‡Œçš„å®ä½“ (WeaponPart)
+                    // ã€å…³é”®ä¿®å¤ã€‘è¿™é‡Œéœ€è¦é€šè¿‡ assignedPart (æˆ–ä½ ä»£ç é‡Œçš„åå­—) æ¥è®¿é—® WeaponPart
                     var part = ownedWrapper.weaponPartInstance;
 
                     if (part != null)
                     {
-                        // Ç¿ÖÆ°Ñ WeaponPart ÀïµÄµÈ¼¶Ò²Í¬²½ÁË
+                        // å¼ºåˆ¶æŠŠ WeaponPart é‡Œçš„ç­‰çº§ä¹ŸåŒæ­¥äº†
                         part.currentLevel = ownedWrapper.currentLevel;
-                        Debug.Log($"[²âÊÔ] {part.StatBlock.weaponName} ÒÑÇ¿ÖÆÉı¼¶µ½ Lv.{part.currentLevel}");
+                        Debug.Log($"[æµ‹è¯•] {part.StatBlock.weaponName} å·²å¼ºåˆ¶å‡çº§åˆ° Lv.{part.currentLevel}");
                     }
                 }
 
-                // Ë¢ĞÂÒ»ÏÂ×´Ì¬£¬È·±£½ø»¯¼ì²é±»´¥·¢
+                // åˆ·æ–°ä¸€ä¸‹çŠ¶æ€ï¼Œç¡®ä¿è¿›åŒ–æ£€æŸ¥è¢«è§¦å‘
                 WeaponController.Instance.RefreshAllWeaponStates();
             }
         }
 
-        // --- 2. °´ Y ¼ü£º¸øËùÓĞÎäÆ÷²åÉÏÊ¯Í· ---
+        // --- 2. æŒ‰ Y é”®ï¼šç»™æ‰€æœ‰æ­¦å™¨æ’ä¸ŠçŸ³å¤´ ---
         if (Keyboard.current != null && Keyboard.current.yKey.wasPressedThisFrame)
         {
             if (WeaponController.Instance != null && stoneToGive != null)
             {
-                Debug.Log($"<color=cyan>[²âÊÔ] °´ÏÂY¼ü -> ¸øËùÓĞÎäÆ÷²åÈë {stoneToGive.stoneName}</color>");
+                Debug.Log($"<color=cyan>[æµ‹è¯•] æŒ‰ä¸‹Yé”® -> ç»™æ‰€æœ‰æ­¦å™¨æ’å…¥ {stoneToGive.stoneName}</color>");
 
                 foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
                 {
-                    // ¡¾¹Ø¼üĞŞ¸´¡¿Í¨¹ı assignedPart ÕÒµ½ÊµÌå£¬µ÷ÓÃÈÚºÏ·½·¨
+                    // ã€å…³é”®ä¿®å¤ã€‘é€šè¿‡ assignedPart æ‰¾åˆ°å®ä½“ï¼Œè°ƒç”¨èåˆæ–¹æ³•
                     var part = ownedWrapper.weaponPartInstance;
                     if (part != null)
                     {
@@ -63,12 +63,12 @@ public class EvolutionDebugger : MonoBehaviour
             }
         }
 
-        // --- 3. °´ U ¼ü£ºÇ¿ÖÆ´¥·¢Ò»´ÎÉı¼¶Ãæ°å£¨¼ì²éÊÇ·ñµ¯³ö½ø»¯¿¨£© ---
+        // --- 3. æŒ‰ U é”®ï¼šå¼ºåˆ¶è§¦å‘ä¸€æ¬¡å‡çº§é¢æ¿ï¼ˆæ£€æŸ¥æ˜¯å¦å¼¹å‡ºè¿›åŒ–å¡ï¼‰ ---
         if (Keyboard.current != null && Keyboard.current.uKey.wasPressedThisFrame)
         {
             if (PlayerLevelManager.Instance != null)
             {
-                // ¡¾¹Ø¼üĞŞ¸´¡¿Ëæ±ã¼Óµã¾­Ñé´¥·¢Éı¼¶£¬²»ÓÃ¹Ü currentLevelXP ½ĞÊ²Ã´
+                // ã€å…³é”®ä¿®å¤ã€‘éšä¾¿åŠ ç‚¹ç»éªŒè§¦å‘å‡çº§ï¼Œä¸ç”¨ç®¡ currentLevelXP å«ä»€ä¹ˆ
                 PlayerLevelManager.Instance.AddExperience(100);
             }
         }

@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -6,9 +6,9 @@ public class ChainLightningVFX : MonoBehaviour
 {
     private LineRenderer lineRenderer;
 
-    public int points = 10; // ÉÁµçµÄÇúÕÛµãÊıÁ¿
-    public float randomness = 0.5f; // ÇúÕÛµÄ·ù¶È
-    public float lifetime = 0.2f; // ÉÁµç³ÖĞøÊ±¼ä
+    public int points = 10; // é—ªç”µçš„æ›²æŠ˜ç‚¹æ•°é‡
+    public float randomness = 0.5f; // æ›²æŠ˜çš„å¹…åº¦
+    public float lifetime = 0.2f; // é—ªç”µæŒç»­æ—¶é—´
 
     void Awake()
     {
@@ -16,18 +16,18 @@ public class ChainLightningVFX : MonoBehaviour
     }
 
     /// <summary>
-    /// ÉèÖÃÉÁµçÁ´µÄÆğµãºÍÖÕµã
+    /// è®¾ç½®é—ªç”µé“¾çš„èµ·ç‚¹å’Œç»ˆç‚¹
     /// </summary>
     public void Setup(Vector3 startPoint, Vector3 endPoint)
     {
-        lineRenderer.positionCount = points; // ÉèÖÃÏß¶ÎµÄµãÊı
+        lineRenderer.positionCount = points; // è®¾ç½®çº¿æ®µçš„ç‚¹æ•°
 
         for (int i = 0; i < points; i++)
         {
-            // Ê¹ÓÃÏßĞÔ²åÖµÕÒµ½»ù´¡µã
+            // ä½¿ç”¨çº¿æ€§æ’å€¼æ‰¾åˆ°åŸºç¡€ç‚¹
             Vector3 pos = Vector3.Lerp(startPoint, endPoint, (float)i / (points - 1));
 
-            // ÎªÖĞ¼äµÄµãÌí¼ÓËæ»úÆ«ÒÆ£¬ÖÆÔìÉÁµçµÄÇúÕÛ¸Ğ
+            // ä¸ºä¸­é—´çš„ç‚¹æ·»åŠ éšæœºåç§»ï¼Œåˆ¶é€ é—ªç”µçš„æ›²æŠ˜æ„Ÿ
             if (i > 0 && i < points - 1)
             {
                 pos.x += Random.Range(-randomness, randomness);
@@ -38,7 +38,7 @@ public class ChainLightningVFX : MonoBehaviour
             lineRenderer.SetPosition(i, pos);
         }
 
-        // ÔÚÉè¶¨µÄÉúÃüÖÜÆÚºóÏú»Ù×Ô¼º
+        // åœ¨è®¾å®šçš„ç”Ÿå‘½å‘¨æœŸåé”€æ¯è‡ªå·±
         Destroy(gameObject, lifetime);
     }
 }

@@ -1,89 +1,89 @@
-// ExperienceGem.cs (×îÖÕÕûºÏ°æ)
+ï»¿// ExperienceGem.cs (æœ€ç»ˆæ•´åˆç‰ˆ)
 using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Collider))]
 public class ExperienceGem : MonoBehaviour
 {
-    [Header("¾­ÑéÖµÉèÖÃ")]
-    [Tooltip("´Ë±¦Ê¯Ìá¹©µÄ¾­ÑéÖµ")]
+    [Header("ç»éªŒå€¼è®¾ç½®")]
+    [Tooltip("æ­¤å®çŸ³æä¾›çš„ç»éªŒå€¼")]
     public int experienceAmount = 1;
 
-    [Header("Ê°È¡ÉèÖÃ")]
-    [Tooltip("Íæ¼Ò¿¿½üµ½¶àÉÙ¾àÀëÄÚ¿ªÊ¼±»ÎüÒı")]
+    [Header("æ‹¾å–è®¾ç½®")]
+    [Tooltip("ç©å®¶é è¿‘åˆ°å¤šå°‘è·ç¦»å†…å¼€å§‹è¢«å¸å¼•")]
     public float magnetRadius = 4f;
-    [Tooltip("·ÉÏòÍæ¼ÒµÄËÙ¶È")]
+    [Tooltip("é£å‘ç©å®¶çš„é€Ÿåº¦")]
     public float collectionSpeed = 8f;
 
-    // --- ¡¾ĞÂÔö¡¿Ê°È¡ÑÓ³Ù ---
-    [Tooltip("±¦Ê¯Éú³Éºó£¬ÑÓ³Ù¶à¾Ã²ÅÄÜ±»Ê°È¡£¨Ãë£©")]
+    // --- ã€æ–°å¢ã€‘æ‹¾å–å»¶è¿Ÿ ---
+    [Tooltip("å®çŸ³ç”Ÿæˆåï¼Œå»¶è¿Ÿå¤šä¹…æ‰èƒ½è¢«æ‹¾å–ï¼ˆç§’ï¼‰")]
     public float pickupDelay = 0.5f;
 
-    // --- ¡¾ĞÂÔö¡¿µôÂä¶¯»­ ---
-    [Header("µôÂä¶¯»­")]
-    [Tooltip("±¦Ê¯ÏòÉÏµ¯ÌøµÄ¸ß¶È")]
+    // --- ã€æ–°å¢ã€‘æ‰è½åŠ¨ç”» ---
+    [Header("æ‰è½åŠ¨ç”»")]
+    [Tooltip("å®çŸ³å‘ä¸Šå¼¹è·³çš„é«˜åº¦")]
     public float popHeight = 0.75f;
-    [Tooltip("±¦Ê¯Íê³Éµ¯Ìø¶¯»­ËùĞèµÄÊ±¼ä")]
+    [Tooltip("å®çŸ³å®Œæˆå¼¹è·³åŠ¨ç”»æ‰€éœ€çš„æ—¶é—´")]
     public float popDuration = 0.3f;
 
-    // --- ¡¾ĞÂÔö¡¿ÎüÊÕ¸¡¿ÕĞ§¹û ---
-    [Header("ÎüÊÕ¸¡¿ÕĞ§¹û")]
-    [Tooltip("ÎüÊÕÊ±ÏòÉÏ¸¡¿ÕµÄ¸ß¶È")]
+    // --- ã€æ–°å¢ã€‘å¸æ”¶æµ®ç©ºæ•ˆæœ ---
+    [Header("å¸æ”¶æµ®ç©ºæ•ˆæœ")]
+    [Tooltip("å¸æ”¶æ—¶å‘ä¸Šæµ®ç©ºçš„é«˜åº¦")]
     public float absorbFloatHeight = 1.0f;
-    [Tooltip("ÎüÊÕ¸¡¿ÕµÄÊ±¼ä")]
+    [Tooltip("å¸æ”¶æµ®ç©ºçš„æ—¶é—´")]
     public float absorbFloatDuration = 0.3f;
-    [Tooltip("¸¡¿ÕºóÍ£ÖÍµÄÊ±¼ä")]
+    [Tooltip("æµ®ç©ºååœæ»çš„æ—¶é—´")]
     public float absorbHoverDuration = 0.2f;
 
-    [Header("ÒôĞ§ÓëÌØĞ§")]
-    // ¡¾ĞŞ¸Ä¡¿ÖØÃüÃû±äÁ¿£¬ÒÔ¸üºÃµØ·´Ó³ÆäÓÃÍ¾
-    [Tooltip("¾­ÑéÖµ±»Íæ¼ÒÊÕ¼¯Ê±²¥·ÅµÄÒôĞ§")]
+    [Header("éŸ³æ•ˆä¸ç‰¹æ•ˆ")]
+    // ã€ä¿®æ”¹ã€‘é‡å‘½åå˜é‡ï¼Œä»¥æ›´å¥½åœ°åæ˜ å…¶ç”¨é€”
+    [Tooltip("ç»éªŒå€¼è¢«ç©å®¶æ”¶é›†æ—¶æ’­æ”¾çš„éŸ³æ•ˆ")]
     public AudioClip collectionSound;
-    [Tooltip("¾­ÑéÖµ±»Íæ¼ÒÊÕ¼¯Ê±£¬ÔÚÍæ¼ÒÉíÉÏ²¥·ÅµÄÁ£×ÓÌØĞ§")]
+    [Tooltip("ç»éªŒå€¼è¢«ç©å®¶æ”¶é›†æ—¶ï¼Œåœ¨ç©å®¶èº«ä¸Šæ’­æ”¾çš„ç²’å­ç‰¹æ•ˆ")]
     public GameObject collectionVfxPrefab;
 
-    // --- ÄÚ²¿×´Ì¬±äÁ¿ ---
+    // --- å†…éƒ¨çŠ¶æ€å˜é‡ ---
     private Transform collectionTarget;
     private PlayerLevelManager foundLevelManager;
     private bool isCollecting = false;
-    private bool canBePickedUp = false; // ¡¾ĞÂÔö¡¿¿ØÖÆÊÇ·ñ¿É±»Ê°È¡µÄ¡°×Ü¿ª¹Ø¡±
-    private bool isAbsorbFloating = false; // ¡¾ĞÂÔö¡¿ÊÇ·ñÕıÔÚÎüÊÕ¸¡¿Õ×´Ì¬
-    private Vector3 absorbStartPosition; // ¡¾ĞÂÔö¡¿ÎüÊÕ¸¡¿ÕÆğÊ¼Î»ÖÃ    
+    private bool canBePickedUp = false; // ã€æ–°å¢ã€‘æ§åˆ¶æ˜¯å¦å¯è¢«æ‹¾å–çš„â€œæ€»å¼€å…³â€
+    private bool isAbsorbFloating = false; // ã€æ–°å¢ã€‘æ˜¯å¦æ­£åœ¨å¸æ”¶æµ®ç©ºçŠ¶æ€
+    private Vector3 absorbStartPosition; // ã€æ–°å¢ã€‘å¸æ”¶æµ®ç©ºèµ·å§‹ä½ç½®    
 
 
     void Start()
     {
-        // È·±£Åö×²ÌåÊÇ´¥·¢Æ÷
+        // ç¡®ä¿ç¢°æ’ä½“æ˜¯è§¦å‘å™¨
         GetComponent<Collider>().isTrigger = true;
 
-        // ÔÚ Start ÖĞÖ»»ñÈ¡Ò»´ÎÍæ¼ÒÒıÓÃ£¬ºóĞø²»ÔÙÖØ¸´»ñÈ¡
+        // åœ¨ Start ä¸­åªè·å–ä¸€æ¬¡ç©å®¶å¼•ç”¨ï¼Œåç»­ä¸å†é‡å¤è·å–
         if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
         {
             Transform playerRoot = GameManager.Instance.playerTransform;
             foundLevelManager = playerRoot.GetComponent<PlayerLevelManager>();
 
-            // 1. ³¢ÊÔÑ°ÕÒ "AimTargetPoint"
+            // 1. å°è¯•å¯»æ‰¾ "AimTargetPoint"
             Transform aimTarget = playerRoot.Find("AimTargetPoint");
             if (aimTarget != null)
             {
-                // Èç¹ûÕÒµ½ÁË£¬¾ÍÓÃËü×÷ÎªÄ¿±ê
+                // å¦‚æœæ‰¾åˆ°äº†ï¼Œå°±ç”¨å®ƒä½œä¸ºç›®æ ‡
                 collectionTarget = aimTarget;
             }
             else
             {
-                // Èç¹ûÃ»ÕÒµ½£¬¾ÍÓÃÍæ¼ÒµÄ¸ù×ø±ê×÷Îªºó±¸
+                // å¦‚æœæ²¡æ‰¾åˆ°ï¼Œå°±ç”¨ç©å®¶çš„æ ¹åæ ‡ä½œä¸ºåå¤‡
                 collectionTarget = playerRoot;
-                Debug.LogWarning("ÔÚÍæ¼ÒÉíÉÏÎ´ÕÒµ½ 'AimTargetPoint'£¬¾­ÑéÇò½«·ÉÏòÍæ¼Ò½Åµ×¡£");
+                Debug.LogWarning("åœ¨ç©å®¶èº«ä¸Šæœªæ‰¾åˆ° 'AimTargetPoint'ï¼Œç»éªŒçƒå°†é£å‘ç©å®¶è„šåº•ã€‚");
             }
         }
 
-        // Æô¶¯µôÂä¶¯»­ºÍÊ°È¡ÑÓ³Ù¼ÆÊ±
+        // å¯åŠ¨æ‰è½åŠ¨ç”»å’Œæ‹¾å–å»¶è¿Ÿè®¡æ—¶
         StartCoroutine(SpawnRoutine());
     }
 
     IEnumerator SpawnRoutine()
     {
-        // --- 1. ¶¯Ì¬µôÂä¶¯»­ ---
+        // --- 1. åŠ¨æ€æ‰è½åŠ¨ç”» ---
         Vector3 startPoint = transform.position;
         Vector3 endPoint = startPoint + new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
 
@@ -100,12 +100,12 @@ public class ExperienceGem : MonoBehaviour
 
             yield return null;
         }
-        transform.position = new Vector3(endPoint.x, startPoint.y, endPoint.z); // È·±£ÂäµØÔÚÍ¬Ò»Ë®Æ½Ãæ
+        transform.position = new Vector3(endPoint.x, startPoint.y, endPoint.z); // ç¡®ä¿è½åœ°åœ¨åŒä¸€æ°´å¹³é¢
 
-        // --- 2. Ê°È¡ÑÓ³Ù ---
+        // --- 2. æ‹¾å–å»¶è¿Ÿ ---
         yield return new WaitForSeconds(pickupDelay);
 
-        // --- 3. ÑÓ³Ù½áÊø£¬´ò¿ª¡°×Ü¿ª¹Ø¡± ---
+        // --- 3. å»¶è¿Ÿç»“æŸï¼Œæ‰“å¼€â€œæ€»å¼€å…³â€ ---
         canBePickedUp = true;
     }
 
@@ -116,14 +116,14 @@ public class ExperienceGem : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, collectionTarget.position);
 
-        // --- ¡¾ĞŞ¸´¡¿Ó¦ÓÃÊ°È¡·¶Î§¼Ó³É ---
+        // --- ã€ä¿®å¤ã€‘åº”ç”¨æ‹¾å–èŒƒå›´åŠ æˆ ---
         float finalRadius = magnetRadius;
         if (PlayerStats.Instance != null)
         {
             finalRadius *= PlayerStats.Instance.pickupRadiusMultiplier;
         }
 
-        if (distanceToPlayer <= finalRadius) // Ê¹ÓÃ finalRadius
+        if (distanceToPlayer <= finalRadius) // ä½¿ç”¨ finalRadius
         {
             StartAbsorbSequence();
         }
@@ -131,20 +131,20 @@ public class ExperienceGem : MonoBehaviour
     }
     private void StartAbsorbSequence()
     {
-        if (isCollecting) return; // ·ÀÖ¹ÖØ¸´´¥·¢
+        if (isCollecting) return; // é˜²æ­¢é‡å¤è§¦å‘
 
         isCollecting = true;
         isAbsorbFloating = true;
         absorbStartPosition = transform.position;       
 
-        // Æô¶¯ÎüÊÕ¸¡¿ÕĞ­³Ì
+        // å¯åŠ¨å¸æ”¶æµ®ç©ºåç¨‹
         StartCoroutine(AbsorbFloatRoutine());
     }
 
-    // ¡¾ĞÂÔö¡¿ÎüÊÕ¸¡¿ÕĞ­³Ì
+    // ã€æ–°å¢ã€‘å¸æ”¶æµ®ç©ºåç¨‹
     IEnumerator AbsorbFloatRoutine()
     {
-        // (1. ÏòÉÏ¸¡¿Õ - ±£³Ö²»±ä)
+        // (1. å‘ä¸Šæµ®ç©º - ä¿æŒä¸å˜)
         Vector3 floatTarget = absorbStartPosition + Vector3.up * absorbFloatHeight;
         float timer = 0f;
         while (timer < absorbFloatDuration)
@@ -155,19 +155,19 @@ public class ExperienceGem : MonoBehaviour
             yield return null;
         }
 
-        // (2. ÔÚ¸¡¿ÕÎ»ÖÃÍ£ÖÍÒ»»á¶ù - ±£³Ö²»±ä)
+        // (2. åœ¨æµ®ç©ºä½ç½®åœæ»ä¸€ä¼šå„¿ - ä¿æŒä¸å˜)
         yield return new WaitForSeconds(absorbHoverDuration);
 
-        // (3. ½áÊø¸¡¿Õ×´Ì¬)
+        // (3. ç»“æŸæµ®ç©ºçŠ¶æ€)
         isAbsorbFloating = false;
 
-        // --- vvv [ĞÂÔö] vvv ---
-        // (4. Á¢¼´¿ªÊ¼·ÉÏòÍæ¼Ò£¬Ö±µ½±» Collect() Ïú»Ù)
+        // --- vvv [æ–°å¢] vvv ---
+        // (4. ç«‹å³å¼€å§‹é£å‘ç©å®¶ï¼Œç›´åˆ°è¢« Collect() é”€æ¯)
         while (true)
         {
             if (collectionTarget == null)
             {
-                Destroy(gameObject); // Íæ¼ÒÏûÊ§ÁË£¿Ïú»Ù×Ô¼º
+                Destroy(gameObject); // ç©å®¶æ¶ˆå¤±äº†ï¼Ÿé”€æ¯è‡ªå·±
                 yield break;
             }
 
@@ -179,15 +179,15 @@ public class ExperienceGem : MonoBehaviour
             }
             yield return null;
         }
-        // --- ^^^ [ĞÂÔö] ^^^ ---
+        // --- ^^^ [æ–°å¢] ^^^ ---
     }
 
     public void TriggerMagnet(Transform target)
     {
-        // È·±£Ö»´¥·¢Ò»´Î
+        // ç¡®ä¿åªè§¦å‘ä¸€æ¬¡
         if (isCollecting || !canBePickedUp) return;
 
-        // (Èç¹û collectionTarget Îª null, ³¢ÊÔÊ¹ÓÃ´«ÈëµÄ target)
+        // (å¦‚æœ collectionTarget ä¸º null, å°è¯•ä½¿ç”¨ä¼ å…¥çš„ target)
         if (collectionTarget == null)
         {
             collectionTarget = target;
@@ -204,29 +204,29 @@ public class ExperienceGem : MonoBehaviour
         }
         else
         {
-            // ×÷Îªºó±¸·½°¸£¬Èç¹û³õÊ¼Î´ÕÒµ½£¬ÔÙÕÒÒ»´Î
+            // ä½œä¸ºåå¤‡æ–¹æ¡ˆï¼Œå¦‚æœåˆå§‹æœªæ‰¾åˆ°ï¼Œå†æ‰¾ä¸€æ¬¡
             var lvlManager = collectionTarget.GetComponent<PlayerLevelManager>();
             if (lvlManager != null) lvlManager.AddExperience(experienceAmount);
         }
         if (collectionTarget != null)
         {
-            // ÔÚÍæ¼ÒÉíÉÏ²¥·ÅÊÕ¼¯ÌØĞ§
+            // åœ¨ç©å®¶èº«ä¸Šæ’­æ”¾æ”¶é›†ç‰¹æ•ˆ
             if (collectionVfxPrefab != null)
             {
                 Instantiate(collectionVfxPrefab, collectionTarget.position, collectionTarget.rotation);
             }
 
-            // ÔÚÍæ¼ÒÉíÉÏ²¥·ÅÊÕ¼¯ÒôĞ§
+            // åœ¨ç©å®¶èº«ä¸Šæ’­æ”¾æ”¶é›†éŸ³æ•ˆ
             if (collectionSound != null && AudioManager.Instance != null)
             {
-                // ÇëÇó AudioManager ²¥·ÅÕâ¸öÊÕ¼¯ÒôĞ§
-                // ÉùÒô½«ÒÔ2DĞÎÊ½²¥·Å£¬ÒôÁ¿ÇåÎú£¬²»ÊÜ¾àÀëÓ°Ïì
+                // è¯·æ±‚ AudioManager æ’­æ”¾è¿™ä¸ªæ”¶é›†éŸ³æ•ˆ
+                // å£°éŸ³å°†ä»¥2Då½¢å¼æ’­æ”¾ï¼ŒéŸ³é‡æ¸…æ™°ï¼Œä¸å—è·ç¦»å½±å“
                 AudioManager.Instance.PlaySoundEffect(collectionSound);
             }
         }
 
 
-        // Ïú»Ù×ÔÉí
+        // é”€æ¯è‡ªèº«
         Destroy(gameObject);
     }
 }

@@ -1,10 +1,10 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 public class UpgradeNodeUI : MonoBehaviour
 {
-    [Header("UI ÒıÓÃ")]
+    [Header("UI å¼•ç”¨")]
     public Image iconImage;
     public Image backgroundImage;
     public Button purchaseButton;
@@ -12,12 +12,12 @@ public class UpgradeNodeUI : MonoBehaviour
     public TextMeshProUGUI nodeNameText;
     public TextMeshProUGUI nodeCostText;
 
-    [Header("×´Ì¬ÑÕÉ«")]
+    [Header("çŠ¶æ€é¢œè‰²")]
     public Color lockedColor = Color.gray;
     public Color unlockedColor = Color.yellow;
     public Color canPurchaseColor = Color.white;
 
-    // ÄÚ²¿Êı¾İ
+    // å†…éƒ¨æ•°æ®
     public WeaponUpgradeNode nodeData { get; private set; }
     private SkillTreeUIManager uiManager;
 
@@ -32,10 +32,10 @@ public class UpgradeNodeUI : MonoBehaviour
         if (nodeCostText != null) nodeCostText.text = nodeData.cost.ToString();
         if (iconImage != null) iconImage.sprite = data.icon;
 
-        // °ó¶¨°´Å¥µã»÷ÊÂ¼ş
+        // ç»‘å®šæŒ‰é’®ç‚¹å‡»äº‹ä»¶
         purchaseButton.onClick.AddListener(OnNodeClicked);
 
-        // Ö®ºóÎÒÃÇ»áÔÚÕâÀï¸üĞÂ½ÚµãµÄÊÓ¾õ×´Ì¬£¨Ëø¶¨¡¢¿É¹ºÂòµÈ£©
+        // ä¹‹åæˆ‘ä»¬ä¼šåœ¨è¿™é‡Œæ›´æ–°èŠ‚ç‚¹çš„è§†è§‰çŠ¶æ€ï¼ˆé”å®šã€å¯è´­ä¹°ç­‰ï¼‰
         UpdateNodeState();
     }
 
@@ -43,35 +43,35 @@ public class UpgradeNodeUI : MonoBehaviour
     {
         if (nodeData == null || PlayerProgressManager.Instance == null) return;
 
-        // ¼ì²é1£º¸Ã½ÚµãÊÇ·ñÒÑ¾­±»½âËø
+        // æ£€æŸ¥1ï¼šè¯¥èŠ‚ç‚¹æ˜¯å¦å·²ç»è¢«è§£é”
         if (PlayerProgressManager.Instance.IsNodeUnlocked(nodeData))
         {
             backgroundImage.color = unlockedColor;
-            purchaseButton.interactable = false; // ÒÑ½âËøµÄ²»ÄÜÔÙ¹ºÂò
-            return; // ½áÊøÂß¼­
+            purchaseButton.interactable = false; // å·²è§£é”çš„ä¸èƒ½å†è´­ä¹°
+            return; // ç»“æŸé€»è¾‘
         }
 
-        // ¼ì²é2£ºÇ°ÖÃ½ÚµãÊÇ·ñÒÑ½âËø
-        // (Èç¹ûÇ°ÖÃ½ÚµãÎªnull£¬ËµÃ÷ÊÇ³õÊ¼½Úµã£¬Ä¬ÈÏÊÓÎªÒÑ½âËø)
+        // æ£€æŸ¥2ï¼šå‰ç½®èŠ‚ç‚¹æ˜¯å¦å·²è§£é”
+        // (å¦‚æœå‰ç½®èŠ‚ç‚¹ä¸ºnullï¼Œè¯´æ˜æ˜¯åˆå§‹èŠ‚ç‚¹ï¼Œé»˜è®¤è§†ä¸ºå·²è§£é”)
         bool prerequisiteUnlocked = nodeData.prerequisiteNode == null || PlayerProgressManager.Instance.IsNodeUnlocked(nodeData.prerequisiteNode);
 
         if (prerequisiteUnlocked)
         {
-            // ¼ì²é3£º½ğ±ÒÊÇ·ñ×ã¹»
+            // æ£€æŸ¥3ï¼šé‡‘å¸æ˜¯å¦è¶³å¤Ÿ
             if (PlayerProgressManager.Instance.CanAfford(nodeData.cost))
             {
                 backgroundImage.color = canPurchaseColor;
-                purchaseButton.interactable = true; // Ç°ÖÃÒÑ½â£¬½ğ±Ò×ã¹»£¬¿ÉÒÔ¹ºÂò
+                purchaseButton.interactable = true; // å‰ç½®å·²è§£ï¼Œé‡‘å¸è¶³å¤Ÿï¼Œå¯ä»¥è´­ä¹°
             }
             else
             {
-                backgroundImage.color = canPurchaseColor; // ÑÕÉ«Ò»Ñù£¬µ«°´Å¥²»¿É½»»¥
-                purchaseButton.interactable = false; // ½ğ±Ò²»×ã
+                backgroundImage.color = canPurchaseColor; // é¢œè‰²ä¸€æ ·ï¼Œä½†æŒ‰é’®ä¸å¯äº¤äº’
+                purchaseButton.interactable = false; // é‡‘å¸ä¸è¶³
             }
         }
         else
         {
-            // Ç°ÖÃ½ÚµãÎ´½âËø
+            // å‰ç½®èŠ‚ç‚¹æœªè§£é”
             backgroundImage.color = lockedColor;
             purchaseButton.interactable = false;
         }
@@ -79,7 +79,7 @@ public class UpgradeNodeUI : MonoBehaviour
 
     private void OnNodeClicked()
     {
-        // µ±½Úµã±»µã»÷Ê±£¬Í¨ÖªUI¹ÜÀíÆ÷
+        // å½“èŠ‚ç‚¹è¢«ç‚¹å‡»æ—¶ï¼Œé€šçŸ¥UIç®¡ç†å™¨
         if (uiManager != null)
         {
             uiManager.OnNodeSelected(this, nodeData);

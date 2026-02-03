@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -8,41 +8,41 @@ public class SuperMechAI : MonoBehaviour
     private enum MechState { Following, Attacking }
     private MechState currentState = MechState.Following;
 
-    [Header("»ú¼×ĞĞ¶¯²ÎÊı")]
+    [Header("æœºç”²è¡ŒåŠ¨å‚æ•°")]
     public float moveSpeed = 3.5f;
     public float rotationSpeed = 5f;
     public float followDistance = 4.0f;
     public float attackRange = 20f;
 
-    [Header("´«ËÍ»úÖÆ (Teleport)")]
-    public float teleportDistance = 25f; // ¡¾ĞÂÔö¡¿³¬¹ıÕâ¸ö¾àÀë¾Í´«ËÍ
-    public GameObject teleportVfxPrefab; // ¡¾ĞÂÔö¡¿´«ËÍÊ±µÄÌØĞ§
+    [Header("ä¼ é€æœºåˆ¶ (Teleport)")]
+    public float teleportDistance = 25f; // ã€æ–°å¢ã€‘è¶…è¿‡è¿™ä¸ªè·ç¦»å°±ä¼ é€
+    public GameObject teleportVfxPrefab; // ã€æ–°å¢ã€‘ä¼ é€æ—¶çš„ç‰¹æ•ˆ
 
-    [Header("»ú¼×½á¹¹×é¼ş")]
+    [Header("æœºç”²ç»“æ„ç»„ä»¶")]
     public Transform aimBone;
     public Transform leftShoulderMuzzle;
     public Transform rightShoulderMuzzle;
     public Transform chestMuzzle;
 
-    [Header("¹Ç÷ÀĞŞÕı")]
+    [Header("éª¨éª¼ä¿®æ­£")]
     public Vector3 boneCorrection = Vector3.zero;
 
-    [Header("Ğı×ªÏŞÖÆ")]
+    [Header("æ—‹è½¬é™åˆ¶")]
     public float maxTorsoAngle = 60f;
 
-    [Header("¹¥»÷A£º¼ç²¿µ¼µ¯ÆëÉä")]
+    [Header("æ”»å‡»Aï¼šè‚©éƒ¨å¯¼å¼¹é½å°„")]
     public GameObject missilePrefab;
     public GameObject missileHitVfxPrefab;
-    public GameObject muzzleFlashVfxPrefab; // ¡¾ĞÂÔö¡¿Ç¹¿Ú¿ª»ğÌØĞ§
+    public GameObject muzzleFlashVfxPrefab; // ã€æ–°å¢ã€‘æªå£å¼€ç«ç‰¹æ•ˆ
     public int missileVolleys = 6;
     public float volleyInterval = 0.2f;
     public float missileUpwardForce = 15f;
 
-    [Header("µ¼µ¯·¢ÉäÏ¸½Ú")]
+    [Header("å¯¼å¼¹å‘å°„ç»†èŠ‚")]
     public float muzzlePosOffset = 0.3f;
     public float trajectorySpread = 1.5f;
 
-    [Header("¹¥»÷B£ºĞØ²¿¼¯Êø¼¤¹â")]
+    [Header("æ”»å‡»Bï¼šèƒ¸éƒ¨é›†æŸæ¿€å…‰")]
     public float laserChargeTime = 1.0f;
     public float laserDuration = 2.5f;
     public float laserWidth = 2.0f;
@@ -50,14 +50,14 @@ public class SuperMechAI : MonoBehaviour
     public LayerMask enemyLayer;
     public GameObject chestChargeVfx;
 
-    [Header("¼¤¹âÊÓ¾õÓÅ»¯")]
+    [Header("æ¿€å…‰è§†è§‰ä¼˜åŒ–")]
     public GameObject laserImpactVfxPrefab;
     public float minAttackDistance = 5.0f;
 
-    [Header("Ñ­»·ÉèÖÃ")]
+    [Header("å¾ªç¯è®¾ç½®")]
     public float attackCooldown = 3.0f;
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private Transform ownerPlayer;
     private WeaponPart ownerWeapon;
     private Transform currentTarget;
@@ -133,7 +133,7 @@ public class SuperMechAI : MonoBehaviour
 
         for (int i = 0; i < missileVolleys; i++)
         {
-            // ·¢ÉäÇ°ÔÙ´ÎÈ·ÈÏÄ¿±ê£¬·ÀÖ¹Ä¿±êËÀÍöµ¼ÖÂÈ«²¿´ò¿Õ
+            // å‘å°„å‰å†æ¬¡ç¡®è®¤ç›®æ ‡ï¼Œé˜²æ­¢ç›®æ ‡æ­»äº¡å¯¼è‡´å…¨éƒ¨æ‰“ç©º
             if (currentTarget == null) FindNewTarget();
 
             FireSingleMissile(leftShoulderMuzzle);
@@ -181,11 +181,11 @@ public class SuperMechAI : MonoBehaviour
     {
         float distToPlayer = Vector3.Distance(transform.position, ownerPlayer.position);
 
-        // --- ¡¾ĞÂÔö¡¿´«ËÍÂß¼­ ---
+        // --- ã€æ–°å¢ã€‘ä¼ é€é€»è¾‘ ---
         if (distToPlayer > teleportDistance)
         {
             TeleportToPlayer();
-            return; // ´«ËÍÍêÕâÒ»Ö¡¾Í½áÊø£¬ÏÂÒ»Ö¡ÔÙ´¦ÀíÒÆ¶¯
+            return; // ä¼ é€å®Œè¿™ä¸€å¸§å°±ç»“æŸï¼Œä¸‹ä¸€å¸§å†å¤„ç†ç§»åŠ¨
         }
         // -----------------------
 
@@ -207,24 +207,24 @@ public class SuperMechAI : MonoBehaviour
         if (animator != null) animator.SetBool("IsMoving", shouldMove);
     }
 
-    // ¡¾ĞÂÔö¡¿´«ËÍ·½·¨
+    // ã€æ–°å¢ã€‘ä¼ é€æ–¹æ³•
     void TeleportToPlayer()
     {
-        // ¼ÆËãÍæ¼Ò±³ºóµÄÎ»ÖÃ
+        // è®¡ç®—ç©å®¶èƒŒåçš„ä½ç½®
         Vector3 spawnPos = ownerPlayer.position - ownerPlayer.forward * 3f;
-        // ¼òµ¥µÄµØÃæĞ£Õı (·ÀÖ¹¿¨ÔÚÇ½Àï»òµØÏÂ£¬¼òµ¥´¦Àí±£³ÖÔ­YÖá»òÍæ¼ÒYÖá)
+        // ç®€å•çš„åœ°é¢æ ¡æ­£ (é˜²æ­¢å¡åœ¨å¢™é‡Œæˆ–åœ°ä¸‹ï¼Œç®€å•å¤„ç†ä¿æŒåŸYè½´æˆ–ç©å®¶Yè½´)
         spawnPos.y = ownerPlayer.position.y;
 
-        // ²¥·ÅÏûÊ§ÌØĞ§ (ÔÚ¾ÉÎ»ÖÃ)
+        // æ’­æ”¾æ¶ˆå¤±ç‰¹æ•ˆ (åœ¨æ—§ä½ç½®)
         if (teleportVfxPrefab != null) Instantiate(teleportVfxPrefab, transform.position, Quaternion.identity);
 
-        // Ë²ÒÆ
+        // ç¬ç§»
         transform.position = spawnPos;
 
-        // ²¥·Å³öÏÖÌØĞ§ (ÔÚĞÂÎ»ÖÃ)
+        // æ’­æ”¾å‡ºç°ç‰¹æ•ˆ (åœ¨æ–°ä½ç½®)
         if (teleportVfxPrefab != null) Instantiate(teleportVfxPrefab, transform.position, Quaternion.identity);
 
-        // ÖØÖÃ×´Ì¬
+        // é‡ç½®çŠ¶æ€
         isPerformingAttackRoutine = false;
         currentState = MechState.Following;
         lineRenderer.enabled = false;
@@ -253,15 +253,15 @@ public class SuperMechAI : MonoBehaviour
         if (muzzle == null) muzzle = transform;
         if (missilePrefab == null) return;
 
-        // 1. Î»ÖÃÆ«ÒÆ
+        // 1. ä½ç½®åç§»
         Vector3 randomPosOffset = (muzzle.right * Random.Range(-1f, 1f) + muzzle.up * Random.Range(-1f, 1f)) * muzzlePosOffset;
         Vector3 spawnPos = muzzle.position + randomPosOffset;
 
-        // 2. ¡¾ĞÂÔö¡¿Éú³ÉÇ¹¿Ú»ğÑæ
+        // 2. ã€æ–°å¢ã€‘ç”Ÿæˆæªå£ç«ç„°
         if (muzzleFlashVfxPrefab != null)
         {
             GameObject flash = Instantiate(muzzleFlashVfxPrefab, spawnPos, muzzle.rotation);
-            Destroy(flash, 0.5f); // ×Ô¶¯Ïú»Ù
+            Destroy(flash, 0.5f); // è‡ªåŠ¨é”€æ¯
         }
 
         GameObject missile = Instantiate(missilePrefab, spawnPos, muzzle.rotation);
@@ -273,18 +273,18 @@ public class SuperMechAI : MonoBehaviour
             proj.owner = ownerWeapon.gameObject;
             proj.MarkAsPlayerProjectile();
 
-            // --- ¡¾ºËĞÄĞŞ¸´¡¿·ÀÖ¹µ¼µ¯·ÉÌì ---
-            // Èç¹û currentTarget ¶ªÊ§£¨±ÈÈçÅÜÌ«Ô¶ÁË£©£¬ÎÒÃÇÁÙÊ±ÓÃ¸ü´ó·¶Î§ÕÒÒ»¸öÌæ´úÄ¿±ê
-            // ÕâÑùµ¼µ¯ÖÁÉÙ»á·ÉÏòÄ³¸öµĞÈË£¬¶ø²»ÊÇ·ÉÏòÌ«¿Õ
+            // --- ã€æ ¸å¿ƒä¿®å¤ã€‘é˜²æ­¢å¯¼å¼¹é£å¤© ---
+            // å¦‚æœ currentTarget ä¸¢å¤±ï¼ˆæ¯”å¦‚è·‘å¤ªè¿œäº†ï¼‰ï¼Œæˆ‘ä»¬ä¸´æ—¶ç”¨æ›´å¤§èŒƒå›´æ‰¾ä¸€ä¸ªæ›¿ä»£ç›®æ ‡
+            // è¿™æ ·å¯¼å¼¹è‡³å°‘ä¼šé£å‘æŸä¸ªæ•Œäººï¼Œè€Œä¸æ˜¯é£å‘å¤ªç©º
             Transform missileTarget = currentTarget;
             if (missileTarget == null)
             {
-                // ÁÙÊ±ÕÒÒ»¸ö 50Ã×ÄÚµÄµĞÈË¸øµ¼µ¯
+                // ä¸´æ—¶æ‰¾ä¸€ä¸ª 50ç±³å†…çš„æ•Œäººç»™å¯¼å¼¹
                 missileTarget = FindEnemyForMissile(50f);
             }
 
             proj.InitializeAsHoming(
-                missileTarget, // ´«ÈëĞŞÕıºóµÄÄ¿±ê
+                missileTarget, // ä¼ å…¥ä¿®æ­£åçš„ç›®æ ‡
                 20f,
                 missileDamage,
                 false,
@@ -294,11 +294,11 @@ public class SuperMechAI : MonoBehaviour
                 missileHitVfxPrefab
             );
 
-            // 3. ³õÊ¼¹ì¼£
+            // 3. åˆå§‹è½¨è¿¹
             Vector3 spreadDir = Random.insideUnitSphere * trajectorySpread;
 
-            // ¡¾ºËĞÄĞŞ¸´¡¿Èç¹û´ËÊ±»¹ÊÇÃ»ÓĞÄ¿±ê (missileTarget == null)£¬
-            // ËµÃ÷ÖÜÎ§ÕæÃ»¹ÖÁË£¬ÄÇ¾Í²»ÒªÍùÌìÉÏ´ò£¬¸ÄÎªÍù¡°Ç°·½¡±Å×Éä
+            // ã€æ ¸å¿ƒä¿®å¤ã€‘å¦‚æœæ­¤æ—¶è¿˜æ˜¯æ²¡æœ‰ç›®æ ‡ (missileTarget == null)ï¼Œ
+            // è¯´æ˜å‘¨å›´çœŸæ²¡æ€ªäº†ï¼Œé‚£å°±ä¸è¦å¾€å¤©ä¸Šæ‰“ï¼Œæ”¹ä¸ºå¾€â€œå‰æ–¹â€æŠ›å°„
             Vector3 baseDir = (missileTarget != null) ? (muzzle.up * 2.0f) : (muzzle.forward + muzzle.up * 0.5f);
 
             Vector3 launchDir = (baseDir + spreadDir).normalized;
@@ -313,14 +313,14 @@ public class SuperMechAI : MonoBehaviour
         }
     }
 
-    // ¡¾ĞÂÔö¡¿×¨ÃÅÎªµ¼µ¯ÕÒÄ¿±êµÄ¸¨Öú·½·¨
+    // ã€æ–°å¢ã€‘ä¸“é—¨ä¸ºå¯¼å¼¹æ‰¾ç›®æ ‡çš„è¾…åŠ©æ–¹æ³•
     Transform FindEnemyForMissile(float range)
     {
         Collider[] enemies = Physics.OverlapSphere(transform.position, range, enemyLayer);
         foreach (var col in enemies)
         {
             Health h = col.GetComponentInParent<Health>();
-            if (h != null && !h.IsDead) return col.transform; // Ëæ±ã·µ»ØÒ»¸ö»î×ÅµÄ¾ÍĞĞ
+            if (h != null && !h.IsDead) return col.transform; // éšä¾¿è¿”å›ä¸€ä¸ªæ´»ç€çš„å°±è¡Œ
         }
         return null;
     }

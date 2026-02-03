@@ -1,377 +1,380 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
-// ¶¨ÒåÎäÆ÷µÄºËĞÄĞĞÎªÀàĞÍ
+// å®šä¹‰æ­¦å™¨çš„æ ¸å¿ƒè¡Œä¸ºç±»å‹
 public enum WeaponBehaviorType
 {
-    Standard,       // ±ê×¼µ¯ (ÃüÖĞºóÏûÊ§)
-    Pierce,         // ´©Í¸µ¯
-    ParabolicAOE,   // Å×ÎïÏß·¶Î§ÉËº¦µ¯
-    Chain,          // Á¬Ëøµ¯
-    Orbital,        // ¹ìµÀÎäÆ÷
-    PersistentAOE,  // ³ÖĞøÇøÓò (¿ÕÍ¶)
-    SummonDrone,    // ÎŞÈË»ú
-    Beam,           // ¹âÊø
-    Funnel,         //³¬Îä¸¡ÓÎÅÚ
+    Standard,       // æ ‡å‡†å¼¹ (å‘½ä¸­åæ¶ˆå¤±)
+    Pierce,         // ç©¿é€å¼¹
+    ParabolicAOE,   // æŠ›ç‰©çº¿èŒƒå›´ä¼¤å®³å¼¹
+    Chain,          // è¿é”å¼¹
+    Orbital,        // è½¨é“æ­¦å™¨
+    PersistentAOE,  // æŒç»­åŒºåŸŸ (ç©ºæŠ•)
+    SummonDrone,    // æ— äººæœº
+    Beam,           // å…‰æŸ
+    Funnel,         //è¶…æ­¦æµ®æ¸¸ç‚®
     SuperMech,
-    Landmine,       // µØÀ×
-    MeleeAOE,       // ½üÕ½·¶Î§
-    Boomerang,      // »ØĞıïÚ
-    Aura,           // ¹â»·
-    CreateAndForget // <--- ¡¾ĞÂÔö¡¿Éú³Éºó²»¹Ü (ÓÃÓÚÓÎµ´ĞÍ³¬Îä)
+    Landmine,       // åœ°é›·
+    MeleeAOE,       // è¿‘æˆ˜èŒƒå›´
+    Boomerang,      // å›æ—‹é•–
+    Aura,           // å…‰ç¯
+    CreateAndForget, // <--- ã€æ–°å¢ã€‘ç”Ÿæˆåä¸ç®¡ (ç”¨äºæ¸¸è¡å‹è¶…æ­¦)
+    FlyingDagger    // <--- ã€æ–°å¢ã€‘è¿½è¸ªé£åˆ€ (æ— éœ€å‘å°„ï¼Œæœ¬ä½“æ’å‡»)
 }
 
 public enum WeaponXpSource
 {
-    DamageDealt,  // Ôì³ÉÉËº¦Ê±»ñµÃ
-    EnemyKilled,  // »÷É±µĞÈËÊ±»ñµÃ
-    CastCount     // ÊÍ·Å¼¼ÄÜÊ±»ñµÃ
+    DamageDealt,  // é€ æˆä¼¤å®³æ—¶è·å¾—
+    EnemyKilled,  // å‡»æ€æ•Œäººæ—¶è·å¾—
+    CastCount     // é‡Šæ”¾æŠ€èƒ½æ—¶è·å¾—
 }
 
 
 [CreateAssetMenu(fileName = "Weapon_Cannon", menuName = "Weapons/Weapon Stat Block")]
 public class WeaponStatBlock : ScriptableObject
 {
-    [Header("ºËĞÄ±êÊ¶")]
-    [Tooltip("³ÌĞòÂß¼­×¨ÓÃµÄÎ¨Ò»ID£¬²»ËæÓïÑÔ¸Ä±ä (ÀıÈç: Fireball, ExplosiveFireball)")]
-    public string weaponID; // <--- ¡¾ĞÂÔö¡¿ÕâÀïÌîÓ¢ÎÄID
+    [Header("æ ¸å¿ƒæ ‡è¯†")]
+    [Tooltip("ç¨‹åºé€»è¾‘ä¸“ç”¨çš„å”¯ä¸€IDï¼Œä¸éšè¯­è¨€æ”¹å˜ (ä¾‹å¦‚: Fireball, ExplosiveFireball)")]
+    public string weaponID; // <--- ã€æ–°å¢ã€‘è¿™é‡Œå¡«è‹±æ–‡ID
 
     public string weaponName;
     public Sprite weaponIcon;
-    [Tooltip("Òª¹ÒÔØµ½»ú¼×ÉÏµÄÎäÆ÷²¿¼şÔ¤ÖÆ¼ş (WeaponPart Prefab)")]
+    [Tooltip("è¦æŒ‚è½½åˆ°æœºç”²ä¸Šçš„æ­¦å™¨éƒ¨ä»¶é¢„åˆ¶ä»¶ (WeaponPart Prefab)")]
     public GameObject weaponPartPrefab;
 
-    [Header("ÊÓ¾õ±íÏÖ")]
-    [Tooltip("Õâ°ÑÎäÆ÷µÄ´ú±íÉ« (HDR)¡£ÀıÈç£ºÕ¶»÷ÓÃ³ÈÉ«£¬¼²·çÖ®ÈĞÓÃÇàÉ«¡£")]
+    [Header("è§†è§‰è¡¨ç°")]
+    [Tooltip("è¿™æŠŠæ­¦å™¨çš„ä»£è¡¨è‰² (HDR)ã€‚ä¾‹å¦‚ï¼šæ–©å‡»ç”¨æ©™è‰²ï¼Œç–¾é£ä¹‹åˆƒç”¨é’è‰²ã€‚")]
     [ColorUsage(true, true)]
-    public Color weaponGlowColor = new Color(1f, 0.5f, 0f) * 2f; // Ä¬ÈÏ³ÈÉ«¸ßÁÁ
-    [Header("ÊÓ¾õÄ£ĞÍ")]
-    [Tooltip("Õâ°ÑÎäÆ÷ÔÚ±³ºóÆ¯¸¡Ê±µÄÄ£ĞÍÔ¤ÖÆÌå (°üº¬MeshRendererºÍCooldownMaterial½Å±¾)")]
-    public GameObject floatingModelPrefab; // <--- ĞÂÔöÕâ¸ö×Ö¶Î
+    public Color weaponGlowColor = new Color(1f, 0.5f, 0f) * 2f; // é»˜è®¤æ©™è‰²é«˜äº®
+    [Header("è§†è§‰æ¨¡å‹")]
+    [Tooltip("è¿™æŠŠæ­¦å™¨åœ¨èƒŒåæ¼‚æµ®æ—¶çš„æ¨¡å‹é¢„åˆ¶ä½“ (åŒ…å«MeshRendererå’ŒCooldownMaterialè„šæœ¬)")]
+    public GameObject floatingModelPrefab; // <--- æ–°å¢è¿™ä¸ªå­—æ®µ
 
-    [Header("ÌØÊâ¹æÔò")]
-    [Tooltip("¹´Ñ¡ºó£¬´Ë¼¼ÄÜÔÚÊÍ·ÅÒ»´Îºó¾Í»á±»½ûÓÃ")]
-    public bool isOneShot = false; // ÊÇ·ñÎªÒ»´ÎĞÔ¼¼ÄÜ
-    [Header("¿ª»ğÓëÀäÈ´")]
-    [Tooltip("»ù´¡ÉäËÙ (Ã¿Ãë·¢Éä´ÎÊı)")]
+    [Header("ç‰¹æ®Šè§„åˆ™")]
+    [Tooltip("å‹¾é€‰åï¼Œæ­¤æŠ€èƒ½åœ¨é‡Šæ”¾ä¸€æ¬¡åå°±ä¼šè¢«ç¦ç”¨")]
+    public bool isOneShot = false; // æ˜¯å¦ä¸ºä¸€æ¬¡æ€§æŠ€èƒ½
+    [Header("å¼€ç«ä¸å†·å´")]
+    [Tooltip("åŸºç¡€å°„é€Ÿ (æ¯ç§’å‘å°„æ¬¡æ•°)")]
     public float baseFireRate = 1f;
 
 
-    [Header("µ¯µÀÓë·¢ÉäÊôĞÔ")]
-    [Tooltip("¸ÃÎäÆ÷·¢ÉäµÄÅÚµ¯/×Óµ¯µÄÔ¤ÖÆ¼ş")]
+    [Header("å¼¹é“ä¸å‘å°„å±æ€§")]
+    [Tooltip("è¯¥æ­¦å™¨å‘å°„çš„ç‚®å¼¹/å­å¼¹çš„é¢„åˆ¶ä»¶")]
 
     public GameObject projectilePrefab;
-    [Tooltip("ÊÇ·ñÊÇÅ×ÎïÏßµ¯µÀ£¿Èç¹û²»ÊÇ£¬ÔòÎªÖ±Ïß¡£")]
+    [Tooltip("æ˜¯å¦æ˜¯æŠ›ç‰©çº¿å¼¹é“ï¼Ÿå¦‚æœä¸æ˜¯ï¼Œåˆ™ä¸ºç›´çº¿ã€‚")]
 
-    public WeaponBehaviorType behavior; // <--- ĞÂÔö£ºÈ¡´úÖ®Ç°µÄ isParabolic ²¼¶ûÖµ
+    public WeaponBehaviorType behavior; // <--- æ–°å¢ï¼šå–ä»£ä¹‹å‰çš„ isParabolic å¸ƒå°”å€¼
 
-    [Tooltip("»ù´¡·¢ÉäÁ¦¶È(ÓÃÓÚÅ×ÎïÏß) »ò »ù´¡ËÙ¶È(ÓÃÓÚÖ±Ïßµ¯)")]
+    [Tooltip("åŸºç¡€å‘å°„åŠ›åº¦(ç”¨äºæŠ›ç‰©çº¿) æˆ– åŸºç¡€é€Ÿåº¦(ç”¨äºç›´çº¿å¼¹)")]
     public float baseLaunchForce = 20f;
 
-    [Tooltip("Å×ÎïÏß·¢Éä½Ç¶È (½öµ± isParabolic Îª true Ê±ÓĞĞ§)")]
+    [Tooltip("æŠ›ç‰©çº¿å‘å°„è§’åº¦ (ä»…å½“ isParabolic ä¸º true æ—¶æœ‰æ•ˆ)")]
     public float launchAngle = 45f;
 
-    [Tooltip("Ã¿´Î¹¥»÷·¢ÉäµÄ×Óµ¯ÊıÁ¿")]
+    [Tooltip("æ¯æ¬¡æ”»å‡»å‘å°„çš„å­å¼¹æ•°é‡")]
     public int projectileCount = 1;
 
-    [Tooltip("¶à·¢×Óµ¯µÄ×ÜÉ¢Éä½Ç¶È (ÀıÈç 30 ¶È)")]
+    [Tooltip("å¤šå‘å­å¼¹çš„æ€»æ•£å°„è§’åº¦ (ä¾‹å¦‚ 30 åº¦)")]
     public float spreadAngle = 0f;
 
-    [Header("±©»÷ÊôĞÔ (Critical Stats)")]
-    [Tooltip("ÎäÆ÷µÄ»ù´¡±©»÷ÂÊ (»áÓë½ÇÉ«±©»÷ÂÊÏà¼Ó)¡£0.1 ´ú±í 10%")]
+    [Header("æš´å‡»å±æ€§ (Critical Stats)")]
+    [Tooltip("æ­¦å™¨çš„åŸºç¡€æš´å‡»ç‡ (ä¼šä¸è§’è‰²æš´å‡»ç‡ç›¸åŠ )ã€‚0.1 ä»£è¡¨ 10%")]
     [Range(0f, 1f)]
     public float baseCritRate = 0f;
 
-    [Tooltip("ÎäÆ÷µÄ»ù´¡±©»÷ÉËº¦ (»áÓë½ÇÉ«±©»÷ÉËº¦Ïà¼Ó)¡£0.5 ´ú±í +50%")]
+    [Tooltip("æ­¦å™¨çš„åŸºç¡€æš´å‡»ä¼¤å®³ (ä¼šä¸è§’è‰²æš´å‡»ä¼¤å®³ç›¸åŠ )ã€‚0.5 ä»£è¡¨ +50%")]
     public float baseCritDamage = 0f;
 
-    [Tooltip("´ËAOEÎäÆ÷Ôì³ÉÑ£ÔÎµÄ»ù´¡¼¸ÂÊ (0 µ½ 1)")]
+    [Tooltip("æ­¤AOEæ­¦å™¨é€ æˆçœ©æ™•çš„åŸºç¡€å‡ ç‡ (0 åˆ° 1)")]
     [Range(0f, 1f)]
-    public float baseStunChance = 0.1f; // ÀıÈç 10% »ù´¡¼¸ÂÊ
-    [Tooltip("´ËAOEÎäÆ÷Ôì³ÉÑ£ÔÎµÄ»ù´¡³ÖĞøÊ±¼ä£¨Ãë£©")]
+    public float baseStunChance = 0.1f; // ä¾‹å¦‚ 10% åŸºç¡€å‡ ç‡
+    [Tooltip("æ­¤AOEæ­¦å™¨é€ æˆçœ©æ™•çš„åŸºç¡€æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float baseStunDuration = 1.0f;
 
-    [Tooltip("×Óµ¯»ù´¡´æ»îÊ±¼ä")]
+    [Tooltip("å­å¼¹åŸºç¡€å­˜æ´»æ—¶é—´")]
     public float baseProjectileLifetime = 5f;
 
-    [Header("ÉËº¦ÓëĞ§¹û")]
-    [Tooltip("»ù´¡Ö±½ÓÃüÖĞÉËº¦")]
+    [Header("ä¼¤å®³ä¸æ•ˆæœ")]
+    [Tooltip("åŸºç¡€ç›´æ¥å‘½ä¸­ä¼¤å®³")]
     public int baseDirectDamage = 0;
-    [Tooltip("»ù´¡·¶Î§±¬Õ¨ÉËº¦")]
+    [Tooltip("åŸºç¡€èŒƒå›´çˆ†ç‚¸ä¼¤å®³")]
     public int baseAoeDamage = 10;
-    [Tooltip("»ù´¡±¬Õ¨·¶Î§°ë¾¶")]
+    [Tooltip("åŸºç¡€çˆ†ç‚¸èŒƒå›´åŠå¾„")]
     public float baseAoeRadius = 3f;
-    [Tooltip("»ù´¡´©Í¸´ÎÊı¡£1±íÊ¾»÷ÖĞµÚÒ»¸öµĞÈËºóÏûÊ§¡£")]
+    [Tooltip("åŸºç¡€å‡»é€€åŠ›åº¦")]
+    public float baseKnockbackForce = 5f; // <--- ã€æ–°å¢ã€‘
+    [Tooltip("åŸºç¡€ç©¿é€æ¬¡æ•°ã€‚1è¡¨ç¤ºå‡»ä¸­ç¬¬ä¸€ä¸ªæ•Œäººåæ¶ˆå¤±ã€‚")]
     public int basePierceCount = 1;    
-    [Tooltip("Á¬Ëø¹¥»÷µÄ»ù´¡ÌøÔ¾´ÎÊı¡£0±íÊ¾²»Á¬Ëø¡£")]
-    public int baseChainCount = 0; // <--- ĞÂÔö
-    [Tooltip("Á¬Ëø¹¥»÷Ñ°ÕÒÏÂÒ»¸öÄ¿±êµÄ·¶Î§°ë¾¶¡£")]
-    public float chainRange = 10f; // <--- ĞÂÔö
-    [Tooltip("Ô­ÉúÀ×»÷µÄÌØĞ§ (µ±Ã»ÓĞ²åÀ×Ê¯Ê±Ê¹ÓÃ)")]
+    [Tooltip("è¿é”æ”»å‡»çš„åŸºç¡€è·³è·ƒæ¬¡æ•°ã€‚0è¡¨ç¤ºä¸è¿é”ã€‚")]
+    public int baseChainCount = 0; // <--- æ–°å¢
+    [Tooltip("è¿é”æ”»å‡»å¯»æ‰¾ä¸‹ä¸€ä¸ªç›®æ ‡çš„èŒƒå›´åŠå¾„ã€‚")]
+    public float chainRange = 10f; // <--- æ–°å¢
+    [Tooltip("åŸç”Ÿé›·å‡»çš„ç‰¹æ•ˆ (å½“æ²¡æœ‰æ’é›·çŸ³æ—¶ä½¿ç”¨)")]
     public GameObject nativeSmiteVfxPrefab;
-    [Tooltip("Ô­ÉúÉÁµçÁ´µÄÁ¬ÏßÌØĞ§ (µ±Ã»ÓĞ²åÀ×Ê¯Ê±Ê¹ÓÃ)")]
+    [Tooltip("åŸç”Ÿé—ªç”µé“¾çš„è¿çº¿ç‰¹æ•ˆ (å½“æ²¡æœ‰æ’é›·çŸ³æ—¶ä½¿ç”¨)")]
     public GameObject nativeChainVfxPrefab;
-    [Tooltip("Ô­ÉúÉÁµçÁ´µÄÊÜ»÷/ÃüÖĞÌØĞ§ (»÷ÖĞµĞÈËÊ±µÄ±¬Õ¨/»ğ»¨)")]
+    [Tooltip("åŸç”Ÿé—ªç”µé“¾çš„å—å‡»/å‘½ä¸­ç‰¹æ•ˆ (å‡»ä¸­æ•Œäººæ—¶çš„çˆ†ç‚¸/ç«èŠ±)")]
     public GameObject nativeChainImpactVfxPrefab;
 
-    [Header("ÊÖÀ×/Å×ÎïÏß½ø»¯ÌØÓĞ (Grenade Evolution)")]
+    [Header("æ‰‹é›·/æŠ›ç‰©çº¿è¿›åŒ–ç‰¹æœ‰ (Grenade Evolution)")]
 
-    [Tooltip("±¬Õ¨ºóÉú³ÉµÄµØÃæ²ĞÁôÎï (ÀıÈç£ºÄı¹ÌÆûÓÍµ¯µÄ»ğº£)")]
-    public GameObject groundHazardPrefab; // ¸´ÓÃÖ®Ç°¸ø±¬Ñ×Õ¶Ìá¹ıµÄ×Ö¶Î£¬Èç¹ûÃ»ÓĞÇë¼ÓÉÏ
-    [Tooltip("µØÃæ²ĞÁôÎï³ÖĞøÊ±¼ä")]
+    [Tooltip("çˆ†ç‚¸åç”Ÿæˆçš„åœ°é¢æ®‹ç•™ç‰© (ä¾‹å¦‚ï¼šå‡å›ºæ±½æ²¹å¼¹çš„ç«æµ·)")]
+    public GameObject groundHazardPrefab; // å¤ç”¨ä¹‹å‰ç»™çˆ†ç‚æ–©æè¿‡çš„å­—æ®µï¼Œå¦‚æœæ²¡æœ‰è¯·åŠ ä¸Š
+    [Tooltip("åœ°é¢æ®‹ç•™ç‰©æŒç»­æ—¶é—´")]
     public float groundHazardDuration = 5f;
 
-    [Tooltip("¡¾ÆæµãÊÖÀ×¡¿ÊÇ·ñ½«»÷ÍË¸ÄÎªÎüÁ¦£¿")]
+    [Tooltip("ã€å¥‡ç‚¹æ‰‹é›·ã€‘æ˜¯å¦å°†å‡»é€€æ”¹ä¸ºå¸åŠ›ï¼Ÿ")]
     public bool isBlackHole = false;
-    [Tooltip("ÎüÁ¦Ç¿¶È (»á½«¹ÖÀ­Ïò±¬Õ¨ÖĞĞÄ)")]
+    [Tooltip("å¸åŠ›å¼ºåº¦ (ä¼šå°†æ€ªæ‹‰å‘çˆ†ç‚¸ä¸­å¿ƒ)")]
     public float blackHoleForce = 15f;
 
-    [Tooltip("¡¾·ÖÁÑ¶¾±¬¡¿±¬Õ¨ºó·ÖÁÑ³öµÄ×Óµ¯Ô¤ÖÆÌå (¶¾±¬³æ)")]
+    [Tooltip("ã€åˆ†è£‚æ¯’çˆ†ã€‘çˆ†ç‚¸ååˆ†è£‚å‡ºçš„å­å¼¹é¢„åˆ¶ä½“ (æ¯’çˆ†è™«)")]
     public GameObject subProjectilePrefab;
-    [Tooltip("·ÖÁÑÊıÁ¿")]
+    [Tooltip("åˆ†è£‚æ•°é‡")]
     public int subProjectileCount = 6;
 
-    [Tooltip("·ÖÁÑ×Óµ¯µÄÃüÖĞ/±¬Õ¨ÌØĞ§ (ÀıÈçĞ¡ĞÍµÄ¶¾Òº±¬Õ¨)")]
+    [Tooltip("åˆ†è£‚å­å¼¹çš„å‘½ä¸­/çˆ†ç‚¸ç‰¹æ•ˆ (ä¾‹å¦‚å°å‹çš„æ¯’æ¶²çˆ†ç‚¸)")]
     public GameObject subProjectileHitVfx;
 
-    [Header("ÌØĞ§Óë²ãÉèÖÃ")]
-    [Tooltip("Ç¹¿Ú»ğÑæÌØĞ§Ô¤ÖÆ¼ş")]
+    [Header("ç‰¹æ•ˆä¸å±‚è®¾ç½®")]
+    [Tooltip("æªå£ç«ç„°ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject muzzleFlashPrefab;
-    [Tooltip("Ö±Ïßµ¯µÄÃüÖĞÌØĞ§Ô¤ÖÆ¼ş")]
+    [Tooltip("ç›´çº¿å¼¹çš„å‘½ä¸­ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject impactEffectPrefab;
-    [Tooltip("Å×ÎïÏßµ¯µÄ±¬Õ¨ÌØĞ§Ô¤ÖÆ¼ş")]
+    [Tooltip("æŠ›ç‰©çº¿å¼¹çš„çˆ†ç‚¸ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject explosionEffectPrefab;
-    [Tooltip("AOEÉËº¦¿ÉÒÔÓ°ÏìµÄ²ã")]
+    [Tooltip("AOEä¼¤å®³å¯ä»¥å½±å“çš„å±‚")]
     public LayerMask layersToDamageByAOE;
-    [Tooltip("¿ÉÒÔ´¥·¢±¬Õ¨µÄµØÃæ»òÇ½Ìå²ã")]
+    [Tooltip("å¯ä»¥è§¦å‘çˆ†ç‚¸çš„åœ°é¢æˆ–å¢™ä½“å±‚")]
     public LayerMask layersToExplodeOn;
-    [Tooltip("ÃüÖĞ¡¾»¤¶Ü¡¿Ê±µÄ×¨ÊôÌØĞ§")]
+    [Tooltip("å‘½ä¸­ã€æŠ¤ç›¾ã€‘æ—¶çš„ä¸“å±ç‰¹æ•ˆ")]
     public GameObject shieldImpactEffectPrefab;
-    [Tooltip("ÃüÖĞ¡¾ÎŞ»¤¶ÜÄ¿±ê¡¿»ò¡¾Ç½±Ú¡¿Ê±µÄÍ¨ÓÃÌØĞ§")]
+    [Tooltip("å‘½ä¸­ã€æ— æŠ¤ç›¾ç›®æ ‡ã€‘æˆ–ã€å¢™å£ã€‘æ—¶çš„é€šç”¨ç‰¹æ•ˆ")]
     public GameObject defaultImpactEffectPrefab;
 
-    [Header("½ø»¯ÓëÈÚºÏ (Î´À´À©Õ¹)")]
-    [Tooltip("´ËÎäÆ÷µÄ×î¸ßµÈ¼¶")]
+    [Header("è¿›åŒ–ä¸èåˆ (æœªæ¥æ‰©å±•)")]
+    [Tooltip("æ­¤æ­¦å™¨çš„æœ€é«˜ç­‰çº§")]
     public int maxLevel = 8;
 
-    [Header("½ø½×Óë½ø»¯")]
-    [Tooltip("µ±´ïµ½×î´óµÈ¼¶ÇÒÂú×ã½ø»¯Ìõ¼şÊ±£¬½ø»¯³ÉÕâ°ÑÎäÆ÷")]
-    public WeaponStatBlock evolutionTarget; // ÍÏÈë¡°±¬ÁÑ»ğÇò¡±µÄ SO ÎÄ¼ş
+    [Header("è¿›é˜¶ä¸è¿›åŒ–")]
+    [Tooltip("å½“è¾¾åˆ°æœ€å¤§ç­‰çº§ä¸”æ»¡è¶³è¿›åŒ–æ¡ä»¶æ—¶ï¼Œè¿›åŒ–æˆè¿™æŠŠæ­¦å™¨")]
+    public WeaponStatBlock evolutionTarget; // æ‹–å…¥â€œçˆ†è£‚ç«çƒâ€çš„ SO æ–‡ä»¶
 
-    [Header("¿ª»ğĞĞÎª (Firing Behavior)")] // ¿ÉÒÔĞÂ½¨Ò»¸öHeader
-    [Tooltip("Èç¹û¹´Ñ¡£¬´ËÎäÆ÷½«×Ô¶¯Ãé×¼·¶Î§ÄÚ×î½üµÄµĞÈË£¬ºöÂÔÊó±ê³¯Ïò")]
-    public bool autoAimAtNearestEnemy = false; // <--- ĞÂÔö
-    [Tooltip("×Ô¶¯Ãé×¼µÄÓĞĞ§·¶Î§°ë¾¶")]
-    public float autoAimRange = 360f; // <--- ĞÂÔö
+    [Header("å¼€ç«è¡Œä¸º (Firing Behavior)")] // å¯ä»¥æ–°å»ºä¸€ä¸ªHeader
+    [Tooltip("å¦‚æœå‹¾é€‰ï¼Œæ­¤æ­¦å™¨å°†è‡ªåŠ¨ç„å‡†èŒƒå›´å†…æœ€è¿‘çš„æ•Œäººï¼Œå¿½ç•¥é¼ æ ‡æœå‘")]
+    public bool autoAimAtNearestEnemy = false; // <--- æ–°å¢
+    [Tooltip("è‡ªåŠ¨ç„å‡†çš„æœ‰æ•ˆèŒƒå›´åŠå¾„")]
+    public float autoAimRange = 360f; // <--- æ–°å¢
     // public WeaponStatBlock evolution;
     // public List<WeaponStatBlock> fusionPartners;
     // public WeaponStatBlock fusionResult;
 
-    [Header("¹ìµÀÎäÆ÷ÊôĞÔ (½ö Behavior=Orbital Ê±ÓĞĞ§)")]
-    [Tooltip("×÷Îª¹ìµÀÎïÌåµÄÔ¤ÖÆ¼ş (ÀıÈçÒ»¸ö·ÉÂÖ¡¢¸«×Ó¡¢ÄÜÁ¿Çò)")]
+    [Header("è½¨é“æ­¦å™¨å±æ€§ (ä»… Behavior=Orbital æ—¶æœ‰æ•ˆ)")]
+    [Tooltip("ä½œä¸ºè½¨é“ç‰©ä½“çš„é¢„åˆ¶ä»¶ (ä¾‹å¦‚ä¸€ä¸ªé£è½®ã€æ–§å­ã€èƒ½é‡çƒ)")]
     public GameObject orbitalPrefab;
-    [Tooltip("»ù´¡¹ìµÀÎïÌåÊıÁ¿")]
+    [Tooltip("åŸºç¡€è½¨é“ç‰©ä½“æ•°é‡")]
     public int baseOrbitalCount = 1;
-    [Tooltip("»ù´¡Ğı×ªËÙ¶È (¶È/Ãë)")]
+    [Tooltip("åŸºç¡€æ—‹è½¬é€Ÿåº¦ (åº¦/ç§’)")]
     public float baseOrbitalSpeed = 90f;
-    [Tooltip("»ù´¡¹ìµÀ°ë¾¶")]
+    [Tooltip("åŸºç¡€è½¨é“åŠå¾„")]
     public float baseOrbitalRadius = 3f;
-    [Tooltip("»ù´¡³ÖĞøÊ±¼ä£¨Ãë£©¡£0 ±íÊ¾ÓÀ¾Ã´æÔÚ¡£")]
-    public float baseDuration = 15f; // <--- ĞÂÔö
+    [Tooltip("åŸºç¡€æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰ã€‚0 è¡¨ç¤ºæ°¸ä¹…å­˜åœ¨ã€‚")]
+    public float baseDuration = 15f; // <--- æ–°å¢
 
-    [Header("ÔªËØĞ§¹û (Elemental Effects)")]
-    [Tooltip("µãÈ¼µĞÈËµÄ¸ÅÂÊ (0 ~ 1)£¬ÀıÈç 0.3 ´ú±í 30%")]
+    [Header("å…ƒç´ æ•ˆæœ (Elemental Effects)")]
+    [Tooltip("ç‚¹ç‡ƒæ•Œäººçš„æ¦‚ç‡ (0 ~ 1)ï¼Œä¾‹å¦‚ 0.3 ä»£è¡¨ 30%")]
     [Range(0f, 1f)]
-    public float ignitionChance = 0f; // Ä¬ÈÏÎª0£¬Ö»ÓĞ»ğÏµÎäÆ÷Ìî 0.2 »ò¸ü¸ß
+    public float ignitionChance = 0f; // é»˜è®¤ä¸º0ï¼Œåªæœ‰ç«ç³»æ­¦å™¨å¡« 0.2 æˆ–æ›´é«˜
 
-    [Tooltip("µãÈ¼ÉËº¦ÏµÊı (»ùÓÚÖ±»÷ÉËº¦µÄ±ÈÀı)£¬Ä¬ÈÏ 0.2 (20%)")]
+    [Tooltip("ç‚¹ç‡ƒä¼¤å®³ç³»æ•° (åŸºäºç›´å‡»ä¼¤å®³çš„æ¯”ä¾‹)ï¼Œé»˜è®¤ 0.2 (20%)")]
     public float burnDamagePercent = 0.2f;
 
-    [Header("³ÖĞøÉËº¦Ğ§¹û (DoT)")]
-    [Tooltip("Ã¿ÃëÌøÉË")]
+    [Header("æŒç»­ä¼¤å®³æ•ˆæœ (DoT)")]
+    [Tooltip("æ¯ç§’è·³ä¼¤")]
     public int baseDotDamage = 5;
-    [Tooltip("³ÖĞøÊ±¼ä£¨Ãë£©")]
+    [Tooltip("æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float baseDotDuration = 3f;
-    [Tooltip("Ã¿Ìø¼ä¸ôÊ±³¤")]
-    public float dotTickInterval = 1f; // ÀıÈçÃ¿ÃëÔì³ÉÒ»´Î‚ûº¦
+    [Tooltip("æ¯è·³é—´éš”æ—¶é•¿")]
+    public float dotTickInterval = 1f; // ä¾‹å¦‚æ¯ç§’é€ æˆä¸€æ¬¡å‚·å®³
 
-    [Header("³ÖĞø·¶Î§ÉËº¦(PersistentAOE)ÊôĞÔ")]
-    [Tooltip("´Ó¿ÕÖĞÂäÏÂµÄ²¿ÊğÆ÷Ô¤ÖÆ¼ş (±ØĞë¹ÒÔØ Projectile ½Å±¾)")]
-    public GameObject deployerProjectilePrefab; // <--- ĞÂÔö
-    [Tooltip("ÉËº¦ÇøÓòµÄÔ¤ÖÆ¼ş (±ØĞë¹ÒÔØ PersistentAoeField ½Å±¾)")]
+    [Header("æŒç»­èŒƒå›´ä¼¤å®³(PersistentAOE)å±æ€§")]
+    [Tooltip("ä»ç©ºä¸­è½ä¸‹çš„éƒ¨ç½²å™¨é¢„åˆ¶ä»¶ (å¿…é¡»æŒ‚è½½ Projectile è„šæœ¬)")]
+    public GameObject deployerProjectilePrefab; // <--- æ–°å¢
+    [Tooltip("ä¼¤å®³åŒºåŸŸçš„é¢„åˆ¶ä»¶ (å¿…é¡»æŒ‚è½½ PersistentAoeField è„šæœ¬)")]
     public GameObject areaPrefab;
-    [Tooltip("²¿ÊğÆ÷µÄÏÂÂäËÙ¶È")]
+    [Tooltip("éƒ¨ç½²å™¨çš„ä¸‹è½é€Ÿåº¦")]
     public float deployerFallSpeed = 25f;
-    [Tooltip("²¿ÊğÆ÷ÔÚÄ¿±êÉÏ¿Õ¶à¸ß´¦Éú³É")]
+    [Tooltip("éƒ¨ç½²å™¨åœ¨ç›®æ ‡ä¸Šç©ºå¤šé«˜å¤„ç”Ÿæˆ")]
     public float deployerSpawnHeight = 40f;
-    [Tooltip("‚ûº¦…^ÓòµÄ»ùµA³ÖÀm•rég")]
+    [Tooltip("å‚·å®³å€åŸŸçš„åŸºç¤æŒçºŒæ™‚é–“")]
     public float baseAreaDuration = 5f;
-    [Tooltip("‚ûº¦…^ÓòµÄ»ùµA‚ûº¦ég¸ô£¨Ã¿¸ô¶à¾ÃÔì³ÉÒ»´Î‚ûº¦£©")]
+    [Tooltip("å‚·å®³å€åŸŸçš„åŸºç¤å‚·å®³é–“éš”ï¼ˆæ¯éš”å¤šä¹…é€ æˆä¸€æ¬¡å‚·å®³ï¼‰")]
     public float baseAreaTickInterval = 0.5f;
-    [Tooltip("‚ûº¦…^ÓòµÄ»ùµAÃ¿Ìø‚ûº¦")]
+    [Tooltip("å‚·å®³å€åŸŸçš„åŸºç¤æ¯è·³å‚·å®³")]
     public int baseAreaDamagePerTick = 4;
-    [Tooltip("¹â»·µÄÊÓ¾õÌØĞ§Ô¤ÖÆ¼ş")]
+    [Tooltip("å…‰ç¯çš„è§†è§‰ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject auraVfxPrefab;
 
-    [Tooltip("VFXÔ¤ÖÆ¼şµÄ»ù´¡Ëõ·Å³ËÊı (ÓÃÓÚĞ£×¼ÊÓ¾õºÍÅö×²Æ÷°ë¾¶)")]
+    [Tooltip("VFXé¢„åˆ¶ä»¶çš„åŸºç¡€ç¼©æ”¾ä¹˜æ•° (ç”¨äºæ ¡å‡†è§†è§‰å’Œç¢°æ’å™¨åŠå¾„)")]
     public float vfxBaseScaleMultiplier = 1.0f;
 
-    [Header("¿ØÖÆĞ§¹û (Control Effects)")]
-    [Tooltip("»ù´¡¼õËÙ°Ù·Ö±È (ÀıÈç 0.3 ±íÊ¾¼õËÙ30%)")]
+    [Header("æ§åˆ¶æ•ˆæœ (Control Effects)")]
+    [Tooltip("åŸºç¡€å‡é€Ÿç™¾åˆ†æ¯” (ä¾‹å¦‚ 0.3 è¡¨ç¤ºå‡é€Ÿ30%)")]
     [Range(0f, 1f)]
     public float baseSlowPercentage = 0f;
-    [Tooltip("»ù´¡¼õËÙ³ÖĞøÊ±¼ä£¨Ãë£©")]
+    [Tooltip("åŸºç¡€å‡é€ŸæŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float baseSlowDuration = 0f;
     public float baseFreezeChance = 0f;
 
-    [Header("ÕÙ»½ÉèÖÃ (Summon Settings)")]
-    [Tooltip("ÒªÕÙ»½µÄÎŞÈË»ú/ÕÙ»½ÎïÔ¤ÖÆ¼ş")]
+    [Header("å¬å”¤è®¾ç½® (Summon Settings)")]
+    [Tooltip("è¦å¬å”¤çš„æ— äººæœº/å¬å”¤ç‰©é¢„åˆ¶ä»¶")]
     public GameObject summonPrefab;
-    [Tooltip("Ã¿´ÎÊÍ·Å¼¼ÄÜÊ±ÕÙ»½µÄÊıÁ¿")]
+    [Tooltip("æ¯æ¬¡é‡Šæ”¾æŠ€èƒ½æ—¶å¬å”¤çš„æ•°é‡")]
     public int summonCount = 1;
-    [Tooltip("ÕÙ»½ÎïµÄ³ÖĞøÊ±¼ä£¨Ãë£©£¬0±íÊ¾ÓÀ¾Ã")]
+    [Tooltip("å¬å”¤ç‰©çš„æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰ï¼Œ0è¡¨ç¤ºæ°¸ä¹…")]
     public float summonDuration = 20f;
 
-    [Tooltip("¡¾ÖØÒª¡¿Ö¸¶¨ÕÙ»½Îï±»ÕÙ»½³öÀ´ºó£¬Ó¦¸ÃÊ¹ÓÃÄÄÖÖÎäÆ÷Êı¾İ (WeaponStatBlock)")]
+    [Tooltip("ã€é‡è¦ã€‘æŒ‡å®šå¬å”¤ç‰©è¢«å¬å”¤å‡ºæ¥åï¼Œåº”è¯¥ä½¿ç”¨å“ªç§æ­¦å™¨æ•°æ® (WeaponStatBlock)")]
     public WeaponStatBlock summonWeaponStats;
-    [Tooltip("ÕÙ»½ÎïÉú³ÉÊ±£¬ÔÚÍæ¼ÒÉÏ·½µÄ»ù´¡¸ß¶È")]
-    public float summonSpawnHeight = 2f; // ¡¾ĞÂÔö¡¿
+    [Tooltip("å¬å”¤ç‰©ç”Ÿæˆæ—¶ï¼Œåœ¨ç©å®¶ä¸Šæ–¹çš„åŸºç¡€é«˜åº¦")]
+    public float summonSpawnHeight = 2f; // ã€æ–°å¢ã€‘
 
-    // --- ¡¾ĞÂÔö¡¿¹âÊøÎäÆ÷ÊôĞÔ ---
-    [Header("¹âÊøÎäÆ÷ÊôĞÔ (½ö Behavior=Beam Ê±ÓĞĞ§)")]
-    [Tooltip("¹âÊøÀàÎäÆ÷µÄÊÓ¾õÌØĞ§Ô¤ÖÆ¼ş (ĞèÒª¹ÒÔØLineRendererºÍLaserBeamController½Å±¾)")]
+    // --- ã€æ–°å¢ã€‘å…‰æŸæ­¦å™¨å±æ€§ ---
+    [Header("å…‰æŸæ­¦å™¨å±æ€§ (ä»… Behavior=Beam æ—¶æœ‰æ•ˆ)")]
+    [Tooltip("å…‰æŸç±»æ­¦å™¨çš„è§†è§‰ç‰¹æ•ˆé¢„åˆ¶ä»¶ (éœ€è¦æŒ‚è½½LineRendererå’ŒLaserBeamControllerè„šæœ¬)")]
     public GameObject beamVfxPrefab;
 
-    [Tooltip("¹âÊøÃüÖĞÄ¿±êÊ±£¬ÔÚÃüÖĞµã²úÉúµÄ³ÖĞøÌØĞ§")]
+    [Tooltip("å…‰æŸå‘½ä¸­ç›®æ ‡æ—¶ï¼Œåœ¨å‘½ä¸­ç‚¹äº§ç”Ÿçš„æŒç»­ç‰¹æ•ˆ")]
     public GameObject beamImpactVfxPrefab;
 
-    [Tooltip("¹âÊøµÄ×î´óÉä³Ì")]
+    [Tooltip("å…‰æŸçš„æœ€å¤§å°„ç¨‹")]
     public float beamMaxDistance = 25f;
 
-    [Tooltip("¹âÊøÃ¿ÃëÔì³ÉµÄÉËº¦Öµ (DPS)")]
+    [Tooltip("å…‰æŸæ¯ç§’é€ æˆçš„ä¼¤å®³å€¼ (DPS)")]
     public int beamDamagePerSecond = 20;
 
-    [Tooltip("¹âÊøÔì³ÉÉËº¦µÄÆµÂÊ£¨Ã¿Ãë¼¸´Î£©¡£ÊıÖµÔ½¸ß£¬ÉËº¦Ìø×ÖÔ½Æµ·±¡£")]
-    public float beamDamageTickRate = 5f; // Ã¿ÃëÔì³É5´ÎÉËº¦
+    [Tooltip("å…‰æŸé€ æˆä¼¤å®³çš„é¢‘ç‡ï¼ˆæ¯ç§’å‡ æ¬¡ï¼‰ã€‚æ•°å€¼è¶Šé«˜ï¼Œä¼¤å®³è·³å­—è¶Šé¢‘ç¹ã€‚")]
+    public float beamDamageTickRate = 5f; // æ¯ç§’é€ æˆ5æ¬¡ä¼¤å®³
 
-    [Tooltip("¹âÊø¼¤»îºóµÄ³ÖĞøÊ±¼ä£¨Ãë£©")]
+    [Tooltip("å…‰æŸæ¿€æ´»åçš„æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float beamDuration = 3f;
-    [Tooltip("¹âÊø¹Ø±ÕºóµÄÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Tooltip("å…‰æŸå…³é—­åçš„å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float beamCooldown = 5f;
 
-    [Tooltip("¹âÊø×·×ÙÍæ¼ÒµÄ×ªÏòËÙ¶È¡£ÊıÖµÔ½Ğ¡£¬¹âÊø×ªÏòÔ½Âı£¬Íæ¼ÒÔ½ÈİÒ×¶ã¿ª¡£")]
-    public float beamTurnSpeed = 5f; // ¡¾ĞÂÔö¡¿
-    [Tooltip("¹âÊøÔÚµØÃæÉÏÒÆ¶¯Ê±ÁôÏÂµÄÓ¡¼ÇÔ¤ÖÆ¼ş")]
-    public GameObject scorchMarkPrefab; // ¡¾ĞÂÔö¡¿
-    [Tooltip("Éú³ÉÓ¡¼ÇµÄÊ±¼ä¼ä¸ô£¨Ãë£©£¬ÊıÖµÔ½Ğ¡£¬Ó¡¼ÇÔ½ÃÜ¼¯")]
-    public float scorchMarkInterval = 0.2f; // ¡¾ĞÂÔö¡¿
-    [Tooltip("¿ÉÒÔÉú³ÉÓ¡¼ÇµÄµØÃæ²ã")]
-    public LayerMask beamScorchMarkGroundLayer; // ¡¾ĞÂÔö¡¿
+    [Tooltip("å…‰æŸè¿½è¸ªç©å®¶çš„è½¬å‘é€Ÿåº¦ã€‚æ•°å€¼è¶Šå°ï¼Œå…‰æŸè½¬å‘è¶Šæ…¢ï¼Œç©å®¶è¶Šå®¹æ˜“èº²å¼€ã€‚")]
+    public float beamTurnSpeed = 5f; // ã€æ–°å¢ã€‘
+    [Tooltip("å…‰æŸåœ¨åœ°é¢ä¸Šç§»åŠ¨æ—¶ç•™ä¸‹çš„å°è®°é¢„åˆ¶ä»¶")]
+    public GameObject scorchMarkPrefab; // ã€æ–°å¢ã€‘
+    [Tooltip("ç”Ÿæˆå°è®°çš„æ—¶é—´é—´éš”ï¼ˆç§’ï¼‰ï¼Œæ•°å€¼è¶Šå°ï¼Œå°è®°è¶Šå¯†é›†")]
+    public float scorchMarkInterval = 0.2f; // ã€æ–°å¢ã€‘
+    [Tooltip("å¯ä»¥ç”Ÿæˆå°è®°çš„åœ°é¢å±‚")]
+    public LayerMask beamScorchMarkGroundLayer; // ã€æ–°å¢ã€‘
 
 
-    [Header("µØÀ×ÎäÆ÷ÊôĞÔ (½ö Behavior=Landmine Ê±ÓĞĞ§)")]
-    [Tooltip("µØÀ×µÄÔ¤ÖÆ¼ş (ĞèÒª¹ÒÔØLandmine½Å±¾ºÍTriggerÅö×²Ìå)")]
+    [Header("åœ°é›·æ­¦å™¨å±æ€§ (ä»… Behavior=Landmine æ—¶æœ‰æ•ˆ)")]
+    [Tooltip("åœ°é›·çš„é¢„åˆ¶ä»¶ (éœ€è¦æŒ‚è½½Landmineè„šæœ¬å’ŒTriggerç¢°æ’ä½“)")]
     public GameObject minePrefab;
 
-    [Tooltip("µØÀ×ÔÚÍæ¼ÒÉí±ßÉú³ÉµÄ×î´ó°ë¾¶")]
+    [Tooltip("åœ°é›·åœ¨ç©å®¶èº«è¾¹ç”Ÿæˆçš„æœ€å¤§åŠå¾„")]
     public float spawnRadius = 5f;
 
-    [Tooltip("µØÀ×·ÅÖÃºó£¬ĞèÒª¶à¾Ã²ÅÄÜ¼¤»î£¨Ãë£©")]
+    [Tooltip("åœ°é›·æ”¾ç½®åï¼Œéœ€è¦å¤šä¹…æ‰èƒ½æ¿€æ´»ï¼ˆç§’ï¼‰")]
     public float armingTime = 0.5f;
 
-    [Tooltip("µØÀ×·ÅÖÃºó£¬ÄÜ´æÔÚ¶à¾Ã£¨Ãë£©£¬³¬Ê±»á×Ô¶¯ÏûÊ§")]
+    [Tooltip("åœ°é›·æ”¾ç½®åï¼Œèƒ½å­˜åœ¨å¤šä¹…ï¼ˆç§’ï¼‰ï¼Œè¶…æ—¶ä¼šè‡ªåŠ¨æ¶ˆå¤±")]
     public float mineDuration = 10f;
 
-    [Header("½üÕ½·¶Î§¹¥»÷ÊôĞÔ (½ö Behavior=MeleeAOE Ê±ÓĞĞ§)")]
-    [Tooltip("¹¥»÷Ê±²úÉúµÄµ¶¹â/»Ó¿³ÌØĞ§Ô¤ÖÆ¼ş")]
+    [Header("è¿‘æˆ˜èŒƒå›´æ”»å‡»å±æ€§ (ä»… Behavior=MeleeAOE æ—¶æœ‰æ•ˆ)")]
+    [Tooltip("æ”»å‡»æ—¶äº§ç”Ÿçš„åˆ€å…‰/æŒ¥ç ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject slashEffectPrefab;
 
-    [Header("½üÕ½ - ¸ß¼¶ÌØĞÔ (Melee Advanced)")]
-    [Tooltip("¶à¶Î¹¥»÷´ÎÊı (ÀıÈçÀ×¹â´ÌÉèÎª 3)")]
+    [Header("è¿‘æˆ˜ - é«˜çº§ç‰¹æ€§ (Melee Advanced)")]
+    [Tooltip("å¤šæ®µæ”»å‡»æ¬¡æ•° (ä¾‹å¦‚é›·å…‰åˆºè®¾ä¸º 3)")]
     public int multiHitCount = 1;
 
-    [Tooltip("¶à¶Î¹¥»÷µÄÊ±¼ä¼ä¸ô (Ãë)")]
+    [Tooltip("å¤šæ®µæ”»å‡»çš„æ—¶é—´é—´éš” (ç§’)")]
     public float multiHitInterval = 0.1f;
 
-    [Tooltip("¹¥»÷Ê±ÊÇ·ñÇ¿ÖÆ³¯Ïò×î½üµÄµĞÈË (ÓÃÓÚÀ×¹â´Ì)")]
+    [Tooltip("æ”»å‡»æ—¶æ˜¯å¦å¼ºåˆ¶æœå‘æœ€è¿‘çš„æ•Œäºº (ç”¨äºé›·å…‰åˆº)")]
     public bool autoAimMelee = false;
 
-    /*[Tooltip("µØÃæ²ĞÁôÎïÔ¤ÖÆÌå (ÀıÈç±¬Ñ×Õ¶ÁôÏÂµÄÈ¼ÉÕÇøÓò)")]
+    /*[Tooltip("åœ°é¢æ®‹ç•™ç‰©é¢„åˆ¶ä½“ (ä¾‹å¦‚çˆ†ç‚æ–©ç•™ä¸‹çš„ç‡ƒçƒ§åŒºåŸŸ)")]
     public GameObject groundHazardPrefab;
 
-    [Tooltip("µØÃæ²ĞÁôÎï³ÖĞøÊ±¼ä")]
+    [Tooltip("åœ°é¢æ®‹ç•™ç‰©æŒç»­æ—¶é—´")]
     public float groundHazardDuration = 3f;*/
 
 
-    [Tooltip("¹¥»÷ÅĞ¶¨µÄÉÈĞÎ½Ç¶È¡£90´ú±í½ÇÉ«Ç°·½90¶ÈµÄ×¶ĞÎ¡£360´ú±íÔ²ĞÎ¡£")]
+    [Tooltip("æ”»å‡»åˆ¤å®šçš„æ‰‡å½¢è§’åº¦ã€‚90ä»£è¡¨è§’è‰²å‰æ–¹90åº¦çš„é”¥å½¢ã€‚360ä»£è¡¨åœ†å½¢ã€‚")]
     [Range(0, 360)]
     public float attackAngle = 90f;
-    [Header("ÌØĞ§Óë²ãÉèÖÃ")]
-    [Tooltip("¡¾Í¨ÓÃ¡¿µ±±¾´Î¹¥»÷ÃüÖĞµĞÈËÊ±£¬ÔÚµĞÈËÉíÉÏ²úÉúµÄÌØĞ§")] // <--- ĞÂÔö
-    public GameObject hitEffectPrefab; // <--- ĞÂÔö
+    [Header("ç‰¹æ•ˆä¸å±‚è®¾ç½®")]
+    [Tooltip("ã€é€šç”¨ã€‘å½“æœ¬æ¬¡æ”»å‡»å‘½ä¸­æ•Œäººæ—¶ï¼Œåœ¨æ•Œäººèº«ä¸Šäº§ç”Ÿçš„ç‰¹æ•ˆ")] // <--- æ–°å¢
+    public GameObject hitEffectPrefab; // <--- æ–°å¢
 
-    [Header("ÈĞÆøµ¯ÊôĞÔ (ÓÉ¼¼ÄÜÊ÷½âËø)")]
-    [Tooltip("ÈĞÆøµ¯µÄÔ¤ÖÆ¼ş (±ØĞë¹ÒÔØ Projectile ½Å±¾)")]
-    public GameObject bladeEnergyPrefab; // ÎÒÃÇÓÃÕâ¸öÀ´´úÌæ¾ÉµÄbladeEnergyProjectilePrefab
-    [Tooltip("ÈĞÆøµ¯µÄ»ù´¡ÉËº¦")]
+    [Header("åˆƒæ°”å¼¹å±æ€§ (ç”±æŠ€èƒ½æ ‘è§£é”)")]
+    [Tooltip("åˆƒæ°”å¼¹çš„é¢„åˆ¶ä»¶ (å¿…é¡»æŒ‚è½½ Projectile è„šæœ¬)")]
+    public GameObject bladeEnergyPrefab; // æˆ‘ä»¬ç”¨è¿™ä¸ªæ¥ä»£æ›¿æ—§çš„bladeEnergyProjectilePrefab
+    [Tooltip("åˆƒæ°”å¼¹çš„åŸºç¡€ä¼¤å®³")]
     public int bladeEnergyDamage = 10;
-    [Tooltip("ÈĞÆøµ¯µÄ·ÉĞĞËÙ¶È")]
+    [Tooltip("åˆƒæ°”å¼¹çš„é£è¡Œé€Ÿåº¦")]
     public float bladeEnergySpeed = 15f;
-    [Tooltip("ÈĞÆøµ¯µÄ´©Í¸´ÎÊı")]
+    [Tooltip("åˆƒæ°”å¼¹çš„ç©¿é€æ¬¡æ•°")]
     public int bladeEnergyPierceCount = 1;
 
-    [Header("»ØĞıïÚÊôĞÔ (Boomerang Properties - Only if Behavior=Boomerang)")]
-    [Tooltip("»ØĞıïÚ·É³öµÄ×î´ó¾àÀë (Max outbound distance)")]
+    [Header("å›æ—‹é•–å±æ€§ (Boomerang Properties - Only if Behavior=Boomerang)")]
+    [Tooltip("å›æ—‹é•–é£å‡ºçš„æœ€å¤§è·ç¦» (Max outbound distance)")]
     public float maxDistance = 15f;
-    [Tooltip("Íæ¼Ò×¥È¡»ØĞıïÚµÄ°ë¾¶ (Player catch radius on return)")]
+    [Tooltip("ç©å®¶æŠ“å–å›æ—‹é•–çš„åŠå¾„ (Player catch radius on return)")]
     public float catchRadius = 2.5f;
-    [Tooltip("»ØĞıïÚ×ÔÉíµÄĞı×ªËÙ¶È (¶È/Ãë) - Y-axis rotation speed")]
+    [Tooltip("å›æ—‹é•–è‡ªèº«çš„æ—‹è½¬é€Ÿåº¦ (åº¦/ç§’) - Y-axis rotation speed")]
     public float rotationSpeed = 720f;
-    [Tooltip("»ØĞıïÚ·É³öµÄ×î´ó¾àÀë (Max outbound distance)")]
+    [Tooltip("å›æ—‹é•–é£å‡ºçš„æœ€å¤§è·ç¦» (Max outbound distance)")]
     public float returnOvershootDistance = 15f;
 
 
-    [Header("Ô­ÉúÔªËØÊôĞÔ (Native Elements)")]
-    [Tooltip("¹´Ñ¡ºó£¬¼´Ê¹²»²å»ğÊ¯£¬ÎäÆ÷Ò²×Ô´øÈ¼ÉÕĞ§¹û")]
+    [Header("åŸç”Ÿå…ƒç´ å±æ€§ (Native Elements)")]
+    [Tooltip("å‹¾é€‰åï¼Œå³ä½¿ä¸æ’ç«çŸ³ï¼Œæ­¦å™¨ä¹Ÿè‡ªå¸¦ç‡ƒçƒ§æ•ˆæœ")]
     public bool nativeBurn = false;
 
-    [Tooltip("¹´Ñ¡ºó£¬¼´Ê¹²»²å·çÊ¯£¬ÎäÆ÷Ò²×Ô´ø»÷ÍËĞ§¹û")]
+    [Tooltip("å‹¾é€‰åï¼Œå³ä½¿ä¸æ’é£çŸ³ï¼Œæ­¦å™¨ä¹Ÿè‡ªå¸¦å‡»é€€æ•ˆæœ")]
     public bool nativeKnockback = false;
-    [Tooltip("Ô­Éú»÷ÍËÁ¦¶È (½öµ± nativeKnockback Îª true Ê±ÓĞĞ§)")]
+    [Tooltip("åŸç”Ÿå‡»é€€åŠ›åº¦ (ä»…å½“ nativeKnockback ä¸º true æ—¶æœ‰æ•ˆ)")]
     public float nativeKnockbackForce = 10f;
-    [Header("ÔªËØÁª¶¯ (Elemental Synergy)")]
-    [Tooltip("µ±´ËÅ×ÉäÎï¾­¹ı 'BurningGround' ±êÇ©µÄÎïÌåÉÏ·½Ê±£¬ÁôÏÂµÄ»ğ¾¶Ô¤ÖÆÌå")]
+    [Header("å…ƒç´ è”åŠ¨ (Elemental Synergy)")]
+    [Tooltip("å½“æ­¤æŠ›å°„ç‰©ç»è¿‡ 'BurningGround' æ ‡ç­¾çš„ç‰©ä½“ä¸Šæ–¹æ—¶ï¼Œç•™ä¸‹çš„ç«å¾„é¢„åˆ¶ä½“")]
     public GameObject synergyFireTrailPrefab;
-    [Tooltip("»ğ¾¶Éú³É¼ä¸ô (Ãë/¸ö)£¬ÊıÖµÔ½Ğ¡»ğ¾¶Ô½ÃÜ¼¯")]
+    [Tooltip("ç«å¾„ç”Ÿæˆé—´éš” (ç§’/ä¸ª)ï¼Œæ•°å€¼è¶Šå°ç«å¾„è¶Šå¯†é›†")]
     public float fireTrailSpawnRate = 0.15f;
 
-    [Tooltip("Ô­ÉúÀ×»÷´¥·¢¼¸ÂÊ")]
+    [Tooltip("åŸç”Ÿé›·å‡»è§¦å‘å‡ ç‡")]
     public float nativeLightningChance = 0.2f;
-    [Tooltip("Ô­ÉúÊÇ·ñÊ©¼Ó¸Ğµç")]
+    [Tooltip("åŸç”Ÿæ˜¯å¦æ–½åŠ æ„Ÿç”µ")]
     public bool nativeElectrify = false;
 
-    [Tooltip("¹´Ñ¡ºó£¬¼´Ê¹²»²å¶¾Ê¯£¬ÎäÆ÷Ò²×Ô´ø¸¯Ê´/¾ç¶¾Ğ§¹û")]
+    [Tooltip("å‹¾é€‰åï¼Œå³ä½¿ä¸æ’æ¯’çŸ³ï¼Œæ­¦å™¨ä¹Ÿè‡ªå¸¦è…èš€/å‰§æ¯’æ•ˆæœ")]
     public bool nativeCorrode = false;
-    [Tooltip("Ô­Éú¸¯Ê´Ò×ÉË±¶ÂÊ (ÀıÈç 1.2 ±íÊ¾ÔöÉË 20%)")]
+    [Tooltip("åŸç”Ÿè…èš€æ˜“ä¼¤å€ç‡ (ä¾‹å¦‚ 1.2 è¡¨ç¤ºå¢ä¼¤ 20%)")]
     public float nativeCorrodeMultiplier = 1.2f;
-    [Tooltip("Ô­Éú¸¯Ê´ÑÕÉ«")]
-    public Color nativeCorrodeColor = new Color(0.5f, 1f, 0.5f); // Ä¬ÈÏ¶¾ÒºÂÌ
+    [Tooltip("åŸç”Ÿè…èš€é¢œè‰²")]
+    public Color nativeCorrodeColor = new Color(0.5f, 1f, 0.5f); // é»˜è®¤æ¯’æ¶²ç»¿
 
-    [Header("ÊìÁ·¶ÈÓë³É³¤ (Proficiency System)")]
-    public bool usesProficiency = true; // ÊÇ·ñÆôÓÃÊìÁ·¶ÈÏµÍ³
+    [Header("ç†Ÿç»ƒåº¦ä¸æˆé•¿ (Proficiency System)")]
+    public bool usesProficiency = true; // æ˜¯å¦å¯ç”¨ç†Ÿç»ƒåº¦ç³»ç»Ÿ
     public WeaponXpSource xpSource = WeaponXpSource.DamageDealt;
 
-    [Tooltip("Ã¿Ôì³É1µãÉËº¦/»÷É±1¸ö/ÊÍ·Å1´Î »ñµÃµÄ¾­ÑéÖµ")]
+    [Tooltip("æ¯é€ æˆ1ç‚¹ä¼¤å®³/å‡»æ€1ä¸ª/é‡Šæ”¾1æ¬¡ è·å¾—çš„ç»éªŒå€¼")]
     public float xpGainFactor = 1.0f;
 
-    [Tooltip("Éı¼¶ËùĞè¾­ÑéÇúÏß (XÖá=µÈ¼¶, YÖá=ËùĞè¾­Ñé)")]
+    [Tooltip("å‡çº§æ‰€éœ€ç»éªŒæ›²çº¿ (Xè½´=ç­‰çº§, Yè½´=æ‰€éœ€ç»éªŒ)")]
     public AnimationCurve xpRequirementCurve;
 
-    [Header("Ã¿¼¶³É³¤ÊôĞÔ (Level Up Bonus)")]
-    [Tooltip("Ã¿¼¶Ôö¼ÓµÄÉËº¦±¶ÂÊ (0.1 = +10%)")]
+    [Header("æ¯çº§æˆé•¿å±æ€§ (Level Up Bonus)")]
+    [Tooltip("æ¯çº§å¢åŠ çš„ä¼¤å®³å€ç‡ (0.1 = +10%)")]
     public float damageGrowthPerLevel = 0.1f;
-    [Tooltip("Ã¿¼¶Ôö¼ÓµÄÀäÈ´Ëõ¼õ (0.05 = -5%)")]
+    [Tooltip("æ¯çº§å¢åŠ çš„å†·å´ç¼©å‡ (0.05 = -5%)")]
     public float cooldownGrowthPerLevel = 0.05f;
-    [Tooltip("Ã¿¼¶Ôö¼ÓµÄ·¶Î§ (0.1 = +10%)")]
+    [Tooltip("æ¯çº§å¢åŠ çš„èŒƒå›´ (0.1 = +10%)")]
     public float areaGrowthPerLevel = 0.1f;
 }

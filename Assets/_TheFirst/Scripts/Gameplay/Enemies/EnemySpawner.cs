@@ -1,4 +1,4 @@
-// --- EnemySpawner.cs (×îÖÕÍêÕû°æ - ½â¾öÁËÔ¤¾¯µÈ´ıÎÊÌâ) ---
+ï»¿// --- EnemySpawner.cs (æœ€ç»ˆå®Œæ•´ç‰ˆ - è§£å†³äº†é¢„è­¦ç­‰å¾…é—®é¢˜) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,21 +6,21 @@ using static EnemySpawnGroup;
 
 public class EnemySpawner : MonoBehaviour
 {
-    [Header("Ô¤¾¯ÌØĞ§ÅäÖÃ")]
+    [Header("é¢„è­¦ç‰¹æ•ˆé…ç½®")]
     public GameObject enemySpawnWarningPrefab;
     public float enemySpawnWarningDuration = 1f;
 
-    [Header("³£¹æÉú³Éµã (Chasing AI)")]
+    [Header("å¸¸è§„ç”Ÿæˆç‚¹ (Chasing AI)")]
     public float spawnRadiusMin = 10f;
     public float spawnRadiusMax = 15f;
 
-    [Header("±¼Ï®Éú³Éµã (Stampede AI)")]
+    [Header("å¥”è¢­ç”Ÿæˆç‚¹ (Stampede AI)")]
     public float stampedeCardinalRadiusMin = 30f;
     public float stampedeCardinalRadiusMax = 35f;
     public float stampedeDiagonalRadiusMin = 42f;
     public float stampedeDiagonalRadiusMax = 47f;
 
-    [Header("ºó±¸Éú³ÉÉèÖÃ (Fallback Spawn Settings)")]
+    [Header("åå¤‡ç”Ÿæˆè®¾ç½® (Fallback Spawn Settings)")]
     public List<Transform> predefinedFallbackSpawnPoints;
     private int nextFallbackPointIndex = 0;
     private Vector3? _lastSuccessfulSpawnPosition = null;
@@ -29,13 +29,13 @@ public class EnemySpawner : MonoBehaviour
     public float fallbackAnnulusMinRadius = 3f;
     public float fallbackAnnulusMaxRadius = 25f;
 
-    [Header("µØÃæ¼ì²âÉèÖÃ")]
+    [Header("åœ°é¢æ£€æµ‹è®¾ç½®")]
     public float raycastStartYOffset = 50f;
     public float maxRaycastDistance = 100f;
     public LayerMask groundLayerMask;
     public float enemyPivotOffsetY = 0.1f;
 
-    [Header("±¬·¢Éú³ÉÅäÖÃ (Burst Spawn)")]
+    [Header("çˆ†å‘ç”Ÿæˆé…ç½® (Burst Spawn)")]
     public int burstSpawnThreshold = 20;
     public float burstSpawnTotalDuration = 1.5f;
 
@@ -55,8 +55,8 @@ public class EnemySpawner : MonoBehaviour
                                           float healthG, float damageG, float speedG)
     {
         AcquirePlayerReference();
-        if (playerTransform == null) { Debug.LogError("EnemySpawner: Íæ¼ÒÒıÓÃÎª¿Õ!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
-        if (waveConfig == null || waveConfig.enemyGroups == null || waveConfig.enemyGroups.Count == 0) { Debug.LogError("EnemySpawner: ´«ÈëµÄ WaveConfig ÎŞĞ§»òÃ»ÓĞµĞÈË×é!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
+        if (playerTransform == null) { Debug.LogError("EnemySpawner: ç©å®¶å¼•ç”¨ä¸ºç©º!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
+        if (waveConfig == null || waveConfig.enemyGroups == null || waveConfig.enemyGroups.Count == 0) { Debug.LogError("EnemySpawner: ä¼ å…¥çš„ WaveConfig æ— æ•ˆæˆ–æ²¡æœ‰æ•Œäººç»„!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
 
         if (_currentSpawnRoutine != null) StopCoroutine(_currentSpawnRoutine);
 
@@ -77,7 +77,7 @@ public class EnemySpawner : MonoBehaviour
         }
         foreach (Coroutine coroutine in groupCoroutines) { yield return coroutine; }
         _currentSpawnRoutine = null;
-        // ÒÑÒÆ³ı WaveManager Í¨Öª
+        // å·²ç§»é™¤ WaveManager é€šçŸ¥
     }
 
     private IEnumerator GroupSpawnWrapper(EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG)
@@ -96,7 +96,7 @@ public class EnemySpawner : MonoBehaviour
         if (isStampede)
         {
             if (WarningUIManager.Instance != null) { WarningUIManager.Instance.ShowStampedeGroupWarning(group.directionHint, enemySpawnWarningDuration); }
-            else { Debug.LogWarning("WarningUIManager Î´ÕÒµ½! ÎŞ·¨ÏÔÊ¾±¼Ï®Ô¤¾¯¡£"); }
+            else { Debug.LogWarning("WarningUIManager æœªæ‰¾åˆ°! æ— æ³•æ˜¾ç¤ºå¥”è¢­é¢„è­¦ã€‚"); }
         }
 
         int finalBurstThreshold;
@@ -125,7 +125,7 @@ public class EnemySpawner : MonoBehaviour
         {
             if (!TryFindValidSpawnPoint(out Vector3 anchorPos, out Quaternion anchorRot, group.directionHint, isStampede, true))
             {
-                Debug.LogError($"ÕóĞÍÉú³ÉÊ§°Ü: Î´ÄÜÕÒµ½Ãªµã!");
+                Debug.LogError($"é˜µå‹ç”Ÿæˆå¤±è´¥: æœªèƒ½æ‰¾åˆ°é”šç‚¹!");
                 for (int i = 0; i < group.count; i++) GameTimelineManager.Instance?.AnEnemyFailedToSpawn();
                 yield break;
             }
@@ -175,11 +175,11 @@ public class EnemySpawner : MonoBehaviour
                         break;
                 }
 
-                // --- vvv ºËĞÄĞŞ¸´ vvv ---
-                // (¾É´úÂë: spawnPositionOffset -= (forwardDir * group.formationOffset);)
-                // ¡¾ĞÂ´úÂë¡¿½«Æ«ÒÆÁ¿Ó¦ÓÃµ½¡°ºáÏò¡± (rightDir)£¬¼´ÄúÍ¼ÖĞµÄºìÉ«¼ıÍ··½Ïò
+                // --- vvv æ ¸å¿ƒä¿®å¤ vvv ---
+                // (æ—§ä»£ç : spawnPositionOffset -= (forwardDir * group.formationOffset);)
+                // ã€æ–°ä»£ç ã€‘å°†åç§»é‡åº”ç”¨åˆ°â€œæ¨ªå‘â€ (rightDir)ï¼Œå³æ‚¨å›¾ä¸­çš„çº¢è‰²ç®­å¤´æ–¹å‘
                 spawnPositionOffset += (rightDir * group.formationOffset);
-                // --- ^^^ ĞŞ¸´½áÊø ^^^ ---
+                // --- ^^^ ä¿®å¤ç»“æŸ ^^^ ---
 
                 Vector3 finalSpawnPos = anchorPos + spawnPositionOffset;
 
@@ -231,7 +231,7 @@ public class EnemySpawner : MonoBehaviour
             case AIType.StraightLineStampede:
                 StraightMoverAI moverAI = enemyGO.GetComponent<StraightMoverAI>();
                 if (moverAI != null) { moverAI.Initialize(finalSpeed, type.lifetime, moveDirection, Mathf.RoundToInt(finalDamage)); }
-                else { Debug.LogWarning($"¹ÖÎï {type.name} ±»±ê¼ÇÎª StraightLineStampede µ«È±ÉÙ StraightMoverAI ½Å±¾£¡", enemyGO); }
+                else { Debug.LogWarning($"æ€ªç‰© {type.name} è¢«æ ‡è®°ä¸º StraightLineStampede ä½†ç¼ºå°‘ StraightMoverAI è„šæœ¬ï¼", enemyGO); }
                 enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type);
                 break;
 
@@ -239,14 +239,14 @@ public class EnemySpawner : MonoBehaviour
                 PinballAI pinballAI = enemyGO.GetComponent<PinballAI>();
                 if (pinballAI != null)
                 {
-                    // [!] ĞŞ¸´£ºÊ¹ÓÃ 'type.lifetime' ºÍ 'Mathf.RoundToInt(finalDamage)'
+                    // [!] ä¿®å¤ï¼šä½¿ç”¨ 'type.lifetime' å’Œ 'Mathf.RoundToInt(finalDamage)'
                     pinballAI.Initialize(finalSpeed, type.lifetime, Mathf.RoundToInt(finalDamage)); //
                 }
                 else
                 {
-                    Debug.LogError($"¹ÖÎïÔ¤ÖÆ¼ş {enemyGO.name} È±ÉÙ PinballAI ½Å±¾£¡"); //
+                    Debug.LogError($"æ€ªç‰©é¢„åˆ¶ä»¶ {enemyGO.name} ç¼ºå°‘ PinballAI è„šæœ¬ï¼"); //
                 }
-                // [!] ĞŞ¸´£ºPinball ¹ÖÎïÒ²ĞèÒª³õÊ¼»¯ Health
+                // [!] ä¿®å¤ï¼šPinball æ€ªç‰©ä¹Ÿéœ€è¦åˆå§‹åŒ– Health
                 enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type); //
                 break;
 
@@ -407,7 +407,7 @@ public class EnemySpawner : MonoBehaviour
             _currentSpawnRoutine = null;
         }
         StopAllCoroutines();
-        Debug.Log("EnemySpawner: Éú³ÉÒÑÍ£Ö¹²¢ÇåÀí¡£");
+        Debug.Log("EnemySpawner: ç”Ÿæˆå·²åœæ­¢å¹¶æ¸…ç†ã€‚");
     }
 
     public void Debug_SpawnSingleEnemy(EnemyType enemyTypeToSpawn)
@@ -417,14 +417,14 @@ public class EnemySpawner : MonoBehaviour
             AcquirePlayerReference();
             if (playerTransform == null)
             {
-                Debug.LogError("Debug_SpawnSingleEnemy: Íæ¼ÒÒıÓÃÎª¿Õ£¬ÎŞ·¨Éú³É£¡");
+                Debug.LogError("Debug_SpawnSingleEnemy: ç©å®¶å¼•ç”¨ä¸ºç©ºï¼Œæ— æ³•ç”Ÿæˆï¼");
                 return;
             }
         }
 
         if (!TryFindValidSpawnPoint(out Vector3 spawnPosition, out Quaternion spawnRotation))
         {
-            Debug.LogError("Debug_SpawnSingleEnemy: Î´ÄÜÕÒµ½ÓĞĞ§µÄ³öÉúµã£¡");
+            Debug.LogError("Debug_SpawnSingleEnemy: æœªèƒ½æ‰¾åˆ°æœ‰æ•ˆçš„å‡ºç”Ÿç‚¹ï¼");
             return;
         }
 

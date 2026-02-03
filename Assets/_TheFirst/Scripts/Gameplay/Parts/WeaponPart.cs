@@ -1,94 +1,95 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 public class WeaponPart : MonoBehaviour
 {
-    [Header("ÎäÆ÷Êı¾İÀ¶Í¼ (ÔÚÔ¤ÖÆ¼şÖĞÉèÖÃ)")]
+    [Header("æ­¦å™¨æ•°æ®è“å›¾ (åœ¨é¢„åˆ¶ä»¶ä¸­è®¾ç½®)")]
     public WeaponStatBlock myStatBlock;
 
     public int currentLevel = 1;
     public int maxLevel = 10;
 
-    [Header("×é¼şÒıÓÃ (ÔÚÔ¤ÖÆ¼şÖĞÉèÖÃ)")]
+    [Header("ç»„ä»¶å¼•ç”¨ (åœ¨é¢„åˆ¶ä»¶ä¸­è®¾ç½®)")]
     public Transform firePoint;
 
-    [Header("ÊÓ¾õ±íÏÖ×é¼ş (¿ÉÑ¡)")]
-    [Tooltip("¿ØÖÆ±³ºóĞü¸¡ÎäÆ÷¶¯»­µÄ½Å±¾")]
+    [Header("è§†è§‰è¡¨ç°ç»„ä»¶ (å¯é€‰)")]
+    [Tooltip("æ§åˆ¶èƒŒåæ‚¬æµ®æ­¦å™¨åŠ¨ç”»çš„è„šæœ¬")]
     public FloatingWeaponController floatingVisual;
-    [Tooltip("¿ØÖÆ²ÄÖÊ·¢¹âÀäÈ´µÄ½Å±¾")]
+    [Tooltip("æ§åˆ¶æè´¨å‘å…‰å†·å´çš„è„šæœ¬")]
     public WeaponCooldownMaterial cooldownMaterial;
-    [Tooltip("¿ª»ğÊ±Òş²ØÎäÆ÷Ä£ĞÍµÄÊ±¼ä (Ä£Äâ»Ó¿³/·¢Éä¶¯×÷)")]
-    public float hideVisualDuration = 0.15f; // Ô¶³ÌÍ¨³£±È½üÕ½¿ì£¬0.15Ãë±È½ÏºÏÊÊ
+    [Tooltip("å¼€ç«æ—¶éšè—æ­¦å™¨æ¨¡å‹çš„æ—¶é—´ (æ¨¡æ‹ŸæŒ¥ç /å‘å°„åŠ¨ä½œ)")]
+    public float hideVisualDuration = 0.15f; // è¿œç¨‹é€šå¸¸æ¯”è¿‘æˆ˜å¿«ï¼Œ0.15ç§’æ¯”è¾ƒåˆé€‚
 
-    [Header("ÌØĞ§Ô¤ÖÆ¼ş")]
-    [Tooltip("Á¬ËøÉÁµçµÄÊÓ¾õÌØĞ§Ô¤ÖÆ¼ş")]
+    [Header("ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
+    [Tooltip("è¿é”é—ªç”µçš„è§†è§‰ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject lightningChainPrefab;
 
-    [Header("ÒôĞ§ÉèÖÃ")]
-    [Tooltip("±ê×¼¡¢´©Í¸¡¢Å×ÎïÏßµÈ·¢ÉäĞÍÎäÆ÷µÄ¿ª»ğÒôĞ§")]
+    [Header("éŸ³æ•ˆè®¾ç½®")]
+    [Tooltip("æ ‡å‡†ã€ç©¿é€ã€æŠ›ç‰©çº¿ç­‰å‘å°„å‹æ­¦å™¨çš„å¼€ç«éŸ³æ•ˆ")]
     public AudioClip[] fireSounds;
-    [Tooltip("·ÅÖÃµØÀ×µÄÒôĞ§")]
+    [Tooltip("æ”¾ç½®åœ°é›·çš„éŸ³æ•ˆ")]
     public AudioClip landminePlaceSound;
-    [Tooltip("¹âÊøÎäÆ÷³ÖĞø·¢³öµÄÑ­»·ÒôĞ§")]
+    [Tooltip("å…‰æŸæ­¦å™¨æŒç»­å‘å‡ºçš„å¾ªç¯éŸ³æ•ˆ")]
     public AudioClip beamLoopSound;
-    [Tooltip("¿ª»ğÒôĞ§Ïà¶ÔÓÚ×Óµ¯·¢ÉäµÄÑÓ³Ù£¨Ãë£©¡£¸ºÊıÎªÌáÇ°²¥·Å¡£")]
+    [Tooltip("å¼€ç«éŸ³æ•ˆç›¸å¯¹äºå­å¼¹å‘å°„çš„å»¶è¿Ÿï¼ˆç§’ï¼‰ã€‚è´Ÿæ•°ä¸ºæå‰æ’­æ”¾ã€‚")]
     public float fireSoundDelay = -0.05f;
 
-    [Header("¹â»·×´Ì¬ (ÔËĞĞÊ±)")]
+    [Header("å…‰ç¯çŠ¶æ€ (è¿è¡Œæ—¶)")]
     private float auraDebuffRefreshTimer = 0f; //
     private HashSet<StatusEffectReceiver> aura_ActiveSlows = new HashSet<StatusEffectReceiver>(); //
     private HashSet<StatusEffectReceiver> aura_ActiveWeaKens = new HashSet<StatusEffectReceiver>(); //
-    private HashSet<StatusEffectReceiver> aura_ActiveCorrodes = new HashSet<StatusEffectReceiver>(); // <--- [ĞÂÔö]
+    private HashSet<StatusEffectReceiver> aura_ActiveCorrodes = new HashSet<StatusEffectReceiver>(); // <--- [æ–°å¢]
     private float auraTickTimer = 0f;
     private SphereCollider auraCollider;
     private GameObject auraVfxInstance;
-    [Tooltip("¹â»·Ö»Ó¦¼ì²âÕâĞ©²ãÉÏµÄµĞÈË")]
-    public LayerMask enemyLayerMask; // <--- vvv ĞÂÔö
+    [Tooltip("å…‰ç¯åªåº”æ£€æµ‹è¿™äº›å±‚ä¸Šçš„æ•Œäºº")]
+    public LayerMask enemyLayerMask; // <--- vvv æ–°å¢
 
-    [Tooltip("¹â»·´ÅÌúÓ¦¼ì²âµÄµôÂäÎï²ã")]
+    [Tooltip("å…‰ç¯ç£é“åº”æ£€æµ‹çš„æ‰è½ç‰©å±‚")]
     public LayerMask pickupLayerMask;
 
     private AudioSource audioSource;
 
-    [Header("ÕÙ»½ÎïÓëÌØÊâÎäÆ÷¹ÜÀí")]
-    // --- ¡¾ĞÂÔö¡¿ĞŞ¸´ activeDrones ±¨´í ---
+    [Header("å¬å”¤ç‰©ä¸ç‰¹æ®Šæ­¦å™¨ç®¡ç†")]
+    // --- ã€æ–°å¢ã€‘ä¿®å¤ activeDrones æŠ¥é”™ ---
     private List<GameObject> activeDrones = new List<GameObject>();
+    private List<GameObject> activeFlyingDaggers = new List<GameObject>(); // <--- ã€æ–°å¢ã€‘é£åˆ€åˆ—è¡¨
 
     private List<GameObject> activeLaserTanks = new List<GameObject>();
 
-    private List<GameObject> activeFunneIs = new List<GameObject>(); // ¸¡ÓÎÅÚÁĞ±í
+    private List<GameObject> activeFunneIs = new List<GameObject>(); // æµ®æ¸¸ç‚®åˆ—è¡¨
 
     private PlayerBeamController currentBeamInstance;
 
     private GameObject currentSuperMech;
 
-    [Header("ÄÜÁ¿Ê¯ (ÔËĞĞÊ±)")]
-    [Tooltip("´ËÎäÆ÷µ±Ç°ÏâÇ¶µÄÄÜÁ¿Ê¯")]
+    [Header("èƒ½é‡çŸ³ (è¿è¡Œæ—¶)")]
+    [Tooltip("æ­¤æ­¦å™¨å½“å‰é•¶åµŒçš„èƒ½é‡çŸ³")]
     public EnergyStoneSO currentStone { get; private set; }
 
     private float auraKnockbackTimer = 0f;
 
     private float auraMagnetTimer = 0f;
 
-    [Header("ÔËĞĞÊ±¾Ö²¿ÊôĞÔ (Local Stats)")]
+    [Header("è¿è¡Œæ—¶å±€éƒ¨å±æ€§ (Local Stats)")]
     [HideInInspector] public float localCritRateBonus = 0f;
     [HideInInspector] public float localCritDamageBonus = 0f;
 
     [HideInInspector] public int localOrbitalCountBonus = 0;
-    [HideInInspector] public int localSlashCountBonus = 0;   // ¡¾ĞÂÔö¡¿¸ø½üÕ½µ¶¹âÓÃµÄ
-    [HideInInspector] public float localDamageBonus = 0f;      // ¾Ö²¿ÉËº¦¼Ó³É (0.1 = +10%)
-    [HideInInspector] public float localFireRateBonus = 0f;    // ¾Ö²¿¹¥ËÙ/ÀäÈ´¼Ó³É
-    [HideInInspector] public float localAreaBonus = 0f;        // ¾Ö²¿·¶Î§¼Ó³É
-    [HideInInspector] public float localSpeedBonus = 0f;       // ¾Ö²¿·ÉĞĞ/Ğı×ªËÙ¶È¼Ó³É (OrbitalSpeed ÓÃÕâ¸ö)
-    [HideInInspector] public float localDurationBonus = 0f;    // ¾Ö²¿³ÖĞøÊ±¼ä¼Ó³É
-    [HideInInspector] public float localStunChanceBonus = 0f; // ¾Ö²¿Âé±Ô¸ÅÂÊ
-    [HideInInspector] public float localFreezeChanceBonus = 0f; // ¡¾ĞÂÔö¡¿±ù¶³¸ÅÂÊ¼Ó³É
-    [HideInInspector] public int localPierceCountBonus = 0; // Õâ¸öÄãÓ¦¸ÃÔç¾ÍÓĞÁË£¬Èç¹ûÃ»ÓĞÇë¼ÓÉÏ
+    [HideInInspector] public int localSlashCountBonus = 0;   // ã€æ–°å¢ã€‘ç»™è¿‘æˆ˜åˆ€å…‰ç”¨çš„
+    [HideInInspector] public float localDamageBonus = 0f;      // å±€éƒ¨ä¼¤å®³åŠ æˆ (0.1 = +10%)
+    [HideInInspector] public float localFireRateBonus = 0f;    // å±€éƒ¨æ”»é€Ÿ/å†·å´åŠ æˆ
+    [HideInInspector] public float localAreaBonus = 0f;        // å±€éƒ¨èŒƒå›´åŠ æˆ
+    [HideInInspector] public float localSpeedBonus = 0f;       // å±€éƒ¨é£è¡Œ/æ—‹è½¬é€Ÿåº¦åŠ æˆ (OrbitalSpeed ç”¨è¿™ä¸ª)
+    [HideInInspector] public float localDurationBonus = 0f;    // å±€éƒ¨æŒç»­æ—¶é—´åŠ æˆ
+    [HideInInspector] public float localStunChanceBonus = 0f; // å±€éƒ¨éº»ç—¹æ¦‚ç‡
+    [HideInInspector] public float localFreezeChanceBonus = 0f; // ã€æ–°å¢ã€‘å†°å†»æ¦‚ç‡åŠ æˆ
+    [HideInInspector] public int localPierceCountBonus = 0; // è¿™ä¸ªä½ åº”è¯¥æ—©å°±æœ‰äº†ï¼Œå¦‚æœæ²¡æœ‰è¯·åŠ ä¸Š
 
 
-    // ÓÉ WeaponController ÔÚÔËĞĞÊ±¸³Öµ
+    // ç”± WeaponController åœ¨è¿è¡Œæ—¶èµ‹å€¼
     public WeaponStatBlock StatBlock
     {
         get { return myStatBlock; }
@@ -108,14 +109,14 @@ public class WeaponPart : MonoBehaviour
     private float beamCooldownTimer = 0f;
     private Transform lockedBeamTarget = null;
 
-    [Header("ÔËĞĞÊ±ÊìÁ·¶È (Runtime Proficiency)")]
+    [Header("è¿è¡Œæ—¶ç†Ÿç»ƒåº¦ (Runtime Proficiency)")]
     public int currentProficiencyLevel = 1;
     public float currentProficiencyXP = 0f;
-    public float xpToNextLevel = 100f; // ³õÊ¼Öµ£¬»á±»Curve¸²¸Ç
+    public float xpToNextLevel = 100f; // åˆå§‹å€¼ï¼Œä¼šè¢«Curveè¦†ç›–
 
-    // ÊÂ¼ş£ºµ±ÎäÆ÷Éı¼¶Ê±´¥·¢ (ÓÃÓÚ²¥·ÅÌØĞ§¡¢UI¸üĞÂ)
+    // äº‹ä»¶ï¼šå½“æ­¦å™¨å‡çº§æ—¶è§¦å‘ (ç”¨äºæ’­æ”¾ç‰¹æ•ˆã€UIæ›´æ–°)
     public System.Action<int> OnWeaponLevelUp;
-    // ÊÂ¼ş£ºµ±¾­Ñé±ä»¯Ê± (ÓÃÓÚUIÌõ)
+    // äº‹ä»¶ï¼šå½“ç»éªŒå˜åŒ–æ—¶ (ç”¨äºUIæ¡)
     public System.Action<float, float> OnWeaponXpChanged;
 
     #region Unity Lifecycle Methods
@@ -124,13 +125,13 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock != null)
         {
-            // À×»÷Éı¼¶
+            // é›·å‡»å‡çº§
             if (StatBlock.weaponID == "LightningStrike")
             {
                 ApplyLightningStrikeMetaUpgrades();
             }
 
-            // È¼ÉÕÆ¿Éı¼¶ (ËäÈ»ËüÔÚStartÒ²ÄÜÅÜ£¬µ«ÎªÁËÍ³Ò»½¨ÒéÒ²°á¹ıÀ´)
+            // ç‡ƒçƒ§ç“¶å‡çº§ (è™½ç„¶å®ƒåœ¨Startä¹Ÿèƒ½è·‘ï¼Œä½†ä¸ºäº†ç»Ÿä¸€å»ºè®®ä¹Ÿæ¬è¿‡æ¥)
             if (StatBlock.weaponID == "Molotov")
             {
                 ApplyMolotovMetaUpgrades();
@@ -143,26 +144,30 @@ public class WeaponPart : MonoBehaviour
 
         gameObject.SetActive(true);
 
-        // --- 1. ÕâÀïÊÇ³õÊ¼»¯ÊµÌåÄ£ĞÍµÄµØ·½ ---
+        // --- 1. è¿™é‡Œæ˜¯åˆå§‹åŒ–å®ä½“æ¨¡å‹çš„åœ°æ–¹ ---
         if (StatBlock.behavior == WeaponBehaviorType.Orbital)
         {
             SetupOrbiters();
         }
-        // ¡¾Ö±½ÓÔÚÕâÀïÌí¼Ó Aura µÄÅĞ¶Ï¡¿
+        else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
+        {
+            Debug.Log("[Activateæ£€æŸ¥] æ£€æµ‹åˆ° SummonDroneï¼Œå‡†å¤‡è°ƒç”¨ SetupDrones..."); // <--- è¿™é‡Œçš„æ—¥å¿—å‡ºäº†å—ï¼Ÿ
+            SetupDrones();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.FlyingDagger) // <--- ã€æ–°å¢ã€‘
+        {
+            SetupFlyingDaggers(); // åˆ·æ–°é£åˆ€ï¼ˆæ•°é‡å˜åŒ–æ—¶ï¼‰
+        }
+        // ã€ç›´æ¥åœ¨è¿™é‡Œæ·»åŠ  Aura çš„åˆ¤æ–­ã€‘
         else if (StatBlock.behavior == WeaponBehaviorType.Aura)
         {
             SetupAura();
-        }
-        else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
-        {
-            Debug.Log("[Activate¼ì²é] ¼ì²âµ½ SummonDrone£¬×¼±¸µ÷ÓÃ SetupDrones..."); // <--- ÕâÀïµÄÈÕÖ¾³öÁËÂğ£¿
-            SetupDrones();
         }
         else if (StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             SetupAutoBeam();
         }
-        else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // ¼ÙÉèÄã¼ÓÁËÕâ¸öÃ¶¾Ù£¬»òÕßÔİÊ±¸´ÓÃ Beam
+        else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // å‡è®¾ä½ åŠ äº†è¿™ä¸ªæšä¸¾ï¼Œæˆ–è€…æš‚æ—¶å¤ç”¨ Beam
         {
             SetupFunnelSystem();
         }
@@ -170,16 +175,16 @@ public class WeaponPart : MonoBehaviour
         {
             SetupSuperMech();
         }
-        // --- 2. ³õÊ¼»¯¹âÊø¼ÆÊ±Æ÷ ---
+        // --- 2. åˆå§‹åŒ–å…‰æŸè®¡æ—¶å™¨ ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             beamEnergyTimer = StatBlock.beamDuration;
             beamCooldownTimer = 0;
         }
 
-        // --- 3. ÄãÔ­±¾µÄ Orbital ±£»¤Âß¼­ (±£Áô¼´¿É) ---
-        // ×¢Òâ£ºÒòÎªÉÏÃæÒÑ¾­ÅĞ¶Ï¹ıÒ»´Î SetupOrbiters ÁË£¬ÕâÀïµÄ !isOrbitalActive »áÆğ×÷ÓÃ·ÀÖ¹ÖØ¸´Éú³É£¬
-        // µ«Èç¹û behavior ÊÇ Aura£¬ÕâÀïÌõ¼ş²»Âú×ã£¬Ö±½ÓÌø¹ı£¬ËùÒÔÂß¼­ÊÇ°²È«µÄ¡£
+        // --- 3. ä½ åŸæœ¬çš„ Orbital ä¿æŠ¤é€»è¾‘ (ä¿ç•™å³å¯) ---
+        // æ³¨æ„ï¼šå› ä¸ºä¸Šé¢å·²ç»åˆ¤æ–­è¿‡ä¸€æ¬¡ SetupOrbiters äº†ï¼Œè¿™é‡Œçš„ !isOrbitalActive ä¼šèµ·ä½œç”¨é˜²æ­¢é‡å¤ç”Ÿæˆï¼Œ
+        // ä½†å¦‚æœ behavior æ˜¯ Auraï¼Œè¿™é‡Œæ¡ä»¶ä¸æ»¡è¶³ï¼Œç›´æ¥è·³è¿‡ï¼Œæ‰€ä»¥é€»è¾‘æ˜¯å®‰å…¨çš„ã€‚
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
         {
             if (!isOrbitalActive && orbitalCooldownTimer <= 0)
@@ -188,7 +193,7 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        // --- 4. ³õÊ¼»¯»ØĞıïÚ ---
+        // --- 4. åˆå§‹åŒ–å›æ—‹é•– ---
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             isBoomerangOut = false;
@@ -207,8 +212,8 @@ public class WeaponPart : MonoBehaviour
         auraCollider = GetComponent<SphereCollider>();
         if (StatBlock == null) return;
 
-        Debug.Log($"[ÎäÆ÷¼ì²é] Ãû×Ö: {StatBlock.weaponName}, ID: '{StatBlock.weaponID}'");
-        // ¡¾ĞŞ¸Ä¡¿Ö»ÅĞ¶Ï ID£¬²»ÔÙ¹ØĞÄÃû×Ö½ĞÖĞÎÄ»¹ÊÇÓ¢ÎÄ
+        Debug.Log($"[æ­¦å™¨æ£€æŸ¥] åå­—: {StatBlock.weaponName}, ID: '{StatBlock.weaponID}'");
+        // ã€ä¿®æ”¹ã€‘åªåˆ¤æ–­ IDï¼Œä¸å†å…³å¿ƒåå­—å«ä¸­æ–‡è¿˜æ˜¯è‹±æ–‡
         if (StatBlock.weaponID == "Fireball" && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
         {
             if (StatBlock.evolutionTarget != null)
@@ -220,7 +225,7 @@ public class WeaponPart : MonoBehaviour
         {
             if (StatBlock.evolutionTarget != null)
             {
-                Debug.Log("¡¾¾ÖÍâ¼Ó³É¡¿À×»÷³õÊ¼½ø»¯ÉúĞ§£¡±äÉíÎªÉÁµçÁ´");
+                Debug.Log("ã€å±€å¤–åŠ æˆã€‘é›·å‡»åˆå§‹è¿›åŒ–ç”Ÿæ•ˆï¼å˜èº«ä¸ºé—ªç”µé“¾");
                 StatBlock = StatBlock.evolutionTarget;
             }
         }
@@ -229,7 +234,7 @@ public class WeaponPart : MonoBehaviour
             if (StatBlock.evolutionTarget != null)
             {
                 StatBlock = StatBlock.evolutionTarget;
-                Debug.Log("[WeaponPart] ±ù×¶Êõ³õÊ¼½ø»¯ÉúĞ§£¡");
+                Debug.Log("[WeaponPart] å†°é”¥æœ¯åˆå§‹è¿›åŒ–ç”Ÿæ•ˆï¼");
             }
         }
     }
@@ -250,21 +255,21 @@ public class WeaponPart : MonoBehaviour
             if (StatBlock.weaponGlowColor.maxColorComponent > 0)
                 cooldownMaterial.SetEmissionColor(StatBlock.weaponGlowColor);
         }
-        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "»ğÇòÊõ") && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
+        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "ç«çƒæœ¯") && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
         {
             if (StatBlock.evolutionTarget != null)
             {
-                Debug.Log("¡¾¾ÖÍâ¼Ó³É¡¿»ğÇòÊõ³õÊ¼½ø»¯ÉúĞ§£¡");
-                StatBlock = StatBlock.evolutionTarget; // Ö±½ÓÌæ»»Êı¾İÀ¶Í¼
+                Debug.Log("ã€å±€å¤–åŠ æˆã€‘ç«çƒæœ¯åˆå§‹è¿›åŒ–ç”Ÿæ•ˆï¼");
+                StatBlock = StatBlock.evolutionTarget; // ç›´æ¥æ›¿æ¢æ•°æ®è“å›¾
             }
         }
 
-        // 3. »ğÇòÊõ¿ÉÒÔÉıÖÁÊ®¼¶
+        // 3. ç«çƒæœ¯å¯ä»¥å‡è‡³åçº§
         if (StatBlock != null)
         {
             maxLevel = StatBlock.maxLevel;
 
-            // ¡¾ĞŞ¸Ä¡¿Ê¹ÓÃ ID ÅĞ¶Ï
+            // ã€ä¿®æ”¹ã€‘ä½¿ç”¨ ID åˆ¤æ–­
             if (StatBlock.weaponID == "Fireball")
             {
                 maxLevel = 5;
@@ -275,11 +280,11 @@ public class WeaponPart : MonoBehaviour
             }
             if (StatBlock.weaponID == "LightningStrike")
             {
-                // 1. Ä¬ÈÏËøÔÚ 5 ¼¶
+                // 1. é»˜è®¤é”åœ¨ 5 çº§
                 maxLevel = 5;
 
-                // 2. ¼ì²éÊÇ·ñÓĞ¡°µÈ¼¶Í»ÆÆ¡±¾ÖÍâÉı¼¶
-                // ¼ÙÉè½ÚµãÎÄ¼şÃû½Ğ "Lightning_Meta_LimitBreak"
+                // 2. æ£€æŸ¥æ˜¯å¦æœ‰â€œç­‰çº§çªç ´â€å±€å¤–å‡çº§
+                // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶åå« "Lightning_Meta_LimitBreak"
                 if (IsMetaUnlocked("Lightning_Meta_LimitBreak"))
                 {
                     maxLevel = 10;
@@ -292,10 +297,10 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        // 1. »ğÇòÊõ¹¥»÷Á¦ÌáÉı (×÷Îª¾Ö²¿¼Ó³É)
-        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "»ğÇòÊõ") && IsMetaUnlocked("Fireball_Meta_Damage"))
+        // 1. ç«çƒæœ¯æ”»å‡»åŠ›æå‡ (ä½œä¸ºå±€éƒ¨åŠ æˆ)
+        if ((StatBlock.weaponName == "Fireball" || StatBlock.weaponName == "ç«çƒæœ¯") && IsMetaUnlocked("Fireball_Meta_Damage"))
         {
-            // ¼ÙÉèÌáÉı 20% ÉËº¦
+            // å‡è®¾æå‡ 20% ä¼¤å®³
             localDamageBonus += 0.2f;
         }
                 
@@ -305,75 +310,75 @@ public class WeaponPart : MonoBehaviour
 
     private void ApplyLightningStrikeMetaUpgrades()
     {
-        // 1. ³õÊ¼ÉËº¦ +30% (Lv1 ½Úµã)
-        // ¼ÙÉè½ÚµãÃû½Ğ "Lightning_Meta_Damage"
+        // 1. åˆå§‹ä¼¤å®³ +30% (Lv1 èŠ‚ç‚¹)
+        // å‡è®¾èŠ‚ç‚¹åå« "Lightning_Meta_Damage"
         if(IsMetaUnlocked("Lightning_Meta_Damage"))
         {
-            // Ô­À´ÊÇ localDamageBonus += 0.3f;
-            // ÏÖÔÚ¸ÄÎª¼Ó±©»÷ÂÊ (ÀıÈç +10% »ò +20%)
+            // åŸæ¥æ˜¯ localDamageBonus += 0.3f;
+            // ç°åœ¨æ”¹ä¸ºåŠ æš´å‡»ç‡ (ä¾‹å¦‚ +10% æˆ– +20%)
             localCritRateBonus += 0.2f;
-            Debug.Log("[Lightning] ±©»÷ÂÊÉı¼¶ÉúĞ§ (+20%)");
+            Debug.Log("[Lightning] æš´å‡»ç‡å‡çº§ç”Ÿæ•ˆ (+20%)");
         }
 
-        // 2. Âé±Ô¸ÅÂÊ +10% (¼ÙÉèÕâÊÇ Lv3 »ò Lv5 ½Úµã)
-        // ¼ÙÉè½ÚµãÃû½Ğ "Lightning_Meta_Stun"
+        // 2. éº»ç—¹æ¦‚ç‡ +10% (å‡è®¾è¿™æ˜¯ Lv3 æˆ– Lv5 èŠ‚ç‚¹)
+        // å‡è®¾èŠ‚ç‚¹åå« "Lightning_Meta_Stun"
         if (IsMetaUnlocked("Lightning_Meta_Stun"))
         {
             localCritRateBonus += 0.3f; 
-            Debug.Log("[Lightning] ½ø½×±©»÷/Âé±ÔÉı¼¶ÉúĞ§ (+30%)");
+            Debug.Log("[Lightning] è¿›é˜¶æš´å‡»/éº»ç—¹å‡çº§ç”Ÿæ•ˆ (+30%)");
         }
 
-        // Èç¹û»¹ÓĞÆäËûÉı¼¶(Èç·¶Î§¡¢ÆµÂÊ)£¬°´Í¬Ñù·½Ê½Ğ´
+        // å¦‚æœè¿˜æœ‰å…¶ä»–å‡çº§(å¦‚èŒƒå›´ã€é¢‘ç‡)ï¼ŒæŒ‰åŒæ ·æ–¹å¼å†™
     }
 
     private void ApplyIceShardMetaUpgrades()
     {
-        // 1. Ôö¼Ó´©Í¸ (Lv1)
+        // 1. å¢åŠ ç©¿é€ (Lv1)
         if (IsMetaUnlocked("Ice_Meta_Pierce"))
         {
-            localPierceCountBonus += 1; // ¼ÙÉèÄãÓĞÕâ¸ö±äÁ¿£¬Èç¹ûÃ»ÓĞ£¬Çë¶¨ÒåËü
-            Debug.Log("[IceShard] ´©Í¸Éı¼¶ÉúĞ§ (+1)");
+            localPierceCountBonus += 1; // å‡è®¾ä½ æœ‰è¿™ä¸ªå˜é‡ï¼Œå¦‚æœæ²¡æœ‰ï¼Œè¯·å®šä¹‰å®ƒ
+            Debug.Log("[IceShard] ç©¿é€å‡çº§ç”Ÿæ•ˆ (+1)");
         }
 
-        // 2. Ôö¼Ó±ù¶³¸ÅÂÊ (Lv3)
+        // 2. å¢åŠ å†°å†»æ¦‚ç‡ (Lv3)
         if (IsMetaUnlocked("Ice_Meta_Freeze"))
         {
-            localFreezeChanceBonus += 0.15f; // +15% ¸ÅÂÊ
-            Debug.Log("[IceShard] ±ù¶³¸ÅÂÊÉı¼¶ÉúĞ§ (+15%)");
+            localFreezeChanceBonus += 0.15f; // +15% æ¦‚ç‡
+            Debug.Log("[IceShard] å†°å†»æ¦‚ç‡å‡çº§ç”Ÿæ•ˆ (+15%)");
         }
     }
     private void ApplyMolotovMetaUpgrades()
     {
-        // 1. ÉËº¦ (Damage)
-        // ¼ÙÉè½ÚµãÎÄ¼ş½Ğ "Molotov_Meta_Damage"£¬ÌáÉı 50%
+        // 1. ä¼¤å®³ (Damage)
+        // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶å« "Molotov_Meta_Damage"ï¼Œæå‡ 50%
         if (IsMetaUnlocked("Molotov_Meta_Damage"))
         {
             localDamageBonus += 0.5f;
-            Debug.Log("[Molotov] ¾ÖÍâÉËº¦Éı¼¶ÉúĞ§!");
+            Debug.Log("[Molotov] å±€å¤–ä¼¤å®³å‡çº§ç”Ÿæ•ˆ!");
         }
 
-        // 2. ÀäÈ´/¹¥ËÙ (Cooldown / FireRate)
-        // ¼ÙÉè½ÚµãÎÄ¼ş½Ğ "Molotov_Meta_Cooldown"£¬¹¥ËÙÌáÉı 50%
+        // 2. å†·å´/æ”»é€Ÿ (Cooldown / FireRate)
+        // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶å« "Molotov_Meta_Cooldown"ï¼Œæ”»é€Ÿæå‡ 50%
         if (IsMetaUnlocked("Molotov_Meta_Cooldown"))
         {
             localFireRateBonus += 0.5f;
-            Debug.Log("[Molotov] ¾ÖÍâÀäÈ´Éı¼¶ÉúĞ§!");
+            Debug.Log("[Molotov] å±€å¤–å†·å´å‡çº§ç”Ÿæ•ˆ!");
         }
 
-        // 3. ·¶Î§ (Area)
-        // ¼ÙÉè½ÚµãÎÄ¼ş½Ğ "Molotov_Meta_Area"£¬·¶Î§À©´ó 100%
+        // 3. èŒƒå›´ (Area)
+        // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶å« "Molotov_Meta_Area"ï¼ŒèŒƒå›´æ‰©å¤§ 100%
         if (IsMetaUnlocked("Molotov_Meta_Area"))
         {
             localAreaBonus += 1f;
-            Debug.Log("[Molotov] ¾ÖÍâ·¶Î§Éı¼¶ÉúĞ§!");
+            Debug.Log("[Molotov] å±€å¤–èŒƒå›´å‡çº§ç”Ÿæ•ˆ!");
         }
 
-        // 4. ³ÖĞøÊ±¼ä (Duration)
-        // ¼ÙÉè½ÚµãÎÄ¼ş½Ğ "Molotov_Meta_Duration"£¬³ÖĞøÊ±¼äÔö¼Ó 100%
+        // 4. æŒç»­æ—¶é—´ (Duration)
+        // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶å« "Molotov_Meta_Duration"ï¼ŒæŒç»­æ—¶é—´å¢åŠ  100%
         if (IsMetaUnlocked("Molotov_Meta_Duration"))
         {
             localDurationBonus += 1f;
-            Debug.Log("[Molotov] ¾ÖÍâ³ÖĞøÊ±¼äÉı¼¶ÉúĞ§!");
+            Debug.Log("[Molotov] å±€å¤–æŒç»­æ—¶é—´å‡çº§ç”Ÿæ•ˆ!");
         }
     }
 
@@ -386,26 +391,26 @@ public class WeaponPart : MonoBehaviour
         string nodeName = "Fireball_Meta_Ignite";
         bool isNodeUnlocked = IsMetaUnlocked(nodeName);
 
-        bool isFireball = (StatBlock.weaponID == "Fireball" || StatBlock.weaponName == "»ğÇòÊõ");
+        bool isFireball = (StatBlock.weaponID == "Fireball" || StatBlock.weaponName == "ç«çƒæœ¯");
         // ---------------------------------------------------------
-        // 3. Ó¦ÓÃ¼Ó³É
+        // 3. åº”ç”¨åŠ æˆ
         // ---------------------------------------------------------
         if (isFireball && isNodeUnlocked)
         {
-            chance += 0.3f; // ¼ÓÉÏ 30%
+            chance += 0.3f; // åŠ ä¸Š 30%
 
-            // ³É¹¦ÈÕÖ¾
-            // Debug.Log($"[µãÈ¼¸ÅÂÊ] ¼Ó³ÉÉúĞ§£¡»ù´¡: {StatBlock.ignitionChance} + ¾ÖÍâ: 0.3 = {chance}");
+            // æˆåŠŸæ—¥å¿—
+            // Debug.Log($"[ç‚¹ç‡ƒæ¦‚ç‡] åŠ æˆç”Ÿæ•ˆï¼åŸºç¡€: {StatBlock.ignitionChance} + å±€å¤–: 0.3 = {chance}");
         }
         else
         {
-            // ¡¾µ÷ÊÔÈÕÖ¾¡¿Èç¹ûÃ»ÉúĞ§£¬ÕâĞĞÈÕÖ¾»á¸æËßÄãÔ­Òò£¡
-            // Ö»ÓĞµ±ÕâÊÇ»ğÇòÊõ£¬ÇÒÔ­±¾Ó¦¸ÃÓĞ¼Ó³Éµ«Ã»¼Ó³ÉÊ±£¬²Å´òÓ¡£¬±ÜÃâË¢ÆÁ
-            if (isFireball && chance <= 0.15f) // 0.15f ÊÇ¸öãĞÖµ£¬Èç¹ûÊÇ0.4ËµÃ÷ÒÑ¾­ÉúĞ§ÁË¾Í²»±¨ÁË
+            // ã€è°ƒè¯•æ—¥å¿—ã€‘å¦‚æœæ²¡ç”Ÿæ•ˆï¼Œè¿™è¡Œæ—¥å¿—ä¼šå‘Šè¯‰ä½ åŸå› ï¼
+            // åªæœ‰å½“è¿™æ˜¯ç«çƒæœ¯ï¼Œä¸”åŸæœ¬åº”è¯¥æœ‰åŠ æˆä½†æ²¡åŠ æˆæ—¶ï¼Œæ‰æ‰“å°ï¼Œé¿å…åˆ·å±
+            if (isFireball && chance <= 0.15f) // 0.15f æ˜¯ä¸ªé˜ˆå€¼ï¼Œå¦‚æœæ˜¯0.4è¯´æ˜å·²ç»ç”Ÿæ•ˆäº†å°±ä¸æŠ¥äº†
             {
-                Debug.LogWarning($"[µãÈ¼¸ÅÂÊÒì³£] ÎäÆ÷ÊÇ»ğÇòÊõ£¬µ«Ã»ÓĞ»ñµÃ 0.3 ¼Ó³É¡£\n" +
-                                 $"¼ì²é 1 (½Úµã½âËø): ²éÕÒ '{nodeName}' -> ½á¹û: {isNodeUnlocked}\n" +
-                                 $"¼ì²é 2 (ÎäÆ÷ID): ID='{StatBlock.weaponID}', Name='{StatBlock.weaponName}'");
+                Debug.LogWarning($"[ç‚¹ç‡ƒæ¦‚ç‡å¼‚å¸¸] æ­¦å™¨æ˜¯ç«çƒæœ¯ï¼Œä½†æ²¡æœ‰è·å¾— 0.3 åŠ æˆã€‚\n" +
+                                 $"æ£€æŸ¥ 1 (èŠ‚ç‚¹è§£é”): æŸ¥æ‰¾ '{nodeName}' -> ç»“æœ: {isNodeUnlocked}\n" +
+                                 $"æ£€æŸ¥ 2 (æ­¦å™¨ID): ID='{StatBlock.weaponID}', Name='{StatBlock.weaponName}'");
             }
         }
 
@@ -415,30 +420,30 @@ public class WeaponPart : MonoBehaviour
     public void GainProficiencyXP(float amount)
     {
         if (StatBlock == null || !StatBlock.usesProficiency) return;
-        if (currentProficiencyLevel >= StatBlock.maxLevel) return; // Âú¼¶ÁË
+        if (currentProficiencyLevel >= StatBlock.maxLevel) return; // æ»¡çº§äº†
 
         currentProficiencyXP += amount;
 
-        // Í¨Öª UI ¸üĞÂ
+        // é€šçŸ¥ UI æ›´æ–°
         OnWeaponXpChanged?.Invoke(currentProficiencyXP, xpToNextLevel);
 
-        // ¼ì²éÉı¼¶
+        // æ£€æŸ¥å‡çº§
         if (currentProficiencyXP >= xpToNextLevel)
         {
             LevelUpWeapon();
         }
-        Debug.Log($"[ÎäÆ÷¾­Ñé] {StatBlock.weaponName} »ñµÃ {amount} µã¾­Ñé! µ±Ç°: {currentProficiencyXP}/{xpToNextLevel}");
+        Debug.Log($"[æ­¦å™¨ç»éªŒ] {StatBlock.weaponName} è·å¾— {amount} ç‚¹ç»éªŒ! å½“å‰: {currentProficiencyXP}/{xpToNextLevel}");
 
     }
 
     private void LevelUpWeapon()
     {
-        currentProficiencyXP -= xpToNextLevel; // Òç³öµÄ¾­Ñé±£Áô
+        currentProficiencyXP -= xpToNextLevel; // æº¢å‡ºçš„ç»éªŒä¿ç•™
         currentProficiencyLevel++;
 
-        // Ó¦ÓÃ³É³¤ÊôĞÔ (¼òµ¥´Ö±©µØ¼Óµ½ localBonus ÉÏ)
-        // ÕâÀïµÄ¹«Ê½ÊÇ£ºµ±Ç°µÈ¼¶ * ³É³¤ÏµÊı
-        // ×¢Òâ£ºÄã¿ÉÄÜĞèÒª¸ù¾İÄãµÄÊıÖµÉè¼Æµ÷ÕûÕâ¸ö¹«Ê½
+        // åº”ç”¨æˆé•¿å±æ€§ (ç®€å•ç²—æš´åœ°åŠ åˆ° localBonus ä¸Š)
+        // è¿™é‡Œçš„å…¬å¼æ˜¯ï¼šå½“å‰ç­‰çº§ * æˆé•¿ç³»æ•°
+        // æ³¨æ„ï¼šä½ å¯èƒ½éœ€è¦æ ¹æ®ä½ çš„æ•°å€¼è®¾è®¡è°ƒæ•´è¿™ä¸ªå…¬å¼
         localDamageBonus += StatBlock.damageGrowthPerLevel;
         localFireRateBonus += StatBlock.cooldownGrowthPerLevel;
         localAreaBonus += StatBlock.areaGrowthPerLevel;
@@ -447,22 +452,22 @@ public class WeaponPart : MonoBehaviour
         {
             bool canEvolve = false;
 
-            // 1. ¼ì²é»ğÇòÊõ½ø»¯
+            // 1. æ£€æŸ¥ç«çƒæœ¯è¿›åŒ–
             if (StatBlock.weaponID == "Fireball" && IsMetaUnlocked("Fireball_Meta_Evolution"))
             {
                 canEvolve = true;
             }
 
             // ==========================================
-            // ¡¾ĞÂÔö¡¿2. ¼ì²éÀ×»÷½ø»¯
+            // ã€æ–°å¢ã€‘2. æ£€æŸ¥é›·å‡»è¿›åŒ–
             // ==========================================
-            // ¼ÙÉè½ÚµãÎÄ¼şÃû½Ğ "Lightning_Meta_Evolution"
+            // å‡è®¾èŠ‚ç‚¹æ–‡ä»¶åå« "Lightning_Meta_Evolution"
             if (StatBlock.weaponID == "LightningStrike" && IsMetaUnlocked("Lightning_Meta_Evolution"))
             {
                 canEvolve = true;
             }
 
-            // Ö´ĞĞ½ø»¯
+            // æ‰§è¡Œè¿›åŒ–
             if (canEvolve)
             {
                 EvolveWeapon(StatBlock.evolutionTarget);
@@ -470,36 +475,36 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        Debug.Log($"<color=cyan>ÎäÆ÷Éı¼¶! {StatBlock.weaponName} Lv.{currentProficiencyLevel}</color>");
+        Debug.Log($"<color=cyan>æ­¦å™¨å‡çº§! {StatBlock.weaponName} Lv.{currentProficiencyLevel}</color>");
         OnWeaponLevelUp?.Invoke(currentProficiencyLevel);
 
         CalculateNextLevelXP();
 
-        // ¼ì²éÊÇ·ñÔÙ´ÎÉı¼¶ (Èç¹ûÒ»´Î»ñµÃ¾ŞÁ¿¾­Ñé)
+        // æ£€æŸ¥æ˜¯å¦å†æ¬¡å‡çº§ (å¦‚æœä¸€æ¬¡è·å¾—å·¨é‡ç»éªŒ)
         if (currentProficiencyXP >= xpToNextLevel) LevelUpWeapon();
     }
 
     private void EvolveWeapon(WeaponStatBlock newBlock)
     {
-        Debug.Log($"<color=orange>ÎäÆ÷½ø»¯£¡{StatBlock.weaponName} -> {newBlock.weaponName}</color>");
+        Debug.Log($"<color=orange>æ­¦å™¨è¿›åŒ–ï¼{StatBlock.weaponName} -> {newBlock.weaponName}</color>");
 
-        // 1. Ìæ»»Êı¾İ
+        // 1. æ›¿æ¢æ•°æ®
         StatBlock = newBlock;
 
-        // 2. ÖØÖÃµÈ¼¶ (Í¨³£½ø»¯ºó±ä³ÉĞÂÎäÆ÷µÄ Lv1)
+        // 2. é‡ç½®ç­‰çº§ (é€šå¸¸è¿›åŒ–åå˜æˆæ–°æ­¦å™¨çš„ Lv1)
         currentProficiencyLevel = 1;
-        CalculateNextLevelXP(); // ÖØĞÂ¼ÆËãĞÂÎäÆ÷µÄÉı¼¶¾­Ñé
+        CalculateNextLevelXP(); // é‡æ–°è®¡ç®—æ–°æ­¦å™¨çš„å‡çº§ç»éªŒ
 
-        // 3. ÖØÖÃÊôĞÔ (ÒòÎªĞÂÎäÆ÷µÄ»ù´¡ÊôĞÔ¿ÉÄÜÒÑ¾­°üº¬ÁË¾ÉÎäÆ÷µÄ¼Ó³É£¬»òÕßÄãĞèÒª±£Áô¼Ó³É)
-        // ÕâÀïµÄ²ßÂÔ¿´Äã£ºÊÇ¡°¼Ì³Ğ¾ÉÎäÆ÷µÄ¼Ó³É¡±»¹ÊÇ¡°ÖØÖÃÎªĞÂÎäÆ÷°×°å¡±
-        // ½¨Òé£ºÈç¹ûÊÇÊıÖµ½ø»¯£¬±£Áô localBonus£»Èç¹ûÊÇĞÎÌ¬¸Ä±ä£¬¿ÉÄÜĞèÒªµ÷Õû¡£
-        // ÕâÀïÔİÊ±±£Áô localBonus¡£
+        // 3. é‡ç½®å±æ€§ (å› ä¸ºæ–°æ­¦å™¨çš„åŸºç¡€å±æ€§å¯èƒ½å·²ç»åŒ…å«äº†æ—§æ­¦å™¨çš„åŠ æˆï¼Œæˆ–è€…ä½ éœ€è¦ä¿ç•™åŠ æˆ)
+        // è¿™é‡Œçš„ç­–ç•¥çœ‹ä½ ï¼šæ˜¯â€œç»§æ‰¿æ—§æ­¦å™¨çš„åŠ æˆâ€è¿˜æ˜¯â€œé‡ç½®ä¸ºæ–°æ­¦å™¨ç™½æ¿â€
+        // å»ºè®®ï¼šå¦‚æœæ˜¯æ•°å€¼è¿›åŒ–ï¼Œä¿ç•™ localBonusï¼›å¦‚æœæ˜¯å½¢æ€æ”¹å˜ï¼Œå¯èƒ½éœ€è¦è°ƒæ•´ã€‚
+        // è¿™é‡Œæš‚æ—¶ä¿ç•™ localBonusã€‚
 
-        // 4. Ë¢ĞÂÄ£ĞÍºÍÌØĞ§
+        // 4. åˆ·æ–°æ¨¡å‹å’Œç‰¹æ•ˆ
         UpdateVisualModel();
 
-        // 5. Í¨Öª UI
-        OnWeaponLevelUp?.Invoke(currentProficiencyLevel); // ´¥·¢Ë¢ĞÂ
+        // 5. é€šçŸ¥ UI
+        OnWeaponLevelUp?.Invoke(currentProficiencyLevel); // è§¦å‘åˆ·æ–°
     }
 
     private void CalculateNextLevelXP()
@@ -510,7 +515,7 @@ public class WeaponPart : MonoBehaviour
         }
         else
         {
-            xpToNextLevel = 100f * currentProficiencyLevel; // ±£µ×¹«Ê½
+            xpToNextLevel = 100f * currentProficiencyLevel; // ä¿åº•å…¬å¼
         }
     }
     void Update()
@@ -519,7 +524,7 @@ public class WeaponPart : MonoBehaviour
         if (orbitalCooldownTimer > 0f) orbitalCooldownTimer -= Time.deltaTime;
         if (auraKnockbackTimer > 0f) auraKnockbackTimer -= Time.deltaTime; //
         if (auraDebuffRefreshTimer > 0f) auraDebuffRefreshTimer -= Time.deltaTime;
-        // --- ^^^ [ĞÂÔö] ^^^ ---
+        // --- ^^^ [æ–°å¢] ^^^ ---
 
         if (beamCooldownTimer > 0f)
         {
@@ -532,7 +537,7 @@ public class WeaponPart : MonoBehaviour
 
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital && orbitalPivot != null)
         {
-            // Ê¹ÓÃ localSpeedBonus
+            // ä½¿ç”¨ localSpeedBonus
             float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed * (1f + localSpeedBonus);
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
@@ -557,18 +562,18 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null) return 0;
 
-        // 1. »ù´¡ÊıÁ¿ (WSBÅäÖÃ)
+        // 1. åŸºç¡€æ•°é‡ (WSBé…ç½®)
         int baseCount = StatBlock.baseOrbitalCount;
-        // Èç¹ûÄãµÄÎŞÈË»úÓÃµÄÊÇ AddProjectile ×Ö¶Î£¬Çë°ÑÉÏÃæ¸Ä³É StatBlock.projectileCount
+        // å¦‚æœä½ çš„æ— äººæœºç”¨çš„æ˜¯ AddProjectile å­—æ®µï¼Œè¯·æŠŠä¸Šé¢æ”¹æˆ StatBlock.projectileCount
 
-        // 2. ¾Ö²¿Éı¼¶¼Ó³É
+        // 2. å±€éƒ¨å‡çº§åŠ æˆ
         int localBonus = localOrbitalCountBonus;
 
-        // 3. È«¾Ö±»¶¯¼Ó³É (PlayerStats)
+        // 3. å…¨å±€è¢«åŠ¨åŠ æˆ (PlayerStats)
         int globalBonus = 0;
         if (PlayerStats.Instance != null)
         {
-            // ¶ÁÈ¡È«¾ÖµÄ bonusOrbitalCount »ò bonusProjectileCount
+            // è¯»å–å…¨å±€çš„ bonusOrbitalCount æˆ– bonusProjectileCount
             globalBonus = PlayerStats.Instance.bonusOrbitalCount;
         }
 
@@ -576,25 +581,25 @@ public class WeaponPart : MonoBehaviour
     }
     private void SetupAura()
     {
-        Debug.Log($"[SetupAura] ³¢ÊÔÉú³É¹â»·: {StatBlock.weaponName}");
+        Debug.Log($"[SetupAura] å°è¯•ç”Ÿæˆå…‰ç¯: {StatBlock.weaponName}");
 
-        if (StatBlock == null) { Debug.LogError("[SetupAura] StatBlock ÊÇ¿ÕµÄ£¡"); return; }
-        if (StatBlock.orbitalPrefab == null) { Debug.LogError("[SetupAura] Orbital Prefab Ã»¸³Öµ£¡"); return; }
+        if (StatBlock == null) { Debug.LogError("[SetupAura] StatBlock æ˜¯ç©ºçš„ï¼"); return; }
+        if (StatBlock.orbitalPrefab == null) { Debug.LogError("[SetupAura] Orbital Prefab æ²¡èµ‹å€¼ï¼"); return; }
 
-        // 1. ÇåÀí¾É¹â»·
+        // 1. æ¸…ç†æ—§å…‰ç¯
         if (orbitalPivot != null) Destroy(orbitalPivot.gameObject);
 
-        // 2. ÕÒµ½¹ÒÔØµã
+        // 2. æ‰¾åˆ°æŒ‚è½½ç‚¹
         Transform anchor = FindStableAnchor();
 
-        // 3. Éú³É¹â»·
+        // 3. ç”Ÿæˆå…‰ç¯
         GameObject auraGO = Instantiate(StatBlock.orbitalPrefab, anchor);
         auraGO.transform.localPosition = Vector3.zero;
         auraGO.transform.localRotation = Quaternion.identity;
 
         orbitalPivot = auraGO.transform;
 
-        // 4. ³õÊ¼»¯½Å±¾
+        // 4. åˆå§‹åŒ–è„šæœ¬
         MagneticStormAura auraScript = auraGO.GetComponent<MagneticStormAura>();
         if (auraScript != null)
         {            
@@ -606,12 +611,12 @@ public class WeaponPart : MonoBehaviour
             float rangeMult = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
             int finalCount = GetTotalCount();
 
-            // ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËãÂé±Ô¸ÅÂÊ (»ù´¡¸ÅÂÊ + ¾Ö²¿¼Ó³É)
-            // Äã¿ÉÒÔÔÚ SO Àï¼ÓÒ»¸ö baseStunChance£¬»òÕßÄ¬ÈÏ 0
+            // ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—éº»ç—¹æ¦‚ç‡ (åŸºç¡€æ¦‚ç‡ + å±€éƒ¨åŠ æˆ)
+            // ä½ å¯ä»¥åœ¨ SO é‡ŒåŠ ä¸€ä¸ª baseStunChanceï¼Œæˆ–è€…é»˜è®¤ 0
             float finalCritRate = PlayerStats.Instance.critRate + localCritRateBonus;
-            Debug.Log($"[Debug] À×»÷³õÊ¼»¯: È«¾Ö±©»÷({PlayerStats.Instance.critRate}) + ¾Ö²¿¼Ó³É({localCritRateBonus}) = ×îÖÕ({finalCritRate})");
+            Debug.Log($"[Debug] é›·å‡»åˆå§‹åŒ–: å…¨å±€æš´å‡»({PlayerStats.Instance.critRate}) + å±€éƒ¨åŠ æˆ({localCritRateBonus}) = æœ€ç»ˆ({finalCritRate})");
 
-            // ´«Èë finalCritRate
+            // ä¼ å…¥ finalCritRate
             auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount, finalCritRate);
         }
     }
@@ -623,20 +628,20 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
 
-        // --- ¡¾ºËĞÄĞŞ¸´ 4¡¿Ç¿ÖÆÖØ½¨¹â»·Âß¼­¶ÔÏó ---
-        // Ö»ÓĞÖØ½¨£¬²ÅÄÜ°Ñ×îĞÂµÄ damage/range/count ´«¸ø MagneticStormAura
+        // --- ã€æ ¸å¿ƒä¿®å¤ 4ã€‘å¼ºåˆ¶é‡å»ºå…‰ç¯é€»è¾‘å¯¹è±¡ ---
+        // åªæœ‰é‡å»ºï¼Œæ‰èƒ½æŠŠæœ€æ–°çš„ damage/range/count ä¼ ç»™ MagneticStormAura
         SetupAura();
 
-        // (Ô­±¾µÄ VFX Âß¼­¿ÉÒÔ±£Áô£¬ÓÃÓÚ´¦ÀíÎäÆ÷×ÔÉíµÄÊÓ¾õĞ§¹û£¬µ«ºËĞÄÂß¼­±ØĞëÓÉ SetupAura ÖØÖÃ)
+        // (åŸæœ¬çš„ VFX é€»è¾‘å¯ä»¥ä¿ç•™ï¼Œç”¨äºå¤„ç†æ­¦å™¨è‡ªèº«çš„è§†è§‰æ•ˆæœï¼Œä½†æ ¸å¿ƒé€»è¾‘å¿…é¡»ç”± SetupAura é‡ç½®)
 
-        // 1. ¼ÆËã×îÖÕ°ë¾¶ (½öÓÃÓÚ WeaponPart ×ÔÉíµÄÅö×²Æ÷ºÍ VFX£¬Âß¼­¶ÔÏóÒÑÔÚ SetupAura ´¦Àí)
+        // 1. è®¡ç®—æœ€ç»ˆåŠå¾„ (ä»…ç”¨äº WeaponPart è‡ªèº«çš„ç¢°æ’å™¨å’Œ VFXï¼Œé€»è¾‘å¯¹è±¡å·²åœ¨ SetupAura å¤„ç†)
         float stoneScaleBonus = (currentStone != null) ? currentStone.scaleModifier : 0f;
         float finalRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus + stoneScaleBonus);
 
-        // 2. ¸üĞÂÅö×²Æ÷ (ÓÃÓÚ HandleAuraDamageTick£¬Èç¹ûÄÇ¸ö»¹ÔÚÔËĞĞµÄ»°)
+        // 2. æ›´æ–°ç¢°æ’å™¨ (ç”¨äº HandleAuraDamageTickï¼Œå¦‚æœé‚£ä¸ªè¿˜åœ¨è¿è¡Œçš„è¯)
         if (auraCollider != null) { auraCollider.radius = finalRadius; }
 
-        // 3. ¸üĞÂ VFX (±£³ÖÄãÔ­ÓĞµÄ»»Æ¤Âß¼­)
+        // 3. æ›´æ–° VFX (ä¿æŒä½ åŸæœ‰çš„æ¢çš®é€»è¾‘)
         GameObject prefabToUse = StatBlock.auraVfxPrefab;
         float scaleMultiplier = StatBlock.vfxBaseScaleMultiplier;
 
@@ -670,27 +675,27 @@ public class WeaponPart : MonoBehaviour
         {
             if (StatBlock == null) return; //
 
-            // --- vvv [ ºËĞÄĞŞ¸´ 3 ] vvv ---
-            // (ÖØĞÂÌí¼Ó finalDamage ºÍ chainedTargets µÄÉùÃ÷)
+            // --- vvv [ æ ¸å¿ƒä¿®å¤ 3 ] vvv ---
+            // (é‡æ–°æ·»åŠ  finalDamage å’Œ chainedTargets çš„å£°æ˜)
 
             float stoneFireRateBonus = (currentStone != null) ? currentStone.fireRateModifier : 0f; //
             float finalTickInterval = StatBlock.baseAreaTickInterval * (1f - stoneFireRateBonus); //
             auraTickTimer = finalTickInterval;
 
-            // [!] 'finalDamage' µÄÉùÃ÷ÔÚÕâÀï
+            // [!] 'finalDamage' çš„å£°æ˜åœ¨è¿™é‡Œ
             float stoneDamageBonus = (currentStone != null) ? currentStone.damageModifier : 0f; //
             int finalDamage = Mathf.RoundToInt( //
                 (StatBlock.baseAreaDamagePerTick * (PlayerStats.Instance.aoeDamageMultiplier + stoneDamageBonus)) + //
                 PlayerStats.Instance.flatAoeDamageBonus //
             );
 
-            // [!] 'chainedTargets' µÄÉùÃ÷ÔÚÕâÀï
+            // [!] 'chainedTargets' çš„å£°æ˜åœ¨è¿™é‡Œ
             List<Health> chainedTargets = null; //
             if (currentStone != null && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) //
             {
                 chainedTargets = ApplyAuraChainDamage(finalDamage); //
             }
-            // --- ^^^ [ ºËĞÄĞŞ¸´ 3 ] ^^^ ---
+            // --- ^^^ [ æ ¸å¿ƒä¿®å¤ 3 ] ^^^ ---
 
             if (auraCollider == null) return; //
             if (enemyLayerMask == 0) return; //
@@ -707,10 +712,10 @@ public class WeaponPart : MonoBehaviour
                     continue;
                 }
 
-                // (Ê¹ÓÃ 'finalDamage' ºÍ 'chainedTargets')
+                // (ä½¿ç”¨ 'finalDamage' å’Œ 'chainedTargets')
                 if (chainedTargets == null || !chainedTargets.Contains(target))
                 {
-                    // [ĞŞ¸´ 3] ´«Èë StatBlock.weaponName
+                    // [ä¿®å¤ 3] ä¼ å…¥ StatBlock.weaponName
                     target.TakeDamage(finalDamage, target.transform.position, this.gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
                 }
 
@@ -721,7 +726,7 @@ public class WeaponPart : MonoBehaviour
                     {
                         if (currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn) && Random.value <= currentStone.burnChance)
                         {
-                            // [ĞŞ¸´ 4] ´«Èë StatBlock.weaponName ¸ø ApplyBurn
+                            // [ä¿®å¤ 4] ä¼ å…¥ StatBlock.weaponName ç»™ ApplyBurn
                             receiver.ApplyBurn(currentStone.burnDamage, currentStone.burnDuration, currentStone.burnTickInterval, StatBlock.weaponName);
                         }
                     }
@@ -733,21 +738,21 @@ public class WeaponPart : MonoBehaviour
     public void ChainLightningFromTarget(Transform startTarget, int maxChains, int damage, float range,
                                           GameObject overrideChainVfx = null, GameObject overrideImpactVfx = null)
     {
-        // 1. »ù´¡°²È«¼ì²é
+        // 1. åŸºç¡€å®‰å…¨æ£€æŸ¥
         if (startTarget == null || maxChains <= 0) return;
 
         GameObject chainVfxToUse = null;
         GameObject impactVfxToUse = null;
 
-        // --- ¡¾ºËĞÄĞŞ¸Ä¡¿ÓÅÏÈ¼¶ÅĞ¶Ï ---
+        // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä¼˜å…ˆçº§åˆ¤æ–­ ---
 
-        // A. Èç¹û´«ÈëÁË¸²¸ÇÌØĞ§£¬ÓµÓĞ×î¸ßÓÅÏÈ¼¶ (MagneticOrbiter ×¨ÓÃ)
+        // A. å¦‚æœä¼ å…¥äº†è¦†ç›–ç‰¹æ•ˆï¼Œæ‹¥æœ‰æœ€é«˜ä¼˜å…ˆçº§ (MagneticOrbiter ä¸“ç”¨)
         if (overrideChainVfx != null)
         {
             chainVfxToUse = overrideChainVfx;
-            impactVfxToUse = overrideImpactVfx; // ¼´Ê¹ÊÇ null Ò²»á¸²¸Ç£¬ËùÒÔ MagneticOrbiter ±ØĞëÅäÖÃ
+            impactVfxToUse = overrideImpactVfx; // å³ä½¿æ˜¯ null ä¹Ÿä¼šè¦†ç›–ï¼Œæ‰€ä»¥ MagneticOrbiter å¿…é¡»é…ç½®
         }
-        // B. Èç¹ûÃ»ÓĞ¸²¸Ç£¬Ôò×ßÔ­ÓĞÂß¼­ (¼ì²éÊ¯Í· -> ¼ì²é StatBlock)
+        // B. å¦‚æœæ²¡æœ‰è¦†ç›–ï¼Œåˆ™èµ°åŸæœ‰é€»è¾‘ (æ£€æŸ¥çŸ³å¤´ -> æ£€æŸ¥ StatBlock)
         else
         {
             if (currentStone != null && currentStone.chainVfxPrefab != null)
@@ -761,18 +766,18 @@ public class WeaponPart : MonoBehaviour
                 impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
             }
 
-            // ±£µ×Âß¼­
+            // ä¿åº•é€»è¾‘
             if (chainVfxToUse == null) chainVfxToUse = this.lightningChainPrefab;
             if (impactVfxToUse == null) impactVfxToUse = StatBlock?.defaultImpactEffectPrefab;
         }
 
-        // 2. Æô¶¯Ğ­³Ì
+        // 2. å¯åŠ¨åç¨‹
         StartCoroutine(ChainLightningRoutine(startTarget, maxChains, damage, range, chainVfxToUse, impactVfxToUse));
     }
     private IEnumerator ChainLightningRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange, GameObject chainVfx, GameObject impactVfx)
     {
         var hitEnemies = new List<Health>();
-        Vector3 lastHitPosition = currentTarget.position; // [!] ´ÓµÚÒ»¸öÄ¿±ê¿ªÊ¼
+        Vector3 lastHitPosition = currentTarget.position; // [!] ä»ç¬¬ä¸€ä¸ªç›®æ ‡å¼€å§‹
 
         while (currentTarget != null && remainingChains >= 0)
         {
@@ -783,29 +788,29 @@ public class WeaponPart : MonoBehaviour
             {
                 hitEnemies.Add(targetHealth);
 
-                // (ÎÒÃÇ¼ÙÉèµÚÒ»¸öÄ¿±êÒÑ¾­ÔÚ Projectile.cs ÖĞÊÜµ½ÁËÉËº¦£¬
-                //  Õâ¸öĞ­³ÌÖ»ÉËº¦ *ºóĞø* Ä¿±ê)
+                // (æˆ‘ä»¬å‡è®¾ç¬¬ä¸€ä¸ªç›®æ ‡å·²ç»åœ¨ Projectile.cs ä¸­å—åˆ°äº†ä¼¤å®³ï¼Œ
+                //  è¿™ä¸ªåç¨‹åªä¼¤å®³ *åç»­* ç›®æ ‡)
                 if (hitEnemies.Count > 1)
                 {
                     targetHealth.TakeDamage(damage, currentTargetHitPoint, this.gameObject, AttackType.Standard); //
                 }
 
-                // ²¥·ÅÁ¬ËøVFX (´ÓÉÏÒ»¸öµãµ½Õâ¸öµã)
+                // æ’­æ”¾è¿é”VFX (ä»ä¸Šä¸€ä¸ªç‚¹åˆ°è¿™ä¸ªç‚¹)
                 if (chainVfx != null)
                 {
                     var chainVFX_GO = Instantiate(chainVfx, Vector3.zero, Quaternion.identity); //
                     chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetHitPoint); //
                 }
-                // ²¥·ÅÊÜ»÷VFX
+                // æ’­æ”¾å—å‡»VFX
                 if (impactVfx != null)
                 {
                     Instantiate(impactVfx, currentTargetHitPoint, Quaternion.identity); //
                 }
             }
 
-            yield return new WaitForSeconds(0.05f); // Á¬ËøÖ®¼äµÄÎ¢Ğ¡ÑÓ³Ù
+            yield return new WaitForSeconds(0.05f); // è¿é”ä¹‹é—´çš„å¾®å°å»¶è¿Ÿ
 
-            // (²éÕÒÏÂÒ»¸öÄ¿±ê... Âß¼­±£³Ö²»±ä)
+            // (æŸ¥æ‰¾ä¸‹ä¸€ä¸ªç›®æ ‡... é€»è¾‘ä¿æŒä¸å˜)
             Transform nextTarget = FindNextChainTarget(currentTargetHitPoint, chainRange, hitEnemies);
             remainingChains--;
             lastHitPosition = currentTargetHitPoint;
@@ -816,11 +821,11 @@ public class WeaponPart : MonoBehaviour
     {
         auraDebuffRefreshTimer -= Time.deltaTime;
         if (auraDebuffRefreshTimer > 0f) return;
-        auraDebuffRefreshTimer = 0.25f; // ÓÅ»¯£ºÃ¿Ãë¼ì²é4´Î
+        auraDebuffRefreshTimer = 0.25f; // ä¼˜åŒ–ï¼šæ¯ç§’æ£€æŸ¥4æ¬¡
 
         if (currentStone == null || auraCollider == null || enemyLayerMask == 0)
         {
-            ClearAllAuraDebuffs(); // Èç¹ûÃ»ÓĞÊ¯Í·»òÅö×²Æ÷£¬Çå³ıËùÓĞ
+            ClearAllAuraDebuffs(); // å¦‚æœæ²¡æœ‰çŸ³å¤´æˆ–ç¢°æ’å™¨ï¼Œæ¸…é™¤æ‰€æœ‰
             return;
         }
 
@@ -828,38 +833,38 @@ public class WeaponPart : MonoBehaviour
         bool stoneHasWeaken = (currentStone != null) && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyWeaken); //
         bool stoneHasCorrode = (currentStone != null) && currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode); //
 
-        // 1. »ñÈ¡°ë¾¶ÄÚµÄËùÓĞµĞÈË
+        // 1. è·å–åŠå¾„å†…çš„æ‰€æœ‰æ•Œäºº
         HashSet<StatusEffectReceiver> enemiesInRadius = new HashSet<StatusEffectReceiver>();
         Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
 
-        // --- vvv [ ºËĞÄĞŞ¸´ ] vvv ---
+        // --- vvv [ æ ¸å¿ƒä¿®å¤ ] vvv ---
         foreach (var hit in hits)
         {
             if (!hit.CompareTag("Enemy")) continue; //
 
-            // 1. ÏÈ»ñÈ¡ Health ×é¼ş²¢¼ì²é IsDead
+            // 1. å…ˆè·å– Health ç»„ä»¶å¹¶æ£€æŸ¥ IsDead
             Health targetHealth = hit.GetComponentInParent<Health>();
             if (targetHealth == null || targetHealth.IsDead) //
             {
-                continue; // Ìø¹ıËÀÍö»òÃ»ÓĞ Health µÄÎïÌå
+                continue; // è·³è¿‡æ­»äº¡æˆ–æ²¡æœ‰ Health çš„ç‰©ä½“
             }
 
-            // 2. Ö»ÓĞÔÚ´æ»îÊ±£¬²Å»ñÈ¡ StatusEffectReceiver
+            // 2. åªæœ‰åœ¨å­˜æ´»æ—¶ï¼Œæ‰è·å– StatusEffectReceiver
             StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>(); //
             if (receiver != null)
             {
                 enemiesInRadius.Add(receiver);
             }
         }
-        // --- ^^^ [ ºËĞÄĞŞ¸´ ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒä¿®å¤ ] ^^^ ---
 
-        // --- 2. ´¦Àí¼õËÙ (Slow) ---
+        // --- 2. å¤„ç†å‡é€Ÿ (Slow) ---
         ProcessDebuffList(enemiesInRadius, aura_ActiveSlows, stoneHasSlow,
             (receiver) => { receiver.ApplyPersistentSlow(this, currentStone.slowPercentage, currentStone.slowColor); }, //
             (receiver) => { receiver.RemovePersistentSlow(this); }
         );
 
-        // --- 3. ´¦ÀíÈõ»¯ (Weaken) ---
+        // --- 3. å¤„ç†å¼±åŒ– (Weaken) ---
         ProcessDebuffList(enemiesInRadius, aura_ActiveWeaKens, stoneHasWeaken,
             (receiver) => { receiver.ApplyPersistentWeaken(this, currentStone.weakenPercentage); }, //
             (receiver) => { receiver.RemovePersistentWeaken(this); }
@@ -871,14 +876,14 @@ public class WeaponPart : MonoBehaviour
             int corrodeStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode); //
             if (corrodeStoneCount >= 2) //
             {
-                finalCorrodeMultiplier = currentStone.corrodeMultiplier_Stacked; // [!] Ê¹ÓÃ¶ÑµşºóµÄ³ËÊı
+                finalCorrodeMultiplier = currentStone.corrodeMultiplier_Stacked; // [!] ä½¿ç”¨å †å åçš„ä¹˜æ•°
             }
             else
             {
-                finalCorrodeMultiplier = currentStone.corrodeMultiplier; // [!] Ê¹ÓÃ»ù´¡³ËÊı
+                finalCorrodeMultiplier = currentStone.corrodeMultiplier; // [!] ä½¿ç”¨åŸºç¡€ä¹˜æ•°
             }
         }
-        // 4. ´¦Àí¸¯Ê´ (Corrode)
+        // 4. å¤„ç†è…èš€ (Corrode)
         ProcessDebuffList(enemiesInRadius, aura_ActiveCorrodes, stoneHasCorrode,
             (receiver) => { receiver.ApplyPersistentCorrode(this, finalCorrodeMultiplier, currentStone.corrodeColor); }, //
             (receiver) => { receiver.RemovePersistentCorrode(this); }
@@ -889,35 +894,35 @@ public class WeaponPart : MonoBehaviour
     {
         auraMagnetTimer -= Time.deltaTime;
         if (auraMagnetTimer > 0f) return;
-        auraMagnetTimer = 0.5f; // ÓÅ»¯£ºÃ¿Ãë¼ì²é2´Î
+        auraMagnetTimer = 0.5f; // ä¼˜åŒ–ï¼šæ¯ç§’æ£€æŸ¥2æ¬¡
 
         if (currentStone == null || !currentStone.applyMagnet || auraCollider == null || pickupLayerMask == 0)
         {
             return;
         }
 
-        // 1. »ñÈ¡Íæ¼Ò Transform (ÓÃÓÚ´«µİ¸øµôÂäÎï)
+        // 1. è·å–ç©å®¶ Transform (ç”¨äºä¼ é€’ç»™æ‰è½ç‰©)
         Transform playerTransform = GameManager.Instance?.playerTransform;
         if (playerTransform == null) return;
 
-        // 2. ¼ÆËã´ÅÁ¦°ë¾¶
-        // (¹â»·µÄ»ù´¡°ë¾¶ + ÄÜÁ¿Ê¯µÄ¶îÍâ°Ù·Ö±È¼Ó³É)
+        // 2. è®¡ç®—ç£åŠ›åŠå¾„
+        // (å…‰ç¯çš„åŸºç¡€åŠå¾„ + èƒ½é‡çŸ³çš„é¢å¤–ç™¾åˆ†æ¯”åŠ æˆ)
         float finalRadius = auraCollider.radius * (1f + currentStone.magnetRadiusBonusPercent);
 
-        // 3. É¨ÃèµôÂäÎï
+        // 3. æ‰«ææ‰è½ç‰©
         Collider[] hits = Physics.OverlapSphere(transform.position, finalRadius, pickupLayerMask);
 
         foreach (var hit in hits)
         {
-            // ³¢ÊÔ»ñÈ¡¾­ÑéÇò
+            // å°è¯•è·å–ç»éªŒçƒ
             ExperienceGem gem = hit.GetComponent<ExperienceGem>(); //
             if (gem != null)
             {
                 gem.TriggerMagnet(playerTransform);
-                continue; // ÏÂÒ»¸ö
+                continue; // ä¸‹ä¸€ä¸ª
             }
 
-            // ³¢ÊÔ»ñÈ¡½ğ±Ò
+            // å°è¯•è·å–é‡‘å¸
             GoldPickup gold = hit.GetComponent<GoldPickup>(); //
             if (gold != null)
             {
@@ -927,7 +932,7 @@ public class WeaponPart : MonoBehaviour
     }
 
     /// <summary>
-    /// (ĞÂÔö) ±È½ÏĞÂ¾ÉÁĞ±í²¢Ó¦ÓÃ/ÒÆ³ıdebuffµÄÍ¨ÓÃ°ïÖú·½·¨
+    /// (æ–°å¢) æ¯”è¾ƒæ–°æ—§åˆ—è¡¨å¹¶åº”ç”¨/ç§»é™¤debuffçš„é€šç”¨å¸®åŠ©æ–¹æ³•
     /// </summary>
     private void ProcessDebuffList(
         HashSet<StatusEffectReceiver> enemiesInRadius,
@@ -938,28 +943,28 @@ public class WeaponPart : MonoBehaviour
     {
         if (!stoneHasEffect)
         {
-            // Èç¹ûÊ¯Í·Ã»ÓĞÕâ¸öĞ§¹û£¬ÒÆ³ıËùÓĞ
+            // å¦‚æœçŸ³å¤´æ²¡æœ‰è¿™ä¸ªæ•ˆæœï¼Œç§»é™¤æ‰€æœ‰
             foreach (var receiver in activeList) { OnRemove(receiver); }
             activeList.Clear();
             return;
         }
 
-        // 1. Ó¦ÓÃĞÂdebuff (ÔÚ·¶Î§ÄÚ£¬µ«²»ÔÚ¾ÉÁĞ±íÀï)
+        // 1. åº”ç”¨æ–°debuff (åœ¨èŒƒå›´å†…ï¼Œä½†ä¸åœ¨æ—§åˆ—è¡¨é‡Œ)
         foreach (var receiver in enemiesInRadius)
         {
-            if (activeList.Add(receiver)) // Add() Ö»ÓĞÔÚÔªËØ *²»* ´æÔÚÊ±²Å·µ»Ø true
+            if (activeList.Add(receiver)) // Add() åªæœ‰åœ¨å…ƒç´  *ä¸* å­˜åœ¨æ—¶æ‰è¿”å› true
             {
                 OnApply(receiver);
             }
         }
 
-        // 2. ÒÆ³ı¾Édebuff (ÔÚ¾ÉÁĞ±íÀï£¬µ«²»ÔÚ·¶Î§ÄÚ)
+        // 2. ç§»é™¤æ—§debuff (åœ¨æ—§åˆ—è¡¨é‡Œï¼Œä½†ä¸åœ¨èŒƒå›´å†…)
         activeList.RemoveWhere(receiver =>
         {
             if (receiver == null || !enemiesInRadius.Contains(receiver))
             {
                 OnRemove(receiver);
-                return true; // ´Ó activeList ÖĞÒÆ³ı
+                return true; // ä» activeList ä¸­ç§»é™¤
             }
             return false;
         });
@@ -977,21 +982,21 @@ public class WeaponPart : MonoBehaviour
     }
     private List<Health> ApplyAuraChainDamage(int baseDamage)
     {
-        // --- vvv [ ºËĞÄĞŞ¸´ ] vvv ---
-        // 1. ²»ÔÙ¶ÁÈ¡ÁĞ±í£¬¶øÊÇÁ¢¼´É¨Ãè
+        // --- vvv [ æ ¸å¿ƒä¿®å¤ ] vvv ---
+        // 1. ä¸å†è¯»å–åˆ—è¡¨ï¼Œè€Œæ˜¯ç«‹å³æ‰«æ
         if (currentStone == null || auraCollider == null) return null;
         Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
-                                                                                                          // --- ^^^ [ ºËĞÄĞŞ¸´ ] ^^^ ---
+                                                                                                          // --- ^^^ [ æ ¸å¿ƒä¿®å¤ ] ^^^ ---
 
 
-        // ¼ÆËãÁ¬ËøÉËº¦
+        // è®¡ç®—è¿é”ä¼¤å®³
         int chainDamage = Mathf.RoundToInt(baseDamage * currentStone.chainDamageMultiplier); //
         if (chainDamage <= 0) chainDamage = 1;
 
         List<Health> hitTargets = new List<Health>();
 
-        // --- vvv [ ºËĞÄĞŞ¸´ ] vvv ---
-        // 2. ´ÓÉ¨Ãè½á¹û (hits) ÖĞ¹¹½¨Ç±ÔÚÄ¿±êÁĞ±í
+        // --- vvv [ æ ¸å¿ƒä¿®å¤ ] vvv ---
+        // 2. ä»æ‰«æç»“æœ (hits) ä¸­æ„å»ºæ½œåœ¨ç›®æ ‡åˆ—è¡¨
         List<Health> potentialTargets = new List<Health>();
         foreach (Collider hit in hits)
         {
@@ -1001,11 +1006,11 @@ public class WeaponPart : MonoBehaviour
                 potentialTargets.Add(target);
             }
         }
-        // --- ^^^ [ ºËĞÄĞŞ¸´ ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒä¿®å¤ ] ^^^ ---
 
         if (potentialTargets.Count == 0) return null;
 
-        // ... (È·¶¨ firstTarget µÄÂß¼­±£³Ö²»±ä) ...
+        // ... (ç¡®å®š firstTarget çš„é€»è¾‘ä¿æŒä¸å˜) ...
         Health firstTarget = potentialTargets
             .OrderBy(t => (t.transform.position - transform.position).sqrMagnitude)
             .FirstOrDefault();
@@ -1016,7 +1021,7 @@ public class WeaponPart : MonoBehaviour
         Health currentTarget = firstTarget;
         Vector3 lastVFXOriginPoint = transform.position;
 
-        // (Á¬ËøÑ­»·Âß¼­±£³Ö²»±ä)
+        // (è¿é”å¾ªç¯é€»è¾‘ä¿æŒä¸å˜)
         for (int i = 0; i <= currentStone.chainTargets; i++) //
         {
             if (currentTarget == null) break;
@@ -1079,10 +1084,10 @@ public class WeaponPart : MonoBehaviour
             return;
         }
 
-        // (¼ì²éÍ¨¹ı£¬ÖØÖÃ¼ÆÊ±Æ÷)
+        // (æ£€æŸ¥é€šè¿‡ï¼Œé‡ç½®è®¡æ—¶å™¨)
         auraKnockbackTimer = currentStone.knockbackInterval; //
 
-        // --- vvv [ µ÷ÊÔÈÕÖ¾ ] vvv ---
+        // --- vvv [ è°ƒè¯•æ—¥å¿— ] vvv ---
         if (auraCollider == null) //
         {
             Debug.LogError("Knockback FAILED: auraCollider is NULL!");
@@ -1093,13 +1098,13 @@ public class WeaponPart : MonoBehaviour
             Debug.LogWarning("Knockback Check: 'Enemy Layer Mask' (in Inspector) is not set!");
             return;
         }
-        // --- ^^^ [ µ÷ÊÔÈÕÖ¾ ] ^^^ ---
+        // --- ^^^ [ è°ƒè¯•æ—¥å¿— ] ^^^ ---
 
         Collider[] hits = Physics.OverlapSphere(transform.position, auraCollider.radius, enemyLayerMask); //
 
         if (hits.Length == 0)
         {
-            // ÕâÊÇÄãÖ®Ç°¿´µ½µÄÈÕÖ¾µÄĞÂ°æ±¾
+            // è¿™æ˜¯ä½ ä¹‹å‰çœ‹åˆ°çš„æ—¥å¿—çš„æ–°ç‰ˆæœ¬
             Debug.LogWarning("Knockback Fire: OverlapSphere found 0 targets. (Check LayerMask?)");
             return;
         }
@@ -1111,26 +1116,26 @@ public class WeaponPart : MonoBehaviour
 
         if (knockbackStoneCount >= 2) //
         {
-            // Ê¹ÓÃ¶ÑµşºóµÄÁ¦¶È
+            // ä½¿ç”¨å †å åçš„åŠ›åº¦
             finalKnockbackForce = currentStone.knockbackForce_Stacked; //
         }
         else
         {
-            // Ê¹ÓÃ»ù´¡Á¦¶È
+            // ä½¿ç”¨åŸºç¡€åŠ›åº¦
             finalKnockbackForce = currentStone.knockbackForce; //
         }
 
 
         foreach (Collider hit in hits)
         {
-            // --- vvv [ ºËĞÄĞŞ¸´ ] vvv ---
-            // Ç¿ÖÆ¼ì²é Tag
+            // --- vvv [ æ ¸å¿ƒä¿®å¤ ] vvv ---
+            // å¼ºåˆ¶æ£€æŸ¥ Tag
             if (!hit.CompareTag("Enemy"))
             {
                 Debug.Log($"Knockback Check: Ignored collider '{hit.name}' (Tag is not 'Enemy').");
                 continue;
             }
-            // --- ^^^ [ ºËĞÄĞŞ¸´ ] ^^^ ---
+            // --- ^^^ [ æ ¸å¿ƒä¿®å¤ ] ^^^ ---
 
             Health target = hit.GetComponentInParent<Health>(); //
             if (target == null || target.IsDead) continue; //
@@ -1141,7 +1146,7 @@ public class WeaponPart : MonoBehaviour
                 Vector3 pushDir = (target.transform.position - transform.position).normalized; //
                 pushDir.y = 0; //
 
-                // [!] Ê¹ÓÃ finalKnockbackForce
+                // [!] ä½¿ç”¨ finalKnockbackForce
                 receiver.ApplyKnockback(pushDir, finalKnockbackForce); //
             }
             else
@@ -1180,12 +1185,12 @@ public class WeaponPart : MonoBehaviour
 
     private IEnumerator FireRoutine(Vector3 initialDirection)
     {
-        // 1. »ñÈ¡ÄÜÁ¿Ê¯¼Ó³É
+        // 1. è·å–èƒ½é‡çŸ³åŠ æˆ
         float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
         float stoneScaleMod = (currentStone != null) ? currentStone.scaleModifier : 0f;
         float stoneFireRateMod = (currentStone != null) ? currentStone.fireRateModifier : 0f;
 
-        // 2. ¼ì²é»ØĞıïÚ×´Ì¬
+        // 2. æ£€æŸ¥å›æ—‹é•–çŠ¶æ€
         if (StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             if (isBoomerangOut) yield break;
@@ -1193,13 +1198,13 @@ public class WeaponPart : MonoBehaviour
         }
         else
         {
-            // ¼ÆËãÀäÈ´
+            // è®¡ç®—å†·å´
             float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus) * (1f + stoneFireRateMod);
             if (finalFireRateMultiplier <= 0.1f) finalFireRateMultiplier = 0.1f;
             fireCooldown = (1f / StatBlock.baseFireRate) * finalFireRateMultiplier;
         }
 
-        // 3-6. ÊÓ¾õ¡¢ÒôĞ§¡¢ÌØÊâÀàĞÍ¼ì²é (±£³Ö²»±ä)
+        // 3-6. è§†è§‰ã€éŸ³æ•ˆã€ç‰¹æ®Šç±»å‹æ£€æŸ¥ (ä¿æŒä¸å˜)
         if (cooldownMaterial != null) cooldownMaterial.StartCooldown(fireCooldown);
         if (floatingVisual != null) floatingVisual.HideWeapon();
         if (fireSoundDelay < 0) { PlayFireSound(); yield return new WaitForSeconds(Mathf.Abs(fireSoundDelay)); }
@@ -1210,7 +1215,7 @@ public class WeaponPart : MonoBehaviour
             yield break;
         }
 
-        // 7. ×Ô¶¯Ãé×¼Âß¼­ (±£³Ö²»±ä)
+        // 7. è‡ªåŠ¨ç„å‡†é€»è¾‘ (ä¿æŒä¸å˜)
         Vector3 finalTargetDirection = initialDirection;
         Transform firstTarget = null;
         if (StatBlock.autoAimAtNearestEnemy && GetComponentInParent<DroneAI>() == null)
@@ -1232,34 +1237,46 @@ public class WeaponPart : MonoBehaviour
         }
 
         // =========================================================
-        // ¡¾ºËĞÄĞŞ¸´¡¿ÖÇÄÜÑ¡Ôñ»ù´¡ÉËº¦Öµ
+        // ã€æ ¸å¿ƒä¿®å¤ã€‘æ™ºèƒ½é€‰æ‹©åŸºç¡€ä¼¤å®³å€¼
         // =========================================================
         int baseDamageToUse = StatBlock.baseDirectDamage;
-        // Èç¹ûÊÇ AOE ÀàÎäÆ÷£¬ÓÅÏÈÊ¹ÓÃ AOE Ãæ°åÉËº¦
+        // å¦‚æœæ˜¯ AOE ç±»æ­¦å™¨ï¼Œä¼˜å…ˆä½¿ç”¨ AOE é¢æ¿ä¼¤å®³
         if (StatBlock.behavior == WeaponBehaviorType.MeleeAOE ||
             StatBlock.behavior == WeaponBehaviorType.ParabolicAOE ||
             StatBlock.behavior == WeaponBehaviorType.Landmine ||
-            StatBlock.behavior == WeaponBehaviorType.PersistentAOE)
+            StatBlock.behavior == WeaponBehaviorType.PersistentAOE ||
+            StatBlock.behavior == WeaponBehaviorType.Aura || 
+            StatBlock.behavior == WeaponBehaviorType.CreateAndForget ||
+            StatBlock.behavior == WeaponBehaviorType.FlyingDagger) // <--- ã€æ–°å¢ã€‘
         {
             if (StatBlock.baseAoeDamage > 0) baseDamageToUse = StatBlock.baseAoeDamage;
         }
-
+        // For Aura, CreateAndForget, FlyingDagger, we need to ensure they are set up.
+        // ç¡®ä¿åªåˆå§‹åŒ–ä¸€æ¬¡
+        if (StatBlock.behavior == WeaponBehaviorType.Aura || 
+            StatBlock.behavior == WeaponBehaviorType.CreateAndForget ||
+            StatBlock.behavior == WeaponBehaviorType.FlyingDagger) // <--- ã€æ–°å¢ã€‘
+        {
+            if (StatBlock.behavior == WeaponBehaviorType.Aura) SetupAura();
+            // CreateAndForget åº”è¯¥åœ¨ switch ä¸­å¤„ç†ï¼Œä¸åœ¨è¿™é‡Œè°ƒç”¨ï¼Œå› ä¸ºå®ƒéœ€è¦ finalDamage
+            else if (StatBlock.behavior == WeaponBehaviorType.FlyingDagger) SetupFlyingDaggers(); // <--- ã€æ–°å¢ã€‘
+        }
         int baseDamage = 0;
         float baseScale = 1f;
 
         if (StatBlock != null && PlayerStats.Instance != null)
         {
-            // --- ¼ÆËã»ù´¡ÉËº¦ (Ê¹ÓÃ baseDamageToUse) ---
+            // --- è®¡ç®—åŸºç¡€ä¼¤å®³ (ä½¿ç”¨ baseDamageToUse) ---
             baseDamage = Mathf.RoundToInt(
                 baseDamageToUse * (PlayerStats.Instance.damageMultiplier + localDamageBonus + stoneDmgMod) +
                 PlayerStats.Instance.flatDamageBonus
             );
 
-            // --- ¼ÆËã»ù´¡Ìå»ı ---
+            // --- è®¡ç®—åŸºç¡€ä½“ç§¯ ---
             baseScale = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus + stoneScaleMod;
         }
 
-        // 8. »ØĞıïÚµş¼Ó»úÖÆ (±£³Ö²»±ä)
+        // 8. å›æ—‹é•–å åŠ æœºåˆ¶ (ä¿æŒä¸å˜)
         float totalDamageMultiplier = 1f;
         float totalScaleMultiplier = 1f;
         if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0)
@@ -1273,52 +1290,52 @@ public class WeaponPart : MonoBehaviour
         int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
         float finalScale = baseScale * totalScaleMultiplier;
 
-        // 10. Switch ĞĞÎªÄ£Ê½ (±£³Ö²»±ä)
+        // 10. Switch è¡Œä¸ºæ¨¡å¼ (ä¿æŒä¸å˜)
         switch (StatBlock?.behavior)
         {
             case WeaponBehaviorType.Standard:
             case WeaponBehaviorType.Pierce:
                 // ==========================================
-                // ¡¾ºËĞÄĞŞ¸Ä¡¿Ö§³Ö¶àÖØÉä»÷ÓëÉÈĞÎÉ¢Éä (¼«º®±ù×¶Âß¼­)
+                // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æ”¯æŒå¤šé‡å°„å‡»ä¸æ‰‡å½¢æ•£å°„ (æå¯’å†°é”¥é€»è¾‘)
                 // ==========================================
 
-                // 1. ¼ÆËã×Ü×Óµ¯Êı
-                // »ù´¡ÊıÁ¿ + È«¾Ö¼Ó³É + ¾Ö²¿¼Ó³É(ÓÃÀ´Ö§³Ö"ÊıÁ¿+1"ÕâÖÖ¾ÖÍâÉı¼¶)
-                // ×¢Òâ£ºÈç¹û StatBlock »¹Ã»¼Ó projectileCount ×Ö¶Î£¬ÇëÎñ±ØÈ¥¼ÓÉÏ£¡
+                // 1. è®¡ç®—æ€»å­å¼¹æ•°
+                // åŸºç¡€æ•°é‡ + å…¨å±€åŠ æˆ + å±€éƒ¨åŠ æˆ(ç”¨æ¥æ”¯æŒ"æ•°é‡+1"è¿™ç§å±€å¤–å‡çº§)
+                // æ³¨æ„ï¼šå¦‚æœ StatBlock è¿˜æ²¡åŠ  projectileCount å­—æ®µï¼Œè¯·åŠ¡å¿…å»åŠ ä¸Šï¼
                 int finalProjCount = StatBlock.projectileCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
 
-                // ÌØÊâ±£µ×£ºÈç¹ûÊÇ¼«º®±ù×¶£¬Ç¿ÖÆÖÁÉÙ 3 ·¢ (·ÀÖ¹ÅäÖÃ±íÃ»Ìî¶Ô)
+                // ç‰¹æ®Šä¿åº•ï¼šå¦‚æœæ˜¯æå¯’å†°é”¥ï¼Œå¼ºåˆ¶è‡³å°‘ 3 å‘ (é˜²æ­¢é…ç½®è¡¨æ²¡å¡«å¯¹)
                 if (StatBlock.weaponID == "ExtremeIceShard" && finalProjCount < 3)
                 {
                     finalProjCount = 3;
                 }
 
-                // 2. ×¼±¸·¢Éä
+                // 2. å‡†å¤‡å‘å°„
                 if (finalProjCount <= 1)
                 {
-                    // µ¥·¢Âß¼­ (±£³ÖÔ­Ñù)
+                    // å•å‘é€»è¾‘ (ä¿æŒåŸæ ·)
                     InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
                 }
                 else
                 {
-                    // ¶à·¢É¢ÉäÂß¼­
-                    float totalSpread = StatBlock.spreadAngle; // ¶ÁÈ¡ÅäÖÃµÄÉ¢Éä½Ç¶È (Èç 30)
+                    // å¤šå‘æ•£å°„é€»è¾‘
+                    float totalSpread = StatBlock.spreadAngle; // è¯»å–é…ç½®çš„æ•£å°„è§’åº¦ (å¦‚ 30)
 
-                    // ÉÈĞÎËã·¨£º´Ó -Spread/2 ¿ªÊ¼£¬µ½ +Spread/2 ½áÊø
+                    // æ‰‡å½¢ç®—æ³•ï¼šä» -Spread/2 å¼€å§‹ï¼Œåˆ° +Spread/2 ç»“æŸ
                     float startAngle = -totalSpread / 2f;
-                    // ·ÀÖ¹³ıÒÔ 0
+                    // é˜²æ­¢é™¤ä»¥ 0
                     float stepAngle = (finalProjCount > 1) ? (totalSpread / (finalProjCount - 1)) : 0f;
 
                     for (int i = 0; i < finalProjCount; i++)
                     {
-                        // ¼ÆËãµ±Ç°×Óµ¯µÄÆ«×ª½Ç
+                        // è®¡ç®—å½“å‰å­å¼¹çš„åè½¬è§’
                         float currentAngle = startAngle + (stepAngle * i);
 
-                        // ÈÆ Y ÖáĞı×ª»ù×¼·½Ïò
+                        // ç»• Y è½´æ—‹è½¬åŸºå‡†æ–¹å‘
                         Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
                         Vector3 spreadDirection = rotation * finalTargetDirection;
 
-                        // ·¢Éä×Óµ¯
+                        // å‘å°„å­å¼¹
                         InstantiateAndFireProjectile(spreadDirection, finalDamage);
                     }
                 }
@@ -1326,6 +1343,10 @@ public class WeaponPart : MonoBehaviour
 
             case WeaponBehaviorType.CreateAndForget:
                 InstantiateAndFireCreateAndForget(finalDamage, finalScale);
+                break;
+            
+            case WeaponBehaviorType.FlyingDagger:
+                SetupFlyingDaggers();
                 break;
 
             case WeaponBehaviorType.MeleeAOE:
@@ -1357,7 +1378,7 @@ public class WeaponPart : MonoBehaviour
                 break;
         }
 
-        // 11-13. Ç¹¿ÚÌØĞ§ÓëºóĞø (±£³Ö²»±ä)
+        // 11-13. æªå£ç‰¹æ•ˆä¸åç»­ (ä¿æŒä¸å˜)
         if (StatBlock != null && StatBlock.muzzleFlashPrefab != null)
         {
             Instantiate(StatBlock.muzzleFlashPrefab, firePoint.position, firePoint.rotation);
@@ -1384,18 +1405,18 @@ public class WeaponPart : MonoBehaviour
 
         isBoomerangOut = false; // Mark as returned
 
-        // --- ºËĞÄĞŞ¸Ä£ºÔö¼Ó PlayerStats ÖĞµÄµş¼Ó²ãÊı ---
+        // --- æ ¸å¿ƒä¿®æ”¹ï¼šå¢åŠ  PlayerStats ä¸­çš„å åŠ å±‚æ•° ---
         if (PlayerStats.Instance.boomerangMaxCatchStacks > 0)
         {
             PlayerStats.Instance.boomerangCatchStacks = Mathf.Min(PlayerStats.Instance.boomerangCatchStacks + 1, PlayerStats.Instance.boomerangMaxCatchStacks);
             Debug.Log($"Boomerang caught! PlayerStats Stacks increased to {PlayerStats.Instance.boomerangCatchStacks}/{PlayerStats.Instance.boomerangMaxCatchStacks}");
         }
 
-        // --- ºËĞÄĞŞ¸Ä½áÊø ---
+        // --- æ ¸å¿ƒä¿®æ”¹ç»“æŸ ---
 
-        ResetCooldown(); // ÖØÖÃÀäÈ´
+        ResetCooldown(); // é‡ç½®å†·å´
 
-        // --- ×Ô¶¯ÔÙ´Î¶ª³öÂß¼­ ---
+        // --- è‡ªåŠ¨å†æ¬¡ä¸¢å‡ºé€»è¾‘ ---
         Transform nearestEnemy = FindNearestEnemyTransform(catchPosition, StatBlock.autoAimRange);
         Vector3 nextDirection;
         if (nearestEnemy != null)
@@ -1422,13 +1443,13 @@ public class WeaponPart : MonoBehaviour
             fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
             // Debug.Log($"Boomerang '{StatBlock?.weaponName}' missed, starting cooldown: {fireCooldown}s.");
 
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿ÖØÖÃ PlayerStats ÖĞµÄµş¼Ó²ãÊı ---
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘é‡ç½® PlayerStats ä¸­çš„å åŠ å±‚æ•° ---
             if (PlayerStats.Instance != null && PlayerStats.Instance.boomerangCatchStacks > 0)
             {
                 PlayerStats.Instance.boomerangCatchStacks = 0;
                 Debug.Log("PlayerStats catch stacks reset to 0.");
             }
-            // --- ¡¾ºËĞÄĞŞ¸Ä½áÊø¡¿ ---
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ç»“æŸã€‘ ---
         }
     }
 
@@ -1462,33 +1483,33 @@ public class WeaponPart : MonoBehaviour
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            // --- ËÙ¶ÈÓëÊÙÃü ---
+            // --- é€Ÿåº¦ä¸å¯¿å‘½ ---
             float finalSpeed = StatBlock.baseLaunchForce * (PlayerStats.Instance.projectileSpeedMultiplier + localSpeedBonus);
             float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
 
             // ==========================================
-            // ¡¾ºËĞÄĞŞ¸Ä 1¡¿´©Í¸¼ÆËã (¼ÓÈë±ù×¶ÊõÂß¼­)
+            // ã€æ ¸å¿ƒä¿®æ”¹ 1ã€‘ç©¿é€è®¡ç®— (åŠ å…¥å†°é”¥æœ¯é€»è¾‘)
             // ==========================================
             int stonePierceBonus = (currentStone != null) ? (int)currentStone.pierceModifier : 0;
 
-            // »ù´¡´©Í¸ + Íæ¼ÒÈ«¾Ö´©Í¸ + ÄÜÁ¿Ê¯´©Í¸ + ¾ÖÍâÉı¼¶´©Í¸(localPierceCountBonus)
-            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus + localPierceCountBonus; // <--- ¼ÓÉÏ localPierceCountBonus
+            // åŸºç¡€ç©¿é€ + ç©å®¶å…¨å±€ç©¿é€ + èƒ½é‡çŸ³ç©¿é€ + å±€å¤–å‡çº§ç©¿é€(localPierceCountBonus)
+            int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus + localPierceCountBonus; // <--- åŠ ä¸Š localPierceCountBonus
 
-            // ÌØÊâÂß¼­£º¼«º®±ù×¶ (½ø»¯ºó) ÎŞÏŞ´©Í¸
-            // ¿ÉÒÔÅĞ¶Ï ID (ExtremeIceShard) »òÕßÃû×Ö
+            // ç‰¹æ®Šé€»è¾‘ï¼šæå¯’å†°é”¥ (è¿›åŒ–å) æ— é™ç©¿é€
+            // å¯ä»¥åˆ¤æ–­ ID (ExtremeIceShard) æˆ–è€…åå­—
             if (StatBlock.weaponID == "ExtremeIceShard")
             {
                 finalPierceCount = 999;
             }
 
             // ==========================================
-            // ¡¾ºËĞÄĞŞ¸Ä 2¡¿±ù¶³¸ÅÂÊ¼ÆËã
+            // ã€æ ¸å¿ƒä¿®æ”¹ 2ã€‘å†°å†»æ¦‚ç‡è®¡ç®—
             // ==========================================
-            // »ù´¡¸ÅÂÊ + ¾ÖÍâÉı¼¶¸ÅÂÊ
+            // åŸºç¡€æ¦‚ç‡ + å±€å¤–å‡çº§æ¦‚ç‡
             float finalFreezeChance = StatBlock.baseFreezeChance + localFreezeChanceBonus;
 
 
-            // --- ÆäËû²ÎÊı (±£³Ö²»±ä) ---
+            // --- å…¶ä»–å‚æ•° (ä¿æŒä¸å˜) ---
             int finalDotDamage = Mathf.RoundToInt(StatBlock.baseDotDamage);
             float finalDotDuration = StatBlock.baseDotDuration;
             float finalDotTickInterval = StatBlock.dotTickInterval;
@@ -1507,9 +1528,9 @@ public class WeaponPart : MonoBehaviour
             }
 
             // ==========================================
-            // ¡¾ºËĞÄĞŞ¸Ä 3¡¿´«µİ²ÎÊı (×¢Òâ×îºó¼ÓÁË freezeChance)
+            // ã€æ ¸å¿ƒä¿®æ”¹ 3ã€‘ä¼ é€’å‚æ•° (æ³¨æ„æœ€ååŠ äº† freezeChance)
             // ==========================================
-            // ´ËÊ±ÄãĞèÒªÈ¥ Projectile.cs ĞŞ¸Ä InitializeAsStraight µÄ²ÎÊıÁĞ±í£¬½ÓÊÕÕâ¸ö float
+            // æ­¤æ—¶ä½ éœ€è¦å» Projectile.cs ä¿®æ”¹ InitializeAsStraight çš„å‚æ•°åˆ—è¡¨ï¼Œæ¥æ”¶è¿™ä¸ª float
             projectileScript.InitializeAsStraight(
                direction, finalSpeed, finalDamage,
                false, finalPierceCount,
@@ -1521,13 +1542,13 @@ public class WeaponPart : MonoBehaviour
                finalAoeDamage,
                finalAoeRadius,
                explodeVfx,
-               finalFreezeChance // <--- ¡¾ĞÂÔö¡¿´«Èë±ù¶³¸ÅÂÊ
+               finalFreezeChance // <--- ã€æ–°å¢ã€‘ä¼ å…¥å†°å†»æ¦‚ç‡
             );
 
             projectileScript.isCritical = isCrit;
             if (isCrit)
             {
-                // Debug.Log($"[WeaponPart] ·¢ÉäÁËÒ»¿Å±©»÷×Óµ¯£¡ÎäÆ÷: {StatBlock.weaponName}");
+                // Debug.Log($"[WeaponPart] å‘å°„äº†ä¸€é¢—æš´å‡»å­å¼¹ï¼æ­¦å™¨: {StatBlock.weaponName}");
             }
         }
         else { Destroy(bullet); }
@@ -1546,7 +1567,7 @@ public class WeaponPart : MonoBehaviour
         float finalDotTickInterval = statsToUse.dotTickInterval;
 
         float finalStunChance = statsToUse.baseStunChance + PlayerStats.Instance.parabolicAoeStunChance;
-        // ×îÖÕÊ±³¤ = ÎäÆ÷»ù´¡Ê±³¤ (Î´À´Ò²¿ÉÒÔÈÃ PlayerStats Ç¿»¯Õâ¸ö)
+        // æœ€ç»ˆæ—¶é•¿ = æ­¦å™¨åŸºç¡€æ—¶é•¿ (æœªæ¥ä¹Ÿå¯ä»¥è®© PlayerStats å¼ºåŒ–è¿™ä¸ª)
         float finalStunDuration = statsToUse.baseStunDuration;
         float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
 
@@ -1575,12 +1596,12 @@ public class WeaponPart : MonoBehaviour
     }
 
     // Updated to accept finalDamage and finalScale
-    private void InstantiateAndFireBoomerang(Vector3 direction, int finalDamage, float finalScale, Vector3? launchPosition = null) // <-- Ìí¼Ó¿ÉÑ¡²ÎÊı
+    private void InstantiateAndFireBoomerang(Vector3 direction, int finalDamage, float finalScale, Vector3? launchPosition = null) // <-- æ·»åŠ å¯é€‰å‚æ•°
     {
-        // Èç¹ûÃ»ÓĞÌá¹©·¢ÉäÎ»ÖÃ£¬ÔòÊ¹ÓÃÄ¬ÈÏµÄ firePoint
+        // å¦‚æœæ²¡æœ‰æä¾›å‘å°„ä½ç½®ï¼Œåˆ™ä½¿ç”¨é»˜è®¤çš„ firePoint
         Vector3 spawnPos = launchPosition ?? firePoint.position;
 
-        if (StatBlock?.projectilePrefab == null) // ¼ò»¯ null ¼ì²é
+        if (StatBlock?.projectilePrefab == null) // ç®€åŒ– null æ£€æŸ¥
         {
             isBoomerangOut = false;
             Debug.LogError($"[WeaponPart] Boomerang fire failed: ProjectilePrefab missing for {StatBlock?.weaponName}");
@@ -1598,7 +1619,7 @@ public class WeaponPart : MonoBehaviour
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            // --- µ÷ÓÃ×îÖÕµÄ InitializeAsBoomerang ---
+            // --- è°ƒç”¨æœ€ç»ˆçš„ InitializeAsBoomerang ---
             projectileScript.InitializeAsBoomerang(
                 direction,
                 finalSpeed,
@@ -1610,7 +1631,7 @@ public class WeaponPart : MonoBehaviour
                 StatBlock.defaultImpactEffectPrefab,
                 this,
                 StatBlock.rotationSpeed,
-                StatBlock.returnOvershootDistance // <-- ´«µİÕâ¸öÖµ
+                StatBlock.returnOvershootDistance // <-- ä¼ é€’è¿™ä¸ªå€¼
             );
         }
         else
@@ -1623,68 +1644,68 @@ public class WeaponPart : MonoBehaviour
 
     private void InstantiateAndFireCreateAndForget(int finalDamage, float finalScale)
     {
-        // --- [ÅÅ²é 1] ¼ì²éºËĞÄÒıÓÃ ---
+        // --- [æ’æŸ¥ 1] æ£€æŸ¥æ ¸å¿ƒå¼•ç”¨ ---
         if (StatBlock == null)
         {
-            Debug.LogError("[ÅÅ²é] Ê§°Ü: StatBlock ÊÇ¿ÕµÄ£¡");
+            Debug.LogError("[æ’æŸ¥] å¤±è´¥: StatBlock æ˜¯ç©ºçš„ï¼");
             return;
         }
         if (StatBlock.projectilePrefab == null)
         {
-            Debug.LogError($"[ÅÅ²é] Ê§°Ü: ÎäÆ÷ '{StatBlock.weaponName}' µÄ ProjectilePrefab ÊÇ¿ÕµÄ£¡Çë¼ì²é ScriptableObject¡£");
+            Debug.LogError($"[æ’æŸ¥] å¤±è´¥: æ­¦å™¨ '{StatBlock.weaponName}' çš„ ProjectilePrefab æ˜¯ç©ºçš„ï¼è¯·æ£€æŸ¥ ScriptableObjectã€‚");
             return;
         }
         // ---------------------------
 
-        // 1. È·¶¨Éú³ÉÎ»ÖÃ
-        Vector3 spawnPos = transform.position; // Ä¬ÈÏÎªÎäÆ÷Î»ÖÃ
+        // 1. ç¡®å®šç”Ÿæˆä½ç½®
+        Vector3 spawnPos = transform.position; // é»˜è®¤ä¸ºæ­¦å™¨ä½ç½®
         if (WeaponController.Instance != null)
         {
-            spawnPos = WeaponController.Instance.transform.position; // ÓÅÏÈÓÃÍæ¼ÒÎ»ÖÃ
+            spawnPos = WeaponController.Instance.transform.position; // ä¼˜å…ˆç”¨ç©å®¶ä½ç½®
         }
 
-        // --- [ÅÅ²é 2] ¼ì²é Raycast µØÃæ¼ì²â ---
-        Debug.Log($"[ÅÅ²é] ³õÊ¼Éú³Éµã: {spawnPos}¡£ÕıÔÚ³¢ÊÔ Raycast ÕÒµØÃæ...");
+        // --- [æ’æŸ¥ 2] æ£€æŸ¥ Raycast åœ°é¢æ£€æµ‹ ---
+        Debug.Log($"[æ’æŸ¥] åˆå§‹ç”Ÿæˆç‚¹: {spawnPos}ã€‚æ­£åœ¨å°è¯• Raycast æ‰¾åœ°é¢...");
 
         RaycastHit hit;
-        // ³¢ÊÔ´ÓÍæ¼ÒÍ·¶¥ (y+2) ÏòÏÂÉäÏß¼ì²â
+        // å°è¯•ä»ç©å®¶å¤´é¡¶ (y+2) å‘ä¸‹å°„çº¿æ£€æµ‹
         if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground", "Default", "Terrain")))
         {
             spawnPos = hit.point;
-            Debug.Log($"[ÅÅ²é] ³É¹¦ÕÒµ½µØÃæ: {spawnPos}, »÷ÖĞÎïÌå: {hit.collider.name}");
+            Debug.Log($"[æ’æŸ¥] æˆåŠŸæ‰¾åˆ°åœ°é¢: {spawnPos}, å‡»ä¸­ç‰©ä½“: {hit.collider.name}");
         }
         else
         {
-            Debug.LogWarning($"[ÅÅ²é] ¾¯¸æ: Î´¼ì²âµ½µØÃæ£¡Ëş¿ÉÄÜÉú³ÉÔÚ°ë¿Õ»òµØµ×¡£µ±Ç°Î»ÖÃ y={spawnPos.y}");
+            Debug.LogWarning($"[æ’æŸ¥] è­¦å‘Š: æœªæ£€æµ‹åˆ°åœ°é¢ï¼å¡”å¯èƒ½ç”Ÿæˆåœ¨åŠç©ºæˆ–åœ°åº•ã€‚å½“å‰ä½ç½® y={spawnPos.y}");
         }
         // -----------------------------------
 
-        // 2. Éú³ÉÊµÀı
+        // 2. ç”Ÿæˆå®ä¾‹
         GameObject obj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
 
-        // --- [ÅÅ²é 3] ¼ì²éÉú³ÉºóµÄÎïÌå×´Ì¬ ---
+        // --- [æ’æŸ¥ 3] æ£€æŸ¥ç”Ÿæˆåçš„ç‰©ä½“çŠ¶æ€ ---
         if (obj == null)
         {
-            Debug.LogError("[ÅÅ²é] ÖÂÃü´íÎó: Instantiate ·µ»ØÁË null£¡");
+            Debug.LogError("[æ’æŸ¥] è‡´å‘½é”™è¯¯: Instantiate è¿”å›äº† nullï¼");
             return;
         }
-        Debug.Log($"[ÅÅ²é] ÒÑÉú³ÉÎïÌå: '{obj.name}'£¬ÊÀ½ç×ø±ê: {obj.transform.position}£¬Active×´Ì¬: {obj.activeSelf}");
+        Debug.Log($"[æ’æŸ¥] å·²ç”Ÿæˆç‰©ä½“: '{obj.name}'ï¼Œä¸–ç•Œåæ ‡: {obj.transform.position}ï¼ŒActiveçŠ¶æ€: {obj.activeSelf}");
         // -----------------------------------
 
-        // 3. Ó¦ÓÃËõ·Å
-        // --- [ÅÅ²é 4] ¼ì²éËõ·ÅÏµÊı ---
+        // 3. åº”ç”¨ç¼©æ”¾
+        // --- [æ’æŸ¥ 4] æ£€æŸ¥ç¼©æ”¾ç³»æ•° ---
         float configScale = StatBlock.vfxBaseScaleMultiplier;
         if (configScale <= 0.01f)
         {
-            Debug.LogError($"[ÅÅ²é] ÑÏÖØ¾¯¸æ: StatBlock.vfxBaseScaleMultiplier Îª {configScale}£¡ÎïÌå½«²»¿É¼û¡£ÇëÔÚÅäÖÃÀïÉèÎª 1¡£");
+            Debug.LogError($"[æ’æŸ¥] ä¸¥é‡è­¦å‘Š: StatBlock.vfxBaseScaleMultiplier ä¸º {configScale}ï¼ç‰©ä½“å°†ä¸å¯è§ã€‚è¯·åœ¨é…ç½®é‡Œè®¾ä¸º 1ã€‚");
         }
 
         Vector3 targetScale = Vector3.one * (configScale * finalScale);
         obj.transform.localScale = targetScale;
-        Debug.Log($"[ÅÅ²é] Ó¦ÓÃËõ·Å: {targetScale} (ÅäÖÃÖµ: {configScale}, ¶¯Ì¬Öµ: {finalScale})");
+        Debug.Log($"[æ’æŸ¥] åº”ç”¨ç¼©æ”¾: {targetScale} (é…ç½®å€¼: {configScale}, åŠ¨æ€å€¼: {finalScale})");
         // ---------------------------
 
-        // 4. ×é¼ş³õÊ¼»¯Âß¼­
+        // 4. ç»„ä»¶åˆå§‹åŒ–é€»è¾‘
         WanderingAOE wanderScript = obj.GetComponent<WanderingAOE>();
         if (wanderScript != null)
         {
@@ -1694,7 +1715,7 @@ public class WeaponPart : MonoBehaviour
                 wanderScript.target = this.transform.root;
         }
 
-        // --- [ÅÅ²é 5] ¼ì²é FlamethrowerTurret ×é¼ş ---
+        // --- [æ’æŸ¥ 5] æ£€æŸ¥ FlamethrowerTurret ç»„ä»¶ ---
         FlamethrowerTurret turret = obj.GetComponent<FlamethrowerTurret>();
         if (turret != null)
         {
@@ -1702,7 +1723,7 @@ public class WeaponPart : MonoBehaviour
             float finalRange = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
             float finalInterval = StatBlock.dotTickInterval;
 
-            Debug.Log($"[ÅÅ²é] ÕÒµ½ FlamethrowerTurret ×é¼ş£¬ÕıÔÚ³õÊ¼»¯... ´æ»îÊ±¼ä: {finalLifetime}");
+            Debug.Log($"[æ’æŸ¥] æ‰¾åˆ° FlamethrowerTurret ç»„ä»¶ï¼Œæ­£åœ¨åˆå§‹åŒ–... å­˜æ´»æ—¶é—´: {finalLifetime}");
 
             turret.Initialize(
                 finalDamage,
@@ -1715,15 +1736,15 @@ public class WeaponPart : MonoBehaviour
         }
         else
         {
-            // Èç¹û²»ÊÇÆäËûÀàĞÍ£¬Ò²²»ÊÇËş£¬ÄÇ¾Í¿ÉÄÜÊÇ½Å±¾¹Ò´íÁË
+            // å¦‚æœä¸æ˜¯å…¶ä»–ç±»å‹ï¼Œä¹Ÿä¸æ˜¯å¡”ï¼Œé‚£å°±å¯èƒ½æ˜¯è„šæœ¬æŒ‚é”™äº†
             if (obj.GetComponent<TornadoController>() == null && obj.GetComponent<PersistentAoeField>() == null && obj.GetComponent<Projectile>() == null)
             {
-                Debug.LogError($"[ÅÅ²é] Éú³ÉµÄÎïÌå '{obj.name}' ÉÏÃ»ÓĞÕÒµ½ FlamethrowerTurret ½Å±¾£¡Ò²Ã»ÓĞÆäËûÒÑÖª½Å±¾¡£Çë¼ì²é Prefab¡£");
+                Debug.LogError($"[æ’æŸ¥] ç”Ÿæˆçš„ç‰©ä½“ '{obj.name}' ä¸Šæ²¡æœ‰æ‰¾åˆ° FlamethrowerTurret è„šæœ¬ï¼ä¹Ÿæ²¡æœ‰å…¶ä»–å·²çŸ¥è„šæœ¬ã€‚è¯·æ£€æŸ¥ Prefabã€‚");
             }
         }
         // ----------------------------------------
 
-        // ... (ÆäËû Tornado/Persistent Âß¼­±£Áô) ...
+        // ... (å…¶ä»– Tornado/Persistent é€»è¾‘ä¿ç•™) ...
         TornadoController tc = obj.GetComponent<TornadoController>();
         if (tc != null) tc.Setup(finalDamage, this);
 
@@ -1734,9 +1755,9 @@ public class WeaponPart : MonoBehaviour
             aoe.Setup(finalDamage, StatBlock.baseAreaTickInterval, StatBlock.baseAreaDuration, attackerObj);
         }
 
-        // Projectile ³õÊ¼»¯±£µ×
+        // Projectile åˆå§‹åŒ–ä¿åº•
         Projectile p = obj.GetComponent<Projectile>();
-        if (p != null && turret == null) // Èç¹ûÊÇËş£¬Í¨³£²»ĞèÒª³õÊ¼»¯Îª Projectile£¬³ı·ÇÄãµÄËşÍ¬Ê±ÊÇ Projectile
+        if (p != null && turret == null) // å¦‚æœæ˜¯å¡”ï¼Œé€šå¸¸ä¸éœ€è¦åˆå§‹åŒ–ä¸º Projectileï¼Œé™¤éä½ çš„å¡”åŒæ—¶æ˜¯ Projectile
         {
             p.InitializeAsStraight(transform.forward, 0f, finalDamage, false, 999, StatBlock.baseProjectileLifetime, null, null, 0, 0, 0, 0, 0, AttackType.Standard, this);
         }
@@ -1814,15 +1835,15 @@ public class WeaponPart : MonoBehaviour
             orbiterGO.transform.localPosition = spawnPos;
             orbiterGO.transform.localRotation = Quaternion.Euler(0, angle, 0);
 
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿Çø·ÖÆÕÍ¨¶ÜºÍ´Å±©¶Ü ---
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘åŒºåˆ†æ™®é€šç›¾å’Œç£æš´ç›¾ ---
 
-            // 1. ÓÅÏÈ³¢ÊÔ³õÊ¼»¯Îª´Å±©¶Ü (MagneticOrbiter)
+            // 1. ä¼˜å…ˆå°è¯•åˆå§‹åŒ–ä¸ºç£æš´ç›¾ (MagneticOrbiter)
             MagneticOrbiter mag = orbiterGO.GetComponent<MagneticOrbiter>();
             if (mag != null)
             {
                 mag.Initialize(finalDamage, this);
             }
-            // 2. Èç¹û²»ÊÇ£¬Ôò³õÊ¼»¯ÎªÆÕÍ¨ÑÒÊ¯¶Ü (Orbiter)
+            // 2. å¦‚æœä¸æ˜¯ï¼Œåˆ™åˆå§‹åŒ–ä¸ºæ™®é€šå²©çŸ³ç›¾ (Orbiter)
             else
             {
                 Orbiter orb = orbiterGO.GetComponent<Orbiter>();
@@ -1899,15 +1920,15 @@ public class WeaponPart : MonoBehaviour
 
     /*private void HandleBeamWeapon()
     {
-        // È·±£¼¤¹âÊµÀı´æÔÚ
+        // ç¡®ä¿æ¿€å…‰å®ä¾‹å­˜åœ¨
         if (currentBeamInstance == null)
         {
-            // Éú³É¼¤¹âÔ¤ÖÆÌå
-            GameObject beamGO = Instantiate(StatBlock.projectilePrefab, firePoint.position, firePoint.rotation, firePoint); // ¹ÒÔÚÇ¹¿ÚÏÂ
+            // ç”Ÿæˆæ¿€å…‰é¢„åˆ¶ä½“
+            GameObject beamGO = Instantiate(StatBlock.projectilePrefab, firePoint.position, firePoint.rotation, firePoint); // æŒ‚åœ¨æªå£ä¸‹
             currentBeamInstance = beamGO.GetComponent<PlayerBeamController>();
 
-            // ³õÊ¼»¯Îª¡¾·½ÏòÄ£Ê½¡¿
-            // ³¤¶È 20£¬²ã¼¶ Enemy
+            // åˆå§‹åŒ–ä¸ºã€æ–¹å‘æ¨¡å¼ã€‘
+            // é•¿åº¦ 20ï¼Œå±‚çº§ Enemy
             if (currentBeamInstance != null)
             {
                 currentBeamInstance.InitializeDirectional(
@@ -1920,8 +1941,8 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        // ¼¤¹âÊÇÒ»Ö±´æÔÚµÄ£¬PlayerBeamController µÄ Update »á´¦ÀíÉËº¦
-        // ÎÒÃÇÖ»ĞèÒªÈ·±£Ëü¸ú×ÅÇ¹¿Ú×ª (ÒòÎª×öÁË SetParent£¬ËùÒÔ×Ô¶¯¸úÁË)
+        // æ¿€å…‰æ˜¯ä¸€ç›´å­˜åœ¨çš„ï¼ŒPlayerBeamController çš„ Update ä¼šå¤„ç†ä¼¤å®³
+        // æˆ‘ä»¬åªéœ€è¦ç¡®ä¿å®ƒè·Ÿç€æªå£è½¬ (å› ä¸ºåšäº† SetParentï¼Œæ‰€ä»¥è‡ªåŠ¨è·Ÿäº†)
     }*/
 
     private void ValidateOrFindTarget()
@@ -1989,22 +2010,22 @@ public class WeaponPart : MonoBehaviour
     }
     private void SetupDrones()
     {
-        Debug.Log("[SetupDrones] ¿ªÊ¼³¢ÊÔÉú³ÉÎŞÈË»ú...");
+        Debug.Log("[SetupDrones] å¼€å§‹å°è¯•ç”Ÿæˆæ— äººæœº...");
 
         if (StatBlock == null)
         {
-            Debug.LogError("[SetupDrones] Ê§°Ü: StatBlock ÊÇ¿ÕµÄ£¡");
+            Debug.LogError("[SetupDrones] å¤±è´¥: StatBlock æ˜¯ç©ºçš„ï¼");
             return;
         }
 
-        // ×¢Òâ£ºÕâÀï±£ÁôÄãÔ­À´µÄ orbitalPrefab£¬²»Òª¸Ä¶¯
+        // æ³¨æ„ï¼šè¿™é‡Œä¿ç•™ä½ åŸæ¥çš„ orbitalPrefabï¼Œä¸è¦æ”¹åŠ¨
         if (StatBlock.orbitalPrefab == null)
         {
-            Debug.LogError($"[SetupDrones] Ê§°Ü: ÎäÆ÷ '{StatBlock.weaponName}' µÄ Orbital Prefab Îª¿Õ£¡");
+            Debug.LogError($"[SetupDrones] å¤±è´¥: æ­¦å™¨ '{StatBlock.weaponName}' çš„ Orbital Prefab ä¸ºç©ºï¼");
             return;
         }
 
-        // 1. ÇåÀí¾ÉÎŞÈË»ú (Õâ²¿·ÖÊÇ¶ÔµÄ£¬±£Áô)
+        // 1. æ¸…ç†æ—§æ— äººæœº (è¿™éƒ¨åˆ†æ˜¯å¯¹çš„ï¼Œä¿ç•™)
         foreach (var drone in activeDrones)
         {
             if (drone != null) Destroy(drone);
@@ -2012,23 +2033,23 @@ public class WeaponPart : MonoBehaviour
         activeDrones.Clear();
 
         // =========================================================
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËãÊıÁ¿Ê±£¬¼ÓÉÏ localOrbitalCountBonus
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—æ•°é‡æ—¶ï¼ŒåŠ ä¸Š localOrbitalCountBonus
         // =========================================================
 
-        // ·½·¨ A: Èç¹ûÄã¸Õ²ÅÔÚ WeaponPart Àï¼ÓÁË GetTotalCount() ·½·¨£¬Ö±½Óµ÷ÓÃËü£º
+        // æ–¹æ³• A: å¦‚æœä½ åˆšæ‰åœ¨ WeaponPart é‡ŒåŠ äº† GetTotalCount() æ–¹æ³•ï¼Œç›´æ¥è°ƒç”¨å®ƒï¼š
         int count = GetTotalCount();
 
-        // ·½·¨ B: Èç¹ûÄãÃ»¼ÓÄÇ¸ö·½·¨£¬¾ÍÊÖ¶¯¼ÓÉÏ±äÁ¿£º
+        // æ–¹æ³• B: å¦‚æœä½ æ²¡åŠ é‚£ä¸ªæ–¹æ³•ï¼Œå°±æ‰‹åŠ¨åŠ ä¸Šå˜é‡ï¼š
         // int count = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
 
-        Debug.Log($"[SetupDrones] ¼Æ»®Éú³ÉÊıÁ¿: {count} (»ù´¡:{StatBlock.baseOrbitalCount} + È«¾Ö:{PlayerStats.Instance.bonusProjectileCount} + ¾Ö²¿:{localOrbitalCountBonus})");
+        Debug.Log($"[SetupDrones] è®¡åˆ’ç”Ÿæˆæ•°é‡: {count} (åŸºç¡€:{StatBlock.baseOrbitalCount} + å…¨å±€:{PlayerStats.Instance.bonusProjectileCount} + å±€éƒ¨:{localOrbitalCountBonus})");
 
         // =========================================================
 
         int dmg = Mathf.RoundToInt(StatBlock.baseDirectDamage * PlayerStats.Instance.damageMultiplier);
         float fr = PlayerStats.Instance.fireRateMultiplier;
 
-        // 3. Éú³É (Ñ­»·²¿·Ö»ù±¾²»ÓÃ¶¯£¬±£³ÖÔ­Ñù¼´¿É)
+        // 3. ç”Ÿæˆ (å¾ªç¯éƒ¨åˆ†åŸºæœ¬ä¸ç”¨åŠ¨ï¼Œä¿æŒåŸæ ·å³å¯)
         for (int i = 0; i < count; i++)
         {
             Vector3 spawnPos = transform.position + Random.insideUnitSphere * 2f;
@@ -2042,11 +2063,11 @@ public class WeaponPart : MonoBehaviour
                 WeaponStatBlock weaponToGive = StatBlock.summonWeaponStats;
                 if (weaponToGive == null)
                 {
-                    // ÎªÁË·ÀÖ¹¿ÕÖ¸Õë±¨´í£¬½¨ÒéÕâÀï×öÒ»¸ö±£µ×£¬Èç¹ûÃ»ÓĞ×¨ÊôÎäÆ÷£¬¾ÍÓÃ±¾ÌåÊôĞÔ
+                    // ä¸ºäº†é˜²æ­¢ç©ºæŒ‡é’ˆæŠ¥é”™ï¼Œå»ºè®®è¿™é‡Œåšä¸€ä¸ªä¿åº•ï¼Œå¦‚æœæ²¡æœ‰ä¸“å±æ­¦å™¨ï¼Œå°±ç”¨æœ¬ä½“å±æ€§
                     weaponToGive = StatBlock;
                 }
 
-                // ³õÊ¼»¯
+                // åˆå§‹åŒ–
                 droneScript.Initialize(weaponToGive, 0, transform.root, dmg, fr);
             }
             activeDrones.Add(droneGO);
@@ -2054,45 +2075,45 @@ public class WeaponPart : MonoBehaviour
     }
     public void RefreshDrones()
     {
-        // 1. °²È«¼ì²é£ºÈç¹û²»ÊÇÕÙ»½ÀàÎäÆ÷£¬Ö±½ÓÍË³ö£¬·ÀÖ¹±¨´í
+        // 1. å®‰å…¨æ£€æŸ¥ï¼šå¦‚æœä¸æ˜¯å¬å”¤ç±»æ­¦å™¨ï¼Œç›´æ¥é€€å‡ºï¼Œé˜²æ­¢æŠ¥é”™
         if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.SummonDrone) return;
 
-        // 2. Ö±½Óµ÷ÓÃÎÒÃÇ¸Õ²ÅĞŞ¸Ä¹ıµÄ SetupDrones
-        // (SetupDrones ÀïÒÑ¾­°üº¬ÁË¡°Ïú»Ù¾É·É»ú¡±ºÍ¡°ÖØĞÂÉú³É¡±µÄÂß¼­£¬ËùÒÔÖ±½Óµ÷Ëü¾ÍĞĞ)
+        // 2. ç›´æ¥è°ƒç”¨æˆ‘ä»¬åˆšæ‰ä¿®æ”¹è¿‡çš„ SetupDrones
+        // (SetupDrones é‡Œå·²ç»åŒ…å«äº†â€œé”€æ¯æ—§é£æœºâ€å’Œâ€œé‡æ–°ç”Ÿæˆâ€çš„é€»è¾‘ï¼Œæ‰€ä»¥ç›´æ¥è°ƒå®ƒå°±è¡Œ)
         SetupDrones();
     }
     private void SetupAutoBeam()
     {
         if (StatBlock == null || StatBlock.projectilePrefab == null) return;
 
-        // 1. ÇåÀí¾ÉÌ¹¿Ë
+        // 1. æ¸…ç†æ—§å¦å…‹
         foreach (var tank in activeLaserTanks)
         {
             if (tank != null) Destroy(tank);
         }
         activeLaserTanks.Clear();
 
-        // 2. --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËãÊıÁ¿ ---
-        // Ê¹ÓÃ GetTotalCount() ×Ô¶¯°üº¬£º»ù´¡ + È«¾Ö¼Ó³É + ¾Ö²¿¼Ó³É(Éı¼¶¿¨)
+        // 2. --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—æ•°é‡ ---
+        // ä½¿ç”¨ GetTotalCount() è‡ªåŠ¨åŒ…å«ï¼šåŸºç¡€ + å…¨å±€åŠ æˆ + å±€éƒ¨åŠ æˆ(å‡çº§å¡)
         int count = GetTotalCount();
-        if (count < 1) count = 1; // ±£µ× 1 Á¾
+        if (count < 1) count = 1; // ä¿åº• 1 è¾†
 
-        // 3. --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËãÉËº¦ ---
-        // ÉËº¦¹«Ê½£ºÃæ°åDPS / ÆµÂÊ * (È«¾Ö±¶ÂÊ + ¾Ö²¿±¶ÂÊ + Ê¯Í·±¶ÂÊ)
+        // 3. --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—ä¼¤å®³ ---
+        // ä¼¤å®³å…¬å¼ï¼šé¢æ¿DPS / é¢‘ç‡ * (å…¨å±€å€ç‡ + å±€éƒ¨å€ç‡ + çŸ³å¤´å€ç‡)
         float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
         float finalDmgMult = PlayerStats.Instance.damageMultiplier + localDamageBonus + stoneDmgMod;
 
         int damagePerTick = Mathf.CeilToInt((float)StatBlock.beamDamagePerSecond / StatBlock.beamDamageTickRate);
         damagePerTick = Mathf.RoundToInt(damagePerTick * finalDmgMult);
 
-        // 4. --- ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËã±©»÷ ---
+        // 4. --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—æš´å‡» ---
         float finalCritRate = PlayerStats.Instance.critRate + StatBlock.baseCritRate + localCritRateBonus;
         float finalCritDmg = PlayerStats.Instance.critDamage + StatBlock.baseCritDamage + localCritDamageBonus;
 
-        // 5. Éú³ÉÌ¹¿Ë
+        // 5. ç”Ÿæˆå¦å…‹
         for (int i = 0; i < count; i++)
         {
-            // Éú³ÉÔÚÍæ¼ÒÖÜÎ§µØÃæÉÏ
+            // ç”Ÿæˆåœ¨ç©å®¶å‘¨å›´åœ°é¢ä¸Š
             Vector3 spawnOffset = Quaternion.Euler(0, i * 360f / count, 0) * Vector3.forward * 3f;
             Vector3 potentialPos = transform.position + spawnOffset;
             RaycastHit hit;
@@ -2107,11 +2128,11 @@ public class WeaponPart : MonoBehaviour
 
             GameObject tankGO = Instantiate(StatBlock.projectilePrefab, potentialPos, Quaternion.identity);
 
-            // ³õÊ¼»¯½Å±¾
+            // åˆå§‹åŒ–è„šæœ¬
             AutoBeamTurret tankScript = tankGO.GetComponent<AutoBeamTurret>();
             if (tankScript != null)
             {
-                // ¡¾ĞŞ¸Ä¡¿´«Èë±©»÷²ÎÊı
+                // ã€ä¿®æ”¹ã€‘ä¼ å…¥æš´å‡»å‚æ•°
                 tankScript.Initialize(this, damagePerTick, StatBlock.beamDamageTickRate, transform.root, finalCritRate, finalCritDmg);
             }
             activeLaserTanks.Add(tankGO);
@@ -2121,20 +2142,20 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || StatBlock.projectilePrefab == null) return;
 
-        // 1. ÇåÀí¾É¸¡ÓÎÅÚ
+        // 1. æ¸…ç†æ—§æµ®æ¸¸ç‚®
         foreach (var f in activeFunneIs) { if (f != null) Destroy(f); }
         activeFunneIs.Clear();
 
-        // 2. Éè¶¨ÊıÁ¿ (¹Ì¶¨6¸ö£¬»òÕßÊÜ¼Ó³ÉÓ°Ïì)
+        // 2. è®¾å®šæ•°é‡ (å›ºå®š6ä¸ªï¼Œæˆ–è€…å—åŠ æˆå½±å“)
         int count = 6 + PlayerStats.Instance.bonusProjectileCount;
 
-        // 3. ¼ÆËãÉËº¦
+        // 3. è®¡ç®—ä¼¤å®³
         int laserDmg = Mathf.RoundToInt(StatBlock.beamDamagePerSecond / StatBlock.beamDamageTickRate * PlayerStats.Instance.damageMultiplier);
 
-        // 4. Éú³ÉÕóÁĞ
+        // 4. ç”Ÿæˆé˜µåˆ—
         for (int i = 0; i < count; i++)
         {
-            // ³õÊ¼Éú³ÉÔÚÍæ¼ÒÉíºó
+            // åˆå§‹ç”Ÿæˆåœ¨ç©å®¶èº«å
             Vector3 spawnPos = transform.position + Vector3.up * 5f;
 
             GameObject funnelGO = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
@@ -2142,10 +2163,10 @@ public class WeaponPart : MonoBehaviour
             OrbitalJudgmentFunnel script = funnelGO.GetComponent<OrbitalJudgmentFunnel>();
             if (script != null)
             {
-                // ³õÊ¼»¯£º´«Èë index ÓÃÓÚ¼ÆËã»·ÈÆ½Ç¶È
+                // åˆå§‹åŒ–ï¼šä¼ å…¥ index ç”¨äºè®¡ç®—ç¯ç»•è§’åº¦
                 script.Initialize(this, laserDmg, StatBlock.beamDamageTickRate, transform.root, i, count);
 
-                // ¿ÉÒÔÔÚÕâÀï°Ñµ¼µ¯Ô¤ÖÆÌå´«½øÈ¥ (Èç¹û WeaponStatBlock ÀïÓĞ²ÛÎ»µÄ»°)
+                // å¯ä»¥åœ¨è¿™é‡ŒæŠŠå¯¼å¼¹é¢„åˆ¶ä½“ä¼ è¿›å» (å¦‚æœ WeaponStatBlock é‡Œæœ‰æ§½ä½çš„è¯)
                 // script.missilePrefab = StatBlock.summonWeaponStats.projectilePrefab; 
             }
             activeFunneIs.Add(funnelGO);
@@ -2155,13 +2176,13 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || StatBlock.projectilePrefab == null) return;
 
-        // ÇåÀí¾ÉµÄ
+        // æ¸…ç†æ—§çš„
         if (currentSuperMech != null) Destroy(currentSuperMech);
 
-        // Éú³ÉÔÚÍæ¼ÒÅÔ±ß
+        // ç”Ÿæˆåœ¨ç©å®¶æ—è¾¹
         Vector3 spawnPos = transform.position + transform.right * 2f;
 
-        // Raycast ÕÒµØÃæ£¬È·±£ÌùµØÉú³É
+        // Raycast æ‰¾åœ°é¢ï¼Œç¡®ä¿è´´åœ°ç”Ÿæˆ
         RaycastHit hit;
         if (Physics.Raycast(spawnPos + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Default", "Ground")))
         {
@@ -2173,7 +2194,7 @@ public class WeaponPart : MonoBehaviour
         SuperMechAI mechScript = currentSuperMech.GetComponent<SuperMechAI>();
         if (mechScript != null)
         {
-            // ´«ÈëÕû¸ö StatBlock£¬ÈÃ»ú¼××Ô¼º¶ÁÈ¡ÉËº¦ºÍ³ÖĞøÊ±¼äÅäÖÃ
+            // ä¼ å…¥æ•´ä¸ª StatBlockï¼Œè®©æœºç”²è‡ªå·±è¯»å–ä¼¤å®³å’ŒæŒç»­æ—¶é—´é…ç½®
             mechScript.Initialize(this, StatBlock, transform.root);
         }
     }
@@ -2234,7 +2255,7 @@ public class WeaponPart : MonoBehaviour
                     WeaponController.Instance.gameObject,
                     StatBlock.explosionEffectPrefab,
                     StatBlock.layersToDamageByAOE,
-                    this // <--- [ĞÂÔö] ´«µİ WeaponPart ×ÔÉí
+                    this // <--- [æ–°å¢] ä¼ é€’ WeaponPart è‡ªèº«
                 );
             }
             else { Debug.LogWarning($"Mine prefab '{StatBlock.minePrefab.name}' is missing Landmine script.", mineGO); }
@@ -2250,47 +2271,47 @@ public class WeaponPart : MonoBehaviour
     {
         if (newStone == null)
         {
-            Debug.LogError("[FuseEnergyStone] Ê§°Ü! ´«ÈëµÄ newStone ÊÇ null!");
+            Debug.LogError("[FuseEnergyStone] å¤±è´¥! ä¼ å…¥çš„ newStone æ˜¯ null!");
             return;
         }
 
-        Debug.Log($"<color=lime>[FuseEnergyStone] 1. ¿ªÊ¼ÈÚºÏ: {newStone.stoneName}</color>"); //
+        Debug.Log($"<color=lime>[FuseEnergyStone] 1. å¼€å§‹èåˆ: {newStone.stoneName}</color>"); //
 
-        EnergyStoneSO oldStone = this.currentStone; // (»ñÈ¡¾ÉÊ¯Í·£¬ÓÃÓÚ PlayerStats)
+        EnergyStoneSO oldStone = this.currentStone; // (è·å–æ—§çŸ³å¤´ï¼Œç”¨äº PlayerStats)
 
-        // 2. ¸²¸Ç¾ÉµÄÄÜÁ¿Ê¯
+        // 2. è¦†ç›–æ—§çš„èƒ½é‡çŸ³
         this.currentStone = newStone; //
 
-        // 3. Á¢¼´¼ì²é
+        // 3. ç«‹å³æ£€æŸ¥
         if (this.currentStone != null)
         {
-            Debug.Log($"<color=lime>[FuseEnergyStone] 2. ±äÁ¿ÒÑÉèÖÃ! this.currentStone ÏÖÔÚÊÇ: {this.currentStone.stoneName}</color>");
+            Debug.Log($"<color=lime>[FuseEnergyStone] 2. å˜é‡å·²è®¾ç½®! this.currentStone ç°åœ¨æ˜¯: {this.currentStone.stoneName}</color>");
         }
         else
         {
-            // Èç¹ûÕâ¸öÈÕÖ¾³öÏÖ£¬¾ÍÒâÎ¶×Å·¢ÉúÁËÑÏÖØµÄÄÚ²¿´íÎó
-            Debug.LogError("[FuseEnergyStone] 2. ÑÏÖØ´íÎó! ¸Õ¸ÕÉèÖÃÁË currentStone£¬µ«ËüÈÔÈ»ÊÇ null!");
+            // å¦‚æœè¿™ä¸ªæ—¥å¿—å‡ºç°ï¼Œå°±æ„å‘³ç€å‘ç”Ÿäº†ä¸¥é‡çš„å†…éƒ¨é”™è¯¯
+            Debug.LogError("[FuseEnergyStone] 2. ä¸¥é‡é”™è¯¯! åˆšåˆšè®¾ç½®äº† currentStoneï¼Œä½†å®ƒä»ç„¶æ˜¯ null!");
         }
 
-        // 4. (ÕâÊÇÎÒÃÇÎª¡°±ù¶³¼ÆÊıÆ÷¡± Ìí¼ÓµÄÂß¼­£¬ÇëÈ·±£ËüÔÚÄãµÄ½Å±¾Àï)
+        // 4. (è¿™æ˜¯æˆ‘ä»¬ä¸ºâ€œå†°å†»è®¡æ•°å™¨â€ æ·»åŠ çš„é€»è¾‘ï¼Œè¯·ç¡®ä¿å®ƒåœ¨ä½ çš„è„šæœ¬é‡Œ)
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.RegisterStone(newStone, oldStone); //
         }
-        // --- ^^^ [ ºËĞÄµ÷ÊÔ ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒè°ƒè¯• ] ^^^ ---
 
 
-        // 5. ÈÚºÏºó£¬Á¢¼´Ë¢ĞÂÎäÆ÷×´Ì¬
+        // 5. èåˆåï¼Œç«‹å³åˆ·æ–°æ­¦å™¨çŠ¶æ€
         RefreshWeaponStateFromStone(); //
     }
 
     public void RemoveEnergyStone() 
     {
-        EnergyStoneSO oldStone = this.currentStone; // 1. Ôİ´æ¾ÉÊ¯Í·
+        EnergyStoneSO oldStone = this.currentStone; // 1. æš‚å­˜æ—§çŸ³å¤´
 
-        this.currentStone = null; // 2. ÒÆ³ıÊ¯Í·
+        this.currentStone = null; // 2. ç§»é™¤çŸ³å¤´
 
-        // 3. ÏòÈ«¾Ö¼ÆÊıÆ÷±¨¸æ
+        // 3. å‘å…¨å±€è®¡æ•°å™¨æŠ¥å‘Š
         if (oldStone != null && PlayerStats.Instance != null)
         {
             PlayerStats.Instance.RegisterStone(null, oldStone);
@@ -2305,22 +2326,23 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock.behavior == WeaponBehaviorType.Orbital) RefreshOrbiters();
 
         if (StatBlock.behavior == WeaponBehaviorType.SummonDrone) RefreshDrones();
+        if (StatBlock.behavior == WeaponBehaviorType.FlyingDagger) SetupFlyingDaggers(); // Refresh flying daggers
 
         if (StatBlock.behavior == WeaponBehaviorType.Beam) SetupAutoBeam();
 
-        // ½ø»¯/ÈÚºÏºó£¬Ë¢ĞÂÄ£ĞÍ
+        // è¿›åŒ–/èåˆåï¼Œåˆ·æ–°æ¨¡å‹
         UpdateVisualModel();
     }
     private void UpdateVisualModel()
     {
         if (floatingVisual == null || StatBlock == null) return;
 
-        // 1. »»×°
+        // 1. æ¢è£…
         if (StatBlock.floatingModelPrefab != null)
         {
             GameObject newModelInstance = floatingVisual.SwapModel(StatBlock.floatingModelPrefab);
 
-            // 2. »ñÈ¡ĞÂÄ£ĞÍÉÏµÄ²ÄÖÊ½Å±¾
+            // 2. è·å–æ–°æ¨¡å‹ä¸Šçš„æè´¨è„šæœ¬
             if (newModelInstance != null)
             {
                 cooldownMaterial = newModelInstance.GetComponent<WeaponCooldownMaterial>();
@@ -2329,21 +2351,21 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        // --- ¡¾ºËĞÄĞŞ¸´¡¿Í¬²½ÒıÓÃ¸ø PlayerBladeAttack ---
-        // ÒòÎªÎ´½ø»¯Ê±£¬ÊÇ PlayerBladeAttack ÔÚ¿ØÖÆ¹¥»÷ºÍÀäÈ´±íÏÖ
-        // ËùÒÔ±ØĞë°ÑĞÂÉú³ÉµÄ visual ºÍ material ¸æËßËü
+        // --- ã€æ ¸å¿ƒä¿®å¤ã€‘åŒæ­¥å¼•ç”¨ç»™ PlayerBladeAttack ---
+        // å› ä¸ºæœªè¿›åŒ–æ—¶ï¼Œæ˜¯ PlayerBladeAttack åœ¨æ§åˆ¶æ”»å‡»å’Œå†·å´è¡¨ç°
+        // æ‰€ä»¥å¿…é¡»æŠŠæ–°ç”Ÿæˆçš„ visual å’Œ material å‘Šè¯‰å®ƒ
 
         var meleeAttackScript = GetComponent<PlayerBladeAttack>();
         if (meleeAttackScript != null)
         {
-            // 1. Í¬²½²ÄÖÊÒıÓÃ (ĞŞ¸´·¢¹âÊ§Ğ§)
+            // 1. åŒæ­¥æè´¨å¼•ç”¨ (ä¿®å¤å‘å…‰å¤±æ•ˆ)
             meleeAttackScript.weaponCooldownMaterial = this.cooldownMaterial;
 
-            // 2. Í¬²½¿ØÖÆÆ÷ÒıÓÃ (È·±£ÄÜ¿ØÖÆÏÔÒş)
+            // 2. åŒæ­¥æ§åˆ¶å™¨å¼•ç”¨ (ç¡®ä¿èƒ½æ§åˆ¶æ˜¾éš)
             meleeAttackScript.floatingWeapon = this.floatingVisual;
 
-            // µ÷ÊÔÈÕÖ¾
-            // Debug.Log($"[WeaponPart] ÒÑ½«ÊÓ¾õ×é¼şÍ¬²½¸ø PlayerBladeAttack. Material: {cooldownMaterial != null}");
+            // è°ƒè¯•æ—¥å¿—
+            // Debug.Log($"[WeaponPart] å·²å°†è§†è§‰ç»„ä»¶åŒæ­¥ç»™ PlayerBladeAttack. Material: {cooldownMaterial != null}");
         }
         // ---------------------------------------------
     }
@@ -2357,7 +2379,7 @@ public class WeaponPart : MonoBehaviour
         {
             if (StatBlock.autoAimMelee) RotateTowardsNearestEnemy();
 
-            // ¡¾ĞŞÕı¡¿ÕâÀïÖ±½Ó´« baseDamage£¬ÈÃ VFXDamageController È¥Åö´ÉµÄÊ±ºò×Ô¼ºËã±©»÷
+            // ã€ä¿®æ­£ã€‘è¿™é‡Œç›´æ¥ä¼  baseDamageï¼Œè®© VFXDamageController å»ç¢°ç“·çš„æ—¶å€™è‡ªå·±ç®—æš´å‡»
             SpawnMeleeVFX(baseDamage, scale);
 
             PlayFireSound();
@@ -2365,7 +2387,7 @@ public class WeaponPart : MonoBehaviour
             if (count > 1) yield return new WaitForSeconds(StatBlock.multiHitInterval);
         }
     }
-    private void SpawnMeleeVFX(int damage, float scale) // ¡¾×¢Òâ¡¿ÕâÀï¿ÉÒÔÉ¾µôÉÏÒ»ÂÖ¼ÓµÄ bool isCrit ²ÎÊıÁË
+    private void SpawnMeleeVFX(int damage, float scale) // ã€æ³¨æ„ã€‘è¿™é‡Œå¯ä»¥åˆ æ‰ä¸Šä¸€è½®åŠ çš„ bool isCrit å‚æ•°äº†
     {
         if (StatBlock.slashEffectPrefab == null) return;
 
@@ -2378,23 +2400,23 @@ public class WeaponPart : MonoBehaviour
         VFXDamageController vfxCtrl = vfxObj.GetComponent<VFXDamageController>();
         if (vfxCtrl != null)
         {
-            // ¡¾ĞŞÕı¡¿È¥µô isCrit ²ÎÊı£¬Ö»´« damage
+            // ã€ä¿®æ­£ã€‘å»æ‰ isCrit å‚æ•°ï¼Œåªä¼  damage
             vfxCtrl.Initialize(damage, StatBlock.hitEffectPrefab, this.gameObject, this);
         }
     }
     private void RotateTowardsNearestEnemy()
     {
-        // Ê¹ÓÃ StatBlock.autoAimRange »òÄ¬ÈÏÒ»¸ö·¶Î§
+        // ä½¿ç”¨ StatBlock.autoAimRange æˆ–é»˜è®¤ä¸€ä¸ªèŒƒå›´
         float range = StatBlock.autoAimRange > 0 ? StatBlock.autoAimRange : 10f;
         Transform target = FindNearestEnemyTransform(transform.position, range);
 
         if (target != null)
         {
             Vector3 dir = (target.position - transform.position).normalized;
-            dir.y = 0; // ±£³ÖË®Æ½
+            dir.y = 0; // ä¿æŒæ°´å¹³
             if (dir != Vector3.zero)
             {
-                // Ë²¼ä×ªÉí£¬±£Ö¤´Ì»÷×¼È·
+                // ç¬é—´è½¬èº«ï¼Œä¿è¯åˆºå‡»å‡†ç¡®
                 transform.rotation = Quaternion.LookRotation(dir);
             }
         }
@@ -2402,50 +2424,50 @@ public class WeaponPart : MonoBehaviour
 
     private IEnumerator PerformMultiThrustRoutine(int damage, float scale)
     {
-        // 1. Ëø¶¨Ä¿±ê·½Ïò
+        // 1. é”å®šç›®æ ‡æ–¹å‘
         if (StatBlock.autoAimMelee)
         {
             RotateTowardsNearestEnemy();
         }
 
-        // 2. Ñ­»·Ö´ĞĞ´Ì»÷
+        // 2. å¾ªç¯æ‰§è¡Œåˆºå‡»
         for (int i = 0; i < StatBlock.multiHitCount; i++)
         {
-            // Ã¿´Î´Ì»÷¶¼Î¢µ÷·½Ïò (·ÀÖ¹µĞÈËÅÜÌ«¿ì´ò¿Õ)
+            // æ¯æ¬¡åˆºå‡»éƒ½å¾®è°ƒæ–¹å‘ (é˜²æ­¢æ•Œäººè·‘å¤ªå¿«æ‰“ç©º)
             if (StatBlock.autoAimMelee) RotateTowardsNearestEnemy();
 
-            // ²¥·ÅÒôĞ§
+            // æ’­æ”¾éŸ³æ•ˆ
             PlayFireSound();
 
-            // Éú³É´Ì»÷ÌØĞ§ (À×¹âÌØĞ§)
+            // ç”Ÿæˆåˆºå‡»ç‰¹æ•ˆ (é›·å…‰ç‰¹æ•ˆ)
             if (StatBlock.slashEffectPrefab != null)
             {
-                // ÉÔÎ¢ÏòÇ°Æ«ÒÆÒ»µã£¬ÈÃÌØĞ§¿´ÆğÀ´ÊÇ´ÓÎäÆ÷¼â¶Ë·¢³öµÄ
+                // ç¨å¾®å‘å‰åç§»ä¸€ç‚¹ï¼Œè®©ç‰¹æ•ˆçœ‹èµ·æ¥æ˜¯ä»æ­¦å™¨å°–ç«¯å‘å‡ºçš„
                 Vector3 spawnPos = firePoint.position + transform.forward * 0.5f;
                 GameObject vfx = Instantiate(StatBlock.slashEffectPrefab, spawnPos, transform.rotation);
-                vfx.transform.localScale = Vector3.one * scale; // ´Ì»÷ÌØĞ§Í¨³£±È½ÏÏ¸³¤
+                vfx.transform.localScale = Vector3.one * scale; // åˆºå‡»ç‰¹æ•ˆé€šå¸¸æ¯”è¾ƒç»†é•¿
             }
 
-            // Ö´ĞĞÅĞ¶¨ (ÕâÀïÓÃ BoxCast Ä£Äâ´Ì»÷µÄ³¤ÌõĞÎÅĞ¶¨)
+            // æ‰§è¡Œåˆ¤å®š (è¿™é‡Œç”¨ BoxCast æ¨¡æ‹Ÿåˆºå‡»çš„é•¿æ¡å½¢åˆ¤å®š)
             PerformThrustHitCheck(damage, scale);
 
-            // µÈ´ı¼ä¸ô
+            // ç­‰å¾…é—´éš”
             yield return new WaitForSeconds(StatBlock.multiHitInterval);
         }
     }
 
     private void PerformThrustHitCheck(int baseDamage, float scale)
     {
-        // ´Ì»÷²ÎÊı£º³¤·½ĞÎÅĞ¶¨
-        // ¿í¶ÈÓÉ scale ¾ö¶¨£¬³¤¶ÈÓÉ baseAoeRadius ¾ö¶¨
+        // åˆºå‡»å‚æ•°ï¼šé•¿æ–¹å½¢åˆ¤å®š
+        // å®½åº¦ç”± scale å†³å®šï¼Œé•¿åº¦ç”± baseAoeRadius å†³å®š
         float thrustWidth = 1.5f * scale;
         float thrustDistance = StatBlock.baseAoeRadius * scale;
 
         Vector3 center = firePoint.position;
-        Vector3 halfExtents = new Vector3(thrustWidth / 2, 1f, thrustWidth / 2); // ¸ß¶È¸ø1f·ÀÖ¹Â©¹Ö
+        Vector3 halfExtents = new Vector3(thrustWidth / 2, 1f, thrustWidth / 2); // é«˜åº¦ç»™1fé˜²æ­¢æ¼æ€ª
         Quaternion orientation = transform.rotation;
 
-        // Ê¹ÓÃ BoxCastAll ´©Í¸ËùÓĞµĞÈË
+        // ä½¿ç”¨ BoxCastAll ç©¿é€æ‰€æœ‰æ•Œäºº
         RaycastHit[] hits = Physics.BoxCastAll(center, halfExtents, transform.forward, orientation, thrustDistance, StatBlock.layersToDamageByAOE);
 
         foreach (var hit in hits)
@@ -2455,31 +2477,31 @@ public class WeaponPart : MonoBehaviour
             Health h = hit.collider.GetComponentInParent<Health>();
             if (h != null)
             {
-                // --- ¡¾ºËĞÄĞŞ¸Ä¡¿±©»÷ÅĞ¶¨ ---
+                // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘æš´å‡»åˆ¤å®š ---
                 bool isCrit = Random.value <= PlayerStats.Instance.critRate;
 
-                // ¼ÆËã×îÖÕÉËº¦
+                // è®¡ç®—æœ€ç»ˆä¼¤å®³
                 int finalDamage = baseDamage;
                 if (isCrit)
                 {
                     finalDamage = Mathf.RoundToInt(baseDamage * PlayerStats.Instance.critDamage);
                 }
 
-                // Ôì³ÉÉËº¦ (¿ÉÒÔ°Ñ isCrit ´«¸ø TakeDamage ÓÃÓÚÆ®×ÖÏÔÊ¾±©»÷ÑÕÉ«£¬Èç¹ûÄãµÄ Health Ö§³ÖµÄ»°)
-                // ÕâÀïÔİÊ±ÓÃ null Õ¼Î»£¬»òÕßÄã¿ÉÒÔÀ©Õ¹ AttackType
+                // é€ æˆä¼¤å®³ (å¯ä»¥æŠŠ isCrit ä¼ ç»™ TakeDamage ç”¨äºé£˜å­—æ˜¾ç¤ºæš´å‡»é¢œè‰²ï¼Œå¦‚æœä½ çš„ Health æ”¯æŒçš„è¯)
+                // è¿™é‡Œæš‚æ—¶ç”¨ null å ä½ï¼Œæˆ–è€…ä½ å¯ä»¥æ‰©å±• AttackType
                 h.TakeDamage(finalDamage, hit.point, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
 
-                // --- ¡¾ºËĞÄĞŞ¸Ä¡¿´¥·¢Âß¼­£º±©»÷´¥·¢ÉÁµçÁ´ ---
+                // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘è§¦å‘é€»è¾‘ï¼šæš´å‡»è§¦å‘é—ªç”µé“¾ ---
                 bool triggerChain = false;
 
-                // Ìõ¼ş 1: ÊÇÀ×öª³¤Ã¬ (Í¨¹ıÃû×Ö»ò Tag ÅĞ¶Ï£¬ÔİÊ±ÓÃÃû×ÖÊ¾Àı) ÇÒ·¢ÉúÁË±©»÷
-                // »òÕßÄã¿ÉÒÔÈ¥ WeaponStatBlock ¼Ó¸ö bool triggerChainOnCrit;
-                if (StatBlock.weaponName.Contains("À×öª³¤Ã¬") && isCrit)
+                // æ¡ä»¶ 1: æ˜¯é›·éœ†é•¿çŸ› (é€šè¿‡åå­—æˆ– Tag åˆ¤æ–­ï¼Œæš‚æ—¶ç”¨åå­—ç¤ºä¾‹) ä¸”å‘ç”Ÿäº†æš´å‡»
+                // æˆ–è€…ä½ å¯ä»¥å» WeaponStatBlock åŠ ä¸ª bool triggerChainOnCrit;
+                if (StatBlock.weaponName.Contains("é›·éœ†é•¿çŸ›") && isCrit)
                 {
                     triggerChain = true;
                 }
 
-                // Ìõ¼ş 2: Ô­ÓĞµÄÀ×µçÊ¯Âß¼­ (±£³Ö¼æÈİ)
+                // æ¡ä»¶ 2: åŸæœ‰çš„é›·ç”µçŸ³é€»è¾‘ (ä¿æŒå…¼å®¹)
                 if (currentStone != null && (currentStone.applyChain || currentStone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)))
                 {
                     triggerChain = true;
@@ -2487,23 +2509,23 @@ public class WeaponPart : MonoBehaviour
 
                 if (triggerChain)
                 {
-                    // ´¥·¢ÉÁµçÁ´£ºÉËº¦Í¨³£Ë¥¼õ (±ÈÈç 50% »ò 100%)
-                    // ÕâÀïµÄ chainCount ºÍ range ¿ÉÒÔ´Ó StatBlock ¶ÁÈ¡
-                    int chainDmg = Mathf.RoundToInt(finalDamage * 0.5f); // Á¬ËøÉËº¦¼õ°ë
-                    int chainCount = StatBlock.baseChainCount > 0 ? StatBlock.baseChainCount : 3; // ±£µ× 3 ¸ö
+                    // è§¦å‘é—ªç”µé“¾ï¼šä¼¤å®³é€šå¸¸è¡°å‡ (æ¯”å¦‚ 50% æˆ– 100%)
+                    // è¿™é‡Œçš„ chainCount å’Œ range å¯ä»¥ä» StatBlock è¯»å–
+                    int chainDmg = Mathf.RoundToInt(finalDamage * 0.5f); // è¿é”ä¼¤å®³å‡åŠ
+                    int chainCount = StatBlock.baseChainCount > 0 ? StatBlock.baseChainCount : 3; // ä¿åº• 3 ä¸ª
                     float chainRange = StatBlock.chainRange > 0 ? StatBlock.chainRange : 8f;
 
-                    // µ÷ÓÃÏÖÓĞµÄÁ¬Ëø·½·¨
+                    // è°ƒç”¨ç°æœ‰çš„è¿é”æ–¹æ³•
                     ChainLightningFromTarget(h.transform, chainCount, chainDmg, chainRange);
 
-                    // ¿ÉÑ¡£º±©»÷Ê±µÄÌØÊâÒôĞ§»òÌØĞ§
+                    // å¯é€‰ï¼šæš´å‡»æ—¶çš„ç‰¹æ®ŠéŸ³æ•ˆæˆ–ç‰¹æ•ˆ
                     if (isCrit)
                     {
                         // PlayCritSound(); 
                     }
                 }
 
-                // ²úÉúÃüÖĞÌØĞ§
+                // äº§ç”Ÿå‘½ä¸­ç‰¹æ•ˆ
                 if (StatBlock.hitEffectPrefab != null)
                 {
                     Instantiate(StatBlock.hitEffectPrefab, hit.point, Quaternion.identity);
@@ -2514,14 +2536,14 @@ public class WeaponPart : MonoBehaviour
 
     private void PerformMeleeAttack(Vector3 dir, int damage, float scale)
     {
-        // 1. ²¥·ÅÌØĞ§
+        // 1. æ’­æ”¾ç‰¹æ•ˆ
         if (StatBlock.slashEffectPrefab != null)
         {
             GameObject vfx = Instantiate(StatBlock.slashEffectPrefab, firePoint.position, Quaternion.LookRotation(dir));
             vfx.transform.localScale = Vector3.one * (StatBlock.baseAoeRadius * scale);
         }       
 
-        // 2. ·¶Î§¼ì²â
+        // 2. èŒƒå›´æ£€æµ‹
         float range = StatBlock.baseAoeRadius * scale;
         Collider[] hits = Physics.OverlapSphere(firePoint.position, range, StatBlock.layersToDamageByAOE);
 
@@ -2529,9 +2551,9 @@ public class WeaponPart : MonoBehaviour
         {
             if (!hit.CompareTag("Enemy")) continue;
 
-            // ½Ç¶È¼ì²â (¼òµ¥°æ)
+            // è§’åº¦æ£€æµ‹ (ç®€å•ç‰ˆ)
             Vector3 toTarget = (hit.transform.position - firePoint.position).normalized;
-            // Vector3.Angle ·µ»Ø 0-180¡£Èç¹û attackAngle ÊÇ 180£¬ÔòÖ»ÒªÔÚÇ°·½ 90 ¶ÈÄÚ¶¼ËãÃüÖĞ¡£
+            // Vector3.Angle è¿”å› 0-180ã€‚å¦‚æœ attackAngle æ˜¯ 180ï¼Œåˆ™åªè¦åœ¨å‰æ–¹ 90 åº¦å†…éƒ½ç®—å‘½ä¸­ã€‚
             if (Vector3.Angle(dir, toTarget) < StatBlock.attackAngle / 2)
             {
                 Health h = hit.GetComponentInParent<Health>();
@@ -2539,9 +2561,9 @@ public class WeaponPart : MonoBehaviour
                 {
                     h.TakeDamage(damage, hit.transform.position, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
 
-                    // ±¬Ñ×Õ¶£ºÓÉÓÚÊÇ MeleeAOE£¬¿ÉÒÔÔÚÕâÀï¶îÍâÊ©¼Ó StatusEffectReceiver µÄ Burn
-                    // ÕâÒ»²½ÆäÊµÒÑ¾­ÔÚ WeaponStatBlock µÄ currentStone Âß¼­Àï´¦ÀíÁË (Èç¹ûÄãµÄ WeaponPart Update ÀïÓĞÍ¨ÓÃÃüÖĞ´¦Àí)
-                    // µ« Melee ÊÇË²¼äÅĞ¶¨£¬ËùÒÔĞèÒªÔÚÕâÀïÊÖ¶¯²¹Ò»ÏÂÊ¯Í·Ğ§¹û£º
+                    // çˆ†ç‚æ–©ï¼šç”±äºæ˜¯ MeleeAOEï¼Œå¯ä»¥åœ¨è¿™é‡Œé¢å¤–æ–½åŠ  StatusEffectReceiver çš„ Burn
+                    // è¿™ä¸€æ­¥å…¶å®å·²ç»åœ¨ WeaponStatBlock çš„ currentStone é€»è¾‘é‡Œå¤„ç†äº† (å¦‚æœä½ çš„ WeaponPart Update é‡Œæœ‰é€šç”¨å‘½ä¸­å¤„ç†)
+                    // ä½† Melee æ˜¯ç¬é—´åˆ¤å®šï¼Œæ‰€ä»¥éœ€è¦åœ¨è¿™é‡Œæ‰‹åŠ¨è¡¥ä¸€ä¸‹çŸ³å¤´æ•ˆæœï¼š
                     if (currentStone != null)
                     {
                         StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
@@ -2554,12 +2576,82 @@ public class WeaponPart : MonoBehaviour
             }
         }
     }
+    // --- æ–°å¢ï¼šè¿½è¸ªé£åˆ€è®¾ç½® ---
+    void SetupFlyingDaggers()
+    {
+        if (StatBlock.projectilePrefab == null) return;
+
+        int desiredCount = GetTotalCount(); // è·å–å½“å‰æ•°é‡ (åŸºç¡€ + å‡çº§)
+        int currentCount = activeFlyingDaggers.Count;
+
+        // è®¡ç®—æœ€ç»ˆå±æ€§
+        float damageMult = PlayerStats.Instance != null ? PlayerStats.Instance.damageMultiplier : 1f;
+        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * damageMult);
+        float knockback = StatBlock.baseKnockbackForce; // é£åˆ€ä½¿ç”¨é…ç½®çš„å‡»é€€å€¼
+
+        // æƒ…å†µ1ï¼šæ•°é‡ä¸è¶³ï¼Œè¡¥å……ç”Ÿæˆ
+        if (currentCount < desiredCount)
+        {
+            int needed = desiredCount - currentCount;
+            for (int i = 0; i < needed; i++)
+            {
+                // ç”Ÿæˆé£åˆ€ï¼Œåˆå§‹ä½ç½®åœ¨ç©å®¶å‘¨å›´
+                Vector3 spawnPos = transform.position + Random.onUnitSphere * 2f;
+                spawnPos.y = transform.position.y + 1f; // æŠ¬é«˜ä¸€ç‚¹
+
+                GameObject daggerObj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
+                
+                // è·å–æ§åˆ¶å™¨å¹¶åˆå§‹åŒ–
+                FlyingDaggerController controller = daggerObj.GetComponent<FlyingDaggerController>();
+                if (controller != null)
+                {
+                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+                else
+                {
+                    // å°è¯•åŠ¨æ€æ·»åŠ è„šæœ¬ (å¦‚æœPrefabä¸Šå¿˜äº†æŒ‚)
+                    controller = daggerObj.AddComponent<FlyingDaggerController>();
+                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+
+                activeFlyingDaggers.Add(daggerObj);
+            }
+        }
+        // æƒ…å†µ2ï¼šæ•°é‡è¿‡å¤šï¼Œé”€æ¯å¤šä½™ (æå°‘å‘ç”Ÿï¼Œé™¤éæ´—ç‚¹)
+        else if (currentCount > desiredCount)
+        {
+            int removeCount = currentCount - desiredCount;
+            for (int i = 0; i < removeCount; i++)
+            {
+                int lastIdx = activeFlyingDaggers.Count - 1;
+                GameObject obj = activeFlyingDaggers[lastIdx];
+                if (obj != null) Destroy(obj);
+                activeFlyingDaggers.RemoveAt(lastIdx);
+            }
+        }
+        
+        // æƒ…å†µ3ï¼šä»…ä»…æ˜¯å±æ€§åˆ·æ–° (æ¯”å¦‚å‡çº§äº†ä¼¤å®³)
+        // éå†æ‰€æœ‰ç°å­˜é£åˆ€ï¼Œæ›´æ–°å±æ€§
+        foreach (var dagger in activeFlyingDaggers)
+        {
+            if (dagger != null)
+            {
+                FlyingDaggerController controller = dagger.GetComponent<FlyingDaggerController>();
+                if (controller != null)
+                {
+                    // é‡æ–°åˆå§‹åŒ–ä»¥æ›´æ–°ä¼¤å®³æ•°å€¼
+                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+            }
+        }
+    }
+
     private bool IsMetaUnlocked(string nodeFileName)
     {
         if (PlayerProgressManager.Instance != null)
         {
-            // ÕâÀïÎÒÃÇÖ±½Ó¼ì²é unlockedNodeIDs ¼¯ºÏ
-            // ×¢Òâ£ºnodeFileName ±ØĞëºÍÄã´´½¨µÄ WeaponUpgradeNode ÎÄ¼şÃûÍêÈ«Ò»ÖÂ
+            // è¿™é‡Œæˆ‘ä»¬ç›´æ¥æ£€æŸ¥ unlockedNodeIDs é›†åˆ
+            // æ³¨æ„ï¼šnodeFileName å¿…é¡»å’Œä½ åˆ›å»ºçš„ WeaponUpgradeNode æ–‡ä»¶åå®Œå…¨ä¸€è‡´
             return PlayerProgressManager.Instance.unlockedItems.Contains(nodeFileName) ||
                    PlayerProgressManager.Instance.IsNodeUnlockedRaw(nodeFileName);
         }
@@ -2568,21 +2660,21 @@ public class WeaponPart : MonoBehaviour
 
     void OnDisable()
     {
-        // ÇåÀíÎŞÈË»ú
+        // æ¸…ç†æ— äººæœº
         foreach (var drone in activeDrones)
         {
             if (drone != null) Destroy(drone);
         }
         activeDrones.Clear();
 
-        // ÇåÀí¼¤¹âÌ¹¿Ë (Èç¹ûÄãÖ®Ç°¼ÓÁËÕâ¸öÁĞ±í)
+        // æ¸…ç†æ¿€å…‰å¦å…‹ (å¦‚æœä½ ä¹‹å‰åŠ äº†è¿™ä¸ªåˆ—è¡¨)
         foreach (var tank in activeLaserTanks)
         {
             if (tank != null) Destroy(tank);
         }
         activeLaserTanks.Clear();
 
-        // ÇåÀí³¬Îä»ú¼× (·ÀÖ¹»ú¼×²ĞÁô)
+        // æ¸…ç†è¶…æ­¦æœºç”² (é˜²æ­¢æœºç”²æ®‹ç•™)
         if (currentSuperMech != null) Destroy(currentSuperMech);
     }
     #endregion

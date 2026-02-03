@@ -1,17 +1,17 @@
-// --- IsAttackOffCooldown.cs ---
+ï»¿// --- IsAttackOffCooldown.cs ---
 using UnityEngine;
 
 public class IsAttackOffCooldown : Node
 {
-    [Header("ÀäÈ´¼ì²é")]
-    [Tooltip("Òª¼ì²éÀäÈ´×´Ì¬µÄ¼¼ÄÜµÄÎ¨Ò»Ãû³Æ£¨ĞèÒªºÍActionÀïÉèÖÃµÄÃû³ÆÒ»ÖÂ£©")]
+    [Header("å†·å´æ£€æŸ¥")]
+    [Tooltip("è¦æ£€æŸ¥å†·å´çŠ¶æ€çš„æŠ€èƒ½çš„å”¯ä¸€åç§°ï¼ˆéœ€è¦å’ŒActioné‡Œè®¾ç½®çš„åç§°ä¸€è‡´ï¼‰")]
     public string attackName;
 
     private BehaviorTree behaviorTree;
 
     void Awake()
     {
-        // ÔÚÆô¶¯Ê±¾ÍÕÒµ½ÎÒÃÇµÄ¡°´óÄÔ¡±
+        // åœ¨å¯åŠ¨æ—¶å°±æ‰¾åˆ°æˆ‘ä»¬çš„â€œå¤§è„‘â€
         behaviorTree = GetComponentInParent<BehaviorTree>();
     }
 
@@ -22,14 +22,14 @@ public class IsAttackOffCooldown : Node
             return NodeState.FAILURE;
         }
 
-        // Ñ¯ÎÊ¡°´óÄÔ¡±£¬Õâ¸ö¼¼ÄÜÊÇ·ñÔÚÀäÈ´ÖĞ
+        // è¯¢é—®â€œå¤§è„‘â€ï¼Œè¿™ä¸ªæŠ€èƒ½æ˜¯å¦åœ¨å†·å´ä¸­
         if (behaviorTree.IsOnCooldown(attackName))
         {
-            return NodeState.FAILURE; // ÔÚÀäÈ´£¬Ìõ¼ş²»Âú×ã
+            return NodeState.FAILURE; // åœ¨å†·å´ï¼Œæ¡ä»¶ä¸æ»¡è¶³
         }
         else
         {
-            return NodeState.SUCCESS; // Ã»ÔÚÀäÈ´£¬Ìõ¼şÂú×ã
+            return NodeState.SUCCESS; // æ²¡åœ¨å†·å´ï¼Œæ¡ä»¶æ»¡è¶³
         }
     }
 }

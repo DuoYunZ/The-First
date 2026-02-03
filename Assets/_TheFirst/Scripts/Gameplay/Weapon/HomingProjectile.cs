@@ -1,31 +1,31 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class HomingProjectile : MonoBehaviour
 {
-    [Header("×·×ÙÉèÖÃ")]
-    public float turnSpeed = 40f; // ¡¾¸Ä¶¯¡¿±ØĞëºÜ´ó£¬ÒòÎªÑÓ³Ù¹ıºóĞèÒª¼±×ªÍä
+    [Header("è¿½è¸ªè®¾ç½®")]
+    public float turnSpeed = 40f; // ã€æ”¹åŠ¨ã€‘å¿…é¡»å¾ˆå¤§ï¼Œå› ä¸ºå»¶è¿Ÿè¿‡åéœ€è¦æ€¥è½¬å¼¯
     public float searchRadius = 30f;
     public float speed = 20f;
 
-    [Header("µ¯µÀ¿ØÖÆ (ºËĞÄ)")]
-    [Tooltip("×Óµ¯·¢Éäºó¶àÉÙÃë²Å¿ªÊ¼×·×Ù£¿(½¨Òé 0.2 - 0.5)")]
-    public float homingDelay = 0.25f; // ¡¾ĞÂÔö¡¿ÑÓ³Ù×·×ÙÊ±¼ä
+    [Header("å¼¹é“æ§åˆ¶ (æ ¸å¿ƒ)")]
+    [Tooltip("å­å¼¹å‘å°„åå¤šå°‘ç§’æ‰å¼€å§‹è¿½è¸ªï¼Ÿ(å»ºè®® 0.2 - 0.5)")]
+    public float homingDelay = 0.25f; // ã€æ–°å¢ã€‘å»¶è¿Ÿè¿½è¸ªæ—¶é—´
 
-    [Header("²¿Î»Ãé×¼")]
+    [Header("éƒ¨ä½ç„å‡†")]
     public string targetPartName = "AimTargetPoint";
     public LayerMask enemyLayer;
 
     private Transform target;
     private Rigidbody rb;
     private Projectile baseProjectile;
-    private float startTime; // ¼ÇÂ¼·¢ÉäÊ±¼ä
+    private float startTime; // è®°å½•å‘å°„æ—¶é—´
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         baseProjectile = GetComponent<Projectile>();
-        startTime = Time.time; // ¼ÇÂ¼³öÉúÊ±¼ä
+        startTime = Time.time; // è®°å½•å‡ºç”Ÿæ—¶é—´
 
         if (baseProjectile != null)
         {
@@ -38,20 +38,20 @@ public class HomingProjectile : MonoBehaviour
 
         FindNearestTarget();
 
-        // ¸ø³õÊ¼ËÙ¶ÈÒ»¸öÍÆÁ¦£¬±£Ö¤ÔÚÑÓ³ÙÆÚ¼äËüÊÇ·ÉĞĞµÄ
+        // ç»™åˆå§‹é€Ÿåº¦ä¸€ä¸ªæ¨åŠ›ï¼Œä¿è¯åœ¨å»¶è¿ŸæœŸé—´å®ƒæ˜¯é£è¡Œçš„
         rb.velocity = transform.forward * speed;
     }
 
     void FixedUpdate()
     {
-        // 1. Èç¹û»¹ÔÚÑÓ³ÙÆÚ£¬Ö»×öÖ±Ïß·ÉĞĞ£¬²»×·×Ù
+        // 1. å¦‚æœè¿˜åœ¨å»¶è¿ŸæœŸï¼Œåªåšç›´çº¿é£è¡Œï¼Œä¸è¿½è¸ª
         if (Time.time < startTime + homingDelay)
         {
             rb.velocity = transform.forward * speed;
             return;
         }
 
-        // --- ÒÔÏÂÊÇÔ­±¾µÄ×·×ÙÂß¼­ ---
+        // --- ä»¥ä¸‹æ˜¯åŸæœ¬çš„è¿½è¸ªé€»è¾‘ ---
 
         if (target == null || !target.gameObject.activeInHierarchy)
         {
@@ -71,7 +71,7 @@ public class HomingProjectile : MonoBehaviour
 
         Vector3 direction = (aimPos - transform.position).normalized;
 
-        // ×ªÍä
+        // è½¬å¼¯
         Vector3 newDirection = Vector3.RotateTowards(transform.forward, direction, turnSpeed * Time.fixedDeltaTime, 0.0f);
 
         transform.rotation = Quaternion.LookRotation(newDirection);

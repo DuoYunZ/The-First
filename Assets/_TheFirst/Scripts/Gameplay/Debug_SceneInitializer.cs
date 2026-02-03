@@ -1,66 +1,66 @@
-// Debug_SceneInitializer.cs (ÒÑ¼¯³ÉUI³õÊ¼»¯Âß¼­)
+ï»¿// Debug_SceneInitializer.cs (å·²é›†æˆUIåˆå§‹åŒ–é€»è¾‘)
 using Cinemachine;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Debug_SceneInitializer : MonoBehaviour
 {
-    [Header("µ÷ÊÔÉèÖÃ")]
-    [Tooltip("½«³¡¾°ÖĞÔ¤ÏÈ·ÅÖÃµÄÍæ¼Ò½ÇÉ«ÍÏµ½ÕâÀï")]
+    [Header("è°ƒè¯•è®¾ç½®")]
+    [Tooltip("å°†åœºæ™¯ä¸­é¢„å…ˆæ”¾ç½®çš„ç©å®¶è§’è‰²æ‹–åˆ°è¿™é‡Œ")]
     public GameObject playerInstance;
-    [Tooltip("³¡¾°ÖĞµÄCinemachineĞéÄâÏà»ú")]
+    [Tooltip("åœºæ™¯ä¸­çš„Cinemachineè™šæ‹Ÿç›¸æœº")]
     public CinemachineVirtualCamera virtualCamera;
 
-    // --- ĞÂÔöÒıÓÃ ---
-    [Header("UI ÒıÓÃ")]
-    [Tooltip("½«³¡¾°ÖĞ³ĞÔØ PlayerHealthUI ½Å±¾µÄUI¶ÔÏóÍÏµ½ÕâÀï")]
-    public PlayerHealthUI playerHealthUI; // ÔÚUnity InspectorÖĞ½«ÄãµÄÑªÌõUI¶ÔÏóÍÏ×§µ½´Ë×Ö¶Î
+    // --- æ–°å¢å¼•ç”¨ ---
+    [Header("UI å¼•ç”¨")]
+    [Tooltip("å°†åœºæ™¯ä¸­æ‰¿è½½ PlayerHealthUI è„šæœ¬çš„UIå¯¹è±¡æ‹–åˆ°è¿™é‡Œ")]
+    public PlayerHealthUI playerHealthUI; // åœ¨Unity Inspectorä¸­å°†ä½ çš„è¡€æ¡UIå¯¹è±¡æ‹–æ‹½åˆ°æ­¤å­—æ®µ
 
-    [Header("Ô¤¼ÓÔØÉèÖÃ")]
-    [Tooltip("½«ĞèÒªÌáÇ°¼ÓÔØÒÔ±ÜÃâ¿¨¶ÙµÄÔ¤ÖÆ¼ş£¨Èç»¤¶ÜÌØĞ§£©ÍÏµ½ÕâÀï")]
+    [Header("é¢„åŠ è½½è®¾ç½®")]
+    [Tooltip("å°†éœ€è¦æå‰åŠ è½½ä»¥é¿å…å¡é¡¿çš„é¢„åˆ¶ä»¶ï¼ˆå¦‚æŠ¤ç›¾ç‰¹æ•ˆï¼‰æ‹–åˆ°è¿™é‡Œ")]
     public List<GameObject> prefabsToPreload;
 
     void Start()
     {
         if (playerInstance == null || virtualCamera == null || playerHealthUI == null)
         {
-            Debug.LogError("µ÷ÊÔ³¡¾°³õÊ¼»¯Ê§°Ü£ºÇëÔÚInspectorÖĞÉèÖÃPlayer¡¢Virtual Camera ºÍ PlayerHealthUI µÄÒıÓÃ£¡");
+            Debug.LogError("è°ƒè¯•åœºæ™¯åˆå§‹åŒ–å¤±è´¥ï¼šè¯·åœ¨Inspectorä¸­è®¾ç½®Playerã€Virtual Camera å’Œ PlayerHealthUI çš„å¼•ç”¨ï¼");
             return;
         }
 
-        // --- ºËĞÄ¼¯³É´úÂë£ºÔÚÕâÀï¹ØÁªUIºÍÍæ¼Ò×´Ì¬ ---
+        // --- æ ¸å¿ƒé›†æˆä»£ç ï¼šåœ¨è¿™é‡Œå…³è”UIå’Œç©å®¶çŠ¶æ€ ---
         Health playerHealth = playerInstance.GetComponent<Health>();
         PlayerShield playerShield = playerInstance.GetComponent<PlayerShield>();
 
         if (playerHealth != null && playerShield != null)
         {
             playerHealthUI.Initialize(playerHealth, playerShield);
-            Debug.Log("PlayerHealthUI ÒÑ³É¹¦Óëµ÷ÊÔÍæ¼ÒÊµÀı¹ØÁª¡£");
+            Debug.Log("PlayerHealthUI å·²æˆåŠŸä¸è°ƒè¯•ç©å®¶å®ä¾‹å…³è”ã€‚");
         }
         else
         {
-            Debug.LogWarning("Î´ÄÜ¹ØÁª PlayerHealthUI£¬Çë¼ì²éÍæ¼ÒÔ¤ÖÆ¼şÉÏÊÇ·ñÓĞHealthºÍPlayerShield½Å±¾¡£");
+            Debug.LogWarning("æœªèƒ½å…³è” PlayerHealthUIï¼Œè¯·æ£€æŸ¥ç©å®¶é¢„åˆ¶ä»¶ä¸Šæ˜¯å¦æœ‰Healthå’ŒPlayerShieldè„šæœ¬ã€‚");
         }
-        // --- ¼¯³É´úÂë½áÊø ---
+        // --- é›†æˆä»£ç ç»“æŸ ---
 
-        // 1. ÊÖ¶¯Í¨Öª GameManager Íæ¼ÒÒÑ¾ÍĞ÷
+        // 1. æ‰‹åŠ¨é€šçŸ¥ GameManager ç©å®¶å·²å°±ç»ª
         if (GameManager.Instance != null)
         {
             GameManager.Instance.PlayerMechReadyInCombatScene(playerInstance);
         }
 
-        // 2. ÊÖ¶¯³õÊ¼»¯ UIManager µÄÒıÓÃ
+        // 2. æ‰‹åŠ¨åˆå§‹åŒ– UIManager çš„å¼•ç”¨
         if (UIManager.Instance != null)
         {
             UIManager.Instance.InitializeCombatUIReferences();
         }
 
-        // 3. ÊÖ¶¯ÉèÖÃÏà»úÄ¿±ê
+        // 3. æ‰‹åŠ¨è®¾ç½®ç›¸æœºç›®æ ‡
         virtualCamera.Follow = playerInstance.transform;
         virtualCamera.LookAt = playerInstance.transform;
         virtualCamera.enabled = true;
 
-        Debug.Log("--- µ÷ÊÔ³¡¾°³õÊ¼»¯Íê±Ï ---");
+        Debug.Log("--- è°ƒè¯•åœºæ™¯åˆå§‹åŒ–å®Œæ¯• ---");
     }
     private void PreloadAssets()
     {
@@ -69,20 +69,20 @@ public class Debug_SceneInitializer : MonoBehaviour
             return;
         }
 
-        // ¶¨ÒåÒ»¸öÔ¶ÀëÖ÷ÉãÏñ»úµÄÔ¤¼ÓÔØÎ»ÖÃ
+        // å®šä¹‰ä¸€ä¸ªè¿œç¦»ä¸»æ‘„åƒæœºçš„é¢„åŠ è½½ä½ç½®
         Vector3 preloadPosition = new Vector3(0, -1000, 0);
 
-        Debug.Log($"¿ªÊ¼Ô¤¼ÓÔØ {prefabsToPreload.Count} ¸ö×ÊÔ´...");
+        Debug.Log($"å¼€å§‹é¢„åŠ è½½ {prefabsToPreload.Count} ä¸ªèµ„æº...");
         foreach (GameObject prefab in prefabsToPreload)
         {
             if (prefab != null)
             {
-                // ÔÚÆÁÄ»ÍâÊµÀı»¯£¬È»ºóÁ¢¼´Ïú»Ù¡£
-                // Õâ¸ö²Ù×÷»áÇ¿ÖÆUnity½«Prefab¼°ÆäËùÓĞÒÀÀµÏî¼ÓÔØµ½ÄÚ´æÖĞ¡£
+                // åœ¨å±å¹•å¤–å®ä¾‹åŒ–ï¼Œç„¶åç«‹å³é”€æ¯ã€‚
+                // è¿™ä¸ªæ“ä½œä¼šå¼ºåˆ¶Unityå°†PrefabåŠå…¶æ‰€æœ‰ä¾èµ–é¡¹åŠ è½½åˆ°å†…å­˜ä¸­ã€‚
                 GameObject instance = Instantiate(prefab, preloadPosition, Quaternion.identity);
                 Destroy(instance);
             }
         }
-        Debug.Log("×ÊÔ´Ô¤¼ÓÔØÍê±Ï¡£");
+        Debug.Log("èµ„æºé¢„åŠ è½½å®Œæ¯•ã€‚");
     }
 }

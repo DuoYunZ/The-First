@@ -1,31 +1,35 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.InputSystem; // <-- 1. ÒıÈëĞÂµÄ Input System ÃüÃû¿Õ¼ä
+using UnityEngine.InputSystem; // <-- 1. å¼•å…¥æ–°çš„ Input System å‘½åç©ºé—´
 
 public class CombatUIManager : MonoBehaviour
 {
-    [Header("UI Ãæ°åÒıÓÃ")]
-    [Tooltip("ÔÚ°´ÏÂESCÊ±ÒªÏÔÊ¾µÄÔİÍ£Ãæ°å")]
+    [Header("UI é¢æ¿å¼•ç”¨")]
+    [Tooltip("åœ¨æŒ‰ä¸‹ESCæ—¶è¦æ˜¾ç¤ºçš„æš‚åœé¢æ¿")]
     public GameObject pausePanel;
+    
+    [Tooltip("æš‚åœèœå•å†…çš„è®¾ç½®é¢æ¿")]
+    public GameObject settingsPanel;
 
     private bool isPaused = false;
-    private InputAction pauseAction; // <-- 2. ´´½¨Ò»¸ö InputAction ±äÁ¿
+    private bool isSettingsOpen = false;
+    private InputAction pauseAction; // <-- 2. åˆ›å»ºä¸€ä¸ª InputAction å˜é‡
 
     void Awake()
     {
-        // 3. ³õÊ¼»¯Õâ¸ö Action ²¢°ó¶¨µ½¼üÅÌµÄ Escape ¼ü
+        // 3. åˆå§‹åŒ–è¿™ä¸ª Action å¹¶ç»‘å®šåˆ°é”®ç›˜çš„ Escape é”®
         pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
     }
 
     private void OnEnable()
     {
-        // 4. ¼¤»î Action
+        // 4. æ¿€æ´» Action
         pauseAction.Enable();
     }
 
     private void OnDisable()
     {
-        // 5. ½ûÓÃ Action£¬·ÀÖ¹ÔÚ³¡¾°Ğ¶ÔØºó»¹Õ¼ÓÃ×ÊÔ´
+        // 5. ç¦ç”¨ Actionï¼Œé˜²æ­¢åœ¨åœºæ™¯å¸è½½åè¿˜å ç”¨èµ„æº
         pauseAction.Disable();
     }
 
@@ -38,17 +42,28 @@ public class CombatUIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("ÔİÍ£Ãæ°å (PausePanel) Î´ÔÚ CombatUIManager ÖĞ·ÖÅä!", this);
+            Debug.LogError("æš‚åœé¢æ¿ (PausePanel) æœªåœ¨ CombatUIManager ä¸­åˆ†é…!", this);
+        }
+        
+        // åˆå§‹åŒ–è®¾ç½®é¢æ¿ä¸ºéšè—çŠ¶æ€
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(false);
         }
     }
 
     void Update()
     {
-        // 6. Ê¹ÓÃĞÂµÄ·½Ê½¼ì²â°´¼ü
-        // .triggered Ïàµ±ÓÚ¾ÉµÄ GetButtonDown
+        // 6. ä½¿ç”¨æ–°çš„æ–¹å¼æ£€æµ‹æŒ‰é”®
+        // .triggered ç›¸å½“äºæ—§çš„ GetButtonDown
         if (pauseAction.triggered)
         {
-            if (isPaused)
+            // å¦‚æœè®¾ç½®é¢æ¿æ‰“å¼€ï¼Œåˆ™å…³é—­è®¾ç½®é¢æ¿
+            if (isSettingsOpen)
+            {
+                CloseSettings();
+            }
+            else if (isPaused)
             {
                 ResumeGame();
             }
@@ -59,7 +74,7 @@ public class CombatUIManager : MonoBehaviour
         }
     }
 
-    // ÔİÍ£ÓÎÏ·
+    // æš‚åœæ¸¸æˆ
     public void PauseGame()
     {
         if (pausePanel == null) return;
@@ -69,20 +84,40 @@ public class CombatUIManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
-    // ¼ÌĞøÓÎÏ· (Õâ¸ö·½·¨ÏÖÔÚ¿ÉÒÔ±»°´Å¥ºÍESC¼ü¹²ÓÃ)
+    // ç»§ç»­æ¸¸æˆ (è¿™ä¸ªæ–¹æ³•ç°åœ¨å¯ä»¥è¢«æŒ‰é’®å’ŒESCé”®å…±ç”¨)
     public void ResumeGame()
     {
         if (pausePanel == null) return;
 
         isPaused = false;
+        isSettingsOpen = false;
         pausePanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
         Time.timeScale = 1f;
     }
 
-    // ·µ»ØÊàÅ¦³¡¾°
+    // æ‰“å¼€è®¾ç½®é¢æ¿
+    public void OpenSettings()
+    {
+        if (settingsPanel == null) return;
+        
+        settingsPanel.SetActive(true);
+        isSettingsOpen = true;
+    }
+
+    // å…³é—­è®¾ç½®é¢æ¿
+    public void CloseSettings()
+    {
+        if (settingsPanel == null) return;
+        
+        settingsPanel.SetActive(false);
+        isSettingsOpen = false;
+    }
+
+    // è¿”å›æ¢çº½åœºæ™¯
     public void ReturnToHub()
     {
-        Debug.Log("ÕıÔÚ·µ»ØÊàÅ¦...");
+        Debug.Log("æ­£åœ¨è¿”å›æ¢çº½...");
 
         if (PlayerProgressManager.Instance != null)
         {
@@ -90,10 +125,42 @@ public class CombatUIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Î´ÕÒµ½ PlayerProgressManager ÊµÀı£¬½ğ±Ò¿ÉÄÜÎ´±»±£´æ£¡");
+            Debug.LogWarning("æœªæ‰¾åˆ° PlayerProgressManager å®ä¾‹ï¼Œé‡‘å¸å¯èƒ½æœªè¢«ä¿å­˜ï¼");
         }
 
         Time.timeScale = 1f;
         SceneManager.LoadScene("HubScene");
+    }
+
+    // è¿”å›ä¸»èœå•
+    public void ReturnToMainMenu()
+    {
+        Debug.Log("æ­£åœ¨è¿”å›ä¸»èœå•...");
+
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.SaveGame();
+        }
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    // é€€å‡ºæ¸¸æˆ
+    public void QuitGame()
+    {
+        Debug.Log("æ­£åœ¨é€€å‡ºæ¸¸æˆ...");
+
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.SaveGame();
+        }
+
+        Time.timeScale = 1f;
+        Application.Quit();
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }

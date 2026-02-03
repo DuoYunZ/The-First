@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -16,8 +16,8 @@ public class StraightMoverAI : MonoBehaviour
     private Animator animator;
     private StatusEffectReceiver statusReceiver;
 
-    [Header("ÉËº¦ÉèÖÃ")]
-    [Tooltip("¹ÖÎïÃ¿´ÎÔì³ÉÉËº¦ºóµÄÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Header("ä¼¤å®³è®¾ç½®")]
+    [Tooltip("æ€ªç‰©æ¯æ¬¡é€ æˆä¼¤å®³åçš„å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float damageCooldown = 1.0f;
     private bool canDealDamage = true;
 
@@ -26,7 +26,7 @@ public class StraightMoverAI : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         statusReceiver = GetComponent<StatusEffectReceiver>();
         rb.useGravity = false;
-        // Ëø¶¨YÖáÎ»ÖÃºÍËùÓĞĞı×ª£¬ÎÒÃÇÖ»Í¨¹ı½Å±¾¿ØÖÆËÙ¶È
+        // é”å®šYè½´ä½ç½®å’Œæ‰€æœ‰æ—‹è½¬ï¼Œæˆ‘ä»¬åªé€šè¿‡è„šæœ¬æ§åˆ¶é€Ÿåº¦
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
 
         Collider col = GetComponent<Collider>();
@@ -37,7 +37,7 @@ public class StraightMoverAI : MonoBehaviour
     }
 
     /// <summary>
-    /// ÓÉ EnemySpawner µ÷ÓÃµÄ³õÊ¼»¯·½·¨
+    /// ç”± EnemySpawner è°ƒç”¨çš„åˆå§‹åŒ–æ–¹æ³•
     /// </summary>
     public void Initialize(float speed, float lifetime, Vector3 direction, int damage)
     {
@@ -45,10 +45,10 @@ public class StraightMoverAI : MonoBehaviour
         this.moveDirection = direction.normalized;
         this.touchDamage = damage;
 
-        // Á¢¼´ÉèÖÃ¹Ì¶¨µÄÒÆ¶¯ËÙ¶È
+        // ç«‹å³è®¾ç½®å›ºå®šçš„ç§»åŠ¨é€Ÿåº¦
         rb.velocity = this.moveDirection * this.moveSpeed;
 
-        // ÈÃ¹ÖÎïÃæ³¯ÒÆ¶¯·½Ïò
+        // è®©æ€ªç‰©é¢æœç§»åŠ¨æ–¹å‘
         if (this.moveDirection != Vector3.zero)
         {
             transform.rotation = Quaternion.LookRotation(this.moveDirection);
@@ -59,7 +59,7 @@ public class StraightMoverAI : MonoBehaviour
             animator.SetBool("isMoving", true);
         }
 
-        // ÔÚ 'lifetime' Ãëºó×Ô¶¯Ïú»Ù
+        // åœ¨ 'lifetime' ç§’åè‡ªåŠ¨é”€æ¯
         Destroy(gameObject, lifetime);
     }
 
@@ -70,13 +70,13 @@ public class StraightMoverAI : MonoBehaviour
 
         if (stunned)
         {
-            // ±£´æµ±Ç°ËÙ¶È²¢Í£Ö¹
+            // ä¿å­˜å½“å‰é€Ÿåº¦å¹¶åœæ­¢
             savedVelocity = rb.velocity;
             rb.velocity = Vector3.zero;
         }
         else
         {
-            // ½öÔÚ Rigidbody Í£Ö¹Ê±²Å»Ö¸´ËÙ¶È£¨·ÀÖ¹¸²¸ÇÆäËûÎïÀí½»»¥£©
+            // ä»…åœ¨ Rigidbody åœæ­¢æ—¶æ‰æ¢å¤é€Ÿåº¦ï¼ˆé˜²æ­¢è¦†ç›–å…¶ä»–ç‰©ç†äº¤äº’ï¼‰
             if (rb.velocity.sqrMagnitude < 0.1f)
             {
                 rb.velocity = savedVelocity;
@@ -84,8 +84,8 @@ public class StraightMoverAI : MonoBehaviour
         }
         if (animator != null)
         {
-            // Èç¹ûÑ£ÔÎ£¬ÉèÖÃ "isMoving" Îª false (²¥·Å´ı»ú)
-            // Èç¹ûÑ£ÔÎ½áÊø£¬ÉèÖÃ "isMoving" Îª true (»Ö¸´ÅÜ²½)
+            // å¦‚æœçœ©æ™•ï¼Œè®¾ç½® "isMoving" ä¸º false (æ’­æ”¾å¾…æœº)
+            // å¦‚æœçœ©æ™•ç»“æŸï¼Œè®¾ç½® "isMoving" ä¸º true (æ¢å¤è·‘æ­¥)
             animator.SetBool("isMoving", !stunned);
         }
     }
@@ -93,11 +93,11 @@ public class StraightMoverAI : MonoBehaviour
     {
         if (rb != null && !isStunned)
         {
-            // ÔÚÑ£ÔÎÊ±²»½ÓÊÜ»÷ÍË
+            // åœ¨çœ©æ™•æ—¶ä¸æ¥å—å‡»é€€
             rb.AddForce(forceDirection * forceAmount, ForceMode.Impulse);
         }
     }
-    // --- Åö×²ÉËº¦Âß¼­ ---
+    // --- ç¢°æ’ä¼¤å®³é€»è¾‘ ---
     void OnTriggerStay(Collider other)
     {
         if (isStunned) return;
@@ -107,16 +107,16 @@ public class StraightMoverAI : MonoBehaviour
             Health playerHealth = other.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                // --- vvv [ ºËĞÄĞŞ¸Ä ] vvv ---
-                // 1. »ñÈ¡Èõ»¯³ËÊı
+                // --- vvv [ æ ¸å¿ƒä¿®æ”¹ ] vvv ---
+                // 1. è·å–å¼±åŒ–ä¹˜æ•°
                 float multiplier = (statusReceiver != null) ? statusReceiver.weakenDamageMultiplier : 1.0f;
 
-                // 2. ¼ÆËã×îÖÕÉËº¦
+                // 2. è®¡ç®—æœ€ç»ˆä¼¤å®³
                 int finalDamage = Mathf.RoundToInt(touchDamage * multiplier);
 
-                // 3. Ê¹ÓÃ×îÖÕÉËº¦
+                // 3. ä½¿ç”¨æœ€ç»ˆä¼¤å®³
                 playerHealth.TakeDamage(finalDamage, transform.position, this.gameObject, AttackType.Standard); //
-                                                                                                                // --- ^^^ [ ºËĞÄĞŞ¸Ä ] ^^^ ---
+                                                                                                                // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ ] ^^^ ---
 
                 canDealDamage = false;
                 StartCoroutine(DamageCooldownRoutine());

@@ -1,40 +1,40 @@
-using UnityEngine;
-using DG.Tweening; // È·±£ÄúÏîÄ¿ÖĞÒÑ°²×° DOTween
+ï»¿using UnityEngine;
+using DG.Tweening; // ç¡®ä¿æ‚¨é¡¹ç›®ä¸­å·²å®‰è£… DOTween
 
 public class AoeIndicatorController : MonoBehaviour
 {
-    [Header("×é¼şÒıÓÃ")]
+    [Header("ç»„ä»¶å¼•ç”¨")]
     public Transform outerRing;
     public Transform innerCircle;
 
     /// <summary>
-    /// Æô¶¯Ô¤¾¯¶¯»­
+    /// å¯åŠ¨é¢„è­¦åŠ¨ç”»
     /// </summary>
-    /// <param name="duration">ÄÚÈ¦À©ÕÅµ½ÍâÈ¦ËùĞèµÄÊ±¼ä</param>
-    /// <param name="radius">Ô¤¾¯È¦µÄ×îÖÕ°ë¾¶</param>
+    /// <param name="duration">å†…åœˆæ‰©å¼ åˆ°å¤–åœˆæ‰€éœ€çš„æ—¶é—´</param>
+    /// <param name="radius">é¢„è­¦åœˆçš„æœ€ç»ˆåŠå¾„</param>
     public void Animate(float duration, float radius)
     {
-        // SpriteÄ¬ÈÏÊÇ1x1µ¥Î»£¬°ë¾¶Îª0.5¡£ËùÒÔÒª´ïµ½'radius'µÄ°ë¾¶£¬localScaleĞèÒªÊÇradius*2¡£
+        // Spriteé»˜è®¤æ˜¯1x1å•ä½ï¼ŒåŠå¾„ä¸º0.5ã€‚æ‰€ä»¥è¦è¾¾åˆ°'radius'çš„åŠå¾„ï¼ŒlocalScaleéœ€è¦æ˜¯radius*2ã€‚
         float finalScale = radius * 2f;
 
-        // 1. Á¢¼´ÉèÖÃÍâÈ¦µÄ´óĞ¡
+        // 1. ç«‹å³è®¾ç½®å¤–åœˆçš„å¤§å°
         if (outerRing != null)
         {
             outerRing.localScale = new Vector3(finalScale, finalScale, 1f);
         }
 
-        // 2. ½«ÄÚÈ¦µÄ³õÊ¼´óĞ¡ÉèÎª0
+        // 2. å°†å†…åœˆçš„åˆå§‹å¤§å°è®¾ä¸º0
         if (innerCircle != null)
         {
             innerCircle.localScale = Vector3.zero;
 
-            // 3. Ê¹ÓÃ DOTween ÖÆ×÷ÄÚÈ¦ÔÚ'duration'ÃëÄÚÀ©ÕÅµ½×îÖÕ´óĞ¡µÄ¶¯»­
+            // 3. ä½¿ç”¨ DOTween åˆ¶ä½œå†…åœˆåœ¨'duration'ç§’å†…æ‰©å¼ åˆ°æœ€ç»ˆå¤§å°çš„åŠ¨ç”»
             innerCircle.DOScale(finalScale, duration)
-                .SetEase(Ease.Linear) // Ê¹ÓÃÏßĞÔ»º¶¯£¬È·±£À©ÕÅËÙ¶È¾ùÔÈ
-                .SetUpdate(true); // ±£Ö¤ÔÚÊ±¼äÔİÍ£Ê±Ò²ÄÜ²¥·Å
+                .SetEase(Ease.Linear) // ä½¿ç”¨çº¿æ€§ç¼“åŠ¨ï¼Œç¡®ä¿æ‰©å¼ é€Ÿåº¦å‡åŒ€
+                .SetUpdate(true); // ä¿è¯åœ¨æ—¶é—´æš‚åœæ—¶ä¹Ÿèƒ½æ’­æ”¾
         }
 
-        // 4. ÔÚ¶¯»­½áÊøºó£¨¼ÓÒ»µãµã»º³åÊ±¼ä£©£¬Ïú»ÙÕû¸öÔ¤¾¯È¦¶ÔÏó
+        // 4. åœ¨åŠ¨ç”»ç»“æŸåï¼ˆåŠ ä¸€ç‚¹ç‚¹ç¼“å†²æ—¶é—´ï¼‰ï¼Œé”€æ¯æ•´ä¸ªé¢„è­¦åœˆå¯¹è±¡
         Destroy(gameObject, duration + 0.1f);
     }
 }

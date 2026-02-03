@@ -1,9 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class MetaUpgradeNPC : MonoBehaviour
 {
-    [Header("UI ÒıÓÃ")]
+    [Header("UI å¼•ç”¨")]
     public GameObject metaUpgradeUIPanel;
     public GameObject interactionPromptUI;
 
@@ -20,26 +20,26 @@ public class MetaUpgradeNPC : MonoBehaviour
 
     void Update()
     {
-        // 1. Èç¹ûÍæ¼ÒÔÚ·¶Î§ÄÚ
+        // 1. å¦‚æœç©å®¶åœ¨èŒƒå›´å†…
         if (playerIsInRange)
         {
-            // 2. ¼ì²â°´¼ü
+            // 2. æ£€æµ‹æŒ‰é”®
             if (playerControls.Player.Interact.WasPressedThisFrame())
             {
-                Debug.Log(">>> [MetaNPC] ¼ì²âµ½ E ¼ü°´ÏÂ£¡×¼±¸ÇĞ»» UI...");
+                Debug.Log(">>> [MetaNPC] æ£€æµ‹åˆ° E é”®æŒ‰ä¸‹ï¼å‡†å¤‡åˆ‡æ¢ UI...");
 
                 if (metaUpgradeUIPanel != null)
                 {
                     bool isActive = metaUpgradeUIPanel.activeSelf;
                     metaUpgradeUIPanel.SetActive(!isActive);
 
-                    // ÔİÍ£/»Ö¸´Ê±¼ä
+                    // æš‚åœ/æ¢å¤æ—¶é—´
                     Time.timeScale = !isActive ? 0f : 1f;
-                    Debug.Log($">>> [MetaNPC] UI ×´Ì¬ÒÑÇĞ»»Îª: {!isActive}");
+                    Debug.Log($">>> [MetaNPC] UI çŠ¶æ€å·²åˆ‡æ¢ä¸º: {!isActive}");
                 }
                 else
                 {
-                    Debug.LogError(">>> [MetaNPC] ´íÎó£¡UI Panel Ã»¸³Öµ£¡ÇëÔÚ Inspector ÀïÍÏ½øÈ¥¡£");
+                    Debug.LogError(">>> [MetaNPC] é”™è¯¯ï¼UI Panel æ²¡èµ‹å€¼ï¼è¯·åœ¨ Inspector é‡Œæ‹–è¿›å»ã€‚");
                 }
             }
         }
@@ -47,14 +47,14 @@ public class MetaUpgradeNPC : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // ´òÓ¡Åöµ½ÁËË­£¬°ïÄãÈ·ÈÏ Tag ÊÇ·ñÕıÈ·
-        Debug.Log($"[MetaNPC] ÓĞÎïÌå½øÈë´¥·¢Æ÷: {other.name}, Tag: {other.tag}");
+        // æ‰“å°ç¢°åˆ°äº†è°ï¼Œå¸®ä½ ç¡®è®¤ Tag æ˜¯å¦æ­£ç¡®
+        Debug.Log($"[MetaNPC] æœ‰ç‰©ä½“è¿›å…¥è§¦å‘å™¨: {other.name}, Tag: {other.tag}");
 
         if (other.CompareTag("Player"))
         {
             playerIsInRange = true;
             if (interactionPromptUI != null) interactionPromptUI.SetActive(true);
-            Debug.Log("[MetaNPC] Íæ¼Ò½øÈë·¶Î§£¡ÏÖÔÚ°´ E Ó¦¸ÃÓĞĞ§¡£");
+            Debug.Log("[MetaNPC] ç©å®¶è¿›å…¥èŒƒå›´ï¼ç°åœ¨æŒ‰ E åº”è¯¥æœ‰æ•ˆã€‚");
         }
     }
 
@@ -65,7 +65,7 @@ public class MetaUpgradeNPC : MonoBehaviour
             playerIsInRange = false;
             if (interactionPromptUI != null) interactionPromptUI.SetActive(false);
             if (metaUpgradeUIPanel != null) metaUpgradeUIPanel.SetActive(false);
-            Debug.Log("[MetaNPC] Íæ¼ÒÀë¿ª·¶Î§¡£");
+            Debug.Log("[MetaNPC] ç©å®¶ç¦»å¼€èŒƒå›´ã€‚");
         }
     }
 }

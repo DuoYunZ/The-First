@@ -1,39 +1,39 @@
-/// <summary>
-/// ¶¨ÒåÉı¼¶Ğ§¹ûµÄÀàĞÍ£¬ÕâÓĞÖúÓÚÎÒÃÇÔÚ´úÂëÖĞ¸ù¾İÀàĞÍÀ´Ó¦ÓÃ²»Í¬µÄÇ¿»¯Âß¼­¡£
+ï»¿/// <summary>
+/// å®šä¹‰å‡çº§æ•ˆæœçš„ç±»å‹ï¼Œè¿™æœ‰åŠ©äºæˆ‘ä»¬åœ¨ä»£ç ä¸­æ ¹æ®ç±»å‹æ¥åº”ç”¨ä¸åŒçš„å¼ºåŒ–é€»è¾‘ã€‚
 /// </summary>
 public enum UpgradeType
 {
-    // ÎäÆ÷Àà
-    WeaponDamage,       // ÎäÆ÷ÉËº¦
-    AoeDamage,          // ·¶Î§ÉËº¦
-    AoeRadius,          // ±¬Õ¨·¶Î§
-    WeaponFireRate,     // ÎäÆ÷ÉäËÙ
-    WeaponProjectileSpeed, // ×Óµ¯ËÙ¶È
-    AddProjectile,      // Ôö¼Ó·¢ÉäÎïÊıÁ¿
-    PierceCount,        // ´©Í¸
-    SlashCount,         // µ¶¹âÊıÁ¿
-    OrbitalCount,       // ¹ìµÀÎäÆ÷ÊıÁ¿
+    // æ­¦å™¨ç±»
+    WeaponDamage,       // æ­¦å™¨ä¼¤å®³
+    AoeDamage,          // èŒƒå›´ä¼¤å®³
+    AoeRadius,          // çˆ†ç‚¸èŒƒå›´
+    WeaponFireRate,     // æ­¦å™¨å°„é€Ÿ
+    WeaponProjectileSpeed, // å­å¼¹é€Ÿåº¦
+    AddProjectile,      // å¢åŠ å‘å°„ç‰©æ•°é‡
+    PierceCount,        // ç©¿é€
+    SlashCount,         // åˆ€å…‰æ•°é‡
+    OrbitalCount,       // è½¨é“æ­¦å™¨æ•°é‡
     OrbitalSpeed,
     WeaponDuration,
     CritRate,
     CritDamage,
 
-    // »ú¼×ÊôĞÔÀà
-    MaxHealth,          // ×î´óÉúÃüÖµ
-    UnlockShield,       // ½âËø»¤¶Ü
-    MaxShield,          // ×î´ó»¤¶ÜÖµ
-    ShieldCooldown,     // »¤¶ÜÀäÈ´Ëõ¼õ
-    Armor,              // »¤¼×/¼õÉË
-    MoveSpeed,          // ÒÆ¶¯ËÙ¶È
-    Revival,            // ¡¾ĞÂÔö¡¿¸´»î´ÎÊı (½â¾ö±¨´í)
+    // æœºç”²å±æ€§ç±»
+    MaxHealth,          // æœ€å¤§ç”Ÿå‘½å€¼
+    UnlockShield,       // è§£é”æŠ¤ç›¾
+    MaxShield,          // æœ€å¤§æŠ¤ç›¾å€¼
+    ShieldCooldown,     // æŠ¤ç›¾å†·å´ç¼©å‡
+    Armor,              // æŠ¤ç”²/å‡ä¼¤
+    MoveSpeed,          // ç§»åŠ¨é€Ÿåº¦
+    Revival,            // ã€æ–°å¢ã€‘å¤æ´»æ¬¡æ•° (è§£å†³æŠ¥é”™)
 
-    // ×ÊÔ´/Ê°È¡Àà
-    PickupRadius,       // Ê°È¡°ë¾¶
-    ExperienceGain,     // ¾­Ñé»ñÈ¡ÂÊ
-    Luck,               // ¡¾ĞÂÔö¡¿ĞÒÔËÖµ
+    // èµ„æº/æ‹¾å–ç±»
+    PickupRadius,       // æ‹¾å–åŠå¾„
+    ExperienceGain,     // ç»éªŒè·å–ç‡
+    Luck,               // ã€æ–°å¢ã€‘å¹¸è¿å€¼
 
-    // ÌØÊâ»úÖÆ
-    BoomerangStackUpgrade, // »ØĞıïÚµş¼Ó¹æÔò
-    ParabolicAoeStunChance, // Å×ÎïÏßÑ£ÔÎ¼¸ÂÊ
-    Stun                   // Ñ£ÔÎ
+    // ç‰¹æ®Šæœºåˆ¶
+    BoomerangStackUpgrade, // å›æ—‹é•–å åŠ è§„åˆ™
+    ParabolicAoeStunChance, // æŠ›ç‰©çº¿çœ©æ™•å‡ ç‡
+    Stun                   // çœ©æ™•
 }

@@ -1,12 +1,12 @@
-// --- PlayAnimationAction.cs ---
+ï»¿// --- PlayAnimationAction.cs ---
 using UnityEngine;
 
 public class PlayAnimationAction : Node
 {
-    [Header("¶¯»­ÉèÖÃ")]
-    [Tooltip("ÔÚAnimatorÖĞÉèÖÃµÄ¶¯»­´¥·¢Æ÷£¨Trigger£©Ãû³Æ")]
+    [Header("åŠ¨ç”»è®¾ç½®")]
+    [Tooltip("åœ¨Animatorä¸­è®¾ç½®çš„åŠ¨ç”»è§¦å‘å™¨ï¼ˆTriggerï¼‰åç§°")]
     public string animationTriggerName;
-    [Tooltip("¶¯»­²¥·ÅµÄÊ±³¤£¬½Úµã½«µÈ´ıÕâÃ´¾Ã")]
+    [Tooltip("åŠ¨ç”»æ’­æ”¾çš„æ—¶é•¿ï¼ŒèŠ‚ç‚¹å°†ç­‰å¾…è¿™ä¹ˆä¹…")]
     public float duration = 2f;
 
     private Animator animator;

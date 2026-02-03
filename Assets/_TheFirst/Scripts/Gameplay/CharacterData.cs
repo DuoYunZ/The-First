@@ -1,20 +1,20 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "NewCharacterData", menuName = "Game/Character Data")]
 public class CharacterData : ScriptableObject
 {
-    [Header("½ÇÉ«»ù±¾ĞÅÏ¢")]
+    [Header("è§’è‰²åŸºæœ¬ä¿¡æ¯")]
     public string characterName;
     [TextArea(3, 5)]
     public string description;
-    public Sprite characterIcon; // ÓÃÓÚUIÑ¡Ôñ½çÃæ
-    public GameObject characterPreviewPrefab; // ÓÃÓÚUIÑ¡Ôñ½çÃæµÄ3DÔ¤ÀÀÄ£ĞÍ
+    public Sprite characterIcon; // ç”¨äºUIé€‰æ‹©ç•Œé¢
+    public GameObject characterPreviewPrefab; // ç”¨äºUIé€‰æ‹©ç•Œé¢çš„3Dé¢„è§ˆæ¨¡å‹
 
-    [Header("Õ½¶·ÉèÖÃ")]
-    [Tooltip("Õâ¸ö½ÇÉ«ÔÚÕ½¶·ÖĞÊµ¼ÊÊ¹ÓÃµÄ»ú¼×ºËĞÄÔ¤ÖÆ¼ş")]
+    [Header("æˆ˜æ–—è®¾ç½®")]
+    [Tooltip("è¿™ä¸ªè§’è‰²åœ¨æˆ˜æ–—ä¸­å®é™…ä½¿ç”¨çš„æœºç”²æ ¸å¿ƒé¢„åˆ¶ä»¶")]
     public GameObject chassisPrefab;
 
-    [Tooltip("Õâ¸ö½ÇÉ«µÄ³õÊ¼ÎäÆ÷ÁĞ±í")]
+    [Tooltip("è¿™ä¸ªè§’è‰²çš„åˆå§‹æ­¦å™¨åˆ—è¡¨")]
     public List<WeaponStatBlock> initialWeapons;
 }

@@ -1,13 +1,13 @@
-// --- BehaviorTree.cs (´øÀäÈ´¹ÜÀí¹¦ÄÜ) ---
+ï»¿// --- BehaviorTree.cs (å¸¦å†·å´ç®¡ç†åŠŸèƒ½) ---
 using UnityEngine;
-using System.Collections.Generic; // ĞèÒªÒıÈëÕâ¸öÃüÃû¿Õ¼ä
+using System.Collections.Generic; // éœ€è¦å¼•å…¥è¿™ä¸ªå‘½åç©ºé—´
 
 [RequireComponent(typeof(Node))]
 public class BehaviorTree : MonoBehaviour
 {
     private Node rootNode;
 
-    // ¡¾ĞÂÔö¡¿ÓÃÓÚ´æ´¢ËùÓĞ¹¥»÷¼¼ÄÜÀäÈ´Ê±¼äµÄ×Öµä
+    // ã€æ–°å¢ã€‘ç”¨äºå­˜å‚¨æ‰€æœ‰æ”»å‡»æŠ€èƒ½å†·å´æ—¶é—´çš„å­—å…¸
     private Dictionary<string, float> attackCooldowns = new Dictionary<string, float>();
 
     void Start()
@@ -23,31 +23,31 @@ public class BehaviorTree : MonoBehaviour
         }
     }
 
-    // --- ¡¾ĞÂÔö¡¿¹«¹²·½·¨£¬¹©ÆäËû½Úµãµ÷ÓÃ ---
+    // --- ã€æ–°å¢ã€‘å…¬å…±æ–¹æ³•ï¼Œä¾›å…¶ä»–èŠ‚ç‚¹è°ƒç”¨ ---
 
     /// <summary>
-    /// ¿ªÊ¼Ò»¸ö¼¼ÄÜµÄÀäÈ´
+    /// å¼€å§‹ä¸€ä¸ªæŠ€èƒ½çš„å†·å´
     /// </summary>
-    /// <param name="attackName">¼¼ÄÜµÄÎ¨Ò»Ãû³Æ</param>
-    /// <param name="duration">ÀäÈ´Ê±³¤£¨Ãë£©</param>
+    /// <param name="attackName">æŠ€èƒ½çš„å”¯ä¸€åç§°</param>
+    /// <param name="duration">å†·å´æ—¶é•¿ï¼ˆç§’ï¼‰</param>
     public void StartCooldown(string attackName, float duration)
     {
-        // ¼ÇÂ¼ÏÂÕâ¸ö¼¼ÄÜ¿ÉÒÔÔÙ´ÎÊ¹ÓÃµÄ¡°Î´À´Ê±¼äµã¡±
+        // è®°å½•ä¸‹è¿™ä¸ªæŠ€èƒ½å¯ä»¥å†æ¬¡ä½¿ç”¨çš„â€œæœªæ¥æ—¶é—´ç‚¹â€
         attackCooldowns[attackName] = Time.time + duration;
     }
 
     /// <summary>
-    /// ¼ì²éÒ»¸ö¼¼ÄÜÊÇ·ñÕıÔÚÀäÈ´ÖĞ
+    /// æ£€æŸ¥ä¸€ä¸ªæŠ€èƒ½æ˜¯å¦æ­£åœ¨å†·å´ä¸­
     /// </summary>
-    /// <param name="attackName">Òª¼ì²éµÄ¼¼ÄÜÃû³Æ</param>
-    /// <returns>Èç¹ûÔÚÀäÈ´ÖĞ£¬·µ»Øtrue</returns>
+    /// <param name="attackName">è¦æ£€æŸ¥çš„æŠ€èƒ½åç§°</param>
+    /// <returns>å¦‚æœåœ¨å†·å´ä¸­ï¼Œè¿”å›true</returns>
     public bool IsOnCooldown(string attackName)
     {
-        // Èç¹û×ÖµäÀïÓĞÕâ¸ö¼¼ÄÜ£¬²¢ÇÒËüµÄÀäÈ´½áÊøÊ±¼äµã»¹Ã»µ½
+        // å¦‚æœå­—å…¸é‡Œæœ‰è¿™ä¸ªæŠ€èƒ½ï¼Œå¹¶ä¸”å®ƒçš„å†·å´ç»“æŸæ—¶é—´ç‚¹è¿˜æ²¡åˆ°
         if (attackCooldowns.ContainsKey(attackName) && attackCooldowns[attackName] > Time.time)
         {
-            return true; // ÕıÔÚÀäÈ´
+            return true; // æ­£åœ¨å†·å´
         }
-        return false; // ÒÑÀäÈ´Íê±Ï
+        return false; // å·²å†·å´å®Œæ¯•
     }
 }

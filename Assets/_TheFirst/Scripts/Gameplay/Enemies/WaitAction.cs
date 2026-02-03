@@ -1,4 +1,4 @@
-// --- WaitAction.cs ---
+ï»¿// --- WaitAction.cs ---
 using UnityEngine;
 
 public class WaitAction : Node
@@ -9,7 +9,7 @@ public class WaitAction : Node
     private float startTime;
     private bool isWaiting = false;
 
-    // ¡¾ĞÂÔö¡¿»ñÈ¡¶ÔAIºÍÎïÀíµÄ¿ØÖÆÈ¨
+    // ã€æ–°å¢ã€‘è·å–å¯¹AIå’Œç‰©ç†çš„æ§åˆ¶æƒ
     private EnemyAI regularAI;
     private Rigidbody rb;
 
@@ -26,7 +26,7 @@ public class WaitAction : Node
             isWaiting = true;
             startTime = Time.time;
 
-            // ¡¾ºËĞÄĞŞ¸Ä¡¿ÔÚµÈ´ı¿ªÊ¼Ê±£¬Ç¿ÖÆÍ£Ö¹AIºÍÎïÀíÒÆ¶¯
+            // ã€æ ¸å¿ƒä¿®æ”¹ã€‘åœ¨ç­‰å¾…å¼€å§‹æ—¶ï¼Œå¼ºåˆ¶åœæ­¢AIå’Œç‰©ç†ç§»åŠ¨
             if (regularAI != null) regularAI.enabled = false;
             if (rb != null && !rb.isKinematic)
             {
@@ -34,10 +34,10 @@ public class WaitAction : Node
             }
             else
             {
-                // Èç¹ûÊÇ Kinematic (ÓÉ¶¯»­¿ØÖÆ)£¬ÎÒÃÇ¿ÉÄÜ²»ĞèÒªÊÖ¶¯ÉèËÙ¶È£¬»òÕßĞèÒªÓÃ navMeshAgent.isStopped = true
+                // å¦‚æœæ˜¯ Kinematic (ç”±åŠ¨ç”»æ§åˆ¶)ï¼Œæˆ‘ä»¬å¯èƒ½ä¸éœ€è¦æ‰‹åŠ¨è®¾é€Ÿåº¦ï¼Œæˆ–è€…éœ€è¦ç”¨ navMeshAgent.isStopped = true
             }
 
-            // ¡¾¿ÉÑ¡¡¿ÔÚÕâÀïÒ²¿ÉÒÔ´¥·¢´ı»ú¶¯»­
+            // ã€å¯é€‰ã€‘åœ¨è¿™é‡Œä¹Ÿå¯ä»¥è§¦å‘å¾…æœºåŠ¨ç”»
             // Animator animator = GetComponentInParent<Animator>();
             // if (animator != null) animator.SetBool("isMoving", false);
 
@@ -48,7 +48,7 @@ public class WaitAction : Node
             if (Time.time - startTime >= duration)
             {
                 isWaiting = false;
-                // µÈ´ı½áÊø£¬·µ»Ø³É¹¦¡£ºóĞø½Úµã(±ÈÈçChaseAction)»á¸ºÔğÖØĞÂ¼¤»îAI
+                // ç­‰å¾…ç»“æŸï¼Œè¿”å›æˆåŠŸã€‚åç»­èŠ‚ç‚¹(æ¯”å¦‚ChaseAction)ä¼šè´Ÿè´£é‡æ–°æ¿€æ´»AI
                 return NodeState.SUCCESS;
             }
             else

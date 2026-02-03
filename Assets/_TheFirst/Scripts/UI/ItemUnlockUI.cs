@@ -1,21 +1,21 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 public class ItemUnlockUI : MonoBehaviour
 {
-    [Header("Ä¿±êÎïÆ·")]
-    public string targetItemName = "Molotov"; // ÎïÆ·ID
-    public string statKey = "Ignite_Count"; // ¼àÌıµÄÍ³¼ÆÊı¾İ
-    public int requiredCount = 100; // Ä¿±êÊıÁ¿
+    [Header("ç›®æ ‡ç‰©å“")]
+    public string targetItemName = "Molotov"; // ç‰©å“ID
+    public string statKey = "Ignite_Count"; // ç›‘å¬çš„ç»Ÿè®¡æ•°æ®
+    public int requiredCount = 100; // ç›®æ ‡æ•°é‡
 
-    [Header("UI×é¼ş")]
-    public GameObject lockedPanel;   // Ã»½âËøÊ±ÏÔÊ¾
-    public GameObject unlockedPanel; // ½âËøºóÏÔÊ¾
+    [Header("UIç»„ä»¶")]
+    public GameObject lockedPanel;   // æ²¡è§£é”æ—¶æ˜¾ç¤º
+    public GameObject unlockedPanel; // è§£é”åæ˜¾ç¤º
     public Slider progressSlider;
-    public TextMeshProUGUI progressText; // ÏÔÊ¾ "50/100"
+    public TextMeshProUGUI progressText; // æ˜¾ç¤º "50/100"
 
-    void OnEnable() // Ã¿´Î´ò¿ª½çÃæÊ±Ë¢ĞÂ
+    void OnEnable() // æ¯æ¬¡æ‰“å¼€ç•Œé¢æ—¶åˆ·æ–°
     {
         RefreshUI();
     }
@@ -24,7 +24,7 @@ public class ItemUnlockUI : MonoBehaviour
     {
         if (PlayerProgressManager.Instance == null) return;
 
-        // 1. ¼ì²éÊÇ·ñÒÑ½âËø
+        // 1. æ£€æŸ¥æ˜¯å¦å·²è§£é”
         bool isUnlocked = PlayerProgressManager.Instance.unlockedItems.Contains(targetItemName);
 
         if (isUnlocked)
@@ -37,7 +37,7 @@ public class ItemUnlockUI : MonoBehaviour
             if (lockedPanel) lockedPanel.SetActive(true);
             if (unlockedPanel) unlockedPanel.SetActive(false);
 
-            // 2. ¸üĞÂ½ø¶ÈÌõ
+            // 2. æ›´æ–°è¿›åº¦æ¡
             int current = PlayerProgressManager.Instance.GetStat(statKey);
 
             if (progressSlider)

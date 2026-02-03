@@ -1,62 +1,62 @@
-// --- PlayerWeaponManager.cs (×îÖÕĞŞÕı°æ V2) ---
+ï»¿// --- PlayerWeaponManager.cs (æœ€ç»ˆä¿®æ­£ç‰ˆ V2) ---
 using UnityEngine;
 
 public class PlayerWeaponManager : MonoBehaviour
 {
-    [Header("ÎäÆ÷Ô¤ÖÆ¼ş")]
+    [Header("æ­¦å™¨é¢„åˆ¶ä»¶")]
     public GameObject floatingWeaponPrefab;
 
-    [Header("¹ÒµãÉèÖÃ")]
+    [Header("æŒ‚ç‚¹è®¾ç½®")]
     public Transform weaponFollowTarget;
-    [Tooltip("Ö¸¶¨ÎäÆ÷ÊµÀı»¯ºóµÄ¸¸¶ÔÏó£¬Ó¦ÉèÎªVisuals")]
-    public Transform weaponParent; // ¡¾ĞÂÔö¡¿ÓÃÓÚÖ¸¶¨¸¸¶ÔÏóµÄ±äÁ¿
+    [Tooltip("æŒ‡å®šæ­¦å™¨å®ä¾‹åŒ–åçš„çˆ¶å¯¹è±¡ï¼Œåº”è®¾ä¸ºVisuals")]
+    public Transform weaponParent; // ã€æ–°å¢ã€‘ç”¨äºæŒ‡å®šçˆ¶å¯¹è±¡çš„å˜é‡
 
     void Start()
     {
         if (floatingWeaponPrefab == null || weaponFollowTarget == null)
         {
-            Debug.LogError("PlayerWeaponManager: Î´ÉèÖÃ¸¡ÓÎÎäÆ÷Prefab»òÎäÆ÷µÄ¸úËæÄ¿±êµã (Weapon Follow Target)£¡", this);
+            Debug.LogError("PlayerWeaponManager: æœªè®¾ç½®æµ®æ¸¸æ­¦å™¨Prefabæˆ–æ­¦å™¨çš„è·Ÿéšç›®æ ‡ç‚¹ (Weapon Follow Target)ï¼", this);
             return;
         }
 
         Transform parent = weaponParent != null ? weaponParent : transform;
 
-        // 1. ÊµÀı»¯ÎäÆ÷
+        // 1. å®ä¾‹åŒ–æ­¦å™¨
         GameObject weaponInstance = Instantiate(floatingWeaponPrefab, weaponFollowTarget.position, weaponFollowTarget.rotation, parent);
 
-        // 2. ¡¾°²È«±£ÕÏ¡¿È·±£ÊµÀı»¯µÄ¶ÔÏóÊÇ¼¤»î×´Ì¬£¬ÕâÑùËüµÄ Awake() ²Å»áÖ´ĞĞ
+        // 2. ã€å®‰å…¨ä¿éšœã€‘ç¡®ä¿å®ä¾‹åŒ–çš„å¯¹è±¡æ˜¯æ¿€æ´»çŠ¶æ€ï¼Œè¿™æ ·å®ƒçš„ Awake() æ‰ä¼šæ‰§è¡Œ
         weaponInstance.SetActive(true);
 
-        // 3. »ñÈ¡ĞÂÎäÆ÷ÊµÀıÉÏµÄËùÓĞ±ØÒª×é¼ş
+        // 3. è·å–æ–°æ­¦å™¨å®ä¾‹ä¸Šçš„æ‰€æœ‰å¿…è¦ç»„ä»¶
         FloatingWeaponController weaponController = weaponInstance.GetComponent<FloatingWeaponController>();
-        WeaponCooldownMaterial cooldownMaterial = weaponInstance.GetComponent<WeaponCooldownMaterial>(); // <--- »ñÈ¡²ÄÖÊ¿ØÖÆÆ÷
+        WeaponCooldownMaterial cooldownMaterial = weaponInstance.GetComponent<WeaponCooldownMaterial>(); // <--- è·å–æè´¨æ§åˆ¶å™¨
 
-        // 4. »ñÈ¡Íæ¼ÒÉíÉÏµÄ¹¥»÷½Å±¾
+        // 4. è·å–ç©å®¶èº«ä¸Šçš„æ”»å‡»è„šæœ¬
         PlayerBladeAttack attackScript = GetComponent<PlayerBladeAttack>();
 
-        // 5. ¡¾ºËĞÄĞŞÕı¡¿½¨Á¢ËùÓĞ±ØĞèµÄÒıÓÃÁ´½Ó
+        // 5. ã€æ ¸å¿ƒä¿®æ­£ã€‘å»ºç«‹æ‰€æœ‰å¿…éœ€çš„å¼•ç”¨é“¾æ¥
         if (attackScript != null)
         {
             if (weaponController != null)
             {
-                // Á´½Ó1£ºÈÃ¹¥»÷½Å±¾ÄÜ¿ØÖÆÎäÆ÷ÏÔÒş
+                // é“¾æ¥1ï¼šè®©æ”»å‡»è„šæœ¬èƒ½æ§åˆ¶æ­¦å™¨æ˜¾éš
                 attackScript.floatingWeapon = weaponController;
             }
 
             if (cooldownMaterial != null)
             {
-                // Á´½Ó2£ºÈÃ¹¥»÷½Å±¾ÄÜ¿ØÖÆ²ÄÖÊÀäÈ´Ğ§¹û
+                // é“¾æ¥2ï¼šè®©æ”»å‡»è„šæœ¬èƒ½æ§åˆ¶æè´¨å†·å´æ•ˆæœ
                 attackScript.weaponCooldownMaterial = cooldownMaterial;
             }
         }
 
-        // 6. ÉèÖÃÎäÆ÷×ÔÉíµÄ¸úËæÄ¿±ê
+        // 6. è®¾ç½®æ­¦å™¨è‡ªèº«çš„è·Ÿéšç›®æ ‡
         if (weaponController != null)
         {
             weaponController.targetToFollow = this.weaponFollowTarget;
         }
 
-        // (¿ÉÑ¡½¨Òé) ±ÜÃâ½«ÊµÀıÃüÃûÎªÓë³¡¾°ÖĞÆäËûÎïÌåÏàÍ¬µÄÃû×Ö£¬ÒÔ·À»ìÏı
+        // (å¯é€‰å»ºè®®) é¿å…å°†å®ä¾‹å‘½åä¸ºä¸åœºæ™¯ä¸­å…¶ä»–ç‰©ä½“ç›¸åŒçš„åå­—ï¼Œä»¥é˜²æ··æ·†
         weaponInstance.name = "FloatingWeapon_Instance";
     }
 }

@@ -1,45 +1,45 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
 [RequireComponent(typeof(Animator))]
-[RequireComponent(typeof(NavMeshAgent))] // ĞÂÔö
+[RequireComponent(typeof(NavMeshAgent))] // æ–°å¢
 public class EnemyProjectileAttack : MonoBehaviour
 {
-    [Header("¹¥»÷ÉèÖÃ")]
+    [Header("æ”»å‡»è®¾ç½®")]
     public GameObject projectilePrefab;
     public Transform firePoint;
     public float attackRange = 15f;
-    [Tooltip("¹¥»÷ÆµÂÊ£¨´Î/Ãë£©")]
+    [Tooltip("æ”»å‡»é¢‘ç‡ï¼ˆæ¬¡/ç§’ï¼‰")]
     public float fireRate = 0.5f;
-    [Tooltip("¹¥»÷¶¯»­µÄ³ÖĞøÊ±¼ä£¨Ãë£©¡£×Óµ¯»áÔÚÕâ¶ÎÊ±¼äºó·¢Éä¡£")]
-    public float attackAnimationDuration = 1f; // <-- È¡´úÁËÖ®Ç°µÄ aimDelay
-    [Tooltip("¹ÖÎïÔÚ¹¥»÷·¶Î§ÄÚ×ªÏòÍæ¼ÒµÄËÙ¶È")]
+    [Tooltip("æ”»å‡»åŠ¨ç”»çš„æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰ã€‚å­å¼¹ä¼šåœ¨è¿™æ®µæ—¶é—´åå‘å°„ã€‚")]
+    public float attackAnimationDuration = 1f; // <-- å–ä»£äº†ä¹‹å‰çš„ aimDelay
+    [Tooltip("æ€ªç‰©åœ¨æ”»å‡»èŒƒå›´å†…è½¬å‘ç©å®¶çš„é€Ÿåº¦")]
     public float turnSpeed = 5f;
 
     public int projectileDamage = 10;
     public float projectileSpeed = 20f;
 
-    [Tooltip("ÉèÖÃ´Ë¹¥»÷·¢ÉäµÄ×Óµ¯ÀàĞÍ")]
+    [Tooltip("è®¾ç½®æ­¤æ”»å‡»å‘å°„çš„å­å¼¹ç±»å‹")]
     public AttackType projectileAttackType = AttackType.Standard;
 
-    [Header("ÊÓ¾õĞ§¹û")]
-    // --- ¡¾ºËĞÄĞŞ¸Ä¡¿Á½¸ö¶ÀÁ¢µÄÌØĞ§×Ö¶Î ---
-    [Tooltip("×Óµ¯ÃüÖĞ¡¾Íæ¼Ò»¤¶Ü¡¿Ê±µÄ×¨ÊôÌØĞ§")]
+    [Header("è§†è§‰æ•ˆæœ")]
+    // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä¸¤ä¸ªç‹¬ç«‹çš„ç‰¹æ•ˆå­—æ®µ ---
+    [Tooltip("å­å¼¹å‘½ä¸­ã€ç©å®¶æŠ¤ç›¾ã€‘æ—¶çš„ä¸“å±ç‰¹æ•ˆ")]
     public GameObject shieldHitVfxPrefab;
-    [Tooltip("×Óµ¯ÃüÖĞ¡¾ÎŞ»¤¶ÜÍæ¼Ò¡¿Ê±µÄÍ¨ÓÃÌØĞ§")]
+    [Tooltip("å­å¼¹å‘½ä¸­ã€æ— æŠ¤ç›¾ç©å®¶ã€‘æ—¶çš„é€šç”¨ç‰¹æ•ˆ")]
     public GameObject defaultHitVfxPrefab;
 
 
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float attackCooldownTimer;
     private EnemyAI enemyAI;
     private Animator animator;
     private NavMeshAgent agent; 
-    private bool isInAttackRange = false; // ÓÃÓÚ¸ú×ÙÍæ¼ÒÊÇ·ñÔÚ¹¥»÷·¶Î§ÄÚ
+    private bool isInAttackRange = false; // ç”¨äºè·Ÿè¸ªç©å®¶æ˜¯å¦åœ¨æ”»å‡»èŒƒå›´å†…
 
     private Coroutine attackCoroutine;
     private bool isAttacking = false;
@@ -52,7 +52,7 @@ public class EnemyProjectileAttack : MonoBehaviour
         }
         else
         {
-            Debug.LogError("EnemyProjectileAttack: Î´ÄÜÕÒµ½ GameManager »òÍæ¼ÒÒıÓÃ£¡", this);
+            Debug.LogError("EnemyProjectileAttack: æœªèƒ½æ‰¾åˆ° GameManager æˆ–ç©å®¶å¼•ç”¨ï¼", this);
             enabled = false;
         }
         enemyAI = GetComponent<EnemyAI>();
@@ -69,7 +69,7 @@ public class EnemyProjectileAttack : MonoBehaviour
 
         if (playerTarget == null)
         {
-            // ¿ÉÑ¡£ºÈç¹ûÏ£Íû¹ÖÎïÍ£ÏÂ£¬¿ÉÒÔÖØÖÃ×´Ì¬
+            // å¯é€‰ï¼šå¦‚æœå¸Œæœ›æ€ªç‰©åœä¸‹ï¼Œå¯ä»¥é‡ç½®çŠ¶æ€
             if (isAttacking) InterruptAttack();
             return;
         }
@@ -81,51 +81,51 @@ public class EnemyProjectileAttack : MonoBehaviour
 
         if (isInAttackRange)
         {
-            // --- ¡¾ºËĞÄĞŞ¸Ä 1¡¿Íæ¼ÒÔÚ¹¥»÷·¶Î§ÄÚ ---
-            // 1. ½ûÓÃ»ù´¡AI£¬ÓÉ±¾½Å±¾½Ó¹Ü
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ 1ã€‘ç©å®¶åœ¨æ”»å‡»èŒƒå›´å†… ---
+            // 1. ç¦ç”¨åŸºç¡€AIï¼Œç”±æœ¬è„šæœ¬æ¥ç®¡
             if (agent.isStopped == false)
             {
-                agent.isStopped = true; // ĞŞ¸Ä
-                agent.velocity = Vector3.zero; // È·±£Í£ÎÈ
+                agent.isStopped = true; // ä¿®æ”¹
+                agent.velocity = Vector3.zero; // ç¡®ä¿åœç¨³
                 animator.SetBool("isMoving", false);
             }
 
-            // 2. ³ÖĞø¡¢Æ½»¬µØ×ªÏòÍæ¼Ò
+            // 2. æŒç»­ã€å¹³æ»‘åœ°è½¬å‘ç©å®¶
             Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
 
-            // 3. ¼ì²éÀäÈ´²¢´¥·¢¹¥»÷Ğ­³Ì
+            // 3. æ£€æŸ¥å†·å´å¹¶è§¦å‘æ”»å‡»åç¨‹
             if (attackCooldownTimer <= 0 && !isAttacking)
             {
-                // ±£´æĞ­³ÌÒıÓÃ£¬ÒÔ±ãÎÒÃÇ¿ÉÒÔ´ò¶ÏËü
+                // ä¿å­˜åç¨‹å¼•ç”¨ï¼Œä»¥ä¾¿æˆ‘ä»¬å¯ä»¥æ‰“æ–­å®ƒ
                 attackCoroutine = StartCoroutine(AttackSequence());
             }
-            // --- ^^^ [ĞŞ¸Ä] ^^^ ---
+            // --- ^^^ [ä¿®æ”¹] ^^^ ---
         }
         else
         {
-            // --- vvv [ĞŞ¸Ä] vvv ---
-            // (Ôö¼Ó isAttacking ¼ì²é£¬·ÀÖ¹ÔÚ¹¥»÷¶¯»­²¥·ÅÊ±»Ö¸´ÒÆ¶¯)
+            // --- vvv [ä¿®æ”¹] vvv ---
+            // (å¢åŠ  isAttacking æ£€æŸ¥ï¼Œé˜²æ­¢åœ¨æ”»å‡»åŠ¨ç”»æ’­æ”¾æ—¶æ¢å¤ç§»åŠ¨)
             if (agent.isStopped == true && !isAttacking)
             {
                 agent.isStopped = false;
             }
-            // --- ^^^ [ĞŞ¸Ä] ^^^ ---
+            // --- ^^^ [ä¿®æ”¹] ^^^ ---
         }
     }
 
     IEnumerator AttackSequence()
     {
-        isAttacking = true; // [!] ±ê¼Ç¹¥»÷¿ªÊ¼
+        isAttacking = true; // [!] æ ‡è®°æ”»å‡»å¼€å§‹
         attackCooldownTimer = 1f / fireRate;
 
         animator.SetTrigger("Attack"); //
 
         yield return new WaitForSeconds(attackAnimationDuration); //
 
-        // 3. ¶¯»­²¥·ÅÍê±Ïºó£¬·¢Éä×Óµ¯
-        if (playerTarget != null && isInAttackRange && agent.isActiveAndEnabled) // (Ôö¼Ó agent ¼ì²é)
+        // 3. åŠ¨ç”»æ’­æ”¾å®Œæ¯•åï¼Œå‘å°„å­å¼¹
+        if (playerTarget != null && isInAttackRange && agent.isActiveAndEnabled) // (å¢åŠ  agent æ£€æŸ¥)
         {
             Vector3 finalDirection = (playerTarget.position - firePoint.position).normalized;
             GameObject bullet = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(finalDirection));
@@ -144,33 +144,33 @@ public class EnemyProjectileAttack : MonoBehaviour
             }
         }
 
-        isAttacking = false; // [!] ±ê¼Ç¹¥»÷½áÊø
+        isAttacking = false; // [!] æ ‡è®°æ”»å‡»ç»“æŸ
         attackCoroutine = null;
     }
     public void InterruptAttack()
     {
-        if (!isAttacking) return; // Ã»ÓĞÔÚ¹¥»÷£¬²»´ò¶Ï
+        if (!isAttacking) return; // æ²¡æœ‰åœ¨æ”»å‡»ï¼Œä¸æ‰“æ–­
 
         Debug.Log($"<color=yellow>[{gameObject.name}] Projectile Attack INTERRUPTED!</color>");
 
         if (attackCoroutine != null)
         {
-            StopCoroutine(attackCoroutine); // [!] Í£Ö¹¹¥»÷Ğ­³Ì
+            StopCoroutine(attackCoroutine); // [!] åœæ­¢æ”»å‡»åç¨‹
         }
 
-        // Á¢¼´ÖØÖÃ×´Ì¬
+        // ç«‹å³é‡ç½®çŠ¶æ€
         isAttacking = false;
         attackCoroutine = null;
-        attackCooldownTimer = 1f / fireRate; // ÈÃËü½øÈëÀäÈ´
+        attackCooldownTimer = 1f / fireRate; // è®©å®ƒè¿›å…¥å†·å´
 
-        // ÖØÖÃ¶¯»­Æ÷
+        // é‡ç½®åŠ¨ç”»å™¨
         if (animator != null)
         {
             animator.ResetTrigger("Attack"); //
         }
 
-        // (ÎÒÃÇ²»ĞèÒªÔÚÕâÀïÉèÖÃ agent.isStopped = false, 
-        //  ÒòÎª Stun/Knockback »á±£³ÖËüÍ£Ö¹£¬
-        //  »òÕß Update() »áÔÚÏÂÒ»Ö¡´¦ÀíËü)
+        // (æˆ‘ä»¬ä¸éœ€è¦åœ¨è¿™é‡Œè®¾ç½® agent.isStopped = false, 
+        //  å› ä¸º Stun/Knockback ä¼šä¿æŒå®ƒåœæ­¢ï¼Œ
+        //  æˆ–è€… Update() ä¼šåœ¨ä¸‹ä¸€å¸§å¤„ç†å®ƒ)
     }
 }

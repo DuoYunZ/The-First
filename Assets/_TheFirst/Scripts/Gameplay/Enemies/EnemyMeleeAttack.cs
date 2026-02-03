@@ -1,4 +1,4 @@
-// --- EnemyMeleeAttack.cs ---
+ï»¿// --- EnemyMeleeAttack.cs ---
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
@@ -7,44 +7,44 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Health))]
 public class EnemyMeleeAttack : MonoBehaviour
 {
-    [Header("¹¥»÷ÉèÖÃ")]
-    [Tooltip("¹¥»÷Ô¤¾¯ÌØĞ§£¨ÀıÈçµØÉÏµÄÉÈĞÎ»òÔ²ĞÎ£©")]
+    [Header("æ”»å‡»è®¾ç½®")]
+    [Tooltip("æ”»å‡»é¢„è­¦ç‰¹æ•ˆï¼ˆä¾‹å¦‚åœ°ä¸Šçš„æ‰‡å½¢æˆ–åœ†å½¢ï¼‰")]
     public GameObject warningIndicatorPrefab;
-    [Tooltip("¹¥»÷ÃüÖĞÊ±µÄÌØĞ§")]
+    [Tooltip("æ”»å‡»å‘½ä¸­æ—¶çš„ç‰¹æ•ˆ")]
     public GameObject hitEffectPrefab;
-    [Tooltip("¹¥»÷ÌØĞ§")]
-    public GameObject slashEffectPrefab; // ¡¾ĞÂÔö¡¿µ¶¹âÌØĞ§
-    [Tooltip("½øÈë´Ë·¶Î§ºó£¬¹ÖÎï»á¿ªÊ¼×¼±¸¹¥»÷")]
+    [Tooltip("æ”»å‡»ç‰¹æ•ˆ")]
+    public GameObject slashEffectPrefab; // ã€æ–°å¢ã€‘åˆ€å…‰ç‰¹æ•ˆ
+    [Tooltip("è¿›å…¥æ­¤èŒƒå›´åï¼Œæ€ªç‰©ä¼šå¼€å§‹å‡†å¤‡æ”»å‡»")]
     public float attackRange = 3f;
-    [Tooltip("¹¥»÷ÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Tooltip("æ”»å‡»å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float cooldown = 4f;
 
-    [Header("¼¼ÄÜĞ§¹û")]
-    [Tooltip("¹¥»÷Ç°Ò¡£¨ĞîÁ¦£©µÄÊ±³¤")]
+    [Header("æŠ€èƒ½æ•ˆæœ")]
+    [Tooltip("æ”»å‡»å‰æ‘‡ï¼ˆè“„åŠ›ï¼‰çš„æ—¶é•¿")]
     public float windupDuration = 1.2f;
-    [Tooltip("¹¥»÷ÅĞ¶¨µÄ·¶Î§£¨ÀıÈçÉÈĞÎ°ë¾¶»òÔ²ĞÎ°ë¾¶£©")]
+    [Tooltip("æ”»å‡»åˆ¤å®šçš„èŒƒå›´ï¼ˆä¾‹å¦‚æ‰‡å½¢åŠå¾„æˆ–åœ†å½¢åŠå¾„ï¼‰")]
     public float attackRadius = 2.5f;
-    [Tooltip("¡¾¿ÉÑ¡¡¿Èç¹ûÊÇÉÈĞÎ¹¥»÷£¬ÕâÀïÊÇÉÈĞÎµÄ¼Ğ½Ç")]
+    [Tooltip("ã€å¯é€‰ã€‘å¦‚æœæ˜¯æ‰‡å½¢æ”»å‡»ï¼Œè¿™é‡Œæ˜¯æ‰‡å½¢çš„å¤¹è§’")]
     [Range(0, 360)]
-    public float attackAngle = 90f; // 0»ò360´ú±íÔ²ĞÎ¹¥»÷
-    [Tooltip("¼¼ÄÜÔì³ÉµÄÉËº¦Öµ")]
+    public float attackAngle = 90f; // 0æˆ–360ä»£è¡¨åœ†å½¢æ”»å‡»
+    [Tooltip("æŠ€èƒ½é€ æˆçš„ä¼¤å®³å€¼")]
     public int damage = 15;
 
-    [Header("ÊÓ¾õĞ§¹û")]
-    [Tooltip("Ô¤¾¯ÌØĞ§µÄÊÓ¾õ°ë¾¶£¬Ó¦´óÓÚ¹¥»÷°ë¾¶¡£¸ù¾İÄãµÄ²âÊÔ£¬Õâ¸öÖµÓ¦Îª10")]
-    public float indicatorVisualRadius = 10f; // ¡¾¹Ø¼ü¡¿ÇëÔÚInspectorÖĞÈ·ÈÏ´ËÖµÎª10
+    [Header("è§†è§‰æ•ˆæœ")]
+    [Tooltip("é¢„è­¦ç‰¹æ•ˆçš„è§†è§‰åŠå¾„ï¼Œåº”å¤§äºæ”»å‡»åŠå¾„ã€‚æ ¹æ®ä½ çš„æµ‹è¯•ï¼Œè¿™ä¸ªå€¼åº”ä¸º10")]
+    public float indicatorVisualRadius = 10f; // ã€å…³é”®ã€‘è¯·åœ¨Inspectorä¸­ç¡®è®¤æ­¤å€¼ä¸º10
    
 
 
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float cooldownTimer;
     private NavMeshAgent agent;
     private Animator animator;
     private bool isAttacking = false;
     private GameObject activeWarningIndicator;
-    private EnemyAI enemyAI; // <--- [ĞÂÔö]
+    private EnemyAI enemyAI; // <--- [æ–°å¢]
 
     void Start()
     {
@@ -65,10 +65,10 @@ public class EnemyMeleeAttack : MonoBehaviour
 
     private void OnDeath()
     {
-        // Í£Ö¹ËùÓĞÕıÔÚ½øĞĞµÄ¹¥»÷Ğ­³Ì
+        // åœæ­¢æ‰€æœ‰æ­£åœ¨è¿›è¡Œçš„æ”»å‡»åç¨‹
         StopAllCoroutines();
 
-        // Èç¹ûµ±Ç°ÓĞ¼¤»îµÄÔ¤¾¯ÌØĞ§£¬Á¢¼´Ïú»ÙËü
+        // å¦‚æœå½“å‰æœ‰æ¿€æ´»çš„é¢„è­¦ç‰¹æ•ˆï¼Œç«‹å³é”€æ¯å®ƒ
         if (activeWarningIndicator != null)
         {
             Destroy(activeWarningIndicator);
@@ -92,11 +92,11 @@ public class EnemyMeleeAttack : MonoBehaviour
         isAttacking = true;
         enemyAI.SetMeleeAttackingState(true);
 
-        // 1. ×¼±¸½×¶Î£ºÍ£Ö¹ÒÆ¶¯£¬Ãæ³¯Íæ¼Ò
+        // 1. å‡†å¤‡é˜¶æ®µï¼šåœæ­¢ç§»åŠ¨ï¼Œé¢æœç©å®¶
         if (agent.isActiveAndEnabled)
         {
             agent.isStopped = true;
-            // ¶îÍâÇ¿ÖÆ½«ËÙ¶ÈÉèÖÃÎª0£¬È·±£Á¢¼´Í£Ö¹
+            // é¢å¤–å¼ºåˆ¶å°†é€Ÿåº¦è®¾ç½®ä¸º0ï¼Œç¡®ä¿ç«‹å³åœæ­¢
             agent.velocity = Vector3.zero;
         }
         yield return null;
@@ -109,7 +109,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
 
 
-        // 2. Ô¤¾¯½×¶Î£ºÔÚÉíÇ°Éú³ÉÔ¤¾¯ÌØĞ§
+        // 2. é¢„è­¦é˜¶æ®µï¼šåœ¨èº«å‰ç”Ÿæˆé¢„è­¦ç‰¹æ•ˆ
         if (warningIndicatorPrefab != null)
         {
             activeWarningIndicator = Instantiate(warningIndicatorPrefab, transform.position, transform.rotation);
@@ -124,10 +124,10 @@ public class EnemyMeleeAttack : MonoBehaviour
             }
         }
 
-        // 3. ĞîÁ¦µÈ´ı
+        // 3. è“„åŠ›ç­‰å¾…
         yield return new WaitForSeconds(windupDuration);
 
-        // 4. ¹¥»÷ÅĞ¶¨½×¶Î
+        // 4. æ”»å‡»åˆ¤å®šé˜¶æ®µ
         if (playerTarget != null)
         {
             transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
@@ -138,7 +138,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         {
             Instantiate(slashEffectPrefab, transform.position, transform.rotation);
         }
-        // 5. »Ö¸´½×¶Î (¿ÉÒÔ¼ÓÒ»¸ö¶ÌÔİµÄºóÒ¡µÈ´ı)
+        // 5. æ¢å¤é˜¶æ®µ (å¯ä»¥åŠ ä¸€ä¸ªçŸ­æš‚çš„åæ‘‡ç­‰å¾…)
         // yield return new WaitForSeconds(0.5f); 
         PerformAttack();
 
@@ -153,20 +153,20 @@ public class EnemyMeleeAttack : MonoBehaviour
 
     public void InterruptAttack()
     {
-        // 1. ¼ì²éÊÇ·ñÕæµÄÔÚ¹¥»÷ÖĞ
+        // 1. æ£€æŸ¥æ˜¯å¦çœŸçš„åœ¨æ”»å‡»ä¸­
         if (!isAttacking)
         {
-            return; // Ã»ÓĞÔÚ¹¥»÷£¬Ê²Ã´Ò²²»×ö
+            return; // æ²¡æœ‰åœ¨æ”»å‡»ï¼Œä»€ä¹ˆä¹Ÿä¸åš
         }
 
         Debug.Log($"<color=yellow>[{gameObject.name}] Melee Attack INTERRUPTED!</color>");
 
-        // 2. Í£Ö¹ÕıÔÚÔËĞĞµÄ MeleeSequence Ğ­³Ì
-        //    (ÎÒÃÇÊ¹ÓÃ StopAllCoroutines() ÊÇ×î¼òµ¥µÄ·½Ê½£¬
-        //     ÒòÎªËüÒ²»áÍ£Ö¹ÎÒÃÇ¿ÉÄÜÌí¼ÓµÄÈÎºÎÆäËû¹¥»÷Ğ­³Ì)
+        // 2. åœæ­¢æ­£åœ¨è¿è¡Œçš„ MeleeSequence åç¨‹
+        //    (æˆ‘ä»¬ä½¿ç”¨ StopAllCoroutines() æ˜¯æœ€ç®€å•çš„æ–¹å¼ï¼Œ
+        //     å› ä¸ºå®ƒä¹Ÿä¼šåœæ­¢æˆ‘ä»¬å¯èƒ½æ·»åŠ çš„ä»»ä½•å…¶ä»–æ”»å‡»åç¨‹)
         StopAllCoroutines(); //
 
-        // 3. Á¢¼´Ïú»ÙÔ¤¾¯ÌØĞ§ (ÕıÈçÄãÒªÇóµÄ)
+        // 3. ç«‹å³é”€æ¯é¢„è­¦ç‰¹æ•ˆ (æ­£å¦‚ä½ è¦æ±‚çš„)
         if (activeWarningIndicator != null)
         {
             Destroy(activeWarningIndicator); //
@@ -174,32 +174,32 @@ public class EnemyMeleeAttack : MonoBehaviour
 
         if (animator != null)
         {
-            // 1. ÖØÖÃµ¼ÖÂÎÒÃÇ¿¨×¡µÄ´¥·¢Æ÷
+            // 1. é‡ç½®å¯¼è‡´æˆ‘ä»¬å¡ä½çš„è§¦å‘å™¨
             animator.ResetTrigger("doWarning"); //
             animator.ResetTrigger("doAttack"); //
 
-            // 2. Ç¿ÖÆ¶¯»­Æ÷»Øµ½¡°´ı»ú¡±×´Ì¬
-            //    (»÷ÍË/Ñ£ÔÎĞ­³Ì»á½Ó¹Ü²¢ÈÃËü±£³ÖÍ£Ö¹)
-            //    (µ±Ğ­³Ì½áÊøºó£¬EnemyAI.UpdateAnimation »áÕıÈ·µØ½«ÆäÉèÖÃ»Ø true)
+            // 2. å¼ºåˆ¶åŠ¨ç”»å™¨å›åˆ°â€œå¾…æœºâ€çŠ¶æ€
+            //    (å‡»é€€/çœ©æ™•åç¨‹ä¼šæ¥ç®¡å¹¶è®©å®ƒä¿æŒåœæ­¢)
+            //    (å½“åç¨‹ç»“æŸåï¼ŒEnemyAI.UpdateAnimation ä¼šæ­£ç¡®åœ°å°†å…¶è®¾ç½®å› true)
             animator.SetBool("isMoving", false); //
         }
         if (enemyAI != null)
         {
             enemyAI.SetMeleeAttackingState(false);
         }
-        // 4. ÖØÖÃËùÓĞ×´Ì¬
+        // 4. é‡ç½®æ‰€æœ‰çŠ¶æ€
         isAttacking = false; //
         activeWarningIndicator = null; //
-        cooldownTimer = cooldown; // ÖØÖÃÀäÈ´Ê±¼ä£¬·ñÔò¹ÖÎï¿ÉÄÜ»á¿¨×¡
+        cooldownTimer = cooldown; // é‡ç½®å†·å´æ—¶é—´ï¼Œå¦åˆ™æ€ªç‰©å¯èƒ½ä¼šå¡ä½
 
-        // 5. [¹Ø¼ü] »Ö¸´ NavMeshAgent µÄ¿ØÖÆÈ¨
-        //    (ÎÒÃÇµÄĞ­³ÌÔÚµÚ 87 ĞĞ ½«ÆäÉèÖÃÎªÁË true)
+        // 5. [å…³é”®] æ¢å¤ NavMeshAgent çš„æ§åˆ¶æƒ
+        //    (æˆ‘ä»¬çš„åç¨‹åœ¨ç¬¬ 87 è¡Œ å°†å…¶è®¾ç½®ä¸ºäº† true)
         if (agent.isActiveAndEnabled && agent.isStopped)
         {
             agent.isStopped = false;
         }
-        // (Ñ£ÔÎ/»÷ÍËĞ­³Ì»áÁ¢¼´ÔÙ´Î½Ó¹Ü²¢ÉèÖÃ isStopped = true£¬
-        // µ«ÕâÈ·±£ÁË *Õâ¸ö½Å±¾* ²»»áÔÙ¡°°ÔÕ¼¡±¿ØÖÆÈ¨)
+        // (çœ©æ™•/å‡»é€€åç¨‹ä¼šç«‹å³å†æ¬¡æ¥ç®¡å¹¶è®¾ç½® isStopped = trueï¼Œ
+        // ä½†è¿™ç¡®ä¿äº† *è¿™ä¸ªè„šæœ¬* ä¸ä¼šå†â€œéœ¸å â€æ§åˆ¶æƒ)
     }
     void PerformAttack()
     {
@@ -215,8 +215,8 @@ public class EnemyMeleeAttack : MonoBehaviour
                     Health playerHealth = playerTarget.GetComponent<Health>();
                     if (playerHealth != null)
                     {
-                        // ¡¾ºËĞÄĞŞÕı¡¿½«ÉËº¦ÊÂ¼şµÄ·¢ÉúÎ»ÖÃ£¬´Ó¹ÖÎï×ÔÉí(transform.position)
-                        // ¸ÄÎªÍæ¼ÒµÄÎ»ÖÃ(playerTarget.position)
+                        // ã€æ ¸å¿ƒä¿®æ­£ã€‘å°†ä¼¤å®³äº‹ä»¶çš„å‘ç”Ÿä½ç½®ï¼Œä»æ€ªç‰©è‡ªèº«(transform.position)
+                        // æ”¹ä¸ºç©å®¶çš„ä½ç½®(playerTarget.position)
                         playerHealth.TakeDamage(damage, playerTarget.position, this.gameObject, AttackType.Standard);
 
                         if (hitEffectPrefab != null)
@@ -231,31 +231,31 @@ public class EnemyMeleeAttack : MonoBehaviour
     }
     void OnDrawGizmosSelected()
     {
-        // ÉèÖÃ¸¨ÖúÏßµÄÑÕÉ«
-        Gizmos.color = new Color(0, 0.8f, 1f, 0.5f); // °ëÍ¸Ã÷µÄÀ¶É«
+        // è®¾ç½®è¾…åŠ©çº¿çš„é¢œè‰²
+        Gizmos.color = new Color(0, 0.8f, 1f, 0.5f); // åŠé€æ˜çš„è“è‰²
 
-        // »ñÈ¡¹¥»÷µÄÆğµãºÍ·½Ïò
+        // è·å–æ”»å‡»çš„èµ·ç‚¹å’Œæ–¹å‘
         Vector3 position = transform.position;
         Vector3 forward = transform.forward;
         float radius = attackRadius;
         float angle = attackAngle;
 
-        // Èç¹ûÊÇÔ²ĞÎ¹¥»÷£¬Ö±½Ó»­Ò»¸öÍêÕûµÄÔ²ÅÌ
+        // å¦‚æœæ˜¯åœ†å½¢æ”»å‡»ï¼Œç›´æ¥ç”»ä¸€ä¸ªå®Œæ•´çš„åœ†ç›˜
         if (angle >= 360 || angle <= 0)
         {
             Gizmos.DrawWireSphere(position, radius);
             return;
         }
 
-        // Èç¹ûÊÇÉÈĞÎ¹¥»÷£¬Ôò»æÖÆÒ»¸öÉÈĞÎ
+        // å¦‚æœæ˜¯æ‰‡å½¢æ”»å‡»ï¼Œåˆ™ç»˜åˆ¶ä¸€ä¸ªæ‰‡å½¢
         Vector3 leftDir = Quaternion.Euler(0, -angle / 2, 0) * forward;
         Vector3 rightDir = Quaternion.Euler(0, angle / 2, 0) * forward;
 
-        // »­Á½Ìõ±ßÏß
+        // ç”»ä¸¤æ¡è¾¹çº¿
         Gizmos.DrawLine(position, position + leftDir * radius);
         Gizmos.DrawLine(position, position + rightDir * radius);
 
-        // Ê¹ÓÃ UnityEditor.Handles À´»æÖÆ¸üÆ½»¬µÄÔ²»¡ (Õâ¶Î´úÂëÖ»ÔÚ±à¼­Æ÷ÖĞÓĞĞ§)
+        // ä½¿ç”¨ UnityEditor.Handles æ¥ç»˜åˆ¶æ›´å¹³æ»‘çš„åœ†å¼§ (è¿™æ®µä»£ç åªåœ¨ç¼–è¾‘å™¨ä¸­æœ‰æ•ˆ)
 #if UNITY_EDITOR
         UnityEditor.Handles.color = Gizmos.color;
         UnityEditor.Handles.DrawSolidArc(position, Vector3.up, leftDir, angle, radius);

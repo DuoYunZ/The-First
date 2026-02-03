@@ -1,9 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public enum AIType
 {
-    Chasing, // Ä¬ÈÏµÄ×·ÖğÍæ¼ÒĞĞÎª
-    StraightLineStampede, // ĞÂµÄÖ±ÏßÒÆ¶¯ĞĞÎª
+    Chasing, // é»˜è®¤çš„è¿½é€ç©å®¶è¡Œä¸º
+    StraightLineStampede, // æ–°çš„ç›´çº¿ç§»åŠ¨è¡Œä¸º
     Pinball
 
 }
@@ -11,82 +11,82 @@ public enum AIType
 [CreateAssetMenu(fileName = "NewEnemyType", menuName = "Game/Enemy Type")]
 public class EnemyType : ScriptableObject
 {
-    [Header("»ù±¾ĞÅÏ¢")]
+    [Header("åŸºæœ¬ä¿¡æ¯")]
     public string enemyName = "New Enemy";
-    public bool isBoss = false; // <--- ĞÂÔö£º±ê¼ÇÕâÊÇ·ñÊÇÒ»¸öBoss
-    public GameObject enemyPrefab; // ¶ÔÓ¦µÄ¹ÖÎïÔ¤ÖÆ¼ş
-    [Tooltip("µĞÈËËÀÍöÊ±£¨·Ç×Ô±¬£©Éú³ÉµÄÌØĞ§")]
+    public bool isBoss = false; // <--- æ–°å¢ï¼šæ ‡è®°è¿™æ˜¯å¦æ˜¯ä¸€ä¸ªBoss
+    public GameObject enemyPrefab; // å¯¹åº”çš„æ€ªç‰©é¢„åˆ¶ä»¶
+    [Tooltip("æ•Œäººæ­»äº¡æ—¶ï¼ˆéè‡ªçˆ†ï¼‰ç”Ÿæˆçš„ç‰¹æ•ˆ")]
     public GameObject deathVfxPrefab;
 
-    [Header("AI ĞĞÎª")]
-    [Tooltip("Ñ¡Ôñ´Ë¹ÖÎïÊ¹ÓÃµÄAIÂß¼­")]
-    public AIType aiType = AIType.Chasing; // <--- ĞÂÔö
-    [Tooltip("Èç¹ûAIÀàĞÍÊÇStraightLineStampede£¬´ËÎªÆäÔÚÆÁÄ»ÉÏµÄ´æ»îÊ±¼ä")]
-    public float lifetime = 15f; // <--- ĞÂÔö
+    [Header("AI è¡Œä¸º")]
+    [Tooltip("é€‰æ‹©æ­¤æ€ªç‰©ä½¿ç”¨çš„AIé€»è¾‘")]
+    public AIType aiType = AIType.Chasing; // <--- æ–°å¢
+    [Tooltip("å¦‚æœAIç±»å‹æ˜¯StraightLineStampedeï¼Œæ­¤ä¸ºå…¶åœ¨å±å¹•ä¸Šçš„å­˜æ´»æ—¶é—´")]
+    public float lifetime = 15f; // <--- æ–°å¢
 
-    [Header("»ù´¡ÊôĞÔ")]
+    [Header("åŸºç¡€å±æ€§")]
     public float baseHealth = 100f;
-    public float baseDamage = 10f; // Èç¹û¹ÖÎïÓĞ¹¥»÷ĞĞÎª
+    public float baseDamage = 10f; // å¦‚æœæ€ªç‰©æœ‰æ”»å‡»è¡Œä¸º
     public float baseSpeed = 2f;
-    // public int scoreValue = 10; // »÷É±µÃ·Ö (¿ÉÑ¡)
+    // public int scoreValue = 10; // å‡»æ€å¾—åˆ† (å¯é€‰)
 
-    [Header("µôÂäÉèÖÃ")]
-    [Tooltip("Õâ¸öµĞÈËµôÂäÄÜÁ¿Ê¯µÄ¼¸ÂÊ (0.01 = 1%)")]
+    [Header("æ‰è½è®¾ç½®")]
+    [Tooltip("è¿™ä¸ªæ•Œäººæ‰è½èƒ½é‡çŸ³çš„å‡ ç‡ (0.01 = 1%)")]
     [Range(0f, 1f)]
-    public float energyStoneDropChance = 0.01f; // Ä¬ÈÏ 1%
+    public float energyStoneDropChance = 0.01f; // é»˜è®¤ 1%
 
-    [Header("²¨´Î¿ØÖÆ")]
-    [Tooltip("¸Ã¹ÖÎï×îÔçÔÚÄÄÒ»²¨¿ªÊ¼³öÏÖ")]
+    [Header("æ³¢æ¬¡æ§åˆ¶")]
+    [Tooltip("è¯¥æ€ªç‰©æœ€æ—©åœ¨å“ªä¸€æ³¢å¼€å§‹å‡ºç°")]
     public int firstAppearanceWave = 1;
 
-    [Header("¾«Ó¢°æ±¾ÉèÖÃ (Elite Version Settings)")]
-    [Tooltip("´ËÀàĞÍ¹ÖÎïÊÇ·ñ¿ÉÒÔ³ÉÎª¾«Ó¢")]
+    [Header("ç²¾è‹±ç‰ˆæœ¬è®¾ç½® (Elite Version Settings)")]
+    [Tooltip("æ­¤ç±»å‹æ€ªç‰©æ˜¯å¦å¯ä»¥æˆä¸ºç²¾è‹±")]
     public bool canBeElite = true;
 
-    [Tooltip("¾«Ó¢×´Ì¬ÏÂµÄÉúÃüÖµ³ËÊı (ÀıÈç 1.5 ±íÊ¾ÎªÆÕÍ¨°æ±¾µÄ150%)")]
+    [Tooltip("ç²¾è‹±çŠ¶æ€ä¸‹çš„ç”Ÿå‘½å€¼ä¹˜æ•° (ä¾‹å¦‚ 1.5 è¡¨ç¤ºä¸ºæ™®é€šç‰ˆæœ¬çš„150%)")]
     public float eliteHealthMultiplier = 1.5f;
 
-    [Tooltip("¾«Ó¢×´Ì¬ÏÂµÄÉËº¦³ËÊı")]
+    [Tooltip("ç²¾è‹±çŠ¶æ€ä¸‹çš„ä¼¤å®³ä¹˜æ•°")]
     public float eliteDamageMultiplier = 1.2f;
 
-    [Tooltip("¾«Ó¢×´Ì¬ÏÂµÄËÙ¶È³ËÊı")]
+    [Tooltip("ç²¾è‹±çŠ¶æ€ä¸‹çš„é€Ÿåº¦ä¹˜æ•°")]
     public float eliteSpeedMultiplier = 1.1f;
 
-    [Tooltip("¾«Ó¢×´Ì¬ÏÂµÄÄ£ĞÍËõ·Å´óĞ¡")]
+    [Tooltip("ç²¾è‹±çŠ¶æ€ä¸‹çš„æ¨¡å‹ç¼©æ”¾å¤§å°")]
     public Vector3 eliteScale = new Vector3(1.2f, 1.2f, 1.2f);
 
-    [Tooltip("¾«Ó¢×´Ì¬ÏÂµÄÑÕÉ«äÖÈ¾£¨Ò»¸ö¼òµ¥µÄÊÓ¾õÇø·Ö·½·¨£©")]
+    [Tooltip("ç²¾è‹±çŠ¶æ€ä¸‹çš„é¢œè‰²æ¸²æŸ“ï¼ˆä¸€ä¸ªç®€å•çš„è§†è§‰åŒºåˆ†æ–¹æ³•ï¼‰")]
     public Color eliteColorTint = Color.red;
 
-    // --- ¡¾ĞÂÔö¡¿×Ô±¬ÊôĞÔ ---
-    [Header("×Ô±¬ÊôĞÔ (Suicide Attack)")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬Èç¹ûÕâÖÖÀàĞÍµÄ¹ÖÎïÊÇ×Ô±¬¹Ö")]
+    // --- ã€æ–°å¢ã€‘è‡ªçˆ†å±æ€§ ---
+    [Header("è‡ªçˆ†å±æ€§ (Suicide Attack)")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œå¦‚æœè¿™ç§ç±»å‹çš„æ€ªç‰©æ˜¯è‡ªçˆ†æ€ª")]
     public bool isSuicideBomber = false;
 
-    [Tooltip("ÔÚ×¼±¸×Ô±¬Ç°£¬ÊÇ·ñ»áÓĞÒ»¸öÌøÏòÍæ¼ÒµÄ¶¯×÷")]
+    [Tooltip("åœ¨å‡†å¤‡è‡ªçˆ†å‰ï¼Œæ˜¯å¦ä¼šæœ‰ä¸€ä¸ªè·³å‘ç©å®¶çš„åŠ¨ä½œ")]
     public bool hasJumpAttack = true;
-    [Tooltip("¹ÖÎï½øÈë´Ë·¶Î§ºó£¬»á´¥·¢ÌøÔ¾¹¥»÷")]
-    public float jumpTriggerRange = 8f; // Ìæ»»ÁË armingRange
-    [Tooltip("ÌøÔ¾Å×ÎïÏßµÄ×î¸ßµã")]
-    public float jumpArcHeight = 3f;   // Ìæ»»ÁË jumpForce
-    [Tooltip("ÌøÔ¾ÔÚ¿ÕÖĞ·ÉĞĞµÄÊ±¼ä")]
+    [Tooltip("æ€ªç‰©è¿›å…¥æ­¤èŒƒå›´åï¼Œä¼šè§¦å‘è·³è·ƒæ”»å‡»")]
+    public float jumpTriggerRange = 8f; // æ›¿æ¢äº† armingRange
+    [Tooltip("è·³è·ƒæŠ›ç‰©çº¿çš„æœ€é«˜ç‚¹")]
+    public float jumpArcHeight = 3f;   // æ›¿æ¢äº† jumpForce
+    [Tooltip("è·³è·ƒåœ¨ç©ºä¸­é£è¡Œçš„æ—¶é—´")]
     public float jumpAirTime = 1.2f;
 
-    [Tooltip("¹ÖÎïĞèÒª¿¿½üÍæ¼Òµ½Õâ¸ö¾àÀë£¬²Å»á¿ªÊ¼×¼±¸×Ô±¬")]
+    [Tooltip("æ€ªç‰©éœ€è¦é è¿‘ç©å®¶åˆ°è¿™ä¸ªè·ç¦»ï¼Œæ‰ä¼šå¼€å§‹å‡†å¤‡è‡ªçˆ†")]
     public float armingRange = 2.5f;
 
-    [Tooltip("×¼±¸×Ô±¬µÄ³ÖĞøÊ±¼ä£¨Ãë£©£¬ÆÚ¼ä»áÓĞÔ¤¾¯")]
+    [Tooltip("å‡†å¤‡è‡ªçˆ†çš„æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰ï¼ŒæœŸé—´ä¼šæœ‰é¢„è­¦")]
     public float armingTime = 1.5f;
 
-    [Tooltip("×Ô±¬µÄÉËº¦·¶Î§°ë¾¶")]
+    [Tooltip("è‡ªçˆ†çš„ä¼¤å®³èŒƒå›´åŠå¾„")]
     public float explosionRadius = 4f;
 
-    [Tooltip("×Ô±¬Ôì³ÉµÄÉËº¦")]
+    [Tooltip("è‡ªçˆ†é€ æˆçš„ä¼¤å®³")]
     public int explosionDamage = 50;
 
-    [Tooltip("×Ô±¬Ê±µÄÊÓ¾õÌØĞ§Ô¤ÖÆ¼ş")]
+    [Tooltip("è‡ªçˆ†æ—¶çš„è§†è§‰ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject explosionVfxPrefab;
 
-    [Tooltip("×¼±¸×Ô±¬ÆÚ¼äµÄÔ¤¾¯ÌØĞ§Ô¤ÖÆ¼ş")]
+    [Tooltip("å‡†å¤‡è‡ªçˆ†æœŸé—´çš„é¢„è­¦ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject armingWarningPrefab;
 }

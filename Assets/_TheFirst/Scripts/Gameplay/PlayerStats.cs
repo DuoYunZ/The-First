@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -26,24 +26,24 @@ public class PlayerStats : MonoBehaviour
     public float projectileSpeedMultiplier = 1f;
     public float pickupRadiusMultiplier = 1f;
     public float moveSpeedMultiplier = 1f;
-    public float durationMultiplier = 1f; // ¡¾ĞÂÔö¡¿³ÖĞøÊ±¼ä/ÉúÃüÖÜÆÚ±¶ÂÊ
+    public float durationMultiplier = 1f; // ã€æ–°å¢ã€‘æŒç»­æ—¶é—´/ç”Ÿå‘½å‘¨æœŸå€ç‡
     public int bonusProjectileCount = 0;
-    [Header("±©»÷ÊôĞÔ")]
-    public float critRate = 0.05f;   // »ù´¡±©»÷ÂÊ 5%
-    public float critDamage = 1.5f;  // »ù´¡±©»÷ÉËº¦ 150%
+    [Header("æš´å‡»å±æ€§")]
+    public float critRate = 0.05f;   // åŸºç¡€æš´å‡»ç‡ 5%
+    public float critDamage = 1.5f;  // åŸºç¡€æš´å‡»ä¼¤å®³ 150%
 
-    [Header("Éú´æÊôĞÔ")]
-    public int revivalCount = 0; // ¡¾ĞÂÔö¡¿¸´»î´ÎÊı
+    [Header("ç”Ÿå­˜å±æ€§")]
+    public int revivalCount = 0; // ã€æ–°å¢ã€‘å¤æ´»æ¬¡æ•°
 
     public float flatDamageBonus = 0f;
     public float flatAoeDamageBonus = 0f;
     public int bonusPierceCount = 0;
     public int bonusMaxHealth = 0;
-    public int bonusSlashCount = 0;   // µ¶¹âÊıÁ¿
+    public int bonusSlashCount = 0;   // åˆ€å…‰æ•°é‡
     public int bonusOrbitalCount = 0;
     public float armor = 0f;
 
-    // --- ¡¾ĞÂÔö¡¿»ù´¡Öµ±¸·İ (ÓÃÓÚÖØËã) ---
+    // --- ã€æ–°å¢ã€‘åŸºç¡€å€¼å¤‡ä»½ (ç”¨äºé‡ç®—) ---
     private float _baseDamageMultiplier;
     private float _baseAoeDamageMultiplier;
     private float _baseAoeRadiusMultiplier;
@@ -51,38 +51,38 @@ public class PlayerStats : MonoBehaviour
     private float _baseProjectileSpeedMultiplier;
     private float _basePickupRadiusMultiplier;
     private float _baseMoveSpeedMultiplier;
-    private float _baseDurationMultiplier; // ¡¾ĞÂÔö¡¿
+    private float _baseDurationMultiplier; // ã€æ–°å¢ã€‘
     private float _baseFlatDamage;
     private int _baseMaxHealth;
     private float _baseCritRate;
     private float _baseCritDamage;
 
-    // ¡¾ºËĞÄĞŞ¸´ 1¡¿ÎªÕûÊıÊôĞÔÌí¼Ó±¸·İ±äÁ¿
+    // ã€æ ¸å¿ƒä¿®å¤ 1ã€‘ä¸ºæ•´æ•°å±æ€§æ·»åŠ å¤‡ä»½å˜é‡
     private int _baseBonusPierceCount;
     private int _baseBonusSlashCount;
     private int _baseBonusOrbitalCount;
     private int _baseBonusProjectileCount;
 
-    [Header("ÎäÆ÷ÌØĞ§¼Ó³É")]
+    [Header("æ­¦å™¨ç‰¹æ•ˆåŠ æˆ")]
     public float parabolicAoeStunChance = 0f;
 
-    [Header("ÌØÊâÊôĞÔ")]
+    [Header("ç‰¹æ®Šå±æ€§")]
     public float luck = 1.0f;
 
-    [Header("»¤¶ÜÊôĞÔ")]
+    [Header("æŠ¤ç›¾å±æ€§")]
     public int maxShield = 0;
     public float shieldCooldown = 5f;
 
-    [Header("»ØĞıïÚµş¼Ó×´Ì¬")]
+    [Header("å›æ—‹é•–å åŠ çŠ¶æ€")]
     public int boomerangCatchStacks = 0;
     public int boomerangMaxCatchStacks = 0;
     public float boomerangStackDamageBonusPercent = 0f;
     public float boomerangStackScaleBonusPercent = 0f;
 
-    [Header("ÄÜÁ¿Ê¯¼ÆÊı")]
+    [Header("èƒ½é‡çŸ³è®¡æ•°")]
     public Dictionary<EnergyStoneEffectType, int> ActiveStoneCounts = new Dictionary<EnergyStoneEffectType, int>();
 
-    [Header("À×µçÊ¯¼ÆÊıÆ÷")]
+    [Header("é›·ç”µçŸ³è®¡æ•°å™¨")]
     public int lightningSmiteCounter = 0;
 
     void Awake()
@@ -107,7 +107,7 @@ public class PlayerStats : MonoBehaviour
         _baseFlatDamage = flatDamageBonus;
         _baseMaxHealth = 0;
 
-        // ¡¾ºËĞÄĞŞ¸´ 2¡¿³õÊ¼»¯ÕâĞ©±¸·İ±äÁ¿
+        // ã€æ ¸å¿ƒä¿®å¤ 2ã€‘åˆå§‹åŒ–è¿™äº›å¤‡ä»½å˜é‡
         _baseBonusPierceCount = bonusPierceCount;
         _baseBonusSlashCount = bonusSlashCount;
         _baseBonusOrbitalCount = bonusOrbitalCount;
@@ -121,7 +121,7 @@ public class PlayerStats : MonoBehaviour
     {
         if (PlayerProgressManager.Instance == null) return;
 
-        Debug.Log("<color=cyan>ÕıÔÚ´Ó PlayerProgressManager Ó¦ÓÃÓÀ¾ÃÊôĞÔ¼Ó³É...</color>");
+        Debug.Log("<color=cyan>æ­£åœ¨ä» PlayerProgressManager åº”ç”¨æ°¸ä¹…å±æ€§åŠ æˆ...</color>");
 
         _baseFlatDamage += PlayerProgressManager.Instance.permanentFlatDamageBonus;
         _baseDamageMultiplier += PlayerProgressManager.Instance.permanentDamagePercentBonus;
@@ -138,7 +138,7 @@ public class PlayerStats : MonoBehaviour
             if (existingItem.currentLevel < itemData.maxLevel)
             {
                 existingItem.currentLevel++;
-                Debug.Log($"Éı¼¶±»¶¯µÀ¾ß: {itemData.itemName} -> Lv.{existingItem.currentLevel}");
+                Debug.Log($"å‡çº§è¢«åŠ¨é“å…·: {itemData.itemName} -> Lv.{existingItem.currentLevel}");
             }
         }
         else
@@ -146,11 +146,11 @@ public class PlayerStats : MonoBehaviour
             if (activePassiveItems.Count < 6)
             {
                 activePassiveItems.Add(new RuntimePassiveItem { data = itemData, currentLevel = 1 });
-                Debug.Log($"»ñµÃ±»¶¯µÀ¾ß: {itemData.itemName}");
+                Debug.Log($"è·å¾—è¢«åŠ¨é“å…·: {itemData.itemName}");
             }
             else
             {
-                Debug.LogWarning("±»¶¯µÀ¾ßÀ¸ÒÑÂú£¡");
+                Debug.LogWarning("è¢«åŠ¨é“å…·æ å·²æ»¡ï¼");
                 return;
             }
         }
@@ -159,7 +159,7 @@ public class PlayerStats : MonoBehaviour
 
     private void RecalculateStats()
     {
-        // 1. ÖØÖÃÎª»ù´¡Öµ (Ê¹ÓÃ±¸·İ±äÁ¿)
+        // 1. é‡ç½®ä¸ºåŸºç¡€å€¼ (ä½¿ç”¨å¤‡ä»½å˜é‡)
         damageMultiplier = _baseDamageMultiplier;
         aoeDamageMultiplier = _baseAoeDamageMultiplier;
         aoeRadiusMultiplier = _baseAoeRadiusMultiplier;
@@ -171,7 +171,7 @@ public class PlayerStats : MonoBehaviour
         bonusMaxHealth = _baseMaxHealth;
         durationMultiplier = _baseDurationMultiplier;
 
-        // ¡¾ºËĞÄĞŞ¸´ 3¡¿²»ÔÙÖØÖÃÎª 0£¬¶øÊÇÖØÖÃÎª±¸·İÖµ
+        // ã€æ ¸å¿ƒä¿®å¤ 3ã€‘ä¸å†é‡ç½®ä¸º 0ï¼Œè€Œæ˜¯é‡ç½®ä¸ºå¤‡ä»½å€¼
         bonusPierceCount = _baseBonusPierceCount;
         bonusSlashCount = _baseBonusSlashCount;
         bonusOrbitalCount = _baseBonusOrbitalCount;
@@ -179,19 +179,19 @@ public class PlayerStats : MonoBehaviour
         critRate = _baseCritRate;
         critDamage = _baseCritDamage;
 
-        armor = 0; // Èç¹ûÄãÒ²ÏëÍ¨¹ıÉı¼¶¿¨¼Ó»¤¼×£¬¼ÇµÃÒ²¸øËü¼Ó¸ö _baseArmor
+        armor = 0; // å¦‚æœä½ ä¹Ÿæƒ³é€šè¿‡å‡çº§å¡åŠ æŠ¤ç”²ï¼Œè®°å¾—ä¹Ÿç»™å®ƒåŠ ä¸ª _baseArmor
 
-        // 2. ±éÀúËùÓĞ±»¶¯µÀ¾ß²¢µş¼Ó
+        // 2. éå†æ‰€æœ‰è¢«åŠ¨é“å…·å¹¶å åŠ 
         foreach (var item in activePassiveItems)
         {
             ApplyPassiveItemStat(item.data, item.currentLevel);
         }
 
-        // 3. Í¨ÖªÆäËû×é¼ş
+        // 3. é€šçŸ¥å…¶ä»–ç»„ä»¶
         UpdateDependentComponents();
 
-        Debug.Log($"ÊôĞÔÖØËãÍê³É¡£µ±Ç°¶îÍâµ¶¹â: {bonusSlashCount}");
-        Debug.Log($"ÊôĞÔÖØËãÍê³É¡£³ÖĞøÊ±¼ä±¶ÂÊ: {durationMultiplier}");
+        Debug.Log($"å±æ€§é‡ç®—å®Œæˆã€‚å½“å‰é¢å¤–åˆ€å…‰: {bonusSlashCount}");
+        Debug.Log($"å±æ€§é‡ç®—å®Œæˆã€‚æŒç»­æ—¶é—´å€ç‡: {durationMultiplier}");
     }
 
     private void ApplyPassiveItemStat(PassiveItemData data, int level)
@@ -216,7 +216,7 @@ public class PlayerStats : MonoBehaviour
             case UpgradeType.WeaponDuration:
                 durationMultiplier += totalValue;
                 break;
-            // Èç¹ûÄãÏëÈÃ±»¶¯µÀ¾ßÒ²ÄÜ¼Óµ¶¹â£¬ÔÚÕâÀï¼Ó case UpgradeType.SlashCount
+            // å¦‚æœä½ æƒ³è®©è¢«åŠ¨é“å…·ä¹Ÿèƒ½åŠ åˆ€å…‰ï¼Œåœ¨è¿™é‡ŒåŠ  case UpgradeType.SlashCount
             case UpgradeType.CritRate: critRate += totalValue; break;
             case UpgradeType.CritDamage: critDamage += totalValue; break;
             case UpgradeType.Revival:
@@ -273,7 +273,7 @@ public class PlayerStats : MonoBehaviour
                         break;
                 }
                 boomerangCatchStacks = 0;
-                Debug.Log($"»ØĞıïÚ¹æÔò¸üĞÂµ½ Level {targetLevel}");
+                Debug.Log($"å›æ—‹é•–è§„åˆ™æ›´æ–°åˆ° Level {targetLevel}");
             }
             else
             {
@@ -317,7 +317,7 @@ public class PlayerStats : MonoBehaviour
             case UpgradeType.MaxHealth: _baseMaxHealth += (int)val; break;
             case UpgradeType.Armor: armor += val; break;
 
-            // ¡¾ºËĞÄĞŞ¸´ 4¡¿ĞŞ¸Ä _base ±äÁ¿£¬¶ø²»ÊÇÖ±½Ó¸Ä public ±äÁ¿
+            // ã€æ ¸å¿ƒä¿®å¤ 4ã€‘ä¿®æ”¹ _base å˜é‡ï¼Œè€Œä¸æ˜¯ç›´æ¥æ”¹ public å˜é‡
             case UpgradeType.PierceCount: _baseBonusPierceCount += (int)val; break;
             case UpgradeType.SlashCount: _baseBonusSlashCount += (int)val; break;
             case UpgradeType.OrbitalCount: _baseBonusOrbitalCount += (int)val; break;
@@ -328,11 +328,11 @@ public class PlayerStats : MonoBehaviour
                 _baseDurationMultiplier += val;
                 break;
             case UpgradeType.CritRate:
-                // ĞŞÕı£ºÖ±½Ó¼Ó val£¬ÒòÎªÉÏÃæÒÑ¾­´¦Àí¹ı /100 ÁË
+                // ä¿®æ­£ï¼šç›´æ¥åŠ  valï¼Œå› ä¸ºä¸Šé¢å·²ç»å¤„ç†è¿‡ /100 äº†
                 _baseCritRate += val;
                 break;
             case UpgradeType.CritDamage:
-                // ĞŞÕı£ºÖ±½Ó¼Ó val
+                // ä¿®æ­£ï¼šç›´æ¥åŠ  val
                 _baseCritDamage += val;
                 break;
         }

@@ -1,53 +1,53 @@
-using UnityEngine;
-using UnityEngine.SceneManagement; // ¡¾¹Ø¼ü¡¿ÒıÈë³¡¾°¹ÜÀíËùĞèµÄÃüÃû¿Õ¼ä
+ï»¿using UnityEngine;
+using UnityEngine.SceneManagement; // ã€å…³é”®ã€‘å¼•å…¥åœºæ™¯ç®¡ç†æ‰€éœ€çš„å‘½åç©ºé—´
 
 public class PortalController : MonoBehaviour
 {
-    [Header("´«ËÍÉèÖÃ")]
-    [Tooltip("Òª¼ÓÔØµÄÕ½¶·³¡¾°µÄÃû³Æ")]
-    public string sceneToLoad = "CombatArena01"; // Ä¬ÈÏÉèÖÃÎªÄúµÄÕ½¶·³¡¾°Ãû
+    [Header("ä¼ é€è®¾ç½®")]
+    [Tooltip("è¦åŠ è½½çš„æˆ˜æ–—åœºæ™¯çš„åç§°")]
+    public string sceneToLoad = "CombatArena01"; // é»˜è®¤è®¾ç½®ä¸ºæ‚¨çš„æˆ˜æ–—åœºæ™¯å
 
-    [Header("ÊÓ¾õÓë½»»¥")]
-    [Tooltip("£¨¿ÉÑ¡£©µ±Íæ¼Ò½øÈëÊ±£¬ĞèÒª¹Ø±ÕµÄÊÓ¾õÌØĞ§")]
+    [Header("è§†è§‰ä¸äº¤äº’")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰å½“ç©å®¶è¿›å…¥æ—¶ï¼Œéœ€è¦å…³é—­çš„è§†è§‰ç‰¹æ•ˆ")]
     public GameObject portalVisuals;
-    [Tooltip("£¨¿ÉÑ¡£©µ±Íæ¼Ò½øÈëÊ±£¬²¥·ÅµÄ´«ËÍÌØĞ§")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰å½“ç©å®¶è¿›å…¥æ—¶ï¼Œæ’­æ”¾çš„ä¼ é€ç‰¹æ•ˆ")]
     public GameObject activationEffectPrefab;
 
-    private bool isActivated = false; // ·ÀÖ¹ÖØ¸´´¥·¢
+    private bool isActivated = false; // é˜²æ­¢é‡å¤è§¦å‘
 
     /// <summary>
-    /// µ±ÓĞÆäËûÅö×²Ìå½øÈëÕâ¸ö´¥·¢Æ÷Ê±£¬Unity»á×Ô¶¯µ÷ÓÃÕâ¸ö·½·¨¡£
+    /// å½“æœ‰å…¶ä»–ç¢°æ’ä½“è¿›å…¥è¿™ä¸ªè§¦å‘å™¨æ—¶ï¼ŒUnityä¼šè‡ªåŠ¨è°ƒç”¨è¿™ä¸ªæ–¹æ³•ã€‚
     /// </summary>
-    /// <param name="other">½øÈë´¥·¢Æ÷µÄÁíÒ»¸öÎïÌåµÄÅö×²Ìå</param>
+    /// <param name="other">è¿›å…¥è§¦å‘å™¨çš„å¦ä¸€ä¸ªç‰©ä½“çš„ç¢°æ’ä½“</param>
     private void OnTriggerEnter(Collider other)
     {
-        // Èç¹ûÒÑ¾­´¥·¢¹ı£¬»òÕß½øÈëµÄ²»ÊÇÍæ¼Ò£¬ÔòÖ±½Ó·µ»Ø
+        // å¦‚æœå·²ç»è§¦å‘è¿‡ï¼Œæˆ–è€…è¿›å…¥çš„ä¸æ˜¯ç©å®¶ï¼Œåˆ™ç›´æ¥è¿”å›
         if (isActivated || !other.CompareTag("Player"))
         {
             return;
         }
 
-        // ¼ì²é½øÈëµÄÊÇ·ñÊÇÍæ¼Ò£¨ĞèÒªÈ·±£ÄúµÄÍæ¼ÒÔ¤ÖÆ¼şµÄTag±»ÉèÖÃÎªÁË"Player"£©
-        Debug.Log("Íæ¼ÒÒÑ½øÈë´«ËÍÃÅ£¬×¼±¸´«ËÍ...");
-        isActivated = true; // ±ê¼ÇÎªÒÑ¼¤»î
+        // æ£€æŸ¥è¿›å…¥çš„æ˜¯å¦æ˜¯ç©å®¶ï¼ˆéœ€è¦ç¡®ä¿æ‚¨çš„ç©å®¶é¢„åˆ¶ä»¶çš„Tagè¢«è®¾ç½®ä¸ºäº†"Player"ï¼‰
+        Debug.Log("ç©å®¶å·²è¿›å…¥ä¼ é€é—¨ï¼Œå‡†å¤‡ä¼ é€...");
+        isActivated = true; // æ ‡è®°ä¸ºå·²æ¿€æ´»
 
-        // ¿ªÊ¼´«ËÍÁ÷³Ì
+        // å¼€å§‹ä¼ é€æµç¨‹
         StartCoroutine(TeleportSequence());
     }
 
     private System.Collections.IEnumerator TeleportSequence()
     {
-        // 1. £¨¿ÉÑ¡£©²¥·Å´«ËÍÌØĞ§
+        // 1. ï¼ˆå¯é€‰ï¼‰æ’­æ”¾ä¼ é€ç‰¹æ•ˆ
         if (portalVisuals != null) portalVisuals.SetActive(false);
         if (activationEffectPrefab != null) Instantiate(activationEffectPrefab, transform.position, Quaternion.identity);
 
-        // 2. £¨¿ÉÑ¡£©¸øÌØĞ§Ò»µã²¥·ÅÊ±¼ä£¬»òÕß×öÒ»¸öÆÁÄ»µ­³öĞ§¹û
-        // ¼òµ¥µÄ×ö·¨ÊÇÖ±½ÓµÈ´ıÒ»Ğ¡¶ÎÊ±¼ä
-        yield return new WaitForSeconds(1.0f); // µÈ´ı1Ãë
+        // 2. ï¼ˆå¯é€‰ï¼‰ç»™ç‰¹æ•ˆä¸€ç‚¹æ’­æ”¾æ—¶é—´ï¼Œæˆ–è€…åšä¸€ä¸ªå±å¹•æ·¡å‡ºæ•ˆæœ
+        // ç®€å•çš„åšæ³•æ˜¯ç›´æ¥ç­‰å¾…ä¸€å°æ®µæ—¶é—´
+        yield return new WaitForSeconds(1.0f); // ç­‰å¾…1ç§’
 
-        // 3. ºËĞÄ£º¼ÓÔØÕ½¶·³¡¾°
-        // ÔÚ¼ÓÔØÇ°£¬DataManagerÖĞÒÑ¾­±£´æÁËÎÒÃÇÔÚHubSceneÖĞ³õÊ¼»¯µÄ½ÇÉ«Êı¾İ
-        Debug.Log($"ÕıÔÚ¼ÓÔØ³¡¾°: {sceneToLoad}...");
+        // 3. æ ¸å¿ƒï¼šåŠ è½½æˆ˜æ–—åœºæ™¯
+        // åœ¨åŠ è½½å‰ï¼ŒDataManagerä¸­å·²ç»ä¿å­˜äº†æˆ‘ä»¬åœ¨HubSceneä¸­åˆå§‹åŒ–çš„è§’è‰²æ•°æ®
+        Debug.Log($"æ­£åœ¨åŠ è½½åœºæ™¯: {sceneToLoad}...");
         SceneManager.LoadScene(sceneToLoad);
     }
 }

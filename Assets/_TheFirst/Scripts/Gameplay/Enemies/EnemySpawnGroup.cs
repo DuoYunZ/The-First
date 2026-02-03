@@ -1,82 +1,82 @@
-// Äã¿ÉÒÔ´´½¨Ò»¸öĞÂµÄ C# ½Å±¾ EnemySpawnGroup.cs
-// »òÕßÈç¹ûËüÖ»±» WaveConfig Ê¹ÓÃ£¬Ò²¿ÉÒÔ½«Æä¶¨ÒåÔÚ WaveConfig.cs ÎÄ¼şÄÚ²¿£¨µ«×÷Îª¶ÀÁ¢Àà£©
+ï»¿// ä½ å¯ä»¥åˆ›å»ºä¸€ä¸ªæ–°çš„ C# è„šæœ¬ EnemySpawnGroup.cs
+// æˆ–è€…å¦‚æœå®ƒåªè¢« WaveConfig ä½¿ç”¨ï¼Œä¹Ÿå¯ä»¥å°†å…¶å®šä¹‰åœ¨ WaveConfig.cs æ–‡ä»¶å†…éƒ¨ï¼ˆä½†ä½œä¸ºç‹¬ç«‹ç±»ï¼‰
 using UnityEngine;
 
-[System.Serializable] // Ê¹Æä¿ÉÒÔÔÚ WaveConfig µÄ Inspector ÖĞ±»±à¼­
+[System.Serializable] // ä½¿å…¶å¯ä»¥åœ¨ WaveConfig çš„ Inspector ä¸­è¢«ç¼–è¾‘
 public class EnemySpawnGroup
 {
     public enum FormationType
     {
-        None, // Ä¬ÈÏµÄËæ»úÉú³É
-        Line, // Ë®Æ½Ïß
+        None, // é»˜è®¤çš„éšæœºç”Ÿæˆ
+        Line, // æ°´å¹³çº¿
         V_Shape,
         Grid
     }
 
-    [Header("ÕóĞÍÉèÖÃ (Formation)")]
-    [Tooltip("Ñ¡Ôñ´Ë×éµĞÈËÉú³ÉµÄÕóĞÍ")]
+    [Header("é˜µå‹è®¾ç½® (Formation)")]
+    [Tooltip("é€‰æ‹©æ­¤ç»„æ•Œäººç”Ÿæˆçš„é˜µå‹")]
     public FormationType formation = FormationType.None;
-    [Tooltip("ÕóĞÍÖĞµĞÈËÖ®¼äµÄ¼ä¾à")]
+    [Tooltip("é˜µå‹ä¸­æ•Œäººä¹‹é—´çš„é—´è·")]
     public float formationSpacing = 2f;
-    [Tooltip("V×ÖĞÎµÄÉî¶ÈÒò×Ó (0.5±íÊ¾Ã¿¸ô1µ¥Î»¼ä¾à£¬Ò²Ç°½ø0.5µ¥Î»)")]
+    [Tooltip("Vå­—å½¢çš„æ·±åº¦å› å­ (0.5è¡¨ç¤ºæ¯éš”1å•ä½é—´è·ï¼Œä¹Ÿå‰è¿›0.5å•ä½)")]
     public float vShapeDepthFactor = 0.5f;
 
-    [Tooltip("Íø¸ñÕóĞÍµÄÁĞÊı¡£ĞĞÊı½«×Ô¶¯¼ÆËã¡£")]
-    public int gridColumns = 5; // <--- 2. ÔÚÕâÀïÌí¼ÓÕâÒ»ĞĞ
+    [Tooltip("ç½‘æ ¼é˜µå‹çš„åˆ—æ•°ã€‚è¡Œæ•°å°†è‡ªåŠ¨è®¡ç®—ã€‚")]
+    public int gridColumns = 5; // <--- 2. åœ¨è¿™é‡Œæ·»åŠ è¿™ä¸€è¡Œ
 
-    [Tooltip("ÕóĞÍÆ«ÒÆÁ¿(ÑØÇ°½ø·½Ïò)£¬ÓÃÓÚ´´½¨½»´íÏß")]
-    public float formationOffset = 0f; // <--- ÔÚÕâÀïÌí¼ÓÕâÒ»ĞĞ
+    [Tooltip("é˜µå‹åç§»é‡(æ²¿å‰è¿›æ–¹å‘)ï¼Œç”¨äºåˆ›å»ºäº¤é”™çº¿")]
+    public float formationOffset = 0f; // <--- åœ¨è¿™é‡Œæ·»åŠ è¿™ä¸€è¡Œ
 
-    [Tooltip("ÒªÉú³ÉµÄµĞÈËÀàĞÍ (ÒıÓÃ EnemyType ScriptableObject)")]
+    [Tooltip("è¦ç”Ÿæˆçš„æ•Œäººç±»å‹ (å¼•ç”¨ EnemyType ScriptableObject)")]
     public EnemyType enemyType;
 
-    [Tooltip("Éú³É´ËÀàĞÍµĞÈËµÄÊıÁ¿")]
+    [Tooltip("ç”Ÿæˆæ­¤ç±»å‹æ•Œäººçš„æ•°é‡")]
     public int count = 1;
 
-    [Tooltip("£¨¿ÉÑ¡£©´Ë×éµĞÈËÊÇ·ñÎª¾«Ó¢¹Ö")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰æ­¤ç»„æ•Œäººæ˜¯å¦ä¸ºç²¾è‹±æ€ª")]
     public bool isElite = false;
 
-    [Tooltip("ÔÚ±¾²¨ÖĞ£¬´Ë×éµĞÈËÔÚÉÏÒ»×éµĞÈË¿ªÊ¼Éú³ÉºóÑÓ³Ù¶àÉÙÃë¿ªÊ¼Éú³É")]
+    [Tooltip("åœ¨æœ¬æ³¢ä¸­ï¼Œæ­¤ç»„æ•Œäººåœ¨ä¸Šä¸€ç»„æ•Œäººå¼€å§‹ç”Ÿæˆåå»¶è¿Ÿå¤šå°‘ç§’å¼€å§‹ç”Ÿæˆ")]
     public float delayAfterPreviousGroupStarts = 0f;
 
-    [Tooltip("ÔÚ´Ë×éÄÚ²¿£¬Ã¿¸öµĞÈËÖ®¼äµÄÉú³É¼ä¸ôÊ±¼ä¡£Èç¹ûÎª0£¬ÔòÊ¹ÓÃ EnemySpawner µÄÈ«¾ÖÄ¬ÈÏ¼ä¸ô¡£")]
+    [Tooltip("åœ¨æ­¤ç»„å†…éƒ¨ï¼Œæ¯ä¸ªæ•Œäººä¹‹é—´çš„ç”Ÿæˆé—´éš”æ—¶é—´ã€‚å¦‚æœä¸º0ï¼Œåˆ™ä½¿ç”¨ EnemySpawner çš„å…¨å±€é»˜è®¤é—´éš”ã€‚")]
     public float spawnIntervalWithinGroup = 0.2f;
 
-    [Tooltip("£¨¿ÉÑ¡£©´Ë×éµĞÈËÉú³ÉµÄ·½ÏòÌáÊ¾")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰æ­¤ç»„æ•Œäººç”Ÿæˆçš„æ–¹å‘æç¤º")]
     public SpawnDirectionHint directionHint = SpawnDirectionHint.Random;
 
-    [Header("±¬·¢Éú³É¸²¸Ç (¿ÉÑ¡)")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬Îª´Ë×éµĞÈËÆôÓÃ¶ÀÁ¢µÄ±¬·¢Éú³ÉÉèÖÃ£¬ºöÂÔ EnemySpawner ÉÏµÄÈ«¾ÖÉèÖÃ¡£")]
+    [Header("çˆ†å‘ç”Ÿæˆè¦†ç›– (å¯é€‰)")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œä¸ºæ­¤ç»„æ•Œäººå¯ç”¨ç‹¬ç«‹çš„çˆ†å‘ç”Ÿæˆè®¾ç½®ï¼Œå¿½ç•¥ EnemySpawner ä¸Šçš„å…¨å±€è®¾ç½®ã€‚")]
     public bool overrideSpawnerBurstSettings = false;
 
-    [Tooltip("¡¾¶ÀÁ¢ÉèÖÃ¡¿µ±Õâ×éµĞÈËµÄÊıÁ¿³¬¹ı´ËÖµÊ±£¬ÆôÓÃ±¬·¢Éú³ÉÄ£Ê½¡£")]
+    [Tooltip("ã€ç‹¬ç«‹è®¾ç½®ã€‘å½“è¿™ç»„æ•Œäººçš„æ•°é‡è¶…è¿‡æ­¤å€¼æ—¶ï¼Œå¯ç”¨çˆ†å‘ç”Ÿæˆæ¨¡å¼ã€‚")]
     public int burstSpawnThreshold = 20;
 
-    [Tooltip("¡¾¶ÀÁ¢ÉèÖÃ¡¿ÔÚ±¬·¢Ä£Ê½ÏÂ£¬Â½ĞøÉú³ÉÍêÕâÒ»Õû×éµĞÈËËùÓÃµÄ×ÜÊ±¼ä£¨Ãë£©¡£")]
+    [Tooltip("ã€ç‹¬ç«‹è®¾ç½®ã€‘åœ¨çˆ†å‘æ¨¡å¼ä¸‹ï¼Œé™†ç»­ç”Ÿæˆå®Œè¿™ä¸€æ•´ç»„æ•Œäººæ‰€ç”¨çš„æ€»æ—¶é—´ï¼ˆç§’ï¼‰ã€‚")]
     public float burstSpawnTotalDuration = 1.5f;
 
-    [Header("×Ô¶¨ÒåÊôĞÔ¸²¸Ç (¿ÉÑ¡)")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬ÒÔÆôÓÃÏÂÃæµÄ×Ô¶¨ÒåÊôĞÔ£¬Ëü»áºöÂÔ'Is Elite'µÄÉèÖÃ¡£")]
+    [Header("è‡ªå®šä¹‰å±æ€§è¦†ç›– (å¯é€‰)")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œä»¥å¯ç”¨ä¸‹é¢çš„è‡ªå®šä¹‰å±æ€§ï¼Œå®ƒä¼šå¿½ç•¥'Is Elite'çš„è®¾ç½®ã€‚")]
     public bool overrideStats = false;
 
-    [Tooltip("ÔÚ´Ë´¦ÉèÖÃµÄÊôĞÔ£¬½«¸²¸ÇÉÏÃæ EnemyType ÖĞµÄ»ù´¡Öµ¡£")]
+    [Tooltip("åœ¨æ­¤å¤„è®¾ç½®çš„å±æ€§ï¼Œå°†è¦†ç›–ä¸Šé¢ EnemyType ä¸­çš„åŸºç¡€å€¼ã€‚")]
     public EnemyStatOverrides statOverrides;
-    // --- Î´À´¿ÉÀ©Õ¹×Ö¶Î (¹ÖÎïÉú³É¶àÑùĞÔ) ---
-    // [Tooltip("£¨¿ÉÑ¡£©Ö¸¶¨´Ë×éµĞÈË±ØĞë´ÓÄÄ¸ö³öÉúµãÉú³É")]
+    // --- æœªæ¥å¯æ‰©å±•å­—æ®µ (æ€ªç‰©ç”Ÿæˆå¤šæ ·æ€§) ---
+    // [Tooltip("ï¼ˆå¯é€‰ï¼‰æŒ‡å®šæ­¤ç»„æ•Œäººå¿…é¡»ä»å“ªä¸ªå‡ºç”Ÿç‚¹ç”Ÿæˆ")]
     // public Transform specificSpawnPointOverride;
 }
 
-// (¿ÉÑ¡) Èç¹ûÒªÓÃµ½·½ÏòÌáÊ¾£¬¿ÉÒÔ¶¨ÒåÒ»¸öÃ¶¾Ù
+// (å¯é€‰) å¦‚æœè¦ç”¨åˆ°æ–¹å‘æç¤ºï¼Œå¯ä»¥å®šä¹‰ä¸€ä¸ªæšä¸¾
 public enum SpawnDirectionHint
 {
     Random,
-    North,      // ±± (0¡ã)
-    Northeast,  // ¶«±± (45¡ã)
-    East,       // ¶« (90¡ã)
-    Southeast,  // ¶«ÄÏ (135¡ã)
-    South,      // ÄÏ (180¡ã)
-    Southwest,  // Î÷ÄÏ (225¡ã)
-    West,       // Î÷ (270¡ã)
-    Northwest,   // Î÷±± (315¡ã)
+    North,      // åŒ— (0Â°)
+    Northeast,  // ä¸œåŒ— (45Â°)
+    East,       // ä¸œ (90Â°)
+    Southeast,  // ä¸œå— (135Â°)
+    South,      // å— (180Â°)
+    Southwest,  // è¥¿å— (225Â°)
+    West,       // è¥¿ (270Â°)
+    Northwest,   // è¥¿åŒ— (315Â°)
     AllSides
     }

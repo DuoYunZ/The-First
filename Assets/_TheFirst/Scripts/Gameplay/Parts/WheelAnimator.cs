@@ -1,43 +1,43 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class WheelAnimator : MonoBehaviour
 {
-    [Tooltip("ĞèÒªĞı×ªµÄÂÖ×ÓÊÓ¾õ²¿·ÖµÄ Transform (Èç¹û²»Ö¸¶¨£¬Ôò³¢ÊÔ»ñÈ¡µÚÒ»¸ö×Ó¶ÔÏó)")]
+    [Tooltip("éœ€è¦æ—‹è½¬çš„è½®å­è§†è§‰éƒ¨åˆ†çš„ Transform (å¦‚æœä¸æŒ‡å®šï¼Œåˆ™å°è¯•è·å–ç¬¬ä¸€ä¸ªå­å¯¹è±¡)")]
     public Transform wheelVisualTransform;
-    [Tooltip("ÂÖ×Ó¹ö¶¯µÄ°ë¾¶ (ÓÃÓÚ¼ÆËã×ªËÙ)")]
-    public float wheelRadius = 0.5f; // *** ĞèÒª¸ù¾İÄãµÄÂÖ×ÓÄ£ĞÍ´óĞ¡¾«È·ÉèÖÃ ***
-    [Tooltip("Ğı×ªÖá (ÂÖ×ÓÄ£ĞÍ×ÔÉíµÄ¾Ö²¿Öá)")]
-    public Vector3 rotationAxis = Vector3.right; // *** ĞèÒª¸ù¾İÄãµÄÂÖ×ÓÄ£ĞÍ³¯ÏòÉèÖÃ ***
+    [Tooltip("è½®å­æ»šåŠ¨çš„åŠå¾„ (ç”¨äºè®¡ç®—è½¬é€Ÿ)")]
+    public float wheelRadius = 0.5f; // *** éœ€è¦æ ¹æ®ä½ çš„è½®å­æ¨¡å‹å¤§å°ç²¾ç¡®è®¾ç½® ***
+    [Tooltip("æ—‹è½¬è½´ (è½®å­æ¨¡å‹è‡ªèº«çš„å±€éƒ¨è½´)")]
+    public Vector3 rotationAxis = Vector3.right; // *** éœ€è¦æ ¹æ®ä½ çš„è½®å­æ¨¡å‹æœå‘è®¾ç½® ***
 
-    private Rigidbody chassisRigidbody; // »ú¼×Ö÷¸ÕÌå
+    private Rigidbody chassisRigidbody; // æœºç”²ä¸»åˆšä½“
 
     void Start()
     {
-        // ³¢ÊÔ×Ô¶¯²éÕÒ¸¸¼¶»ò¸ù¼¶µÄ Rigidbody
+        // å°è¯•è‡ªåŠ¨æŸ¥æ‰¾çˆ¶çº§æˆ–æ ¹çº§çš„ Rigidbody
         chassisRigidbody = GetComponentInParent<Rigidbody>();
         if (chassisRigidbody == null)
         {
-            Debug.LogError("WheelAnimator Î´ÄÜÔÚ¸¸¼¶ÕÒµ½ Rigidbody!", this);
+            Debug.LogError("WheelAnimator æœªèƒ½åœ¨çˆ¶çº§æ‰¾åˆ° Rigidbody!", this);
             enabled = false;
             return;
         }
 
-        // Èç¹ûÃ»ÓĞÊÖ¶¯Ö¸¶¨ÊÓ¾õ Transform£¬³¢ÊÔ»ñÈ¡µÚÒ»¸ö×Ó¶ÔÏó×÷ÎªÊÓ¾õ²¿·Ö
+        // å¦‚æœæ²¡æœ‰æ‰‹åŠ¨æŒ‡å®šè§†è§‰ Transformï¼Œå°è¯•è·å–ç¬¬ä¸€ä¸ªå­å¯¹è±¡ä½œä¸ºè§†è§‰éƒ¨åˆ†
         if (wheelVisualTransform == null && transform.childCount > 0)
         {
             wheelVisualTransform = transform.GetChild(0);
-            Debug.LogWarning($"WheelAnimator Î´Ö¸¶¨ wheelVisualTransform£¬ÒÑ×Ô¶¯Ê¹ÓÃµÚÒ»¸ö×Ó¶ÔÏó: {wheelVisualTransform.name}", this);
+            Debug.LogWarning($"WheelAnimator æœªæŒ‡å®š wheelVisualTransformï¼Œå·²è‡ªåŠ¨ä½¿ç”¨ç¬¬ä¸€ä¸ªå­å¯¹è±¡: {wheelVisualTransform.name}", this);
         }
         else if (wheelVisualTransform == null)
         {
-            // Èç¹ûÒ²Ã»ÓĞ×Ó¶ÔÏó£¬¾ÍÓÃ×ÔÉí Transform (Èç¹ûÄ£ĞÍ¾ÍÔÚ¸ù½Úµã)
+            // å¦‚æœä¹Ÿæ²¡æœ‰å­å¯¹è±¡ï¼Œå°±ç”¨è‡ªèº« Transform (å¦‚æœæ¨¡å‹å°±åœ¨æ ¹èŠ‚ç‚¹)
             wheelVisualTransform = transform;
-            Debug.LogWarning($"WheelAnimator Î´Ö¸¶¨ wheelVisualTransform ÇÒÎŞ×Ó¶ÔÏó£¬½«Ğı×ª×ÔÉí Transform", this);
+            Debug.LogWarning($"WheelAnimator æœªæŒ‡å®š wheelVisualTransform ä¸”æ— å­å¯¹è±¡ï¼Œå°†æ—‹è½¬è‡ªèº« Transform", this);
         }
 
         if (wheelRadius <= 0)
         {
-            Debug.LogError("WheelAnimator µÄ Wheel Radius ±ØĞë´óÓÚ 0!", this);
+            Debug.LogError("WheelAnimator çš„ Wheel Radius å¿…é¡»å¤§äº 0!", this);
             enabled = false;
         }
     }
@@ -46,26 +46,26 @@ public class WheelAnimator : MonoBehaviour
     {
         if (chassisRigidbody == null || wheelVisualTransform == null) return;
 
-        // 1. »ñÈ¡¸ÕÌåÔÚ×ÔÉíÇ°½ø·½ÏòÉÏµÄËÙ¶È
+        // 1. è·å–åˆšä½“åœ¨è‡ªèº«å‰è¿›æ–¹å‘ä¸Šçš„é€Ÿåº¦
         // Vector3 localVelocity = transform.InverseTransformDirection(chassisRigidbody.velocity);
-        // float forwardSpeed = localVelocity.z; // »ñÈ¡¾Ö²¿ Z ÖáËÙ¶È (¼ÙÉè Z ÖáÊÇÂÖ×ÓÇ°½ø·½Ïò)
-        // --- »òÕß¸üÍ¨ÓÃµÄ·½·¨£º¼ÆËãÑØ»ú¼×Ç°½ø·½ÏòµÄËÙ¶ÈÍ¶Ó° ---
+        // float forwardSpeed = localVelocity.z; // è·å–å±€éƒ¨ Z è½´é€Ÿåº¦ (å‡è®¾ Z è½´æ˜¯è½®å­å‰è¿›æ–¹å‘)
+        // --- æˆ–è€…æ›´é€šç”¨çš„æ–¹æ³•ï¼šè®¡ç®—æ²¿æœºç”²å‰è¿›æ–¹å‘çš„é€Ÿåº¦æŠ•å½± ---
         Vector3 worldVelocity = chassisRigidbody.velocity;
-        Vector3 forwardDir = chassisRigidbody.transform.forward; // Ê¹ÓÃµ×ÅÌµÄÇ°½ø·½Ïò
+        Vector3 forwardDir = chassisRigidbody.transform.forward; // ä½¿ç”¨åº•ç›˜çš„å‰è¿›æ–¹å‘
         float forwardSpeed = Vector3.Dot(worldVelocity, forwardDir);
 
 
-        // 2. ¼ÆËãÂÖ×ÓÖÜ³¤
+        // 2. è®¡ç®—è½®å­å‘¨é•¿
         float circumference = 2f * Mathf.PI * wheelRadius;
 
-        // 3. ¼ÆËãÃ¿ÃëĞèÒªĞı×ª¶àÉÙÈ¦ (ËÙ¶È / ÖÜ³¤)
+        // 3. è®¡ç®—æ¯ç§’éœ€è¦æ—‹è½¬å¤šå°‘åœˆ (é€Ÿåº¦ / å‘¨é•¿)
         float rotationsPerSecond = (circumference > 0) ? (forwardSpeed / circumference) : 0;
 
-        // 4. ¼ÆËãÃ¿Ö¡ĞèÒªĞı×ªµÄ½Ç¶È (È¦Êı * 360¶È * Ê±¼ä)
+        // 4. è®¡ç®—æ¯å¸§éœ€è¦æ—‹è½¬çš„è§’åº¦ (åœˆæ•° * 360åº¦ * æ—¶é—´)
         float angleDelta = rotationsPerSecond * 360f * Time.deltaTime;
 
-        // 5. Ğı×ªÂÖ×ÓµÄÊÓ¾õ Transform
-        // Ê¹ÓÃ Space.Self ±íÊ¾ÈÆ¾Ö²¿ÖáĞı×ª
+        // 5. æ—‹è½¬è½®å­çš„è§†è§‰ Transform
+        // ä½¿ç”¨ Space.Self è¡¨ç¤ºç»•å±€éƒ¨è½´æ—‹è½¬
         wheelVisualTransform.Rotate(rotationAxis, angleDelta, Space.Self);
     }
 }

@@ -1,86 +1,86 @@
-using Cinemachine;
+ï»¿using Cinemachine;
 using UnityEngine;
 
 public class HubSceneInitializer : MonoBehaviour
 {
-    [Header("Ä¬ÈÏ½ÇÉ«ÉèÖÃ")]
-    [Tooltip("½«ÓÃ×÷³õÊ¼½ÇÉ«µÄCharacterData×Ê²úÍÏ×§µ½ÕâÀï")]
+    [Header("é»˜è®¤è§’è‰²è®¾ç½®")]
+    [Tooltip("å°†ç”¨ä½œåˆå§‹è§’è‰²çš„CharacterDataèµ„äº§æ‹–æ‹½åˆ°è¿™é‡Œ")]
     public CharacterData defaultCharacterData;
 
-    [Header("³¡¾°ÒıÓÃ")]
-    [Tooltip("Íæ¼ÒµÄ³öÉúµãÎ»ÖÃ")]
+    [Header("åœºæ™¯å¼•ç”¨")]
+    [Tooltip("ç©å®¶çš„å‡ºç”Ÿç‚¹ä½ç½®")]
     public Transform playerSpawnPoint;
-    [Tooltip("½«³¡¾°ÖĞµÄÊàÅ¦ĞéÄâÏà»úÍÏµ½ÕâÀï")]
-    public CinemachineVirtualCamera hubCamera; // ¡¾ĞÂÔö¡¿
+    [Tooltip("å°†åœºæ™¯ä¸­çš„æ¢çº½è™šæ‹Ÿç›¸æœºæ‹–åˆ°è¿™é‡Œ")]
+    public CinemachineVirtualCamera hubCamera; // ã€æ–°å¢ã€‘
 
     void Start()
     {
-        // --- °²È«¼ì²é ---
+        // --- å®‰å…¨æ£€æŸ¥ ---
         if (defaultCharacterData == null)
         {
-            Debug.LogError("Ã»ÓĞÉèÖÃÄ¬ÈÏ½ÇÉ«Êı¾İ£¡ÇëÔÚHubSceneInitializerµÄInspectorÖĞÉèÖÃ¡£", this);
+            Debug.LogError("æ²¡æœ‰è®¾ç½®é»˜è®¤è§’è‰²æ•°æ®ï¼è¯·åœ¨HubSceneInitializerçš„Inspectorä¸­è®¾ç½®ã€‚", this);
             return;
         }
         if (playerSpawnPoint == null)
         {
-            Debug.LogError("Ã»ÓĞÉèÖÃÍæ¼Ò³öÉúµã£¡ÇëÔÚHubSceneInitializerµÄInspectorÖĞÉèÖÃ¡£", this);
+            Debug.LogError("æ²¡æœ‰è®¾ç½®ç©å®¶å‡ºç”Ÿç‚¹ï¼è¯·åœ¨HubSceneInitializerçš„Inspectorä¸­è®¾ç½®ã€‚", this);
             return;
         }
         if (DataManager.Instance == null)
         {
-            Debug.LogError("DataManager Î´ÕÒµ½£¡ÎŞ·¨³õÊ¼»¯Íæ¼Ò¡£", this);
+            Debug.LogError("DataManager æœªæ‰¾åˆ°ï¼æ— æ³•åˆå§‹åŒ–ç©å®¶ã€‚", this);
             return;
         }
         if (defaultCharacterData.chassisPrefab == null)
         {
-            Debug.LogError("Ä¬ÈÏ½ÇÉ«Êı¾İÖĞÃ»ÓĞÉèÖÃ½ÇÉ«Ô¤ÖÆ¼ş (characterPrefab)£¡", this);
+            Debug.LogError("é»˜è®¤è§’è‰²æ•°æ®ä¸­æ²¡æœ‰è®¾ç½®è§’è‰²é¢„åˆ¶ä»¶ (characterPrefab)ï¼", this);
             return;
         }
 
-        // --- ºËĞÄÂß¼­ ---
+        // --- æ ¸å¿ƒé€»è¾‘ ---
 
-        // 1. ½«Ä¬ÈÏ½ÇÉ«Êı¾İ´æÈë DataManager
-        //    ÕâÈ¡´úÁËÖ®Ç°ÔÚ½ÇÉ«Ñ¡Ôñ½çÃæËù×öµÄÊÂÇé
+        // 1. å°†é»˜è®¤è§’è‰²æ•°æ®å­˜å…¥ DataManager
+        //    è¿™å–ä»£äº†ä¹‹å‰åœ¨è§’è‰²é€‰æ‹©ç•Œé¢æ‰€åšçš„äº‹æƒ…
         DataManager.Instance.selectedCharacter = defaultCharacterData;
-        Debug.Log($"ÒÑÊ¹ÓÃÄ¬ÈÏ½ÇÉ«: {DataManager.Instance.selectedCharacter.characterName} ³õÊ¼»¯ÓÎÏ·¡£");
+        Debug.Log($"å·²ä½¿ç”¨é»˜è®¤è§’è‰²: {DataManager.Instance.selectedCharacter.characterName} åˆå§‹åŒ–æ¸¸æˆã€‚");
 
-        // 2. ÔÚÖ¸¶¨µÄ³öÉúµãÉú³ÉÍæ¼Ò½ÇÉ«
+        // 2. åœ¨æŒ‡å®šçš„å‡ºç”Ÿç‚¹ç”Ÿæˆç©å®¶è§’è‰²
         GameObject playerInstance = Instantiate(defaultCharacterData.chassisPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
 
-        // --- ¡¾ĞÂÔö¡¿½ûÓÃËùÓĞÎäÆ÷Âß¼­ ---
-        // ÔÚÕâ¸ö·ÇÕ½¶·³¡¾°ÖĞ£¬ÎÒÃÇ²»Ï£ÍûÎäÆ÷×Ô¶¯¹¥»÷¡£
-        Debug.Log("ÕıÔÚ½ûÓÃÊàÅ¦³¡¾°ÖĞµÄÎäÆ÷¹¥»÷¹¦ÄÜ...");
+        // --- ã€æ–°å¢ã€‘ç¦ç”¨æ‰€æœ‰æ­¦å™¨é€»è¾‘ ---
+        // åœ¨è¿™ä¸ªéæˆ˜æ–—åœºæ™¯ä¸­ï¼Œæˆ‘ä»¬ä¸å¸Œæœ›æ­¦å™¨è‡ªåŠ¨æ”»å‡»ã€‚
+        Debug.Log("æ­£åœ¨ç¦ç”¨æ¢çº½åœºæ™¯ä¸­çš„æ­¦å™¨æ”»å‡»åŠŸèƒ½...");
 
-        // »ñÈ¡Íæ¼ÒÊµÀıÉÏËùÓĞµÄ WeaponPart ×é¼ş£¨°üÀ¨×ÓÎïÌåÖĞµÄ£©
+        // è·å–ç©å®¶å®ä¾‹ä¸Šæ‰€æœ‰çš„ WeaponPart ç»„ä»¶ï¼ˆåŒ…æ‹¬å­ç‰©ä½“ä¸­çš„ï¼‰
         WeaponPart[] weapons = playerInstance.GetComponentsInChildren<WeaponPart>();
         foreach (WeaponPart weapon in weapons)
         {
             weapon.enabled = false;
-            Debug.Log($"ÒÑ½ûÓÃÍ¨ÓÃÎäÆ÷²¿¼ş: {weapon.gameObject.name}");
+            Debug.Log($"å·²ç¦ç”¨é€šç”¨æ­¦å™¨éƒ¨ä»¶: {weapon.gameObject.name}");
         }
 
-        // b) ¡¾ĞÂÔö¡¿½ûÓÃÌØ¶¨µÄ¹¥»÷¿ØÖÆ½Å±¾ (ÀıÈçÄúµÄµ¶¹â¹¥»÷)
-        // ÕâÊÇ½â¾öÄúÎÊÌâµÄ¹Ø¼ü£¬Ëü»á×èÖ¹½Å±¾¶¯Ì¬Éú³É¸¡ÓÎÎäÆ÷
+        // b) ã€æ–°å¢ã€‘ç¦ç”¨ç‰¹å®šçš„æ”»å‡»æ§åˆ¶è„šæœ¬ (ä¾‹å¦‚æ‚¨çš„åˆ€å…‰æ”»å‡»)
+        // è¿™æ˜¯è§£å†³æ‚¨é—®é¢˜çš„å…³é”®ï¼Œå®ƒä¼šé˜»æ­¢è„šæœ¬åŠ¨æ€ç”Ÿæˆæµ®æ¸¸æ­¦å™¨
         PlayerBladeAttack[] bladeAttacks = playerInstance.GetComponentsInChildren<PlayerBladeAttack>();
         foreach (PlayerBladeAttack bladeAttack in bladeAttacks)
         {
             bladeAttack.enabled = false;
-            Debug.Log($"ÒÑ½ûÓÃÌØ¶¨µÄµ¶¹â¹¥»÷Âß¼­: {bladeAttack.gameObject.name}");
+            Debug.Log($"å·²ç¦ç”¨ç‰¹å®šçš„åˆ€å…‰æ”»å‡»é€»è¾‘: {bladeAttack.gameObject.name}");
         }
         if (hubCamera != null)
         {
-            // ½«ĞéÄâÏà»úµÄ¡°¸úËæ¡±ºÍ¡°¿´Ïò¡±Ä¿±ê¶¼ÉèÖÃÎªĞÂÉú³ÉµÄÍæ¼ÒÊµÀı
+            // å°†è™šæ‹Ÿç›¸æœºçš„â€œè·Ÿéšâ€å’Œâ€œçœ‹å‘â€ç›®æ ‡éƒ½è®¾ç½®ä¸ºæ–°ç”Ÿæˆçš„ç©å®¶å®ä¾‹
             hubCamera.Follow = playerInstance.transform;
             hubCamera.LookAt = playerInstance.transform;
-            Debug.Log("ÊàÅ¦Ïà»úÒÑ¹ØÁªµ½Íæ¼Ò¡£");
+            Debug.Log("æ¢çº½ç›¸æœºå·²å…³è”åˆ°ç©å®¶ã€‚");
         }
         else
         {
-            Debug.LogWarning("Î´ÔÚHubSceneInitializerÖĞÉèÖÃÊàÅ¦Ïà»ú£¡", this);
+            Debug.LogWarning("æœªåœ¨HubSceneInitializerä¸­è®¾ç½®æ¢çº½ç›¸æœºï¼", this);
         }
 
-        // 3. £¨¿ÉÑ¡£©Èç¹ûÍæ¼ÒÉú³ÉºóĞèÒª½øÒ»²½³õÊ¼»¯£¨ÀıÈçÉèÖÃ³õÊ¼ÑªÁ¿¡¢ÎäÆ÷£©£¬
-        //    ¿ÉÒÔÔÚÕâÀï»òÔÚÍæ¼ÒÔ¤ÖÆ¼şµÄAwake/Start·½·¨ÖĞÍê³É¡£
-        //    ÄúÏÖÓĞµÄÍæ¼ÒÉú³ÉÂß¼­Ó¦¸ÃÒÑ¾­´¦ÀíÁËÕâÒ»µã¡£
+        // 3. ï¼ˆå¯é€‰ï¼‰å¦‚æœç©å®¶ç”Ÿæˆåéœ€è¦è¿›ä¸€æ­¥åˆå§‹åŒ–ï¼ˆä¾‹å¦‚è®¾ç½®åˆå§‹è¡€é‡ã€æ­¦å™¨ï¼‰ï¼Œ
+        //    å¯ä»¥åœ¨è¿™é‡Œæˆ–åœ¨ç©å®¶é¢„åˆ¶ä»¶çš„Awake/Startæ–¹æ³•ä¸­å®Œæˆã€‚
+        //    æ‚¨ç°æœ‰çš„ç©å®¶ç”Ÿæˆé€»è¾‘åº”è¯¥å·²ç»å¤„ç†äº†è¿™ä¸€ç‚¹ã€‚
     }
 }

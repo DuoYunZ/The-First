@@ -1,4 +1,4 @@
-// EnergyStoneSO.cs
+ï»¿// EnergyStoneSO.cs
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -6,140 +6,140 @@ using System.Collections.Generic;
 // public struct StoneEffect
 // {
 //     public EnergyStoneEffectType effectType;
-//     public float value; // ÓÃÓÚ ModifyDamage (0.2 = +20%), AddPierce (2 = +2 ´©Í¸) µÈ
+//     public float value; // ç”¨äº ModifyDamage (0.2 = +20%), AddPierce (2 = +2 ç©¿é€) ç­‰
 // }
 
 [CreateAssetMenu(fileName = "EnergyStone_", menuName = "Mech Survivors/Energy Stone")]
 public class EnergyStoneSO : ScriptableObject
 {
-    [Header("»ù´¡ĞÅÏ¢")]
+    [Header("åŸºç¡€ä¿¡æ¯")]
     public string stoneName;
     [TextArea(3, 5)]
     public string description;
     public Sprite icon;
 
-    [Header("µôÂäÎïÔ¤ÖÆ¼ş")]
-    [Tooltip("µ±Õâ¸öÄÜÁ¿Ê¯ÔÚÓÎÏ·ÖĞµôÂäÊ±£¬Ó¦¸ÃÊµÀı»¯µÄÔ¤ÖÆ¼ş (Prefab)")]
+    [Header("æ‰è½ç‰©é¢„åˆ¶ä»¶")]
+    [Tooltip("å½“è¿™ä¸ªèƒ½é‡çŸ³åœ¨æ¸¸æˆä¸­æ‰è½æ—¶ï¼Œåº”è¯¥å®ä¾‹åŒ–çš„é¢„åˆ¶ä»¶ (Prefab)")]
     public GameObject pickupPrefab;
 
-    [Header("ÊÓ¾õ±íÏÖ")]
-    [Tooltip("Õâ¿ÅÊ¯Í·¶ÔÓ¦µÄ·¢¹âÑÕÉ« (HDR)")]
+    [Header("è§†è§‰è¡¨ç°")]
+    [Tooltip("è¿™é¢—çŸ³å¤´å¯¹åº”çš„å‘å…‰é¢œè‰² (HDR)")]
     [ColorUsage(true, true)]
-    public Color stoneGlowColor = Color.white; // Ä¬ÈÏÎª°×
+    public Color stoneGlowColor = Color.white; // é»˜è®¤ä¸ºç™½
 
-    [Header("¹â»·ÌØĞ§¸²¸Ç (¿ÉÑ¡)")]
-    [Tooltip("ÓÃÓÚÌæ»»¹â»·Ä¬ÈÏVFXµÄÔ¤ÖÆ¼ş")]
+    [Header("å…‰ç¯ç‰¹æ•ˆè¦†ç›– (å¯é€‰)")]
+    [Tooltip("ç”¨äºæ›¿æ¢å…‰ç¯é»˜è®¤VFXçš„é¢„åˆ¶ä»¶")]
     public GameObject auraVfxOverride;
-    [Tooltip("VFXÔ¤ÖÆ¼şµÄ»ù´¡Ëõ·Å³ËÊı (ÓÃÓÚĞ£×¼ÊÓ¾õºÍÅö×²Æ÷°ë¾¶)")]
+    [Tooltip("VFXé¢„åˆ¶ä»¶çš„åŸºç¡€ç¼©æ”¾ä¹˜æ•° (ç”¨äºæ ¡å‡†è§†è§‰å’Œç¢°æ’å™¨åŠå¾„)")]
     public float overrideVfxScaleMultiplier = 1.0f;
 
-    [Header("ÄÜÁ¿Ê¯Ğ§¹û")]
-    [Tooltip("Õâ¸öÄÜÁ¿Ê¯Ëù¸³ÓèµÄËùÓĞĞ§¹û¡£")]
+    [Header("èƒ½é‡çŸ³æ•ˆæœ")]
+    [Tooltip("è¿™ä¸ªèƒ½é‡çŸ³æ‰€èµ‹äºˆçš„æ‰€æœ‰æ•ˆæœã€‚")]
     public List<EnergyStoneEffectType> stoneEffects;
 
-    [Header("ÔªËØ (È¼ÉÕ)")]
+    [Header("å…ƒç´  (ç‡ƒçƒ§)")]
     public bool applyBurn = false;
-    [Tooltip("È¼ÉÕ¼¸ÂÊ (0.5 = 50%)")]
+    [Tooltip("ç‡ƒçƒ§å‡ ç‡ (0.5 = 50%)")]
     [Range(0f, 1f)]
     public float burnChance = 0.5f;
-    [Tooltip("È¼ÉÕÃ¿ÌøÉËº¦")]
+    [Tooltip("ç‡ƒçƒ§æ¯è·³ä¼¤å®³")]
     public int burnDamage = 2;
-    [Tooltip("È¼ÉÕ×Ü³ÖĞøÊ±¼ä (Ãë)")]
+    [Tooltip("ç‡ƒçƒ§æ€»æŒç»­æ—¶é—´ (ç§’)")]
     public float burnDuration = 3f;
-    [Tooltip("È¼ÉÕÉËº¦¼ä¸ô (Ãë)")]
+    [Tooltip("ç‡ƒçƒ§ä¼¤å®³é—´éš” (ç§’)")]
     public float burnTickInterval = 1f;
 
-    [Header("ÔªËØ (¼õËÙ)")]
+    [Header("å…ƒç´  (å‡é€Ÿ)")]
     public bool applySlow = false;
-    [Tooltip("¼õËÙ°Ù·Ö±È (0.3 = ¼õËÙ30%)")]
+    [Tooltip("å‡é€Ÿç™¾åˆ†æ¯” (0.3 = å‡é€Ÿ30%)")]
     [Range(0f, 1f)]
     public float slowPercentage = 0.3f;
-    [Tooltip("¼õËÙ³ÖĞøÊ±¼ä (Ãë) - ¶ÔÓÚ¹â»·£¬Õâ¸öÖµ¿ÉÒÔºÜ¶Ì£¬ÒòÎª»á³ÖĞøË¢ĞÂ")]
+    [Tooltip("å‡é€ŸæŒç»­æ—¶é—´ (ç§’) - å¯¹äºå…‰ç¯ï¼Œè¿™ä¸ªå€¼å¯ä»¥å¾ˆçŸ­ï¼Œå› ä¸ºä¼šæŒç»­åˆ·æ–°")]
     public float slowDuration = 1.0f;
     public Color slowColor = Color.cyan;
 
-    [Tooltip("2+ º®±ùÊ¯¶Ñµş£º±ù¶³¼¸ÂÊ (0.15 = 15%)")]
+    [Tooltip("2+ å¯’å†°çŸ³å †å ï¼šå†°å†»å‡ ç‡ (0.15 = 15%)")]
     [Range(0f, 1f)]
     public float freezeChance = 0.15f;
-    [Tooltip("2+ º®±ùÊ¯¶Ñµş£º±ù¶³³ÖĞøÊ±¼ä (Ãë)")]
+    [Tooltip("2+ å¯’å†°çŸ³å †å ï¼šå†°å†»æŒç»­æ—¶é—´ (ç§’)")]
     public float freezeDuration = 1.0f;
-    [Tooltip("2+ º®±ùÊ¯¶Ñµş£º´¥·¢±ù¶³Ê±²¥·ÅµÄ×¨ÊôVFX")]
+    [Tooltip("2+ å¯’å†°çŸ³å †å ï¼šè§¦å‘å†°å†»æ—¶æ’­æ”¾çš„ä¸“å±VFX")]
     public GameObject freezeVfxPrefab;
 
 
-    [Header("ÔªËØ (À×µç)")]
+    [Header("å…ƒç´  (é›·ç”µ)")]
     public bool applyChain = false;
-    [Tooltip("À×»÷´¥·¢¼¸ÂÊ (0.2 = 20%)")]
+    [Tooltip("é›·å‡»è§¦å‘å‡ ç‡ (0.2 = 20%)")]
     [Range(0f, 1f)]
-    public float lightningChance = 0.2f; // Ä¬ÈÏÎª 20%
-    [Tooltip("Á¬ËøÉÁµç¶îÍâµ¯ÉäµÄÄ¿±êÊıÁ¿")]
+    public float lightningChance = 0.2f; // é»˜è®¤ä¸º 20%
+    [Tooltip("è¿é”é—ªç”µé¢å¤–å¼¹å°„çš„ç›®æ ‡æ•°é‡")]
     public int chainTargets = 2;
-    [Tooltip("Á¬ËøÉÁµçµÄµ¯Éä°ë¾¶")]
+    [Tooltip("è¿é”é—ªç”µçš„å¼¹å°„åŠå¾„")]
     public float chainRange = 5f;
-    [Tooltip("Á¬ËøÉËº¦°Ù·Ö±È (0.5 = Ôì³É¹â»·50%µÄÉËº¦)")]
+    [Tooltip("è¿é”ä¼¤å®³ç™¾åˆ†æ¯” (0.5 = é€ æˆå…‰ç¯50%çš„ä¼¤å®³)")]
     public float chainDamageMultiplier = 0.5f;
-    [Tooltip("Á¬ËøÉÁµçµÄVFXÔ¤ÖÆ¼ş (ĞèÒªÒ»¸öÄÜ´¦ÀíÆğµãºÍÖÕµãµÄ½Å±¾)")]
-    public GameObject chainVfxPrefab; // (¸´ÓÃ WeaponPart µÄ lightningChainPrefab)
-    [Tooltip("Á¬ËøÉÁµç *»÷ÖĞµĞÈËÊ±* ²¥·ÅµÄ×¨ÊôÊÜ»÷ÌØĞ§")]
+    [Tooltip("è¿é”é—ªç”µçš„VFXé¢„åˆ¶ä»¶ (éœ€è¦ä¸€ä¸ªèƒ½å¤„ç†èµ·ç‚¹å’Œç»ˆç‚¹çš„è„šæœ¬)")]
+    public GameObject chainVfxPrefab; // (å¤ç”¨ WeaponPart çš„ lightningChainPrefab)
+    [Tooltip("è¿é”é—ªç”µ *å‡»ä¸­æ•Œäººæ—¶* æ’­æ”¾çš„ä¸“å±å—å‡»ç‰¹æ•ˆ")]
     public GameObject chainImpactVfxPrefab;
 
-    [Tooltip("1+ À×µçÊ¯£ºÊÇ·ñ´¥·¢À×»÷")]
+    [Tooltip("1+ é›·ç”µçŸ³ï¼šæ˜¯å¦è§¦å‘é›·å‡»")]
     public bool applySmite = false;
-    [Tooltip("À×»÷Ôì³ÉµÄÉËº¦ (»áÊÜÍæ¼ÒÊôĞÔ¼Ó³É)")]
+    [Tooltip("é›·å‡»é€ æˆçš„ä¼¤å®³ (ä¼šå—ç©å®¶å±æ€§åŠ æˆ)")]
     public int smiteDamage = 10;
-    [Tooltip("À×»÷µÄVFXÔ¤ÖÆ¼ş (´ÓÌìÉÏÅüÏÂÀ´)")]
+    [Tooltip("é›·å‡»çš„VFXé¢„åˆ¶ä»¶ (ä»å¤©ä¸ŠåŠˆä¸‹æ¥)")]
     public GameObject smiteVfxPrefab;
 
-    [Header("ÔªËØ (·ç±©)")]
+    [Header("å…ƒç´  (é£æš´)")]
     public bool applyKnockback = false;
-    [Tooltip("»÷ÍËÁ¦¶È")]
+    [Tooltip("å‡»é€€åŠ›åº¦")]
     public float knockbackForce = 10f;
-    [Tooltip("»÷ÍËĞ§¹ûµÄ´¥·¢¼ä¸ô (Ãë)")]
+    [Tooltip("å‡»é€€æ•ˆæœçš„è§¦å‘é—´éš” (ç§’)")]
     public float knockbackInterval = 1.0f;
 
-    [Tooltip("2+ ·ç±©Ê¯¶Ñµş£ºÖ±Ïß×Óµ¯ Ê©¼ÓµÄ»÷ÍËÁ¦¶È")]
+    [Tooltip("2+ é£æš´çŸ³å †å ï¼šç›´çº¿å­å¼¹ æ–½åŠ çš„å‡»é€€åŠ›åº¦")]
     public float knockbackForce_Stacked = 20f;
 
-    [Header("ÔªËØ (´óµØ - Èõ»¯)")]
+    [Header("å…ƒç´  (å¤§åœ° - å¼±åŒ–)")]
     public bool applyWeaken = false;
-    [Tooltip("Èõ»¯°Ù·Ö±È (0.2 = ½µµÍµĞÈË20%µÄÉËº¦)")]
+    [Tooltip("å¼±åŒ–ç™¾åˆ†æ¯” (0.2 = é™ä½æ•Œäºº20%çš„ä¼¤å®³)")]
     [Range(0f, 1f)]
     public float weakenPercentage = 0.2f;
-    [Tooltip("Èõ»¯³ÖĞøÊ±¼ä (Ãë) - ¹â»·»á³ÖĞøË¢ĞÂ")]
+    [Tooltip("å¼±åŒ–æŒç»­æ—¶é—´ (ç§’) - å…‰ç¯ä¼šæŒç»­åˆ·æ–°")]
     public float weakenDuration = 1.0f;
 
-    [Header("ÔªËØ (¾ç¶¾ - ¸¯Ê´)")]
+    [Header("å…ƒç´  (å‰§æ¯’ - è…èš€)")]
     public bool applyCorrode = false;
-    [Tooltip("Ò×ÉË°Ù·Ö±È (1.2 = ÊÜµ½ÉËº¦Ôö¼Ó20%)")]
+    [Tooltip("æ˜“ä¼¤ç™¾åˆ†æ¯” (1.2 = å—åˆ°ä¼¤å®³å¢åŠ 20%)")]
     public float corrodeMultiplier = 1.2f;
 
-    [Tooltip("¸¯Ê´Ğ§¹ûÊ©¼ÓµÄÑÕÉ«")]
-    public Color corrodeColor = new Color(0.5f, 1f, 0.5f); // Ä¬ÈÏÇ³ÂÌÉ«
+    [Tooltip("è…èš€æ•ˆæœæ–½åŠ çš„é¢œè‰²")]
+    public Color corrodeColor = new Color(0.5f, 1f, 0.5f); // é»˜è®¤æµ…ç»¿è‰²
 
-    [Tooltip("2+ ¸¯Ê´Ê¯¶Ñµş£ºÒ×ÉË°Ù·Ö±È (1.5 = ÊÜµ½ÉËº¦Ôö¼Ó50%)")]
+    [Tooltip("2+ è…èš€çŸ³å †å ï¼šæ˜“ä¼¤ç™¾åˆ†æ¯” (1.5 = å—åˆ°ä¼¤å®³å¢åŠ 50%)")]
     public float corrodeMultiplier_Stacked = 1.5f;
 
-    [Header("ÔªËØ (Ñ£ÔÎ)")]
+    [Header("å…ƒç´  (çœ©æ™•)")]
     public bool applyStun = false;
-    [Tooltip("Ñ£ÔÎ¼¸ÂÊ (0.25 = 25%)")]
+    [Tooltip("çœ©æ™•å‡ ç‡ (0.25 = 25%)")]
     [Range(0f, 1f)]
     public float stunChance = 0.25f;
-    [Tooltip("Ñ£ÔÎÊ±³¤ (Ãë)")]
+    [Tooltip("çœ©æ™•æ—¶é•¿ (ç§’)")]
     public float stunDuration = 1.0f;
 
-    [Tooltip("2+ ´óµØÊ¯¶Ñµş£ºÑ£ÔÎ¼¸ÂÊ (0.5 = 50%)")]
+    [Tooltip("2+ å¤§åœ°çŸ³å †å ï¼šçœ©æ™•å‡ ç‡ (0.5 = 50%)")]
     [Range(0f, 1f)]
     public float stunChance_Stacked = 0.5f;
-    // ... (Äã¿ÉÒÔÌí¼Ó¸ü¶à) ...
+    // ... (ä½ å¯ä»¥æ·»åŠ æ›´å¤š) ...
 
-    [Header("»úÖÆ (´ÅÁ¦)")]
+    [Header("æœºåˆ¶ (ç£åŠ›)")]
     public bool applyMagnet = false;
-    [Tooltip("´ÅÁ¦¹â»·»áÊ¹»ù´¡¹â»·°ë¾¶¶îÍâÔö¼Ó¶àÉÙ°Ù·Ö±È (0.5 = +50%) À´ÎüÈ¡ÎïÆ·")]
+    [Tooltip("ç£åŠ›å…‰ç¯ä¼šä½¿åŸºç¡€å…‰ç¯åŠå¾„é¢å¤–å¢åŠ å¤šå°‘ç™¾åˆ†æ¯” (0.5 = +50%) æ¥å¸å–ç‰©å“")]
     public float magnetRadiusBonusPercent = 0.5f;
 
-    [Header("ÊıÖµĞŞ¸Ä (°Ù·Ö±È/¹Ì¶¨Öµ)")]
+    [Header("æ•°å€¼ä¿®æ”¹ (ç™¾åˆ†æ¯”/å›ºå®šå€¼)")]
     public float damageModifier = 0f;       // 0.2 = +20%
-    public float fireRateModifier = 0f;     // 0.1 = +10% ÉäËÙ (ÀäÈ´ * 0.9)
-    public float scaleModifier = 0f;        // 0.25 = +25% ·¶Î§/Ìå»ı
-    public float pierceModifier = 0;        // 2 = +2 ´©Í¸
+    public float fireRateModifier = 0f;     // 0.1 = +10% å°„é€Ÿ (å†·å´ * 0.9)
+    public float scaleModifier = 0f;        // 0.25 = +25% èŒƒå›´/ä½“ç§¯
+    public float pierceModifier = 0;        // 2 = +2 ç©¿é€
 }

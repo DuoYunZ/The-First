@@ -1,32 +1,32 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class AnimationEventRelay : MonoBehaviour
 {
-    // ÔÚÄúµÄ°¸ÀıÖĞ£¬ÕâÀïÓ¦¸ÃÊÇ PlayerMovement
-    // Äú¿ÉÒÔ¸ù¾İÄú½Å±¾µÄÊµ¼ÊÃû³ÆĞŞ¸ÄËü
+    // åœ¨æ‚¨çš„æ¡ˆä¾‹ä¸­ï¼Œè¿™é‡Œåº”è¯¥æ˜¯ PlayerMovement
+    // æ‚¨å¯ä»¥æ ¹æ®æ‚¨è„šæœ¬çš„å®é™…åç§°ä¿®æ”¹å®ƒ
     private MechController playerMovement;
 
     void Awake()
     {
-        // ÔÚ¸¸¼¶ÎïÌåÖĞÑ°ÕÒ PlayerMovement ½Å±¾
+        // åœ¨çˆ¶çº§ç‰©ä½“ä¸­å¯»æ‰¾ PlayerMovement è„šæœ¬
         playerMovement = GetComponentInParent<MechController>();
         if (playerMovement == null)
         {
-            Debug.LogError("ÔÚ¸¸¼¶ÖĞÕÒ²»µ½ PlayerMovement ½Å±¾!", this);
+            Debug.LogError("åœ¨çˆ¶çº§ä¸­æ‰¾ä¸åˆ° PlayerMovement è„šæœ¬!", this);
         }
     }
 
-    // Õâ¸ö·½·¨½«ÓÉ¶¯»­ÊÂ¼şÀ´µ÷ÓÃ
+    // è¿™ä¸ªæ–¹æ³•å°†ç”±åŠ¨ç”»äº‹ä»¶æ¥è°ƒç”¨
     public void RelayPlayFootstepSound()
     {
-        // È·±£ÕÒµ½ÁË¸¸¼¶½Å±¾£¬È»ºóµ÷ÓÃËüµÄ·½·¨
+        // ç¡®ä¿æ‰¾åˆ°äº†çˆ¶çº§è„šæœ¬ï¼Œç„¶åè°ƒç”¨å®ƒçš„æ–¹æ³•
         if (playerMovement != null)
         {
             playerMovement.PlayFootstepSound();
         }
     }
 
-    // Èç¹ûÎ´À´ÄúÓĞÆäËûĞèÒª×ª·¢µÄ¶¯»­ÊÂ¼ş£¬¿ÉÒÔÔÚÏÂÃæ¼ÌĞøÌí¼Ó
+    // å¦‚æœæœªæ¥æ‚¨æœ‰å…¶ä»–éœ€è¦è½¬å‘çš„åŠ¨ç”»äº‹ä»¶ï¼Œå¯ä»¥åœ¨ä¸‹é¢ç»§ç»­æ·»åŠ 
     // public void RelayAttackEvent()
     // {
     //     if (playerMovement != null)

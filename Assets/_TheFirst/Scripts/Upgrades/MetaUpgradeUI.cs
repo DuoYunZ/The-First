@@ -1,13 +1,13 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class MetaUpgradeUI : MonoBehaviour
 {
-    [Header("È«¾ÖĞÅÏ¢")]
+    [Header("å…¨å±€ä¿¡æ¯")]
     public TextMeshProUGUI goldText;
 
-    [Header("ÏêÇéÌáÊ¾¿ò (Tooltip)")]
-    public GameObject tooltipPanel; // ÓÒ²à»òÏÂ·½µÄÏêÇéÃæ°å
+    [Header("è¯¦æƒ…æç¤ºæ¡† (Tooltip)")]
+    public GameObject tooltipPanel; // å³ä¾§æˆ–ä¸‹æ–¹çš„è¯¦æƒ…é¢æ¿
     public TextMeshProUGUI tooltipName;
     public TextMeshProUGUI tooltipDesc;
     public TextMeshProUGUI tooltipCost;
@@ -15,11 +15,11 @@ public class MetaUpgradeUI : MonoBehaviour
 
     private void OnEnable()
     {
-        // Ãæ°å´ò¿ªÊ±£¬Ë¢ĞÂËùÓĞ×Ó°´Å¥µÄ×´Ì¬
+        // é¢æ¿æ‰“å¼€æ—¶ï¼Œåˆ·æ–°æ‰€æœ‰å­æŒ‰é’®çš„çŠ¶æ€
         RefreshAllButtons();
         RefreshGoldDisplay();
 
-        // Ä¬ÈÏÒş²ØÌáÊ¾¿ò
+        // é»˜è®¤éšè—æç¤ºæ¡†
         if (tooltipPanel != null) tooltipPanel.SetActive(false);
     }
 
@@ -33,7 +33,7 @@ public class MetaUpgradeUI : MonoBehaviour
 
     public void RefreshAllButtons()
     {
-        // ÕÒµ½ËùÓĞ×ÓÎïÌåÀïµÄ°´Å¥²¢Ë¢ĞÂËüÃÇ
+        // æ‰¾åˆ°æ‰€æœ‰å­ç‰©ä½“é‡Œçš„æŒ‰é’®å¹¶åˆ·æ–°å®ƒä»¬
         var buttons = GetComponentsInChildren<MetaUpgradeNodeButton>();
         foreach (var btn in buttons)
         {
@@ -41,7 +41,7 @@ public class MetaUpgradeUI : MonoBehaviour
         }
     }
 
-    // --- ÏÔÊ¾ÏêÇé (ÓÉ°´Å¥µ÷ÓÃ) ---
+    // --- æ˜¾ç¤ºè¯¦æƒ… (ç”±æŒ‰é’®è°ƒç”¨) ---
     public void ShowTooltip(MetaUpgradeSO data)
     {
         if (tooltipPanel == null) return;
@@ -54,24 +54,24 @@ public class MetaUpgradeUI : MonoBehaviour
 
         if (tooltipName) tooltipName.text = data.upgradeName;
 
-        // ÃèÊöÉú³É
+        // æè¿°ç”Ÿæˆ
         float curBonus = data.GetTotalBonus(level);
         float nextBonus = data.GetTotalBonus(level + 1);
 
         string desc = data.description + "\n";
         if (isMax)
         {
-            desc += $"<color=yellow>ÒÑÂú¼¶ (¼Ó³É: {curBonus:F1})</color>";
+            desc += $"<color=yellow>å·²æ»¡çº§ (åŠ æˆ: {curBonus:F1})</color>";
             if (tooltipCost) tooltipCost.text = "---";
         }
         else
         {
-            desc += $"µ±Ç°: {curBonus:F1} <color=green>-> ÏÂÒ»¼¶: {nextBonus:F1}</color>";
+            desc += $"å½“å‰: {curBonus:F1} <color=green>-> ä¸‹ä¸€çº§: {nextBonus:F1}</color>";
             if (tooltipCost)
             {
                 int playerGold = MetaUpgradeManager.Instance.GetPlayerGold();
                 string color = playerGold >= cost ? "white" : "red";
-                tooltipCost.text = $"·ÑÓÃ: <color={color}>{cost}</color>";
+                tooltipCost.text = $"è´¹ç”¨: <color={color}>{cost}</color>";
             }
         }
 

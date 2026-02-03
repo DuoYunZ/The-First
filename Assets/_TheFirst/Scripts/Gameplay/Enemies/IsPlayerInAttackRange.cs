@@ -1,18 +1,18 @@
-// --- IsPlayerInAttackRange.cs (ĞŞÕı°æ) ---
+ï»¿// --- IsPlayerInAttackRange.cs (ä¿®æ­£ç‰ˆ) ---
 using UnityEngine;
 
 public class IsPlayerInAttackRange : Node
 {
-    [Header("Ìõ¼şÉèÖÃ")]
-    [Tooltip("¶¨Òå¶à½üËãÊÇ'¹¥»÷·¶Î§'")]
+    [Header("æ¡ä»¶è®¾ç½®")]
+    [Tooltip("å®šä¹‰å¤šè¿‘ç®—æ˜¯'æ”»å‡»èŒƒå›´'")]
     public float attackRange = 12f;
 
     private Transform playerTarget;
-    private Transform selfTransform; // Boss¸ù¶ÔÏóµÄTransform
+    private Transform selfTransform; // Bossæ ¹å¯¹è±¡çš„Transform
 
     void Awake()
     {
-        // ¡¾ºËĞÄĞŞÕı¡¿Ê¹ÓÃGetComponentInParentÀ´°²È«¡¢¿É¿¿µØÕÒµ½BossµÄ¸ÕÌå£¬´Ó¶ø»ñÈ¡Æä¸ùTransform
+        // ã€æ ¸å¿ƒä¿®æ­£ã€‘ä½¿ç”¨GetComponentInParentæ¥å®‰å…¨ã€å¯é åœ°æ‰¾åˆ°Bossçš„åˆšä½“ï¼Œä»è€Œè·å–å…¶æ ¹Transform
         Rigidbody bossRb = GetComponentInParent<Rigidbody>();
         if (bossRb != null)
         {
@@ -20,14 +20,14 @@ public class IsPlayerInAttackRange : Node
         }
         else
         {
-            // Èç¹ûÕÒ²»µ½£¬Õâ»áÊÇÒ»¸öÃ÷È·µÄ´íÎóÌáÊ¾
-            Debug.LogError("IsPlayerInAttackRange ÎŞ·¨ÔÚ¸¸¼¶ÖĞÕÒµ½ Rigidbody ×é¼ş!", this);
+            // å¦‚æœæ‰¾ä¸åˆ°ï¼Œè¿™ä¼šæ˜¯ä¸€ä¸ªæ˜ç¡®çš„é”™è¯¯æç¤º
+            Debug.LogError("IsPlayerInAttackRange æ— æ³•åœ¨çˆ¶çº§ä¸­æ‰¾åˆ° Rigidbody ç»„ä»¶!", this);
         }
     }
 
     public override NodeState Evaluate()
     {
-        // Èç¹ûÃ»ÓĞ³É¹¦»ñÈ¡µ½×ÔÉíTransform£¬»òÕÒ²»µ½Íæ¼Ò£¬ÔòÌõ¼ş²»³ÉÁ¢
+        // å¦‚æœæ²¡æœ‰æˆåŠŸè·å–åˆ°è‡ªèº«Transformï¼Œæˆ–æ‰¾ä¸åˆ°ç©å®¶ï¼Œåˆ™æ¡ä»¶ä¸æˆç«‹
         if (selfTransform == null) return NodeState.FAILURE;
 
         if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
@@ -39,15 +39,15 @@ public class IsPlayerInAttackRange : Node
             return NodeState.FAILURE;
         }
 
-        // ¼ì²é¾àÀë
+        // æ£€æŸ¥è·ç¦»
         if (Vector3.Distance(selfTransform.position, playerTarget.position) <= attackRange)
         {
-            // ÔÚ·¶Î§ÄÚ£¬Ìõ¼ş³ÉÁ¢£¬·µ»Ø³É¹¦
+            // åœ¨èŒƒå›´å†…ï¼Œæ¡ä»¶æˆç«‹ï¼Œè¿”å›æˆåŠŸ
             return NodeState.SUCCESS;
         }
         else
         {
-            // ²»ÔÚ·¶Î§ÄÚ£¬Ìõ¼ş²»³ÉÁ¢£¬·µ»ØÊ§°Ü
+            // ä¸åœ¨èŒƒå›´å†…ï¼Œæ¡ä»¶ä¸æˆç«‹ï¼Œè¿”å›å¤±è´¥
             return NodeState.FAILURE;
         }
     }

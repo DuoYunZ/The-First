@@ -1,14 +1,14 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class NPCInteraction : MonoBehaviour
 {
-    [Header("¹¦ÄÜÉèÖÃ")]
-    [Tooltip("Õâ¸öNPC¹ØÁªµÄÎäÆ÷¼¼ÄÜÊ÷")]
+    [Header("åŠŸèƒ½è®¾ç½®")]
+    [Tooltip("è¿™ä¸ªNPCå…³è”çš„æ­¦å™¨æŠ€èƒ½æ ‘")]
     public WeaponSkillTree skillTreeToOpen;
 
-    [Header("UIÌáÊ¾")]
-    [Tooltip("µ±Íæ¼Ò½øÈë·¶Î§Ê±ÏÔÊ¾µÄ½»»¥ÌáÊ¾UI£¨ÀıÈçÒ»¸ö'E'¼üÍ¼±ê£©")]
+    [Header("UIæç¤º")]
+    [Tooltip("å½“ç©å®¶è¿›å…¥èŒƒå›´æ—¶æ˜¾ç¤ºçš„äº¤äº’æç¤ºUIï¼ˆä¾‹å¦‚ä¸€ä¸ª'E'é”®å›¾æ ‡ï¼‰")]
     public GameObject interactionPromptUI;
 
     private bool playerIsInRange = false;
@@ -38,27 +38,27 @@ public class NPCInteraction : MonoBehaviour
     {
         if (playerIsInRange && playerControls.Player.Interact.WasPressedThisFrame())
         {
-            Debug.Log("--- E¼ü°´ÏÂ£¬×¼±¸´¦Àí¼¼ÄÜÊ÷½çÃæ ---");
+            Debug.Log("--- Eé”®æŒ‰ä¸‹ï¼Œå‡†å¤‡å¤„ç†æŠ€èƒ½æ ‘ç•Œé¢ ---");
 
             if (UIManager.Instance != null && UIManager.Instance.skillTreeUIManager != null)
             {
-                // ¡¾¹Ø¼üĞŞ¸Ä¡¿¼ì²é¼¼ÄÜÊ÷½çÃæÊÇ·ñÒÑ¾­´ò¿ª
+                // ã€å…³é”®ä¿®æ”¹ã€‘æ£€æŸ¥æŠ€èƒ½æ ‘ç•Œé¢æ˜¯å¦å·²ç»æ‰“å¼€
                 if (UIManager.Instance.skillTreeUIManager.IsPanelOpen())
                 {
-                    // Èç¹û½çÃæÒÑ¾­´ò¿ª£¬Ôò¹Ø±ÕËü
+                    // å¦‚æœç•Œé¢å·²ç»æ‰“å¼€ï¼Œåˆ™å…³é—­å®ƒ
                     UIManager.Instance.skillTreeUIManager.ClosePanel();
-                    Debug.Log("--- ¼¼ÄÜÊ÷½çÃæÒÑ¹Ø±Õ ---");
+                    Debug.Log("--- æŠ€èƒ½æ ‘ç•Œé¢å·²å…³é—­ ---");
                 }
                 else
                 {
-                    // Èç¹û½çÃæÃ»ÓĞ´ò¿ª£¬Ôò´ò¿ªËü
+                    // å¦‚æœç•Œé¢æ²¡æœ‰æ‰“å¼€ï¼Œåˆ™æ‰“å¼€å®ƒ
                     UIManager.Instance.skillTreeUIManager.OpenPanel();
-                    Debug.Log("--- ¼¼ÄÜÊ÷½çÃæÒÑ´ò¿ª ---");
+                    Debug.Log("--- æŠ€èƒ½æ ‘ç•Œé¢å·²æ‰“å¼€ ---");
                 }
             }
             else
             {
-                Debug.LogError("UIManager »ò SkillTreeUIManager Î´ÕÒµ½£¡ÎŞ·¨´ò¿ª/¹Ø±Õ¼¼ÄÜÊ÷¡£");
+                Debug.LogError("UIManager æˆ– SkillTreeUIManager æœªæ‰¾åˆ°ï¼æ— æ³•æ‰“å¼€/å…³é—­æŠ€èƒ½æ ‘ã€‚");
             }
         }
     }
@@ -79,14 +79,14 @@ public class NPCInteraction : MonoBehaviour
             playerIsInRange = false;
             if (interactionPromptUI != null) interactionPromptUI.SetActive(false);
 
-            // ¡¾¿ÉÑ¡¡¿µ±Íæ¼ÒÀë¿ªNPC·¶Î§Ê±£¬Èç¹û¼¼ÄÜÊ÷½çÃæÊÇ´ò¿ªµÄ£¬Ôò¹Ø±ÕËü
-            // ÕâÈ¡¾öÓÚÄãµÄÉè¼ÆĞèÇó
+            // ã€å¯é€‰ã€‘å½“ç©å®¶ç¦»å¼€NPCèŒƒå›´æ—¶ï¼Œå¦‚æœæŠ€èƒ½æ ‘ç•Œé¢æ˜¯æ‰“å¼€çš„ï¼Œåˆ™å…³é—­å®ƒ
+            // è¿™å–å†³äºä½ çš„è®¾è®¡éœ€æ±‚
             if (UIManager.Instance != null &&
                 UIManager.Instance.skillTreeUIManager != null &&
                 UIManager.Instance.skillTreeUIManager.IsPanelOpen())
             {
                 UIManager.Instance.skillTreeUIManager.ClosePanel();
-                Debug.Log("--- Íæ¼ÒÀë¿ªNPC·¶Î§£¬¼¼ÄÜÊ÷½çÃæÒÑ¹Ø±Õ ---");
+                Debug.Log("--- ç©å®¶ç¦»å¼€NPCèŒƒå›´ï¼ŒæŠ€èƒ½æ ‘ç•Œé¢å·²å…³é—­ ---");
             }
         }
     }

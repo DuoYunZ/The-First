@@ -1,23 +1,23 @@
-// PartInfo.cs
+ï»¿// PartInfo.cs
 using UnityEngine;
 
 public class PartInfo : MonoBehaviour
 {
-    // ÓÃÓÚ¿ç³¡¾°±£´æºÍ¼ÓÔØÔ¤ÖÆ¼şµÄ±êÊ¶·û
+    // ç”¨äºè·¨åœºæ™¯ä¿å­˜å’ŒåŠ è½½é¢„åˆ¶ä»¶çš„æ ‡è¯†ç¬¦
     public string PrefabName;
 
-    // ÓÃÓÚÔÚÒÆ³ıÁã¼şÊ±£¬ÖØĞÂ¼¤»îËüËùÁ¬½ÓµÄÎü¸½µã
-    // ÀàĞÍ¿ÉÄÜÊÇ Transform, GameObject, »òÕßÄã×Ô¶¨ÒåµÄ AttachmentPoint/PartContactPoint ÀàĞÍ
-    // ¼ÙÉèËüÊÇ GameObject (´ú±íÄÇ¸öÎü¸½µãÓÎÏ·¶ÔÏó)
+    // ç”¨äºåœ¨ç§»é™¤é›¶ä»¶æ—¶ï¼Œé‡æ–°æ¿€æ´»å®ƒæ‰€è¿æ¥çš„å¸é™„ç‚¹
+    // ç±»å‹å¯èƒ½æ˜¯ Transform, GameObject, æˆ–è€…ä½ è‡ªå®šä¹‰çš„ AttachmentPoint/PartContactPoint ç±»å‹
+    // å‡è®¾å®ƒæ˜¯ GameObject (ä»£è¡¨é‚£ä¸ªå¸é™„ç‚¹æ¸¸æˆå¯¹è±¡)
     //public GameObject connectedToPoint;
-    // »òÕß£¬Èç¹ûËüÊÇÒ»¸ö Transform:
+    // æˆ–è€…ï¼Œå¦‚æœå®ƒæ˜¯ä¸€ä¸ª Transform:
      public Transform connectedToPoint;
-    // »òÕß£¬Èç¹ûËüÊÇÒ»¸öÌØ¶¨µÄ½Å±¾×é¼şÊµÀı:
-    // public AttachmentPoint connectedToPointScript; // (AttachmentPoint ÊÇÄãÎü¸½µã½Å±¾µÄÀàÃû)
+    // æˆ–è€…ï¼Œå¦‚æœå®ƒæ˜¯ä¸€ä¸ªç‰¹å®šçš„è„šæœ¬ç»„ä»¶å®ä¾‹:
+    // public AttachmentPoint connectedToPointScript; // (AttachmentPoint æ˜¯ä½ å¸é™„ç‚¹è„šæœ¬çš„ç±»å)
 
-    // Äã»¹¿ÉÒÔÓĞÆäËûÁã¼şÏà¹ØĞÅÏ¢
+    // ä½ è¿˜å¯ä»¥æœ‰å…¶ä»–é›¶ä»¶ç›¸å…³ä¿¡æ¯
     // public string partDisplayName;
-    // public PartType partType; // ¼ÙÉèÓĞ PartType Ã¶¾Ù
+    // public PartType partType; // å‡è®¾æœ‰ PartType æšä¸¾
     // public int healthBonus;
-    // ...µÈµÈ
+    // ...ç­‰ç­‰
 }

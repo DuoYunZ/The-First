@@ -1,14 +1,14 @@
-// --- WaitForAnimatorStateAction.cs ---
+ï»¿// --- WaitForAnimatorStateAction.cs ---
 using UnityEngine;
 
 public class WaitForAnimatorStateAction : Node
 {
-    [Header("µÈ´ıÉèÖÃ")]
-    [Tooltip("ÎÒÃÇÏ£ÍûµÈ´ıµÄAnimator×´Ì¬µÄ×¼È·Ãû³Æ")]
+    [Header("ç­‰å¾…è®¾ç½®")]
+    [Tooltip("æˆ‘ä»¬å¸Œæœ›ç­‰å¾…çš„AnimatorçŠ¶æ€çš„å‡†ç¡®åç§°")]
     public string targetStateName;
-    [Tooltip("£¨¿ÉÑ¡£©Òª¼ì²éµÄ¶¯»­²ã¼¶£¬0ÊÇ»ù´¡²ã")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰è¦æ£€æŸ¥çš„åŠ¨ç”»å±‚çº§ï¼Œ0æ˜¯åŸºç¡€å±‚")]
     public int layerIndex = 0;
-    [Tooltip("³¬Ê±Ê±¼ä£¨Ãë£©£¬·ÀÖ¹ÎŞÏŞµÈ´ı¿¨ËÀ")]
+    [Tooltip("è¶…æ—¶æ—¶é—´ï¼ˆç§’ï¼‰ï¼Œé˜²æ­¢æ— é™ç­‰å¾…å¡æ­»")]
     public float timeout = 2f;
 
     private Animator animator;
@@ -33,27 +33,27 @@ public class WaitForAnimatorStateAction : Node
             timer = 0f;
         }
 
-        // »ñÈ¡µ±Ç°¶¯»­×´Ì¬ĞÅÏ¢
+        // è·å–å½“å‰åŠ¨ç”»çŠ¶æ€ä¿¡æ¯
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(layerIndex);
 
-        // ¼ì²éµ±Ç°×´Ì¬µÄÃû³ÆÊÇ·ñÊÇÎÒÃÇÆÚÍûµÄ
+        // æ£€æŸ¥å½“å‰çŠ¶æ€çš„åç§°æ˜¯å¦æ˜¯æˆ‘ä»¬æœŸæœ›çš„
         if (stateInfo.IsName(targetStateName))
         {
-            // ÊÇÆÚÍûµÄ×´Ì¬£¬µÈ´ı³É¹¦£¡
+            // æ˜¯æœŸæœ›çš„çŠ¶æ€ï¼Œç­‰å¾…æˆåŠŸï¼
             isWaiting = false;
             return NodeState.SUCCESS;
         }
 
-        // ¼ì²éÊÇ·ñ³¬Ê±
+        // æ£€æŸ¥æ˜¯å¦è¶…æ—¶
         timer += Time.deltaTime;
         if (timer > timeout)
         {
-            Debug.LogWarning($"WaitForAnimatorStateAction: µÈ´ı×´Ì¬ '{targetStateName}' ³¬Ê±£¡", this.gameObject);
+            Debug.LogWarning($"WaitForAnimatorStateAction: ç­‰å¾…çŠ¶æ€ '{targetStateName}' è¶…æ—¶ï¼", this.gameObject);
             isWaiting = false;
-            return NodeState.FAILURE; // ³¬Ê±ÔòÊ§°Ü
+            return NodeState.FAILURE; // è¶…æ—¶åˆ™å¤±è´¥
         }
 
-        // Èç¹û»¹Ã»µ½ÆÚÍû×´Ì¬£¬¾Í¼ÌĞøµÈ´ı
+        // å¦‚æœè¿˜æ²¡åˆ°æœŸæœ›çŠ¶æ€ï¼Œå°±ç»§ç»­ç­‰å¾…
         return NodeState.RUNNING;
     }
 }

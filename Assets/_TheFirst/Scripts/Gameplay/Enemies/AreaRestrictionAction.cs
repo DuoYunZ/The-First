@@ -1,41 +1,41 @@
-// --- AreaRestrictionAction.cs (Ë²·¢°æ) ---
+ï»¿// --- AreaRestrictionAction.cs (ç¬å‘ç‰ˆ) ---
 using UnityEngine;
 using System.Collections;
 
 public class AreaRestrictionAction : Node
 {
-    [Header("ÇøÓòÏŞÖÆÉèÖÃ")]
-    [Tooltip("¡°Ç½±Ú¡±»ò¡°ÀÎÁı¡±µÄÔ¤ÖÆ¼ş")]
+    [Header("åŒºåŸŸé™åˆ¶è®¾ç½®")]
+    [Tooltip("â€œå¢™å£â€æˆ–â€œç‰¢ç¬¼â€çš„é¢„åˆ¶ä»¶")]
     public GameObject arenaWallPrefab;
 
-    [Header("ÀäÈ´ÉèÖÃ")]
-    [Tooltip("ÎªÕâ¸öÒ»´ÎĞÔ¼¼ÄÜÉèÖÃÒ»¸ö·Ç³£³¤µÄCD")]
-    public float cooldownDuration = 9999f; // Ä¬ÈÏÒ»¸ö¼«´óÖµ
+    [Header("å†·å´è®¾ç½®")]
+    [Tooltip("ä¸ºè¿™ä¸ªä¸€æ¬¡æ€§æŠ€èƒ½è®¾ç½®ä¸€ä¸ªéå¸¸é•¿çš„CD")]
+    public float cooldownDuration = 9999f; // é»˜è®¤ä¸€ä¸ªæå¤§å€¼
     public string attackName = "TrapAttack";
 
     public override NodeState Evaluate()
     {
         if (arenaWallPrefab == null) return NodeState.FAILURE;
 
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿Õû¸ö·½·¨±»¼«´ó¼ò»¯
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æ•´ä¸ªæ–¹æ³•è¢«æå¤§ç®€åŒ–
 
-        // 1. ÕÒµ½Íæ¼ÒÎ»ÖÃ
+        // 1. æ‰¾åˆ°ç©å®¶ä½ç½®
         Transform playerTarget = GameManager.Instance?.playerTransform;
         if (playerTarget == null) return NodeState.FAILURE;
 
-        // 2. ÔÚÍæ¼ÒÎ»ÖÃÉú³ÉÇ½±Ú
+        // 2. åœ¨ç©å®¶ä½ç½®ç”Ÿæˆå¢™å£
         GameObject wallGO = Instantiate(arenaWallPrefab, playerTarget.position, Quaternion.identity);
         ArenaWall activeWall = wallGO.GetComponent<ArenaWall>();
 
         if (activeWall != null)
         {
-            activeWall.Activate(); // ÃüÁîÇ½±Ú¡°³öÏÖ¡±£¨Ëü»á×Ô¼º¹Ü×Ô¼ººÎÊ±ÏûÊ§£©
+            activeWall.Activate(); // å‘½ä»¤å¢™å£â€œå‡ºç°â€ï¼ˆå®ƒä¼šè‡ªå·±ç®¡è‡ªå·±ä½•æ—¶æ¶ˆå¤±ï¼‰
         }
 
-        // 3. Á¢¼´ÎªÕâ¸ö¼¼ÄÜ¿ªÆôÀäÈ´
+        // 3. ç«‹å³ä¸ºè¿™ä¸ªæŠ€èƒ½å¼€å¯å†·å´
         GetComponentInParent<BehaviorTree>().StartCooldown(attackName, cooldownDuration);
 
-        // 4. Á¢¼´±¨¸æ³É¹¦£¬ÈÃĞĞÎªÊ÷¿ÉÒÔ¼ÌĞøÖ´ĞĞÏÂÒ»¸ö¶¯×÷
+        // 4. ç«‹å³æŠ¥å‘ŠæˆåŠŸï¼Œè®©è¡Œä¸ºæ ‘å¯ä»¥ç»§ç»­æ‰§è¡Œä¸‹ä¸€ä¸ªåŠ¨ä½œ
         return NodeState.SUCCESS;
     }
 }

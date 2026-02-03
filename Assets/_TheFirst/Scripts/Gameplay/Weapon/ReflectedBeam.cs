@@ -1,4 +1,4 @@
-// ReflectedBeam.cs
+ï»¿// ReflectedBeam.cs
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -15,12 +15,12 @@ public class ReflectedBeam : MonoBehaviour
     private float tickTimer;
     //private float remainingDuration;
 
-    // ÓÉ PlayerShield µ÷ÓÃ
+    // ç”± PlayerShield è°ƒç”¨
     public void Initialize(EnemyAttackData data, GameObject player, Transform target, EnemyBeamController sourceBeam)
     {
         this.lineRenderer = GetComponent<LineRenderer>();
         this.enemyTarget = target;
-        this.sourceBeam = sourceBeam; // ´æ´¢Ô­Ê¼¹âÊøµÄ¿ØÖÆÆ÷ÒıÓÃ
+        this.sourceBeam = sourceBeam; // å­˜å‚¨åŸå§‹å…‰æŸçš„æ§åˆ¶å™¨å¼•ç”¨
         this.playerAttacker = player;
         this.impactVfxPrefab = data.beamImpactVfxPrefab;
         this.damagePerTick = Mathf.CeilToInt((float)data.beamDamagePerSecond / data.beamDamageTickRate);
@@ -29,7 +29,7 @@ public class ReflectedBeam : MonoBehaviour
 
     void Update()
     {
-        // Èç¹ûÔ­Ê¼¹¥»÷Õß¡¢µ±Ç°Ä¿±êËÀÍö£¬»ò³ÖĞøÊ±¼äºÄ¾¡£¬Ôò¹âÊøÁ¢¼´ÏûÊ§
+        // å¦‚æœåŸå§‹æ”»å‡»è€…ã€å½“å‰ç›®æ ‡æ­»äº¡ï¼Œæˆ–æŒç»­æ—¶é—´è€—å°½ï¼Œåˆ™å…‰æŸç«‹å³æ¶ˆå¤±
         if (sourceBeam == null || enemyTarget == null || !enemyTarget.gameObject.activeInHierarchy)
         {
             Destroy(gameObject);
@@ -38,14 +38,14 @@ public class ReflectedBeam : MonoBehaviour
 
         //remainingDuration -= Time.deltaTime;
 
-        // ¸üĞÂÊÓ¾õ
+        // æ›´æ–°è§†è§‰
         Vector3 startPoint = transform.position;
         Transform aimPoint = enemyTarget.Find("AimTargetPoint");
-        Vector3 endPoint = (aimPoint != null) ? aimPoint.position : enemyTarget.position; // ÕÒµ½¾ÍÓÃ£¬ÕÒ²»µ½¾ÍÓÃ¸ù×ø±ê
+        Vector3 endPoint = (aimPoint != null) ? aimPoint.position : enemyTarget.position; // æ‰¾åˆ°å°±ç”¨ï¼Œæ‰¾ä¸åˆ°å°±ç”¨æ ¹åæ ‡
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
 
-        // ... (ÃüÖĞÌØĞ§ºÍÉËº¦Âß¼­Óë PlayerBeamController ÀàËÆ)
+        // ... (å‘½ä¸­ç‰¹æ•ˆå’Œä¼¤å®³é€»è¾‘ä¸ PlayerBeamController ç±»ä¼¼)
         if (impactVfxPrefab != null)
         {
             if (activeImpactVfxInstance == null) activeImpactVfxInstance = Instantiate(impactVfxPrefab, endPoint, Quaternion.identity);

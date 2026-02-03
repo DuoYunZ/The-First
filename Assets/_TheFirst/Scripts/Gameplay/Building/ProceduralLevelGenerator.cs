@@ -1,14 +1,14 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
 public class ProceduralWFCLikeGenerator : MonoBehaviour
 {
-    [Header("Éú³ÉÉèÖÃ")]
+    [Header("ç”Ÿæˆè®¾ç½®")]
     public int gridWidth = 10;
     public int gridHeight = 10;
-    public float tileSize = 10f; // Ã¿¸öÍßÆ¬µÄ³ß´ç (¼ÙÉèÊÇÕı·½ĞÎ)
-    public List<GameObject> tilePrefabs; // ÄãËùÓĞÄ£¿éÔ¤ÖÆ¼şµÄÁĞ±í (Ã¿¸ö¶¼Ó¦ÓĞ TileData ×é¼ş)
+    public float tileSize = 10f; // æ¯ä¸ªç“¦ç‰‡çš„å°ºå¯¸ (å‡è®¾æ˜¯æ­£æ–¹å½¢)
+    public List<GameObject> tilePrefabs; // ä½ æ‰€æœ‰æ¨¡å—é¢„åˆ¶ä»¶çš„åˆ—è¡¨ (æ¯ä¸ªéƒ½åº”æœ‰ TileData ç»„ä»¶)
 
     private class Cell
     {
@@ -21,10 +21,10 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
         public Cell(Vector2Int pos, List<TileData> allTileDatas)
         {
             gridPosition = pos;
-            // ³õÊ¼Ê±£¬Ã¿¸öµ¥Ôª¸ñ¶¼¿ÉÒÔÊÇÈÎºÎÍßÆ¬µÄÈÎºÎĞı×ª
+            // åˆå§‹æ—¶ï¼Œæ¯ä¸ªå•å…ƒæ ¼éƒ½å¯ä»¥æ˜¯ä»»ä½•ç“¦ç‰‡çš„ä»»ä½•æ—‹è½¬
             foreach (var tileData in allTileDatas)
             {
-                for (int r = 0; r < 4; r++) // 0, 90, 180, 270 ¶ÈĞı×ª
+                for (int r = 0; r < 4; r++) // 0, 90, 180, 270 åº¦æ—‹è½¬
                 {
                     possibleTiles.Add((tileData, r));
                 }
@@ -53,14 +53,14 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"Ô¤ÖÆ¼ş '{prefab.name}' È±ÉÙ TileData ×é¼ş!", prefab);
+                Debug.LogError($"é¢„åˆ¶ä»¶ '{prefab.name}' ç¼ºå°‘ TileData ç»„ä»¶!", prefab);
             }
         }
 
         if (allAvailableTileDatas.Count == 0)
         {
-            Debug.LogError("Ã»ÓĞ¿ÉÓÃµÄÍßÆ¬Êı¾İ£¬ÎŞ·¨Éú³É£¡");
-            enabled = false; // ½ûÓÃ½Å±¾
+            Debug.LogError("æ²¡æœ‰å¯ç”¨çš„ç“¦ç‰‡æ•°æ®ï¼Œæ— æ³•ç”Ÿæˆï¼");
+            enabled = false; // ç¦ç”¨è„šæœ¬
             return;
         }
 
@@ -75,55 +75,55 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
 
     void Generate()
     {
-        // ¼òµ¥ÊµÏÖ£º´ÓÒ»¸ö½Ç¿ªÊ¼£¬Öğ¸öÌî³ä£¬»òÕßËæ»úÑ¡ÔñÎ´Ì®ËõµÄµ¥Ôª¸ñ
-        // ÕâÀïÎÒÃÇÓÃÒ»¸ö¼òµ¥µÄË³ĞòÌî³ä×÷ÎªÊ¾Àı£¬¸ü¸´ÔÓµÄWFC»áÑ¡ÔñìØ×îĞ¡µÄ
+        // ç®€å•å®ç°ï¼šä»ä¸€ä¸ªè§’å¼€å§‹ï¼Œé€ä¸ªå¡«å……ï¼Œæˆ–è€…éšæœºé€‰æ‹©æœªåç¼©çš„å•å…ƒæ ¼
+        // è¿™é‡Œæˆ‘ä»¬ç”¨ä¸€ä¸ªç®€å•çš„é¡ºåºå¡«å……ä½œä¸ºç¤ºä¾‹ï¼Œæ›´å¤æ‚çš„WFCä¼šé€‰æ‹©ç†µæœ€å°çš„
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
             {
                 if (!CollapseCell(x, y))
                 {
-                    Debug.LogError($"ÎŞ·¨Îªµ¥Ôª¸ñ ({x},{y}) ÕÒµ½ÓĞĞ§µÄÍßÆ¬¡£Éú³É¿ÉÄÜ²»ÍêÕû»òÓĞ³åÍ»¡£");
-                    // ¿ÉÒÔÑ¡ÔñÍ£Ö¹Éú³É£¬»òÕß³¢ÊÔ»ØËİµÈ¸ü¸ß¼¶µÄ²ßÂÔ
+                    Debug.LogError($"æ— æ³•ä¸ºå•å…ƒæ ¼ ({x},{y}) æ‰¾åˆ°æœ‰æ•ˆçš„ç“¦ç‰‡ã€‚ç”Ÿæˆå¯èƒ½ä¸å®Œæ•´æˆ–æœ‰å†²çªã€‚");
+                    // å¯ä»¥é€‰æ‹©åœæ­¢ç”Ÿæˆï¼Œæˆ–è€…å°è¯•å›æº¯ç­‰æ›´é«˜çº§çš„ç­–ç•¥
                 }
             }
         }
-        Debug.Log("µØ¿éÉú³ÉÍê³É (»ò³¢ÊÔÍê³É)¡£");
+        Debug.Log("åœ°å—ç”Ÿæˆå®Œæˆ (æˆ–å°è¯•å®Œæˆ)ã€‚");
     }
 
     bool CollapseCell(int x, int y)
     {
         Cell currentCell = grid[x, y];
-        if (currentCell.collapsed) return true; // ÒÑ¾­Ì®Ëõ¹ıÁË
+        if (currentCell.collapsed) return true; // å·²ç»åç¼©è¿‡äº†
 
-        // 1. ¸ù¾İÁÚ¾ÓÉ¸Ñ¡µ±Ç°µ¥Ôª¸ñµÄ¿ÉÄÜĞÔ
+        // 1. æ ¹æ®é‚»å±…ç­›é€‰å½“å‰å•å…ƒæ ¼çš„å¯èƒ½æ€§
         FilterPossibilities(currentCell);
 
         if (currentCell.possibleTiles.Count == 0)
         {
-            return false; // Ã»ÓĞÓĞĞ§µÄÍßÆ¬¿ÉÑ¡
+            return false; // æ²¡æœ‰æœ‰æ•ˆçš„ç“¦ç‰‡å¯é€‰
         }
 
-        // 2. ´Ó¿ÉÄÜĞÔÖĞËæ»úÑ¡ÔñÒ»¸ö
+        // 2. ä»å¯èƒ½æ€§ä¸­éšæœºé€‰æ‹©ä¸€ä¸ª
         int randomIndex = Random.Range(0, currentCell.possibleTiles.Count);
         (TileData chosenTileData, int chosenRotation) = currentCell.possibleTiles[randomIndex];
 
         currentCell.chosenTile = chosenTileData;
         currentCell.chosenRotation = chosenRotation;
         currentCell.collapsed = true;
-        currentCell.possibleTiles.Clear(); // Çå¿Õ¿ÉÄÜĞÔ£¬Ö»±£ÁôÑ¡ÖĞµÄ
+        currentCell.possibleTiles.Clear(); // æ¸…ç©ºå¯èƒ½æ€§ï¼Œåªä¿ç•™é€‰ä¸­çš„
         currentCell.possibleTiles.Add((chosenTileData, chosenRotation));
 
 
-        // 3. ÊµÀı»¯Ñ¡ÖĞµÄÍßÆ¬
+        // 3. å®ä¾‹åŒ–é€‰ä¸­çš„ç“¦ç‰‡
         Vector3 position = new Vector3(x * tileSize, 0, y * tileSize);
         Quaternion rotation = Quaternion.Euler(0, chosenRotation * 90f, 0);
-        Instantiate(chosenTileData.gameObject, position, rotation, this.transform); // ×÷Îª×Ó¶ÔÏóÊµÀı»¯
-        // Debug.Log($"ÔÚ ({x},{y}) ·ÅÖÃÁË {chosenTileData.tileName}£¬Ğı×ª {chosenRotation * 90} ¶È");
+        Instantiate(chosenTileData.gameObject, position, rotation, this.transform); // ä½œä¸ºå­å¯¹è±¡å®ä¾‹åŒ–
+        // Debug.Log($"åœ¨ ({x},{y}) æ”¾ç½®äº† {chosenTileData.tileName}ï¼Œæ—‹è½¬ {chosenRotation * 90} åº¦");
 
 
-        // 4. (¿ÉÑ¡£¬µ«WFCºËĞÄ) ´«²¥Ô¼Êøµ½ÁÚ¾Ó (ÕâÒ»²½»áÊ¹Ëã·¨¸üÏñWFC)
-        // PropagateConstraints(x,y); // ÕâÒ»²½»áµü´úµØ¸üĞÂÁÚ¾ÓµÄ¿ÉÄÜĞÔ£¬Èç¹ûÁÚ¾ÓµÄ¿ÉÄÜĞÔ±äÎª0Ôò¿ÉÄÜĞèÒª»ØËİ
+        // 4. (å¯é€‰ï¼Œä½†WFCæ ¸å¿ƒ) ä¼ æ’­çº¦æŸåˆ°é‚»å±… (è¿™ä¸€æ­¥ä¼šä½¿ç®—æ³•æ›´åƒWFC)
+        // PropagateConstraints(x,y); // è¿™ä¸€æ­¥ä¼šè¿­ä»£åœ°æ›´æ–°é‚»å±…çš„å¯èƒ½æ€§ï¼Œå¦‚æœé‚»å±…çš„å¯èƒ½æ€§å˜ä¸º0åˆ™å¯èƒ½éœ€è¦å›æº¯
 
         return true;
     }
@@ -135,35 +135,35 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
         foreach ((TileData candidateTile, int candidateRotation) in cellToFilter.possibleTiles)
         {
             bool isValidCandidate = true;
-            // ¼ì²éËÄ¸ö·½ÏòµÄÁÚ¾Ó
+            // æ£€æŸ¥å››ä¸ªæ–¹å‘çš„é‚»å±…
             foreach (Direction dir in System.Enum.GetValues(typeof(Direction)))
             {
                 Vector2Int neighborPos = cellToFilter.gridPosition + dir.ToVector2Int();
 
-                // ¼ì²éÁÚ¾ÓÊÇ·ñÔÚÍø¸ñÄÚ
+                // æ£€æŸ¥é‚»å±…æ˜¯å¦åœ¨ç½‘æ ¼å†…
                 if (neighborPos.x >= 0 && neighborPos.x < gridWidth &&
                     neighborPos.y >= 0 && neighborPos.y < gridHeight)
                 {
                     Cell neighborCell = grid[neighborPos.x, neighborPos.y];
-                    if (neighborCell.collapsed) // Èç¹ûÁÚ¾ÓÒÑ¾­È·¶¨ÁË
+                    if (neighborCell.collapsed) // å¦‚æœé‚»å±…å·²ç»ç¡®å®šäº†
                     {
-                        // »ñÈ¡µ±Ç°ºòÑ¡ÍßÆ¬ÔÚÕâ¸ö·½ÏòÉÏµÄÁ¬½ÓÆ÷ÀàĞÍ
+                        // è·å–å½“å‰å€™é€‰ç“¦ç‰‡åœ¨è¿™ä¸ªæ–¹å‘ä¸Šçš„è¿æ¥å™¨ç±»å‹
                         ConnectorType candidateConnector = candidateTile.GetConnector(dir, candidateRotation);
-                        // »ñÈ¡ÁÚ¾ÓÍßÆ¬ÔÚÏà¶Ô·½ÏòÉÏµÄÁ¬½ÓÆ÷ÀàĞÍ
+                        // è·å–é‚»å±…ç“¦ç‰‡åœ¨ç›¸å¯¹æ–¹å‘ä¸Šçš„è¿æ¥å™¨ç±»å‹
                         ConnectorType neighborConnector = neighborCell.chosenTile.GetConnector(dir.Opposite(), neighborCell.chosenRotation);
 
                         if (!AreConnectorsCompatible(candidateConnector, neighborConnector))
                         {
                             isValidCandidate = false;
-                            break; // Õâ¸öºòÑ¡ÍßÆ¬²»ĞĞÁË
+                            break; // è¿™ä¸ªå€™é€‰ç“¦ç‰‡ä¸è¡Œäº†
                         }
                     }
-                    // else: ÁÚ¾Ó»¹Ã»È·¶¨£¬ÔİÊ±²»Ê©¼ÓÔ¼Êø (¸üÍêÕûµÄWFC»á´¦ÀíÎ´È·¶¨ÁÚ¾ÓµÄ¿ÉÄÜĞÔ)
+                    // else: é‚»å±…è¿˜æ²¡ç¡®å®šï¼Œæš‚æ—¶ä¸æ–½åŠ çº¦æŸ (æ›´å®Œæ•´çš„WFCä¼šå¤„ç†æœªç¡®å®šé‚»å±…çš„å¯èƒ½æ€§)
                 }
-                else // ³¬³ö±ß½çµÄ´¦Àí
+                else // è¶…å‡ºè¾¹ç•Œçš„å¤„ç†
                 {
                     ConnectorType candidateConnector = candidateTile.GetConnector(dir, candidateRotation);
-                    if (!IsBoundaryCompatible(candidateConnector)) // ¼ÙÉè±ß½çÖ»ÄÜÊÇ Empty »òÌØ¶¨±ß½çÀàĞÍ
+                    if (!IsBoundaryCompatible(candidateConnector)) // å‡è®¾è¾¹ç•Œåªèƒ½æ˜¯ Empty æˆ–ç‰¹å®šè¾¹ç•Œç±»å‹
                     {
                         isValidCandidate = false;
                         break;
@@ -179,30 +179,30 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
         cellToFilter.possibleTiles = validOptions;
     }
 
-    // ¶¨ÒåÁ¬½ÓÆ÷ÈçºÎÆ¥ÅäµÄ¹æÔò
+    // å®šä¹‰è¿æ¥å™¨å¦‚ä½•åŒ¹é…çš„è§„åˆ™
     bool AreConnectorsCompatible(ConnectorType c1, ConnectorType c2)
     {
-        // ×î¼òµ¥µÄ¹æÔò£º±ØĞëÍêÈ«ÏàÍ¬
+        // æœ€ç®€å•çš„è§„åˆ™ï¼šå¿…é¡»å®Œå…¨ç›¸åŒ
         // return c1 == c2;
 
-        // ¸üÁé»îµÄ¹æÔò£º
-        if (c1 == ConnectorType.Empty || c2 == ConnectorType.Empty) return true; // ¿Õ¿ÉÒÔºÍÈÎºÎÁ¬½Ó (»òÕßÌØ¶¨¹æÔò)
+        // æ›´çµæ´»çš„è§„åˆ™ï¼š
+        if (c1 == ConnectorType.Empty || c2 == ConnectorType.Empty) return true; // ç©ºå¯ä»¥å’Œä»»ä½•è¿æ¥ (æˆ–è€…ç‰¹å®šè§„åˆ™)
         if (c1 == c2) return true;
-        // Ìí¼ÓÆäËû¼æÈİĞÔ¹æÔò£¬ÀıÈç Road ¿ÉÒÔºÍ Grass Á¬½Ó£¨Èç¹ûÉè¼ÆÈç´Ë£©
+        // æ·»åŠ å…¶ä»–å…¼å®¹æ€§è§„åˆ™ï¼Œä¾‹å¦‚ Road å¯ä»¥å’Œ Grass è¿æ¥ï¼ˆå¦‚æœè®¾è®¡å¦‚æ­¤ï¼‰
         // if ((c1 == ConnectorType.Road && c2 == ConnectorType.Grass) || (c1 == ConnectorType.Grass && c2 == ConnectorType.Road)) return true;
         return false;
     }
 
     bool IsBoundaryCompatible(ConnectorType connector)
     {
-        // ¶¨ÒåÄÄĞ©Á¬½ÓÆ÷ÀàĞÍ¿ÉÒÔ×÷ÎªµØÍ¼µÄ±ß½ç
-        return connector == ConnectorType.Empty || connector == ConnectorType.Water || connector == ConnectorType.Forest; // Ê¾Àı
+        // å®šä¹‰å“ªäº›è¿æ¥å™¨ç±»å‹å¯ä»¥ä½œä¸ºåœ°å›¾çš„è¾¹ç•Œ
+        return connector == ConnectorType.Empty || connector == ConnectorType.Water || connector == ConnectorType.Forest; // ç¤ºä¾‹
     }
 
-    // PropagateConstraints ·½·¨»á¸ü¸´ÔÓ£¬Ëü»áÔÚÒ»¸öµ¥Ôª¸ñÌ®Ëõºó£¬
-    // µİ¹éµØ¸üĞÂÆäËùÓĞÁÚ¾ÓµÄ¿ÉÄÜĞÔÁĞ±í£¬Èç¹ûÄ³¸öÁÚ¾ÓµÄ¿ÉÄÜĞÔÁĞ±í¸Ä±äÁË£¬
-    // ÓÖ»á¼ÌĞø´«²¥¸øÄÇ¸öÁÚ¾ÓµÄÁÚ¾Ó£¬Ö±µ½Ã»ÓĞ¿ÉÄÜĞÔÔÙ¸Ä±ä¡£
-    // ÕâÊÇWFCËã·¨µÄºËĞÄ£¬µ«¶ÔÓÚÄ£¿é²»¶àµÄÇé¿ö£¬¿ÉÄÜ½öÔÚÌ®ËõÇ°FilterÒ»´ÎÒ²¹»ÓÃ¡£
+    // PropagateConstraints æ–¹æ³•ä¼šæ›´å¤æ‚ï¼Œå®ƒä¼šåœ¨ä¸€ä¸ªå•å…ƒæ ¼åç¼©åï¼Œ
+    // é€’å½’åœ°æ›´æ–°å…¶æ‰€æœ‰é‚»å±…çš„å¯èƒ½æ€§åˆ—è¡¨ï¼Œå¦‚æœæŸä¸ªé‚»å±…çš„å¯èƒ½æ€§åˆ—è¡¨æ”¹å˜äº†ï¼Œ
+    // åˆä¼šç»§ç»­ä¼ æ’­ç»™é‚£ä¸ªé‚»å±…çš„é‚»å±…ï¼Œç›´åˆ°æ²¡æœ‰å¯èƒ½æ€§å†æ”¹å˜ã€‚
+    // è¿™æ˜¯WFCç®—æ³•çš„æ ¸å¿ƒï¼Œä½†å¯¹äºæ¨¡å—ä¸å¤šçš„æƒ…å†µï¼Œå¯èƒ½ä»…åœ¨åç¼©å‰Filterä¸€æ¬¡ä¹Ÿå¤Ÿç”¨ã€‚
     // void PropagateConstraints(int x, int y) { /* ... */ }
 }
 

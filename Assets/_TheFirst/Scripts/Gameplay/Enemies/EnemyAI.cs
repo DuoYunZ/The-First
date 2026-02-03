@@ -1,36 +1,36 @@
-using UnityEngine;
-using System.Collections; // <--- È·±£ÓĞÕâÒ»ĞĞ£¬ÓÃÓÚĞ­³Ì
+ï»¿using UnityEngine;
+using System.Collections; // <--- ç¡®ä¿æœ‰è¿™ä¸€è¡Œï¼Œç”¨äºåç¨‹
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion, MeleeAttacking } // <-- [ĞÂÔö] MeleeAttacking
+    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion, MeleeAttacking } // <-- [æ–°å¢] MeleeAttacking
     private AIState _currentState = AIState.Chasing;
     public AIState CurrentState => _currentState;
 
-    private bool isStunned = false; // <--- vvv ĞÂÔö vvv
+    private bool isStunned = false; // <--- vvv æ–°å¢ vvv
 
-    [Header("AI ÉèÖÃ")]   
-    private float _originalMoveSpeed; // ĞÂÔö£ºÓÃÓÚ´æ´¢Ô­Ê¼ËÙ¶È
+    [Header("AI è®¾ç½®")]   
+    private float _originalMoveSpeed; // æ–°å¢ï¼šç”¨äºå­˜å‚¨åŸå§‹é€Ÿåº¦
 
-    [Header("ÉËº¦ÉèÖÃ")]
-    [Tooltip("¹ÖÎïÃ¿´ÎÔì³ÉÉËº¦ºóµÄÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Header("ä¼¤å®³è®¾ç½®")]
+    [Tooltip("æ€ªç‰©æ¯æ¬¡é€ æˆä¼¤å®³åçš„å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float damageCooldown = 1.0f;
     private int _touchDamage = 5;
     private bool _canDealDamage = true;
 
 
-    [Header("Ëæ»úÍ£¶ÙĞĞÎª (Random Pause Behavior)")]
-    [Tooltip("¹´Ñ¡´ËÏîÒÔÆôÓÃËæ»úÍ£¶Ù¹¦ÄÜ")]
+    [Header("éšæœºåœé¡¿è¡Œä¸º (Random Pause Behavior)")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ä»¥å¯ç”¨éšæœºåœé¡¿åŠŸèƒ½")]
     public bool canPause = true;
-    [Tooltip("ÔÚÍê³ÉÒ»´Î×·Öğºó£¬ÓĞ¶à´óµÄ¼¸ÂÊ½øÈëÍ£¶Ù×´Ì¬ (0µ½1)")]
+    [Tooltip("åœ¨å®Œæˆä¸€æ¬¡è¿½é€åï¼Œæœ‰å¤šå¤§çš„å‡ ç‡è¿›å…¥åœé¡¿çŠ¶æ€ (0åˆ°1)")]
     [Range(0f, 1f)]
-    public float pauseChance = 0.2f; // Ä¬ÈÏ20%µÄ¼¸ÂÊÍ£¶Ù
-    [Tooltip("Ã¿´ÎÍ£¶ÙµÄ³ÖĞøÊ±¼ä·¶Î§£¨Ãë£©")]
+    public float pauseChance = 0.2f; // é»˜è®¤20%çš„å‡ ç‡åœé¡¿
+    [Tooltip("æ¯æ¬¡åœé¡¿çš„æŒç»­æ—¶é—´èŒƒå›´ï¼ˆç§’ï¼‰")]
     public Vector2 pauseDurationRange = new Vector2(0.5f, 1.5f);
-    [Tooltip("Ã¿´Î×·ÖğµÄ³ÖĞøÊ±¼ä·¶Î§£¨Ãë£©")]
+    [Tooltip("æ¯æ¬¡è¿½é€çš„æŒç»­æ—¶é—´èŒƒå›´ï¼ˆç§’ï¼‰")]
     public Vector2 chaseDurationRange = new Vector2(3f, 7f);
 
     private Coroutine knockbackCoroutine;
@@ -38,32 +38,32 @@ public class EnemyAI : MonoBehaviour
 
     private Transform playerTransform = null;
     private NavMeshAgent agent;
-    private Rigidbody rb; // ¡¾ĞÂÔö¡¿Rigidbody µÄÒıÓÃ
+    private Rigidbody rb; // ã€æ–°å¢ã€‘Rigidbody çš„å¼•ç”¨
 
-    // --- ĞÂÔö£º„Ó®‹ÏàêP ---
+    // --- æ–°å¢ï¼šå‹•ç•«ç›¸é—œ ---
     private Animator animator;
 
-    private StatusEffectReceiver statusReceiver; // <--- vvv ĞÂÔö
-    private float stateTimer; // µ±Ç°×´Ì¬µÄÊ£ÓàÊ±¼ä
+    private StatusEffectReceiver statusReceiver; // <--- vvv æ–°å¢
+    private float stateTimer; // å½“å‰çŠ¶æ€çš„å‰©ä½™æ—¶é—´
 
-    // --- ¡¾ĞÂÔö¡¿ÓÃÓÚÄ¿±êµãÆ«ÒÆµÄ±äÁ¿ ---
+    // --- ã€æ–°å¢ã€‘ç”¨äºç›®æ ‡ç‚¹åç§»çš„å˜é‡ ---
     private Vector3 targetOffset;
     private float offsetRecalculateTimer;
 
     private EnemyExplosionAttack explosionAttackScript;
 
-    // ... Start(), InitializeEnemy(), FixedUpdate() ·½·¨±£³Ö²»±ä ...
+    // ... Start(), InitializeEnemy(), FixedUpdate() æ–¹æ³•ä¿æŒä¸å˜ ...
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        rb = GetComponent<Rigidbody>(); // ¡¾ĞÂÔö¡¿»ñÈ¡ Rigidbody ×é¼ş
+        rb = GetComponent<Rigidbody>(); // ã€æ–°å¢ã€‘è·å– Rigidbody ç»„ä»¶
         animator = GetComponentInChildren<Animator>();
-        explosionAttackScript = GetComponent<EnemyExplosionAttack>(); // ¡¾ĞÂÔö¡¿»ñÈ¡±¬Õ¨¹¥»÷½Å±¾
+        explosionAttackScript = GetComponent<EnemyExplosionAttack>(); // ã€æ–°å¢ã€‘è·å–çˆ†ç‚¸æ”»å‡»è„šæœ¬
         statusReceiver = GetComponent<StatusEffectReceiver>();
     }
     void Start()
     {
-        // ÓÎÏ·¿ªÊ¼Ê±£¬ÈÃ¹ÖÎïÖ±½Ó½øÈë×·Öğ×´Ì¬
+        // æ¸¸æˆå¼€å§‹æ—¶ï¼Œè®©æ€ªç‰©ç›´æ¥è¿›å…¥è¿½é€çŠ¶æ€
         EnterChaseState();
     }
 
@@ -72,15 +72,15 @@ public class EnemyAI : MonoBehaviour
         if (isAttacking)
         {
             _currentState = AIState.MeleeAttacking;
-            // ÎÒÃÇĞÅÈÎ EnemyMeleeAttack ½Å±¾»á´¦Àí agent.isStopped
+            // æˆ‘ä»¬ä¿¡ä»» EnemyMeleeAttack è„šæœ¬ä¼šå¤„ç† agent.isStopped
         }
         else
         {
-            // Ö»ÓĞµ±ÎÒÃÇ´¦ÓÚ¹¥»÷×´Ì¬Ê±£¬²ÅÇĞ»»»Ø×·Öğ
+            // åªæœ‰å½“æˆ‘ä»¬å¤„äºæ”»å‡»çŠ¶æ€æ—¶ï¼Œæ‰åˆ‡æ¢å›è¿½é€
             if (_currentState == AIState.MeleeAttacking)
             {
                 _currentState = AIState.Chasing;
-                // MeleeAttack ½Å±¾»á»Ö¸´ agent.isStopped
+                // MeleeAttack è„šæœ¬ä¼šæ¢å¤ agent.isStopped
             }
         }
     }
@@ -97,12 +97,12 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // --- ĞÂÔö£ºÒ»¸ö¹«¹²·½·¨À´ÉèÖÃÒÆ¶¯ËÙ¶È ---
+    // --- æ–°å¢ï¼šä¸€ä¸ªå…¬å…±æ–¹æ³•æ¥è®¾ç½®ç§»åŠ¨é€Ÿåº¦ ---
     public void SetMoveSpeed(float newSpeed)
     {
         if (agent != null)
         {
-            agent.speed = newSpeed; // ¡¾ĞŞ¸Ä¡¿¿ØÖÆ NavMeshAgent µÄËÙ¶È
+            agent.speed = newSpeed; // ã€ä¿®æ”¹ã€‘æ§åˆ¶ NavMeshAgent çš„é€Ÿåº¦
         }
     }
 
@@ -111,26 +111,26 @@ public class EnemyAI : MonoBehaviour
         isStunned = stunned;
         if (agent != null && agent.isOnNavMesh)
         {
-            // Á¢¼´Í£Ö¹»ò»Ö¸´ NavMeshAgent µÄÒÆ¶¯
+            // ç«‹å³åœæ­¢æˆ–æ¢å¤ NavMeshAgent çš„ç§»åŠ¨
             agent.isStopped = stunned;
         }
         if (animator != null)
         {
             if (stunned)
             {
-                // µ±±»Ñ£ÔÎÊ±£¬Ç¿ÖÆ "isMoving" Îª false£¬
-                // Õâ½«´¥·¢Ïò¡°´ı»ú¡±×´Ì¬µÄ¹ı¶É¡£
+                // å½“è¢«çœ©æ™•æ—¶ï¼Œå¼ºåˆ¶ "isMoving" ä¸º falseï¼Œ
+                // è¿™å°†è§¦å‘å‘â€œå¾…æœºâ€çŠ¶æ€çš„è¿‡æ¸¡ã€‚
                 animator.SetBool("isMoving", false);
             }
-            // µ±Ñ£ÔÎ½áÊø (stunned == false) Ê±£¬ÎÒÃÇ²»ĞèÒªÔÚÕâÀïÉèÖÃ»Ø true¡£
-            // ÉÔºó Update() Ñ­»·ÖĞµÄ UpdateAnimation() ·½·¨»á½Ó¹Ü£¬
-            // ²¢¸ù¾İ agent.velocity ×Ô¶¯½«ÆäÉèÖÃ»Ø true¡£
+            // å½“çœ©æ™•ç»“æŸ (stunned == false) æ—¶ï¼Œæˆ‘ä»¬ä¸éœ€è¦åœ¨è¿™é‡Œè®¾ç½®å› trueã€‚
+            // ç¨å Update() å¾ªç¯ä¸­çš„ UpdateAnimation() æ–¹æ³•ä¼šæ¥ç®¡ï¼Œ
+            // å¹¶æ ¹æ® agent.velocity è‡ªåŠ¨å°†å…¶è®¾ç½®å› trueã€‚
         }
     }
 
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
-        // Ñ£ÔÎÊ± »òÒÑ¾­ÔÚ±»»÷ÍËÊ±£¬²»´¥·¢
+        // çœ©æ™•æ—¶ æˆ–å·²ç»åœ¨è¢«å‡»é€€æ—¶ï¼Œä¸è§¦å‘
         if (isStunned || knockbackCoroutine != null) return;
 
         knockbackCoroutine = StartCoroutine(KnockbackRoutine(forceDirection * forceAmount, duration));
@@ -138,11 +138,11 @@ public class EnemyAI : MonoBehaviour
 
     private IEnumerator KnockbackRoutine(Vector3 force, float duration)
     {
-        // --- vvv ĞÂÔö Debug 1 vvv ---
-        //Debug.Log($"<color=orange>KnockbackRoutine: Æô¶¯£¡Ê©¼ÓµÄÁ¦: {force.magnitude}</color>");
-        // --- ^^^ ĞÂÔö½áÊø ^^^ ---
+        // --- vvv æ–°å¢ Debug 1 vvv ---
+        //Debug.Log($"<color=orange>KnockbackRoutine: å¯åŠ¨ï¼æ–½åŠ çš„åŠ›: {force.magnitude}</color>");
+        // --- ^^^ æ–°å¢ç»“æŸ ^^^ ---
 
-        // 1. ½ûÓÃ NavMeshAgent ¶ÔÎ»ÖÃµÄ¿ØÖÆ
+        // 1. ç¦ç”¨ NavMeshAgent å¯¹ä½ç½®çš„æ§åˆ¶
         if (agent.isOnNavMesh)
         {
             agent.isStopped = true;
@@ -150,18 +150,18 @@ public class EnemyAI : MonoBehaviour
         }
         agent.enabled = false;
 
-        // 2. ÆôÓÃ Rigidbody ²¢Ê©¼ÓÁ¦
+        // 2. å¯ç”¨ Rigidbody å¹¶æ–½åŠ åŠ›
         rb.isKinematic = false;
         rb.AddForce(force, ForceMode.Impulse);       
 
-        // 3. µÈ´ı»÷ÍËĞ§¹û½áÊø
+        // 3. ç­‰å¾…å‡»é€€æ•ˆæœç»“æŸ
         yield return new WaitForSeconds(duration);        
 
-        // 4. »Ö¸´ Rigidbody ºÍ NavMeshAgent
+        // 4. æ¢å¤ Rigidbody å’Œ NavMeshAgent
         rb.isKinematic = true;
         agent.enabled = true;
 
-        // 5. ½« Agent¡°´«ËÍ¡±µ½ÎïÀíÄ£Äâ½áÊøµÄĞÂÎ»ÖÃ
+        // 5. å°† Agentâ€œä¼ é€â€åˆ°ç‰©ç†æ¨¡æ‹Ÿç»“æŸçš„æ–°ä½ç½®
         if (agent.isOnNavMesh)
         {
             agent.Warp(transform.position);
@@ -171,7 +171,7 @@ public class EnemyAI : MonoBehaviour
         knockbackCoroutine = null;
     }
 
-    // --- ĞÂÔö£ºÒ»¸ö¹«¹²·½·¨À´»ñÈ¡Ô­Ê¼ËÙ¶È ---
+    // --- æ–°å¢ï¼šä¸€ä¸ªå…¬å…±æ–¹æ³•æ¥è·å–åŸå§‹é€Ÿåº¦ ---
     public float GetOriginalMoveSpeed() => _originalMoveSpeed;
 
     void Update()
@@ -179,7 +179,7 @@ public class EnemyAI : MonoBehaviour
         if (isStunned) return;
         if (knockbackCoroutine != null)
         {
-            // Ğ­³ÌÕıÔÚ´¦Àí»÷ÍË£¬Update() Ó¦¸ÃÍ£Ö¹¸ÉÔ¤
+            // åç¨‹æ­£åœ¨å¤„ç†å‡»é€€ï¼ŒUpdate() åº”è¯¥åœæ­¢å¹²é¢„
             return;
         }
 
@@ -195,10 +195,10 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        // ¡¾ĞŞ¸Ä¡¿µ±´¦ÓÚÌØÊâ¹¥»÷×´Ì¬Ê±£¬ÔİÍ£³£¹æµÄ×·Öğ/Í£¶ÙÂß¼­
+        // ã€ä¿®æ”¹ã€‘å½“å¤„äºç‰¹æ®Šæ”»å‡»çŠ¶æ€æ—¶ï¼Œæš‚åœå¸¸è§„çš„è¿½é€/åœé¡¿é€»è¾‘
         if (_currentState == AIState.MeleeAttacking)
         {
-            return; // ÔİÍ£ËùÓĞÒÆ¶¯ºÍ¶¯»­Âß¼­
+            return; // æš‚åœæ‰€æœ‰ç§»åŠ¨å’ŒåŠ¨ç”»é€»è¾‘
         }
 
         if (!agent.isOnNavMesh) return;
@@ -256,7 +256,7 @@ public class EnemyAI : MonoBehaviour
 
     public void RequestJumpAttack(Vector3 targetPosition, float jumpDuration, float arcHeight)
     {
-        // Ö»ÓĞÔÚ×·Öğ×´Ì¬ÏÂ²ÅÄÜ·¢ÆğÌøÔ¾¹¥»÷
+        // åªæœ‰åœ¨è¿½é€çŠ¶æ€ä¸‹æ‰èƒ½å‘èµ·è·³è·ƒæ”»å‡»
         if (_currentState == AIState.Chasing)
         {
             _currentState = AIState.JumpingAttack;
@@ -265,7 +265,7 @@ public class EnemyAI : MonoBehaviour
     }
     public void ResumeNormalBehavior()
     {
-        // ¹¥»÷½áÊøºó£¬Á¢¿Ì»Øµ½×·Öğ×´Ì¬
+        // æ”»å‡»ç»“æŸåï¼Œç«‹åˆ»å›åˆ°è¿½é€çŠ¶æ€
         EnterChaseState();
     }
     private IEnumerator ParabolicJumpCoroutine(Vector3 endPoint, float jumpDuration, float arcHeight)
@@ -298,21 +298,21 @@ public class EnemyAI : MonoBehaviour
         rb.isKinematic = true;
         agent.enabled = originalAgentState;
 
-        // ¡¾¹Ø¼ü¡¿½«AgentÍ¬²½µ½ĞÂÎ»ÖÃ
+        // ã€å…³é”®ã€‘å°†AgentåŒæ­¥åˆ°æ–°ä½ç½®
         if (agent.isOnNavMesh) agent.Warp(transform.position);
 
-        // ÌøÔ¾½áÊø£¬½øÈëÂäµØ×¼±¸×´Ì¬
+        // è·³è·ƒç»“æŸï¼Œè¿›å…¥è½åœ°å‡†å¤‡çŠ¶æ€
         _currentState = AIState.PreparingExplosion;
 
-        // ¡¾¹Ø¼ü¡¿Í¨Öª¹¥»÷½Å±¾£¬ÒÆ¶¯ÒÑÍê³É£¬¿ÉÒÔÖ´ĞĞºóĞøµÄ±¬Õ¨Âß¼­ÁË
+        // ã€å…³é”®ã€‘é€šçŸ¥æ”»å‡»è„šæœ¬ï¼Œç§»åŠ¨å·²å®Œæˆï¼Œå¯ä»¥æ‰§è¡Œåç»­çš„çˆ†ç‚¸é€»è¾‘äº†
         if (explosionAttackScript != null)
         {
             explosionAttackScript.OnJumpFinished();
         }
         else
         {
-            Debug.LogError("ÕÒ²»µ½ EnemyExplosionAttack ½Å±¾À´Íê³É¹¥»÷£¡", this);
-            // Èç¹ûÕÒ²»µ½¹¥»÷½Å±¾£¬»Ö¸´Õı³£ĞĞÎªÒÔ·À¿¨ËÀ
+            Debug.LogError("æ‰¾ä¸åˆ° EnemyExplosionAttack è„šæœ¬æ¥å®Œæˆæ”»å‡»ï¼", this);
+            // å¦‚æœæ‰¾ä¸åˆ°æ”»å‡»è„šæœ¬ï¼Œæ¢å¤æ­£å¸¸è¡Œä¸ºä»¥é˜²å¡æ­»
             ResumeNormalBehavior();
         }
     }
@@ -320,7 +320,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (animator == null) return;
 
-        // ÎÒÃÇĞèÒª¼ì²é agent.velocity ÒòÎª¼´Ê¹ isStopped = true, velocity Ò²ĞèÒªÒ»Ö¡²Å¹éÁã
+        // æˆ‘ä»¬éœ€è¦æ£€æŸ¥ agent.velocity å› ä¸ºå³ä½¿ isStopped = true, velocity ä¹Ÿéœ€è¦ä¸€å¸§æ‰å½’é›¶
         bool isCurrentlyMoving = !agent.isStopped && agent.velocity.magnitude > 0.1f;
 
         if (isCurrentlyMoving != animator.GetBool("isMoving"))
@@ -329,7 +329,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // --- ĞŞ¸ÄºóµÄÅö×²Âß¼­ ---
+    // --- ä¿®æ”¹åçš„ç¢°æ’é€»è¾‘ ---
     void OnTriggerStay(Collider other)
     {
         if (_canDealDamage && other.CompareTag("Player"))
@@ -337,16 +337,16 @@ public class EnemyAI : MonoBehaviour
             Health playerHealth = other.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                // --- vvv [ ºËĞÄĞŞ¸Ä ] vvv ---
-                // 1. »ñÈ¡Èõ»¯³ËÊı (Èç¹û receiver Îª null, Ä¬ÈÏÎª 1.0)
+                // --- vvv [ æ ¸å¿ƒä¿®æ”¹ ] vvv ---
+                // 1. è·å–å¼±åŒ–ä¹˜æ•° (å¦‚æœ receiver ä¸º null, é»˜è®¤ä¸º 1.0)
                 float multiplier = (statusReceiver != null) ? statusReceiver.weakenDamageMultiplier : 1.0f;
 
-                // 2. ¼ÆËã×îÖÕÉËº¦
+                // 2. è®¡ç®—æœ€ç»ˆä¼¤å®³
                 int finalDamage = Mathf.RoundToInt(_touchDamage * multiplier);
 
-                // 3. Ê¹ÓÃ×îÖÕÉËº¦
+                // 3. ä½¿ç”¨æœ€ç»ˆä¼¤å®³
                 playerHealth.TakeDamage(finalDamage, transform.position, this.gameObject, AttackType.Standard); //
-                // --- ^^^ [ ºËĞÄĞŞ¸Ä ] ^^^ ---
+                // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ ] ^^^ ---
 
                 _canDealDamage = false;
                 StartCoroutine(DamageCooldownRoutine());
@@ -354,7 +354,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // --- ĞÂÔöµÄÀäÈ´Ğ­³Ì ---
+    // --- æ–°å¢çš„å†·å´åç¨‹ ---
     IEnumerator DamageCooldownRoutine()
     {
         yield return new WaitForSeconds(damageCooldown);
@@ -365,7 +365,7 @@ public class EnemyAI : MonoBehaviour
         if (_canDealDamage)
         {
             _canDealDamage = false;
-            // ¸´ÓÃÒÑÓĞµÄĞ­³ÌÀ´ÖØÖÃ¼ÆÊ±Æ÷
+            // å¤ç”¨å·²æœ‰çš„åç¨‹æ¥é‡ç½®è®¡æ—¶å™¨
             StartCoroutine(DamageCooldownRoutine());
         }
     }

@@ -1,34 +1,34 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 
 public class MechController : MonoBehaviour
 {
-    [Header("ÒÆ¶¯ÉèÖÃ")]
+    [Header("ç§»åŠ¨è®¾ç½®")]
     public float moveSpeed = 5f;
 
-    [Header("Ğı×ªÉèÖÃ")]
+    [Header("æ—‹è½¬è®¾ç½®")]
     public float rotationSpeed = 15f;
 
-    [Header("³å´ÌÉèÖÃ")] // <--- NEW SECTION
+    [Header("å†²åˆºè®¾ç½®")] // <--- NEW SECTION
     public float dashForce = 20f;
     public float dashDuration = 0.2f;
     public float dashCooldown = 2f;
-    [Tooltip("ÎŞµĞÊ±¼ä£¬Ó¦Ğ¡ÓÚ»òµÈÓÚ³å´Ì³ÖĞøÊ±¼ä")]
+    [Tooltip("æ— æ•Œæ—¶é—´ï¼Œåº”å°äºæˆ–ç­‰äºå†²åˆºæŒç»­æ—¶é—´")]
     public float invincibilityDuration = 0.2f;
-    public AudioClip[] dashSfx; // <--- ĞÂÔö: ³å´ÌÒôĞ§Êı×é
-    public GameObject dashVfxPrefab; // <--- ĞÂÔö: ³å´ÌÌØĞ§Ô¤ÖÆ¼ş
+    public AudioClip[] dashSfx; // <--- æ–°å¢: å†²åˆºéŸ³æ•ˆæ•°ç»„
+    public GameObject dashVfxPrefab; // <--- æ–°å¢: å†²åˆºç‰¹æ•ˆé¢„åˆ¶ä»¶
 
-    [Header("ÒôĞ§ÉèÖÃ")]
-    [Tooltip("×ßÂ·ÒôĞ§¼ô¼­Êı×é£¬¿ÉÒÔ·Å¶à¸öÒÔÔö¼ÓËæ»úĞÔ")]
+    [Header("éŸ³æ•ˆè®¾ç½®")]
+    [Tooltip("èµ°è·¯éŸ³æ•ˆå‰ªè¾‘æ•°ç»„ï¼Œå¯ä»¥æ”¾å¤šä¸ªä»¥å¢åŠ éšæœºæ€§")]
     public AudioSource footstepAudioSource;
-    [Tooltip("³å´ÌºÍÆäËûÌØĞ§µÄÒôĞ§Ô´")]
-    public AudioSource dashAudioSource; // <--- ĞÂÔö: ¶ÀÁ¢µÄ³å´ÌÒôĞ§Ô´
+    [Tooltip("å†²åˆºå’Œå…¶ä»–ç‰¹æ•ˆçš„éŸ³æ•ˆæº")]
+    public AudioSource dashAudioSource; // <--- æ–°å¢: ç‹¬ç«‹çš„å†²åˆºéŸ³æ•ˆæº
     public AudioClip[] footstepClips;
-    // ÄÚ²¿ÒıÓÃ
+    // å†…éƒ¨å¼•ç”¨
     private Transform visualsTransform;
     private Rigidbody rb;
-    private Animator animator; // ¡¾ĞÂÔö¡¿¶¯»­¿ØÖÆÆ÷ÒıÓÃ
+    private Animator animator; // ã€æ–°å¢ã€‘åŠ¨ç”»æ§åˆ¶å™¨å¼•ç”¨
 
     private Vector2 moveInput;
     private PlayerControls playerControls;
@@ -41,32 +41,32 @@ public class MechController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
-            Debug.LogError("MechController: Rigidbody ×é¼şÎ´ÕÒµ½!", this);
+            Debug.LogError("MechController: Rigidbody ç»„ä»¶æœªæ‰¾åˆ°!", this);
             enabled = false;
         }
 
         playerControls = new PlayerControls();
 
-        // ×Ô¶¯²éÕÒÊÓ¾õÄ£ĞÍºÍ¶¯»­¿ØÖÆÆ÷
+        // è‡ªåŠ¨æŸ¥æ‰¾è§†è§‰æ¨¡å‹å’ŒåŠ¨ç”»æ§åˆ¶å™¨
         visualsTransform = transform.Find("Visuals");
         if (visualsTransform != null)
         {
-            animator = visualsTransform.GetComponent<Animator>(); // ¡¾ĞÂÔö¡¿»ñÈ¡Animator×é¼ş
+            animator = visualsTransform.GetComponent<Animator>(); // ã€æ–°å¢ã€‘è·å–Animatorç»„ä»¶
         }
 
         if (visualsTransform == null)
         {
-            Debug.LogError("MechController: ÔÚ '" + gameObject.name + "' µÄ×Ó¼¶ÖĞÎ´ÄÜÕÒµ½ÃûÎª 'Visuals' µÄ¶ÔÏó£¡", this);
+            Debug.LogError("MechController: åœ¨ '" + gameObject.name + "' çš„å­çº§ä¸­æœªèƒ½æ‰¾åˆ°åä¸º 'Visuals' çš„å¯¹è±¡ï¼", this);
             enabled = false;
         }
         if (animator == null)
         {
-            Debug.LogWarning("MechController: ÔÚ 'Visuals' ¶ÔÏóÉÏÎ´ÄÜÕÒµ½ Animator ×é¼ş£¡", this);
+            Debug.LogWarning("MechController: åœ¨ 'Visuals' å¯¹è±¡ä¸Šæœªèƒ½æ‰¾åˆ° Animator ç»„ä»¶ï¼", this);
         }
         
         if (footstepAudioSource == null)
         {
-            Debug.LogError("ÔÚÍæ¼ÒÉíÉÏÕÒ²»µ½AudioSource×é¼ş!", this);
+            Debug.LogError("åœ¨ç©å®¶èº«ä¸Šæ‰¾ä¸åˆ°AudioSourceç»„ä»¶!", this);
         }
     }
 
@@ -84,7 +84,7 @@ public class MechController : MonoBehaviour
         playerControls.Player.Dash.performed -= PerformDash;
     }
 
-    // ÎÒÃÇ²»ÔÙĞèÒª Initialize ·½·¨£¬ÒòÎª Awake ÒÑ¾­¿ÉÒÔÍê³ÉËùÓĞ¹¤×÷
+    // æˆ‘ä»¬ä¸å†éœ€è¦ Initialize æ–¹æ³•ï¼Œå› ä¸º Awake å·²ç»å¯ä»¥å®Œæˆæ‰€æœ‰å·¥ä½œ
     // public void Initialize(Transform visuals) { ... }
 
     void Update()
@@ -94,7 +94,7 @@ public class MechController : MonoBehaviour
             moveInput = playerControls.Player.Move.ReadValue<Vector2>();
         }
 
-        // ¡¾ĞÂÔö¡¿Ã¿Ö¡¸üĞÂ¶¯»­²ÎÊı
+        // ã€æ–°å¢ã€‘æ¯å¸§æ›´æ–°åŠ¨ç”»å‚æ•°
         UpdateAnimation();
     }
 
@@ -107,7 +107,7 @@ public class MechController : MonoBehaviour
     }
     private void PerformDash(InputAction.CallbackContext context)
     {
-        // ¼ì²éÀäÈ´Ê±¼äºÍÊÇ·ñÒÑÔÚ³å´Ì
+        // æ£€æŸ¥å†·å´æ—¶é—´å’Œæ˜¯å¦å·²åœ¨å†²åˆº
         if (!isDashing && Time.time >= lastDashTime + dashCooldown)
         {
             StartCoroutine(DashCoroutine());
@@ -115,80 +115,80 @@ public class MechController : MonoBehaviour
     }
     private IEnumerator DashCoroutine()
     {
-        // 1. ÉèÖÃ×´Ì¬
+        // 1. è®¾ç½®çŠ¶æ€
         isDashing = true;
         lastDashTime = Time.time;
 
-        // ÆôÓÃÎŞµĞ×´Ì¬£¨ÏÈ¿ªÊ¼£©
+        // å¯ç”¨æ— æ•ŒçŠ¶æ€ï¼ˆå…ˆå¼€å§‹ï¼‰
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.isInvincible = true;
         }
 
-        // Í¬Ê±ÉèÖÃ Health ×é¼şµÄÎŞµĞ×´Ì¬
+        // åŒæ—¶è®¾ç½® Health ç»„ä»¶çš„æ— æ•ŒçŠ¶æ€
         Health playerHealth = GetComponent<Health>();
         if (playerHealth != null && playerHealth.isPlayerHealth)
         {
             playerHealth.SetInvincible(invincibilityDuration);
         }
 
-        // ²¥·ÅÒôĞ§
+        // æ’­æ”¾éŸ³æ•ˆ
         if (dashAudioSource != null && dashSfx != null && dashSfx.Length > 0)
         {
             AudioClip clipToPlay = dashSfx[Random.Range(0, dashSfx.Length)];
             dashAudioSource.PlayOneShot(clipToPlay);
         }
 
-        // ²¥·Å³å´ÌÌØĞ§
+        // æ’­æ”¾å†²åˆºç‰¹æ•ˆ
         if (dashVfxPrefab != null)
         {
             Instantiate(dashVfxPrefab, visualsTransform.position, visualsTransform.rotation);
         }
 
-        // 2. ¼ÆËã³å´Ì·½Ïò
+        // 2. è®¡ç®—å†²åˆºæ–¹å‘
         Vector3 dashDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
         if (dashDirection.sqrMagnitude < 0.01f)
         {
             dashDirection = visualsTransform.forward;
         }
 
-        // 3. Ê©¼Ó³å´ÌÁ¦
+        // 3. æ–½åŠ å†²åˆºåŠ›
         rb.velocity = Vector3.zero;
         rb.AddForce(dashDirection * dashForce, ForceMode.Impulse);
 
-        // ´¥·¢³å´Ì¶¯»­
+        // è§¦å‘å†²åˆºåŠ¨ç”»
         animator?.SetTrigger("Dash");        
 
-        // 4. µÈ´ı³å´Ì³ÖĞøÊ±¼ä½áÊø£¨Í£Ö¹ÒÆ¶¯£©
+        // 4. ç­‰å¾…å†²åˆºæŒç»­æ—¶é—´ç»“æŸï¼ˆåœæ­¢ç§»åŠ¨ï¼‰
         yield return new WaitForSeconds(dashDuration);
 
-        // ³å´Ì¶¯×÷½áÊø£¬µ«ÎŞµĞ×´Ì¬¿ÉÄÜ»¹ÔÚ¼ÌĞø
+        // å†²åˆºåŠ¨ä½œç»“æŸï¼Œä½†æ— æ•ŒçŠ¶æ€å¯èƒ½è¿˜åœ¨ç»§ç»­
         isDashing = false;
-        rb.velocity = Vector3.zero; // Í£Ö¹³å´ÌÒÆ¶¯
+        rb.velocity = Vector3.zero; // åœæ­¢å†²åˆºç§»åŠ¨
 
-        Debug.Log($"³å´ÌÒÆ¶¯½áÊø£¬µ«ÎŞµĞ×´Ì¬»¹½«³ÖĞø {invincibilityDuration - dashDuration} Ãë");
+        Debug.Log($"å†²åˆºç§»åŠ¨ç»“æŸï¼Œä½†æ— æ•ŒçŠ¶æ€è¿˜å°†æŒç»­ {invincibilityDuration - dashDuration} ç§’");
 
-        // 5. ¼ÆËãÊ£ÓàµÄÎŞµĞÊ±¼ä²¢¼ÌĞøµÈ´ı
+        // 5. è®¡ç®—å‰©ä½™çš„æ— æ•Œæ—¶é—´å¹¶ç»§ç»­ç­‰å¾…
         float remainingInvincibility = invincibilityDuration - dashDuration;
         if (remainingInvincibility > 0)
         {
             yield return new WaitForSeconds(remainingInvincibility);
         }
 
-        // 6. ½áÊøÎŞµĞ×´Ì¬
+        // 6. ç»“æŸæ— æ•ŒçŠ¶æ€
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.isInvincible = false;
         }       
         
 
-        Debug.Log("ÎŞµĞ×´Ì¬½áÊø");
+        Debug.Log("æ— æ•ŒçŠ¶æ€ç»“æŸ");
     }
     void Move()
     {
         if (visualsTransform == null) return;
 
-        // --- ¡¾ĞŞ¸´¡¿Ó¦ÓÃÒÆËÙ¼Ó³É ---
+        // --- ã€ä¿®å¤ã€‘åº”ç”¨ç§»é€ŸåŠ æˆ ---
         float finalSpeed = moveSpeed;
         if (PlayerStats.Instance != null)
         {
@@ -197,7 +197,7 @@ public class MechController : MonoBehaviour
         // -------------------------
 
         Vector3 moveDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
-        Vector3 targetVelocity = moveDirection * finalSpeed; // Ê¹ÓÃ¼ÆËãºóµÄËÙ¶È
+        Vector3 targetVelocity = moveDirection * finalSpeed; // ä½¿ç”¨è®¡ç®—åçš„é€Ÿåº¦
         rb.velocity = targetVelocity;
 
         if (moveDirection.sqrMagnitude > 0.01f)
@@ -208,16 +208,16 @@ public class MechController : MonoBehaviour
     }
 
     /// <summary>
-    /// ¡¾ĞÂÔö¡¿¸ù¾İµ±Ç°ËÙ¶È¸üĞÂ¶¯»­×´Ì¬
+    /// ã€æ–°å¢ã€‘æ ¹æ®å½“å‰é€Ÿåº¦æ›´æ–°åŠ¨ç”»çŠ¶æ€
     /// </summary>
     void UpdateAnimation()
     {
         if (animator == null) return;
 
-        // ¼ì²é¸ÕÌåµÄËÙ¶È´óĞ¡£¬ÅĞ¶ÏÊÇ·ñÔÚÒÆ¶¯
+        // æ£€æŸ¥åˆšä½“çš„é€Ÿåº¦å¤§å°ï¼Œåˆ¤æ–­æ˜¯å¦åœ¨ç§»åŠ¨
         bool isMoving = rb.velocity.sqrMagnitude > 0.1f;
 
-        // ½«ÒÆ¶¯×´Ì¬´«µİ¸ø Animator µÄ "isMoving" ²ÎÊı
+        // å°†ç§»åŠ¨çŠ¶æ€ä¼ é€’ç»™ Animator çš„ "isMoving" å‚æ•°
         animator.SetBool("isMoving", isMoving);
     }
     public void PlayFootstepSound()

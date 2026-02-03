@@ -1,60 +1,60 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("Ãæ°åÒıÓÃ")]
+    [Header("é¢æ¿å¼•ç”¨")]
     public GameObject settingsPanel;
-    public GameObject mainPanel; // Ìí¼Ó¶ÔÖ÷Ãæ°åµÄÒıÓÃ
+    public GameObject mainPanel; // æ·»åŠ å¯¹ä¸»é¢æ¿çš„å¼•ç”¨
 
     void Start()
     {
-        // È·±£ÓÎÏ·¿ªÊ¼Ê±£¬ÉèÖÃÃæ°åÊÇÒş²ØµÄ£¬Ö÷Ãæ°åÊÇÏÔÊ¾µÄ
+        // ç¡®ä¿æ¸¸æˆå¼€å§‹æ—¶ï¼Œè®¾ç½®é¢æ¿æ˜¯éšè—çš„ï¼Œä¸»é¢æ¿æ˜¯æ˜¾ç¤ºçš„
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (mainPanel != null) mainPanel.SetActive(true);
     }
 
     /// <summary>
-    /// ¿ªÊ¼/¼ÌĞøÓÎÏ·
+    /// å¼€å§‹/ç»§ç»­æ¸¸æˆ
     /// </summary>
     public void OnStartGameClicked()
     {
-        // ÏÖÔÚÕâ¸ö°´Å¥Ö±½Ó¼ÓÔØHub³¡¾°£¬´æµµ¼ÓÔØÂß¼­»áÔÚPlayerProgressManagerÖĞ´¦Àí
-        Debug.Log("¿ªÊ¼ÓÎÏ·£¬¼ÓÔØHub³¡¾°...");
-        SceneManager.LoadScene("HubScene"); // ÍÆ¼öÊ¹ÓÃ³¡¾°Ãû³Æ¼ÓÔØ
+        // ç°åœ¨è¿™ä¸ªæŒ‰é’®ç›´æ¥åŠ è½½Hubåœºæ™¯ï¼Œå­˜æ¡£åŠ è½½é€»è¾‘ä¼šåœ¨PlayerProgressManagerä¸­å¤„ç†
+        Debug.Log("å¼€å§‹æ¸¸æˆï¼ŒåŠ è½½Hubåœºæ™¯...");
+        SceneManager.LoadScene("HubScene"); // æ¨èä½¿ç”¨åœºæ™¯åç§°åŠ è½½
     }
 
     /// <summary>
-    /// ´ò¿ªÉèÖÃÃæ°å
+    /// æ‰“å¼€è®¾ç½®é¢æ¿
     /// </summary>
     public void OnSettingsClicked()
     {
         if (settingsPanel != null && mainPanel != null)
         {
             settingsPanel.SetActive(true);
-            mainPanel.SetActive(false); // Òş²ØÖ÷Ãæ°å
+            mainPanel.SetActive(false); // éšè—ä¸»é¢æ¿
         }
     }
 
     /// <summary>
-    /// ´ÓÉèÖÃÃæ°å·µ»ØÖ÷²Ëµ¥
+    /// ä»è®¾ç½®é¢æ¿è¿”å›ä¸»èœå•
     /// </summary>
     public void OnBackFromSettingsClicked()
     {
         if (settingsPanel != null && mainPanel != null)
         {
             settingsPanel.SetActive(false);
-            mainPanel.SetActive(true); // ÏÔÊ¾Ö÷Ãæ°å
+            mainPanel.SetActive(true); // æ˜¾ç¤ºä¸»é¢æ¿
         }
     }
 
     /// <summary>
-    /// ÍË³öÓÎÏ·
+    /// é€€å‡ºæ¸¸æˆ
     /// </summary>
     public void OnQuitGameClicked()
     {
-        Debug.Log("ÍË³öÓÎÏ·...");
-        // ÔÚÍË³öÇ°¿ÉÒÔÇ¿ÖÆÖ´ĞĞÒ»´Î´æµµ
+        Debug.Log("é€€å‡ºæ¸¸æˆ...");
+        // åœ¨é€€å‡ºå‰å¯ä»¥å¼ºåˆ¶æ‰§è¡Œä¸€æ¬¡å­˜æ¡£
         // PlayerProgressManager.Instance?.SaveGame(); 
         Application.Quit();
 
@@ -67,14 +67,14 @@ public class MainMenuManager : MonoBehaviour
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.ClearSaveData();
-            Debug.Log("´æµµÒÑÇå³ı¡£");
+            Debug.Log("å­˜æ¡£å·²æ¸…é™¤ã€‚");
         }
         else
         {
-            Debug.LogError("Î´ÄÜÕÒµ½ PlayerProgressManager ÊµÀı£¡");
+            Debug.LogError("æœªèƒ½æ‰¾åˆ° PlayerProgressManager å®ä¾‹ï¼");
         }
 
-        // £¨¿ÉÑ¡£©Çå³ı´æµµºó£¬¿ÉÒÔÖØÆôÓÎÏ·»òÖØĞÂ¼ÓÔØÖ÷²Ëµ¥À´È·±£ËùÓĞ×´Ì¬Ë¢ĞÂ
+        // ï¼ˆå¯é€‰ï¼‰æ¸…é™¤å­˜æ¡£åï¼Œå¯ä»¥é‡å¯æ¸¸æˆæˆ–é‡æ–°åŠ è½½ä¸»èœå•æ¥ç¡®ä¿æ‰€æœ‰çŠ¶æ€åˆ·æ–°
         // SceneManager.LoadScene("MainMenu");
     }
 }

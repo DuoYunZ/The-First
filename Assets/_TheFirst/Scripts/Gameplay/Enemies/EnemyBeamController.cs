@@ -1,4 +1,4 @@
-// EnemyBeamController.cs
+ï»¿// EnemyBeamController.cs
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -13,7 +13,7 @@ public class EnemyBeamController : MonoBehaviour
     private float tickInterval;
     private AttackType attackType;
     private float tickTimer;
-    public EnemyAttackData attackData { get; private set; } // ¡¾ĞÂÔö¡¿½« attackData ÉèÎª¹«¿ª¿É¶Á
+    public EnemyAttackData attackData { get; private set; } // ã€æ–°å¢ã€‘å°† attackData è®¾ä¸ºå…¬å¼€å¯è¯»
 
     public void Initialize(EnemyAttackData data, GameObject attacker, Transform target)
     {
@@ -21,7 +21,7 @@ public class EnemyBeamController : MonoBehaviour
         this.lineRenderer = GetComponent<LineRenderer>();
         this.playerTarget = target;
         this.attacker = attacker;
-        this.impactVfxPrefab = data.beamImpactVfxPrefab; // Ö»Ê¹ÓÃ³£¹æÃüÖĞÌØĞ§
+        this.impactVfxPrefab = data.beamImpactVfxPrefab; // åªä½¿ç”¨å¸¸è§„å‘½ä¸­ç‰¹æ•ˆ
         this.damagePerTick = Mathf.CeilToInt((float)data.beamDamagePerSecond / data.beamDamageTickRate);
         this.tickInterval = 1f / data.beamDamageTickRate;
         this.attackType = data.attackType;
@@ -31,24 +31,24 @@ public class EnemyBeamController : MonoBehaviour
     {
         if (playerTarget == null || !playerTarget.gameObject.activeInHierarchy)
         {
-            Destroy(gameObject); // Èç¹ûÄ¿±ê¶ªÊ§£¬¹âÊøÁ¢¼´ÏûÊ§
+            Destroy(gameObject); // å¦‚æœç›®æ ‡ä¸¢å¤±ï¼Œå…‰æŸç«‹å³æ¶ˆå¤±
             return;
         }
 
-        // ¸üĞÂÊÓ¾õ
+        // æ›´æ–°è§†è§‰
         Vector3 startPoint = transform.position;
         Vector3 endPoint = playerTarget.position;
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
 
-        // ¸üĞÂÃüÖĞÌØĞ§
+        // æ›´æ–°å‘½ä¸­ç‰¹æ•ˆ
         if (impactVfxPrefab != null)
         {
             if (activeImpactVfxInstance == null) activeImpactVfxInstance = Instantiate(impactVfxPrefab, endPoint, Quaternion.identity);
             activeImpactVfxInstance.transform.position = endPoint;
         }
 
-        // Ôì³ÉÉËº¦
+        // é€ æˆä¼¤å®³
         tickTimer += Time.deltaTime;
         if (tickTimer >= tickInterval)
         {
@@ -56,7 +56,7 @@ public class EnemyBeamController : MonoBehaviour
             Health playerHealth = playerTarget.GetComponentInParent<Health>();
             if (playerHealth != null)
             {
-                // ¡¾ºËĞÄĞŞ¸Ä¡¿×îºóÒ»¸ö²ÎÊı´«Èë this£¬¼´½Å±¾ÊµÀı±¾Éí
+                // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æœ€åä¸€ä¸ªå‚æ•°ä¼ å…¥ thisï¼Œå³è„šæœ¬å®ä¾‹æœ¬èº«
                 playerHealth.TakeDamage(damagePerTick, endPoint, attacker, attackType, null, this);
             }
         }

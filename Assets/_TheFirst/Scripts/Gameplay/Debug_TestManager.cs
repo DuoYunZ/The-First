@@ -1,25 +1,25 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class Debug_TestManager : MonoBehaviour
 {
-    [Header("µĞÈËÔ¤ÖÆ¼şÁĞ±í (ÓÃÓÚÉú³É)")]
+    [Header("æ•Œäººé¢„åˆ¶ä»¶åˆ—è¡¨ (ç”¨äºç”Ÿæˆ)")]
     public List<EnemyType> enemyTypes;
 
-    [Header("ÎäÆ÷Êı¾İÁĞ±í (ÓÃÓÚÖ±½Ó¸øÓè)")]
+    [Header("æ­¦å™¨æ•°æ®åˆ—è¡¨ (ç”¨äºç›´æ¥ç»™äºˆ)")]
     public List<WeaponStatBlock> weaponStatBlocks;
 
-    [Header("»¤¶ÜÊı¾İÁĞ±í (ÓÃÓÚÖ±½Ó¸øÓè)")]
+    [Header("æŠ¤ç›¾æ•°æ®åˆ—è¡¨ (ç”¨äºç›´æ¥ç»™äºˆ)")]
     public List<ShieldData> shieldDataAssets;
 
-    [Header("¡¾ĞÂÔö¡¿±»¶¯µÀ¾ßÁĞ±í (ÓÃÓÚÖ±½Ó¸øÓè)")]
-    public List<PassiveItemData> passiveItems; // <--- ĞÂÔöÁĞ±í
+    [Header("ã€æ–°å¢ã€‘è¢«åŠ¨é“å…·åˆ—è¡¨ (ç”¨äºç›´æ¥ç»™äºˆ)")]
+    public List<PassiveItemData> passiveItems; // <--- æ–°å¢åˆ—è¡¨
 
-    [Header("Éı¼¶½ÚµãÁĞ±í (ÓÃÓÚÇ¿ÖÆÉı¼¶)")]
+    [Header("å‡çº§èŠ‚ç‚¹åˆ—è¡¨ (ç”¨äºå¼ºåˆ¶å‡çº§)")]
     public List<SkillTreeNodeData> allSkillNodes;
 
-    [Header("µ÷ÊÔÊıÖµ")]
-    [Tooltip("Ã¿´Îµã»÷¡°¼Ó¾­Ñé¡±°´Å¥Ê±¸øÓèµÄ¾­ÑéÖµ")]
+    [Header("è°ƒè¯•æ•°å€¼")]
+    [Tooltip("æ¯æ¬¡ç‚¹å‡»â€œåŠ ç»éªŒâ€æŒ‰é’®æ—¶ç»™äºˆçš„ç»éªŒå€¼")]
     public int xpToAdd = 20;
 
     private Transform playerTransform;
@@ -30,7 +30,7 @@ public class Debug_TestManager : MonoBehaviour
         enemySpawner = FindObjectOfType<EnemySpawner>();
         if (enemySpawner == null)
         {
-            Debug.LogError("Debug_TestManager Î´ÄÜÔÚ³¡¾°ÖĞÕÒµ½ EnemySpawner£¡");
+            Debug.LogError("Debug_TestManager æœªèƒ½åœ¨åœºæ™¯ä¸­æ‰¾åˆ° EnemySpawnerï¼");
         }
 
         Invoke("GetPlayerReference", 0.2f);
@@ -44,54 +44,54 @@ public class Debug_TestManager : MonoBehaviour
         }
     }
 
-    // --- ¹«¹²·½·¨£¬½«ÓÉUI°´Å¥µ÷ÓÃ ---
+    // --- å…¬å…±æ–¹æ³•ï¼Œå°†ç”±UIæŒ‰é’®è°ƒç”¨ ---
 
     /// <summary>
-    /// Éú³ÉÒ»¸öÖ¸¶¨µÄµĞÈË
+    /// ç”Ÿæˆä¸€ä¸ªæŒ‡å®šçš„æ•Œäºº
     /// </summary>
     public void SpawnEnemy(int enemyIndex)
     {
         if (enemySpawner == null)
         {
-            Debug.LogError("EnemySpawner ÒıÓÃÎª¿Õ£¬ÎŞ·¨Éú³ÉµĞÈË£¡");
+            Debug.LogError("EnemySpawner å¼•ç”¨ä¸ºç©ºï¼Œæ— æ³•ç”Ÿæˆæ•Œäººï¼");
             return;
         }
         if (enemyIndex < 0 || enemyIndex >= enemyTypes.Count)
         {
-            Debug.LogError($"ÎŞĞ§µÄµĞÈËË÷Òı: {enemyIndex}");
+            Debug.LogError($"æ— æ•ˆçš„æ•Œäººç´¢å¼•: {enemyIndex}");
             return;
         }
 
-        // Ö±½ÓÃüÁî EnemySpawner Ê¹ÓÃÎÒÃÇÑ¡ÔñµÄ EnemyType À´Éú³ÉµĞÈË
+        // ç›´æ¥å‘½ä»¤ EnemySpawner ä½¿ç”¨æˆ‘ä»¬é€‰æ‹©çš„ EnemyType æ¥ç”Ÿæˆæ•Œäºº
         enemySpawner.Debug_SpawnSingleEnemy(enemyTypes[enemyIndex]);
 
-        Debug.Log($"ÒÑÇëÇó EnemySpawner Éú³ÉµĞÈË: {enemyTypes[enemyIndex].name}");
+        Debug.Log($"å·²è¯·æ±‚ EnemySpawner ç”Ÿæˆæ•Œäºº: {enemyTypes[enemyIndex].name}");
     }
 
     /// <summary>
-    /// ¡¾ĞÂÔö¡¿ÎªÍæ¼ÒÔö¼Ó¾­ÑéÖµ£¬ÓÃÓÚ¿ìËÙ´¥·¢Éı¼¶
+    /// ã€æ–°å¢ã€‘ä¸ºç©å®¶å¢åŠ ç»éªŒå€¼ï¼Œç”¨äºå¿«é€Ÿè§¦å‘å‡çº§
     /// </summary>
     public void AddExperience()
     {
         if (PlayerLevelManager.Instance != null)
         {
             PlayerLevelManager.Instance.AddExperience(xpToAdd);
-            Debug.Log($"ÒÑÎªÍæ¼ÒÔö¼Ó {xpToAdd} µã¾­ÑéÖµ¡£");
+            Debug.Log($"å·²ä¸ºç©å®¶å¢åŠ  {xpToAdd} ç‚¹ç»éªŒå€¼ã€‚");
         }
         else
         {
-            Debug.LogError("PlayerLevelManager Î´ÕÒµ½£¡");
+            Debug.LogError("PlayerLevelManager æœªæ‰¾åˆ°ï¼");
         }
     }
 
     /// <summary>
-    /// ¡¾ĞÂÔö¡¿Ö±½Ó¸øÓèÍæ¼ÒÒ»¼şÖ¸¶¨µÄÎäÆ÷
+    /// ã€æ–°å¢ã€‘ç›´æ¥ç»™äºˆç©å®¶ä¸€ä»¶æŒ‡å®šçš„æ­¦å™¨
     /// </summary>
     public void GiveWeapon(int weaponIndex)
     {
         if (weaponIndex < 0 || weaponIndex >= weaponStatBlocks.Count)
         {
-            Debug.LogError($"ÎŞĞ§µÄÎäÆ÷Ë÷Òı: {weaponIndex}");
+            Debug.LogError($"æ— æ•ˆçš„æ­¦å™¨ç´¢å¼•: {weaponIndex}");
             return;
         }
 
@@ -101,24 +101,24 @@ public class Debug_TestManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("WeaponController Î´ÕÒµ½£¡");
+            Debug.LogError("WeaponController æœªæ‰¾åˆ°ï¼");
         }
     }
     public void GivePassiveItem(int itemIndex)
     {
         if (itemIndex < 0 || itemIndex >= passiveItems.Count)
         {
-            Debug.LogError($"ÎŞĞ§µÄ±»¶¯µÀ¾ßË÷Òı: {itemIndex}");
+            Debug.LogError($"æ— æ•ˆçš„è¢«åŠ¨é“å…·ç´¢å¼•: {itemIndex}");
             return;
         }
 
         if (PlayerStats.Instance != null)
         {
-            // Ö±½Óµ÷ÓÃ PlayerStats µÄ×°±¸·½·¨
+            // ç›´æ¥è°ƒç”¨ PlayerStats çš„è£…å¤‡æ–¹æ³•
             PlayerStats.Instance.EquipOrUpgradePassiveItem(passiveItems[itemIndex]);
-            Debug.Log($"µ÷ÊÔÖ¸Áî£ºÒÑ¸øÓèÍæ¼Ò±»¶¯µÀ¾ß {passiveItems[itemIndex].itemName}");
+            Debug.Log($"è°ƒè¯•æŒ‡ä»¤ï¼šå·²ç»™äºˆç©å®¶è¢«åŠ¨é“å…· {passiveItems[itemIndex].itemName}");
 
-            // Ë³±ãË¢ĞÂÒ»ÏÂUI£¬È·±£Í¼±êÁ¢¿Ì³öÏÖ
+            // é¡ºä¾¿åˆ·æ–°ä¸€ä¸‹UIï¼Œç¡®ä¿å›¾æ ‡ç«‹åˆ»å‡ºç°
             if (PassiveItemsUI.Instance != null)
             {
                 PassiveItemsUI.Instance.UpdateIcons();
@@ -126,14 +126,14 @@ public class Debug_TestManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("PlayerStats Î´ÕÒµ½£¡");
+            Debug.LogError("PlayerStats æœªæ‰¾åˆ°ï¼");
         }
     }
     public void ForceRandomUpgrade(int nodeIndex)
     {
         if (nodeIndex < 0 || nodeIndex >= allSkillNodes.Count)
         {
-            Debug.LogError($"ÎŞĞ§µÄ¼¼ÄÜ½ÚµãË÷Òı: {nodeIndex}");
+            Debug.LogError($"æ— æ•ˆçš„æŠ€èƒ½èŠ‚ç‚¹ç´¢å¼•: {nodeIndex}");
             return;
         }
 
@@ -141,33 +141,33 @@ public class Debug_TestManager : MonoBehaviour
 
         if (UpgradeManager.Instance != null && PlayerStats.Instance != null)
         {
-            // 1. ½øĞĞÒ»´ÎÕæÊµµÄËæ»ú³éÈ¡
+            // 1. è¿›è¡Œä¸€æ¬¡çœŸå®çš„éšæœºæŠ½å–
             float playerLuck = PlayerStats.Instance.luck;
             UpgradeOption chosenOption = RaritySystem.GetRandomOptionByRarity(nodeToGrant.possibleOptions, playerLuck);
 
             if (chosenOption != null)
             {
-                // 2. ½«³éµ½µÄ½á¹ûÓ¦ÓÃµ½ÓÎÏ·ÖĞ
+                // 2. å°†æŠ½åˆ°çš„ç»“æœåº”ç”¨åˆ°æ¸¸æˆä¸­
                 UpgradeManager.Instance.OnUpgradeOptionSelected(nodeToGrant, chosenOption);
 
-                // 3. ¡¾ĞÂÔö·´À¡¡¿½«½á¹û¼ÇÂ¼µ½ÎÒÃÇµÄµ÷ÊÔUIÉÏ
+                // 3. ã€æ–°å¢åé¦ˆã€‘å°†ç»“æœè®°å½•åˆ°æˆ‘ä»¬çš„è°ƒè¯•UIä¸Š
                 if (Debug_UpgradeStats.Instance != null)
                 {
-                    // ¹¹ÔìÒ»ÌõÇåÎúµÄ·´À¡ĞÅÏ¢
-                    string message = $"<color=yellow>Ç¿ÖÆÉı¼¶¡¾{nodeToGrant.skillName}¡¿:</color>\n" +
-                                     $"Æ·ÖÊ: <b>{chosenOption.rarity}</b>, Ğ§¹û: <i>{chosenOption.description}</i>";
+                    // æ„é€ ä¸€æ¡æ¸…æ™°çš„åé¦ˆä¿¡æ¯
+                    string message = $"<color=yellow>å¼ºåˆ¶å‡çº§ã€{nodeToGrant.skillName}ã€‘:</color>\n" +
+                                     $"å“è´¨: <b>{chosenOption.rarity}</b>, æ•ˆæœ: <i>{chosenOption.description}</i>";
 
                     Debug_UpgradeStats.Instance.SetLastUpgradeMessage(message);
-                    Debug_UpgradeStats.Instance.LogRarity(chosenOption.rarity); // Í¬Ê±¼ÆÈë¸ÅÂÊÍ³¼Æ
+                    Debug_UpgradeStats.Instance.LogRarity(chosenOption.rarity); // åŒæ—¶è®¡å…¥æ¦‚ç‡ç»Ÿè®¡
                 }
 
-                Debug.Log($"ÒÑÇ¿ÖÆÎªÍæ¼ÒÓ¦ÓÃÉı¼¶: {nodeToGrant.skillName}, Æ·ÖÊ: {chosenOption.rarity}, Ğ§¹û: {chosenOption.description}");
+                Debug.Log($"å·²å¼ºåˆ¶ä¸ºç©å®¶åº”ç”¨å‡çº§: {nodeToGrant.skillName}, å“è´¨: {chosenOption.rarity}, æ•ˆæœ: {chosenOption.description}");
             }
             else
             {
                 if (Debug_UpgradeStats.Instance != null)
                 {
-                    Debug_UpgradeStats.Instance.SetLastUpgradeMessage($"<color=red>Îª¡¾{nodeToGrant.skillName}¡¿³é¿¨Ê§°Ü£¡</color>");
+                    Debug_UpgradeStats.Instance.SetLastUpgradeMessage($"<color=red>ä¸ºã€{nodeToGrant.skillName}ã€‘æŠ½å¡å¤±è´¥ï¼</color>");
                 }
             }
         }
@@ -176,18 +176,18 @@ public class Debug_TestManager : MonoBehaviour
     {
         if (shieldIndex < 0 || shieldIndex >= shieldDataAssets.Count)
         {
-            Debug.LogError($"ÎŞĞ§µÄ»¤¶ÜË÷Òı: {shieldIndex}");
+            Debug.LogError($"æ— æ•ˆçš„æŠ¤ç›¾ç´¢å¼•: {shieldIndex}");
             return;
         }
 
         if (PlayerShield.Instance != null)
         {
-            // µ÷ÓÃ PlayerShield µÄ EquipShield ·½·¨
+            // è°ƒç”¨ PlayerShield çš„ EquipShield æ–¹æ³•
             PlayerShield.Instance.EquipShield(shieldDataAssets[shieldIndex]);
         }
         else
         {
-            Debug.LogError("PlayerShield Î´ÕÒµ½£¡");
+            Debug.LogError("PlayerShield æœªæ‰¾åˆ°ï¼");
         }
     }
 
@@ -199,11 +199,11 @@ public class Debug_TestManager : MonoBehaviour
             if (recipe != null)
             {
                 WeaponController.Instance.PerformFusion(recipe);
-                Debug.Log("ÈÚºÏ²âÊÔ³É¹¦£¡");
+                Debug.Log("èåˆæµ‹è¯•æˆåŠŸï¼");
             }
             else
             {
-                Debug.Log("µ±Ç°Ã»ÓĞÂú×ãÌõ¼şµÄÈÚºÏÅä·½£¨ĞèÒªÁ½°ÑÂú¼¶ÎäÆ÷£©¡£");
+                Debug.Log("å½“å‰æ²¡æœ‰æ»¡è¶³æ¡ä»¶çš„èåˆé…æ–¹ï¼ˆéœ€è¦ä¸¤æŠŠæ»¡çº§æ­¦å™¨ï¼‰ã€‚");
             }
         }
     }

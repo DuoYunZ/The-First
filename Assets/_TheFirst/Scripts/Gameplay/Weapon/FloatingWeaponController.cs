@@ -1,29 +1,29 @@
-// --- FloatingWeaponController.cs ---
+ï»¿// --- FloatingWeaponController.cs ---
 using UnityEngine;
 
 public class FloatingWeaponController : MonoBehaviour
 {
-    [Header("¸úËæÉèÖÃ")]
-    [Tooltip("ÎäÆ÷ĞèÒª¸úËæµÄÄ¿±êµã£¨ÀıÈçÍæ¼Ò±³ºóµÄÒ»¸ö¿Õ¶ÔÏó£©")]
+    [Header("è·Ÿéšè®¾ç½®")]
+    [Tooltip("æ­¦å™¨éœ€è¦è·Ÿéšçš„ç›®æ ‡ç‚¹ï¼ˆä¾‹å¦‚ç©å®¶èƒŒåçš„ä¸€ä¸ªç©ºå¯¹è±¡ï¼‰")]
     public Transform targetToFollow;
-    [Tooltip("¸úËæµÄÆ½»¬Ê±¼ä£¬ÊıÖµÔ½´ó£¬ÑÓ³Ù¸ĞÔ½Ç¿")]
+    [Tooltip("è·Ÿéšçš„å¹³æ»‘æ—¶é—´ï¼Œæ•°å€¼è¶Šå¤§ï¼Œå»¶è¿Ÿæ„Ÿè¶Šå¼º")]
     public float followSmoothTime = 0.3f;
-    [Tooltip("Ğı×ª¸úËæµÄÆ½»¬Ê±¼ä")]
+    [Tooltip("æ—‹è½¬è·Ÿéšçš„å¹³æ»‘æ—¶é—´")]
     public float rotationSmoothTime = 0.2f;
 
-    [Header("Æ¯¸¡ÉèÖÃ")]
-    [Tooltip("ÉÏÏÂÆ¯¸¡µÄËÙ¶È")]
+    [Header("æ¼‚æµ®è®¾ç½®")]
+    [Tooltip("ä¸Šä¸‹æ¼‚æµ®çš„é€Ÿåº¦")]
     public float bobSpeed = 2f;
-    [Tooltip("ÉÏÏÂÆ¯¸¡µÄ·ù¶È")]
+    [Tooltip("ä¸Šä¸‹æ¼‚æµ®çš„å¹…åº¦")]
     public float bobAmount = 0.1f;
 
-    [Header("ÊÓ¾õ×é¼ş")]
-    [Tooltip("ÎäÆ÷µÄÄ£ĞÍ/ÊÓ¾õ²¿·Ö£¬ÓÃÓÚÏÔÊ¾ºÍÒş²Ø")]
+    [Header("è§†è§‰ç»„ä»¶")]
+    [Tooltip("æ­¦å™¨çš„æ¨¡å‹/è§†è§‰éƒ¨åˆ†ï¼Œç”¨äºæ˜¾ç¤ºå’Œéšè—")]
     public GameObject weaponVisual;
 
     private Renderer[] visualRenderers;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Vector3 positionVelocity;
     private Vector3 baseLocalPosition;
 
@@ -43,26 +43,26 @@ public class FloatingWeaponController : MonoBehaviour
 
     public GameObject SwapModel(GameObject newModelPrefab)
     {
-        // 1. Èç¹ûÃ»ÓĞĞÂÄ£ĞÍ£¬»òÕßĞÂÄ£ĞÍºÍµ±Ç°Ò»Ñù£¬¾Í²»¶¯
-        // (¼òµ¥µÄÃû×Ö¼ì²é£¬·ÀÖ¹ÖØ¸´Éú³É)
+        // 1. å¦‚æœæ²¡æœ‰æ–°æ¨¡å‹ï¼Œæˆ–è€…æ–°æ¨¡å‹å’Œå½“å‰ä¸€æ ·ï¼Œå°±ä¸åŠ¨
+        // (ç®€å•çš„åå­—æ£€æŸ¥ï¼Œé˜²æ­¢é‡å¤ç”Ÿæˆ)
         if (newModelPrefab == null) return null;
         if (weaponVisual != null && weaponVisual.name.StartsWith(newModelPrefab.name)) return weaponVisual;
 
-        // 2. Ïú»Ù¾ÉÄ£ĞÍ
+        // 2. é”€æ¯æ—§æ¨¡å‹
         if (weaponVisual != null)
         {
             Destroy(weaponVisual);
         }
 
-        // 3. Éú³ÉĞÂÄ£ĞÍ
+        // 3. ç”Ÿæˆæ–°æ¨¡å‹
         weaponVisual = Instantiate(newModelPrefab, transform);
         weaponVisual.transform.localPosition = Vector3.zero;
         weaponVisual.transform.localRotation = Quaternion.identity;
 
-        // 4. ÖØÖÃ×´Ì¬
+        // 4. é‡ç½®çŠ¶æ€
         baseLocalPosition = Vector3.zero;
 
-        // 5. Ë¢ĞÂ»º´æ
+        // 5. åˆ·æ–°ç¼“å­˜
         RefreshRenderers();
 
         return weaponVisual;
@@ -72,21 +72,21 @@ public class FloatingWeaponController : MonoBehaviour
     {
         if (weaponVisual != null)
         {
-            // includeInactive = true È·±£¸ÕÉú³É»¹Ã»¼¤»îÒ²ÄÜÕÒµ½
+            // includeInactive = true ç¡®ä¿åˆšç”Ÿæˆè¿˜æ²¡æ¿€æ´»ä¹Ÿèƒ½æ‰¾åˆ°
             visualRenderers = weaponVisual.GetComponentsInChildren<Renderer>(true);
         }
     }
 
-    // Ê¹ÓÃLateUpdate¿ÉÒÔ·ÀÖ¹½ÇÉ«ÒÆ¶¯Ê±µÄ¶¶¶¯
+    // ä½¿ç”¨LateUpdateå¯ä»¥é˜²æ­¢è§’è‰²ç§»åŠ¨æ—¶çš„æŠ–åŠ¨
     void LateUpdate()
     {
         if (targetToFollow == null) return;
 
-        // ¸úËæÂß¼­ (±£³Ö²»±ä)
+        // è·Ÿéšé€»è¾‘ (ä¿æŒä¸å˜)
         transform.position = Vector3.SmoothDamp(transform.position, targetToFollow.position, ref positionVelocity, followSmoothTime);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetToFollow.rotation, Time.deltaTime / rotationSmoothTime);
 
-        // Æ¯¸¡Âß¼­ (±£³Ö²»±ä)
+        // æ¼‚æµ®é€»è¾‘ (ä¿æŒä¸å˜)
         if (weaponVisual != null)
         {
             float bobOffset = Mathf.Sin(Time.time * bobSpeed) * bobAmount;
@@ -94,7 +94,7 @@ public class FloatingWeaponController : MonoBehaviour
         }
     }
 
-    // ¹«¿ª·½·¨£¬ÓÃÓÚ´ÓÆäËû½Å±¾¿ØÖÆÎäÆ÷µÄÏÔÒş
+    // å…¬å¼€æ–¹æ³•ï¼Œç”¨äºä»å…¶ä»–è„šæœ¬æ§åˆ¶æ­¦å™¨çš„æ˜¾éš
     public void ShowWeapon()
     {
         if (visualRenderers != null)

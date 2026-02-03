@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -11,23 +11,23 @@ public class GroundHazard : MonoBehaviour
 
     private float duration;
 
-    // ÉËº¦¼ä¸ô (ÀıÈç 0.5Ãë »ò 1.0Ãë)
+    // ä¼¤å®³é—´éš” (ä¾‹å¦‚ 0.5ç§’ æˆ– 1.0ç§’)
     private float tickInterval = 1f;
 
     private string weaponName;
     private GameObject owner;
 
-    // ¼ÇÂ¼ÔÚÕâ¸ö¾ßÌå»ğ¶Ñ·¶Î§ÄÚµÄµĞÈË
+    // è®°å½•åœ¨è¿™ä¸ªå…·ä½“ç«å †èŒƒå›´å†…çš„æ•Œäºº
     private HashSet<Health> enemiesInRange = new HashSet<Health>();
 
     // =========================================================
-    // ¡¾ºËĞÄĞŞ¸´¡¿¾²Ì¬×Öµä£º¼ÇÂ¼ËùÓĞ¹ÖÎï¶ÔÓÚÌØ¶¨ÀàĞÍÉËº¦µÄÀäÈ´
-    // Key: µĞÈËID + ÉËº¦ÀàĞÍ±êÇ©, Value: ÏÂ´ÎÔÊĞíÊÜÉËµÄÊ±¼ä
+    // ã€æ ¸å¿ƒä¿®å¤ã€‘é™æ€å­—å…¸ï¼šè®°å½•æ‰€æœ‰æ€ªç‰©å¯¹äºç‰¹å®šç±»å‹ä¼¤å®³çš„å†·å´
+    // Key: æ•ŒäººID + ä¼¤å®³ç±»å‹æ ‡ç­¾, Value: ä¸‹æ¬¡å…è®¸å—ä¼¤çš„æ—¶é—´
     // =========================================================
     private static Dictionary<string, float> globalDamageCooldowns = new Dictionary<string, float>();
 
-    // ¸ø»ğº£Ò»¸öÀàĞÍ±êÇ©£¬·ÀÖ¹¸ú¶¾ÕÓÔóµÈÆäËûµØÃæÉËº¦»ìÏı
-    // Èç¹ûÄãÓĞ¶àÖÖµØÃæÉËº¦£¬¿ÉÒÔÔÚ Initialize Àï¸ÄÕâ¸öÖµ
+    // ç»™ç«æµ·ä¸€ä¸ªç±»å‹æ ‡ç­¾ï¼Œé˜²æ­¢è·Ÿæ¯’æ²¼æ³½ç­‰å…¶ä»–åœ°é¢ä¼¤å®³æ··æ·†
+    // å¦‚æœä½ æœ‰å¤šç§åœ°é¢ä¼¤å®³ï¼Œå¯ä»¥åœ¨ Initialize é‡Œæ”¹è¿™ä¸ªå€¼
     public string hazardTypeTag = "FireHazard";
 
     public void Initialize(int damage, float lifeTime, string sourceWeaponName, GameObject ownerInfo)
@@ -48,7 +48,7 @@ public class GroundHazard : MonoBehaviour
             if (h != null)
             {
                 enemiesInRange.Add(h);
-                // ²ÈÉÏÈ¥Ë²¼ä£¬³¢ÊÔÔì³ÉÉËº¦ (ÊÜÈ«¾ÖÀäÈ´ÏŞÖÆ)
+                // è¸©ä¸Šå»ç¬é—´ï¼Œå°è¯•é€ æˆä¼¤å®³ (å—å…¨å±€å†·å´é™åˆ¶)
                 TryDealDamage(h);
             }
         }
@@ -68,13 +68,13 @@ public class GroundHazard : MonoBehaviour
 
     void Update()
     {
-        // ÎÒÃÇ²»ÔÙÊ¹ÓÃµ¥¶ÀµÄ timer ±äÁ¿À´µ¹¼ÆÊ±
-        // ¶øÊÇÃ¿Ò»Ö¡¶¼¼ì²é·¶Î§ÄÚµÄµĞÈË£¬¿´ËûÃÇµÄ¡°È«¾ÖÀäÈ´¡±ÊÇ·ñ½áÊøÁË
+        // æˆ‘ä»¬ä¸å†ä½¿ç”¨å•ç‹¬çš„ timer å˜é‡æ¥å€’è®¡æ—¶
+        // è€Œæ˜¯æ¯ä¸€å¸§éƒ½æ£€æŸ¥èŒƒå›´å†…çš„æ•Œäººï¼Œçœ‹ä»–ä»¬çš„â€œå…¨å±€å†·å´â€æ˜¯å¦ç»“æŸäº†
 
-        // 1. ÇåÀíËÀµôµÄµĞÈË
+        // 1. æ¸…ç†æ­»æ‰çš„æ•Œäºº
         enemiesInRange.RemoveWhere(h => h == null || h.IsDead);
 
-        // 2. ±éÀú·¶Î§ÄÚµÄÃ¿¸öµĞÈË
+        // 2. éå†èŒƒå›´å†…çš„æ¯ä¸ªæ•Œäºº
         foreach (var h in enemiesInRange)
         {
             TryDealDamage(h);
@@ -82,7 +82,7 @@ public class GroundHazard : MonoBehaviour
     }
 
     /// <summary>
-    /// ³¢ÊÔÔì³ÉÉËº¦ (°üº¬·Àµş¼ÓÂß¼­)
+    /// å°è¯•é€ æˆä¼¤å®³ (åŒ…å«é˜²å åŠ é€»è¾‘)
     /// </summary>
     private void TryDealDamage(Health h)
     {
@@ -92,40 +92,40 @@ public class GroundHazard : MonoBehaviour
 
         if (IsCooldownReady(cooldownKey))
         {
-            // 1. --- Ôì³É»ğº£ÉËº¦ (ÕâÊÇÖ÷²Ë£¬100% ÉËº¦À´Ô´) ---
+            // 1. --- é€ æˆç«æµ·ä¼¤å®³ (è¿™æ˜¯ä¸»èœï¼Œ100% ä¼¤å®³æ¥æº) ---
             h.TakeDamage(damagePerTick, h.transform.position, owner, AttackType.Standard, null, null, weaponName);
 
-            // 2. --- [ºËĞÄĞŞ¸Ä] ×¢ÊÍµôÈ¼ÉÕ Debuff ---
-            // Èç¹ûÄã²»Ï£ÍûÓĞ¡°1/4¡±µÄĞ¡Êı×ÖÌø³öÀ´¸ÉÈÅÊÓÏß£¬¾Í°ÑÏÂÃæÕâ¶Î×¢ÊÍµô¡£
-            // ÕâÑù¹ÖÎïÀë¿ª»ğº£ºó£¬¾Í²»»á¼ÌĞøµôÑªÁË¡£
+            // 2. --- [æ ¸å¿ƒä¿®æ”¹] æ³¨é‡Šæ‰ç‡ƒçƒ§ Debuff ---
+            // å¦‚æœä½ ä¸å¸Œæœ›æœ‰â€œ1/4â€çš„å°æ•°å­—è·³å‡ºæ¥å¹²æ‰°è§†çº¿ï¼Œå°±æŠŠä¸‹é¢è¿™æ®µæ³¨é‡Šæ‰ã€‚
+            // è¿™æ ·æ€ªç‰©ç¦»å¼€ç«æµ·åï¼Œå°±ä¸ä¼šç»§ç»­æ‰è¡€äº†ã€‚
             /*
             StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
             if (receiver != null)
             {
-                // ÕâÀïµÄ 5 ¾ÍÊÇÄã¿´µ½µÄÄÇ¸ö¡°ºÜĞ¡µÄÉËº¦¡±
+                // è¿™é‡Œçš„ 5 å°±æ˜¯ä½ çœ‹åˆ°çš„é‚£ä¸ªâ€œå¾ˆå°çš„ä¼¤å®³â€
                 receiver.ApplyBurn(5, 3f, 1f, weaponName); 
             }
             */
 
-            // 3. ÉèÖÃÀäÈ´
+            // 3. è®¾ç½®å†·å´
             globalDamageCooldowns[cooldownKey] = Time.time + tickInterval;
         }
     }
 
     private bool IsCooldownReady(string key)
     {
-        // Èç¹û×ÖµäÀïÃ»¼ÇÂ¼£¬ËµÃ÷¿ÉÒÔÖ±½Ó´ò
+        // å¦‚æœå­—å…¸é‡Œæ²¡è®°å½•ï¼Œè¯´æ˜å¯ä»¥ç›´æ¥æ‰“
         if (!globalDamageCooldowns.ContainsKey(key)) return true;
 
-        // Èç¹û¼ÇÂ¼µÄÊ±¼äĞ¡ÓÚµ±Ç°Ê±¼ä£¬ËµÃ÷ÀäÈ´×ªºÃÁË
+        // å¦‚æœè®°å½•çš„æ—¶é—´å°äºå½“å‰æ—¶é—´ï¼Œè¯´æ˜å†·å´è½¬å¥½äº†
         return Time.time >= globalDamageCooldowns[key];
     }
 
-    // ¿ÉÑ¡£ºÔÚ³¡¾°ÇĞ»»Ê±ÇåÀí¾²Ì¬×Öµä£¬·ÀÖ¹ÄÚ´æĞ¹Â© (ËäÈ»ºó¹ûºÜĞ¡)
+    // å¯é€‰ï¼šåœ¨åœºæ™¯åˆ‡æ¢æ—¶æ¸…ç†é™æ€å­—å…¸ï¼Œé˜²æ­¢å†…å­˜æ³„æ¼ (è™½ç„¶åæœå¾ˆå°)
     void OnDestroy()
     {
-        // ÕâÊÇÒ»¸ö¼òµ¥µÄÇåÀí²ßÂÔ£ºÈç¹ûÕâ¸ö»ğ¶ÑÏú»ÙÊ±£¬×ÖµäÌ«´ó£¬¾ÍÇåÀíÒ»ÏÂ
-        // (ÔÚRoguelikeÀï£¬¸üÑÏ½÷µÄ×ö·¨ÊÇÔÚ GameManager ÖØÆô¹Ø¿¨Ê±ÇåÀí)
+        // è¿™æ˜¯ä¸€ä¸ªç®€å•çš„æ¸…ç†ç­–ç•¥ï¼šå¦‚æœè¿™ä¸ªç«å †é”€æ¯æ—¶ï¼Œå­—å…¸å¤ªå¤§ï¼Œå°±æ¸…ç†ä¸€ä¸‹
+        // (åœ¨Roguelikeé‡Œï¼Œæ›´ä¸¥è°¨çš„åšæ³•æ˜¯åœ¨ GameManager é‡å¯å…³å¡æ—¶æ¸…ç†)
         if (globalDamageCooldowns.Count > 1000)
         {
             globalDamageCooldowns.Clear();

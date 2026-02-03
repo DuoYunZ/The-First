@@ -1,25 +1,25 @@
-using UnityEngine;
-using UnityEngine.UI; // ÓÃÓÚ Slider
-using TMPro; // ÓÃÓÚ TextMeshPro
+ï»¿using UnityEngine;
+using UnityEngine.UI; // ç”¨äº Slider
+using TMPro; // ç”¨äº TextMeshPro
 
-public class PlayerXPUI : MonoBehaviour // ½¨Òé½«´Ë½Å±¾¹ÒÔØÔÚ CombatUIContainer »òÒ»¸ö×¨ÃÅµÄ PlayerStatsUI ¶ÔÏóÉÏ
+public class PlayerXPUI : MonoBehaviour // å»ºè®®å°†æ­¤è„šæœ¬æŒ‚è½½åœ¨ CombatUIContainer æˆ–ä¸€ä¸ªä¸“é—¨çš„ PlayerStatsUI å¯¹è±¡ä¸Š
 {
-    [Header("UI ÒıÓÃ (ÔÚ Inspector ÖĞÖ¸¶¨)")]
+    [Header("UI å¼•ç”¨ (åœ¨ Inspector ä¸­æŒ‡å®š)")]
     [SerializeField] private Slider xpSlider;
     [SerializeField] private TextMeshProUGUI levelText;
 
-    [Header("Íæ¼ÒÊı¾İÔ´")]
-    [Tooltip("£¨¿ÉÑ¡£©ÊÖ¶¯Ö¸¶¨Íæ¼Ò Level Manager¡£Èç¹ûÎª¿Õ£¬»á×Ô¶¯²éÕÒ¡£")]
+    [Header("ç©å®¶æ•°æ®æº")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰æ‰‹åŠ¨æŒ‡å®šç©å®¶ Level Managerã€‚å¦‚æœä¸ºç©ºï¼Œä¼šè‡ªåŠ¨æŸ¥æ‰¾ã€‚")]
     [SerializeField] private PlayerLevelManager levelManager;
 
     private bool isInitialized = false;
 
     void Update()
     {
-        // Èç¹û levelManager »¹Î´ÕÒµ½»ò³õÊ¼»¯£¬Ôò³¢ÊÔ²éÕÒ
+        // å¦‚æœ levelManager è¿˜æœªæ‰¾åˆ°æˆ–åˆå§‹åŒ–ï¼Œåˆ™å°è¯•æŸ¥æ‰¾
         if (levelManager == null)
         {
-            // ³¢ÊÔÍ¨¹ı GameManager »ñÈ¡ (ÍÆ¼ö)
+            // å°è¯•é€šè¿‡ GameManager è·å– (æ¨è)
             if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
             {
                 levelManager = GameManager.Instance.playerTransform.GetComponent<PlayerLevelManager>();
@@ -28,22 +28,22 @@ public class PlayerXPUI : MonoBehaviour // ½¨Òé½«´Ë½Å±¾¹ÒÔØÔÚ CombatUIContainer 
                     Debug.Log("PlayerXPUI found PlayerLevelManager via GameManager.");
                 }
             }
-            // »òÕßÈ«¾Ö²éÕÒ (Ğ§ÂÊ½ÏµÍ)
+            // æˆ–è€…å…¨å±€æŸ¥æ‰¾ (æ•ˆç‡è¾ƒä½)
             // levelManager = FindObjectOfType<PlayerLevelManager>();
 
             if (levelManager == null)
             {
                 // Debug.LogWarning("PlayerXPUI waiting for PlayerLevelManager...");
-                return; // Èç¹û»¹ÊÇÃ»ÕÒµ½£¬µÈ´ıÏÂÒ»Ö¡
+                return; // å¦‚æœè¿˜æ˜¯æ²¡æ‰¾åˆ°ï¼Œç­‰å¾…ä¸‹ä¸€å¸§
             }
         }
 
-        // Èç¹ûÕÒµ½ÁË Level Manager£¬¸üĞÂ UI
+        // å¦‚æœæ‰¾åˆ°äº† Level Managerï¼Œæ›´æ–° UI
         if (xpSlider != null)
         {
-            // È·±£ maxValue ²»ÊÇ 0£¬±ÜÃâ³ıÁã´íÎó
+            // ç¡®ä¿ maxValue ä¸æ˜¯ 0ï¼Œé¿å…é™¤é›¶é”™è¯¯
             int xpToNext = levelManager.GetXPToNextLevel();
-            xpSlider.maxValue = xpToNext > 0 ? xpToNext : 1; // ·ÀÖ¹Îª 0
+            xpSlider.maxValue = xpToNext > 0 ? xpToNext : 1; // é˜²æ­¢ä¸º 0
             xpSlider.value = levelManager.GetCurrentXP();
         }
 

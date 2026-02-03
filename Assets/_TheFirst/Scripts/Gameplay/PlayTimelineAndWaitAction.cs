@@ -1,18 +1,18 @@
-// --- PlayTimelineAction.cs (×îÖÕ°æ£¬Ö§³ÖĞÅºÅ) ---
+ï»¿// --- PlayTimelineAction.cs (æœ€ç»ˆç‰ˆï¼Œæ”¯æŒä¿¡å·) ---
 using UnityEngine;
 using UnityEngine.Playables;
 
 public class PlayTimelineAction : Node
 {
-    [Header("TimelineÉèÖÃ")]
+    [Header("Timelineè®¾ç½®")]
     public PlayableDirector playableDirector;
 
     private bool hasStarted = false;
-    private bool isSignalReceived = false; // ÓÃĞÅºÅÀ´±ê¼Ç½áÊø£¬¶ø²»ÊÇµÈTimeline×Ô¼º²¥Íê
+    private bool isSignalReceived = false; // ç”¨ä¿¡å·æ¥æ ‡è®°ç»“æŸï¼Œè€Œä¸æ˜¯ç­‰Timelineè‡ªå·±æ’­å®Œ
 
     void Awake()
     {
-        // È·±£Ã¿´ÎÓÎÏ·¿ªÊ¼Ê±×´Ì¬¶¼ÊÇÖØÖÃµÄ
+        // ç¡®ä¿æ¯æ¬¡æ¸¸æˆå¼€å§‹æ—¶çŠ¶æ€éƒ½æ˜¯é‡ç½®çš„
         isSignalReceived = false;
         hasStarted = false;
     }
@@ -31,7 +31,7 @@ public class PlayTimelineAction : Node
         if (!hasStarted)
         {
             hasStarted = true;
-            // ÎÒÃÇ²»ÔÙĞèÒª¶©ÔÄstoppedÊÂ¼ş£¬ÒòÎªĞÅºÅ»á¸æËßÎÒÃÇºÎÊ±½áÊø
+            // æˆ‘ä»¬ä¸å†éœ€è¦è®¢é˜…stoppedäº‹ä»¶ï¼Œå› ä¸ºä¿¡å·ä¼šå‘Šè¯‰æˆ‘ä»¬ä½•æ—¶ç»“æŸ
             // playableDirector.stopped += OnTimelineFinished; 
             playableDirector.Play();
         }
@@ -39,10 +39,10 @@ public class PlayTimelineAction : Node
         return NodeState.RUNNING;
     }
 
-    // ¡¾ºËĞÄĞÂÔö¡¿Ò»¸ö¹«¿ªµÄ·½·¨£¬ÓÃÓÚ±»ĞÅºÅ½ÓÊÕÆ÷(Signal Receiver)µ÷ÓÃ
+    // ã€æ ¸å¿ƒæ–°å¢ã€‘ä¸€ä¸ªå…¬å¼€çš„æ–¹æ³•ï¼Œç”¨äºè¢«ä¿¡å·æ¥æ”¶å™¨(Signal Receiver)è°ƒç”¨
     public void OnAnimationEndSignal()
     {
-        Debug.Log("½ÓÊÕµ½¶¯»­½áÊøĞÅºÅ£¬ĞĞÎªÊ÷½«¼ÌĞø£¡");
+        Debug.Log("æ¥æ”¶åˆ°åŠ¨ç”»ç»“æŸä¿¡å·ï¼Œè¡Œä¸ºæ ‘å°†ç»§ç»­ï¼");
         this.isSignalReceived = true;
     }
 }

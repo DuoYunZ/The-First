@@ -1,22 +1,22 @@
-// --- PlayTimelineAndForgetAction.cs ---
+ï»¿// --- PlayTimelineAndForgetAction.cs ---
 using UnityEngine;
 using UnityEngine.Playables;
 
 public class PlayTimelineAndForgetAction : Node
 {
-    [Header("TimelineÉèÖÃ")]
-    [Tooltip("½«³¡¾°ÖĞ¹ÒÔØÁËPlayableDirectorµÄÄÇ¸öGameObjectÍÏµ½ÕâÀï")]
+    [Header("Timelineè®¾ç½®")]
+    [Tooltip("å°†åœºæ™¯ä¸­æŒ‚è½½äº†PlayableDirectorçš„é‚£ä¸ªGameObjectæ‹–åˆ°è¿™é‡Œ")]
     public PlayableDirector playableDirector;
 
     public override NodeState Evaluate()
     {
         if (playableDirector == null)
         {
-            Debug.LogError("PlayTimelineAndForgetAction: Î´Ö¸¶¨PlayableDirector£¡", this.gameObject);
+            Debug.LogError("PlayTimelineAndForgetAction: æœªæŒ‡å®šPlayableDirectorï¼", this.gameObject);
             return NodeState.FAILURE;
         }
 
-        // Á¢¼´²¥·Å£¬È»ºóÁ¢¼´³É¹¦
+        // ç«‹å³æ’­æ”¾ï¼Œç„¶åç«‹å³æˆåŠŸ
         playableDirector.Play();
         return NodeState.SUCCESS;
     }

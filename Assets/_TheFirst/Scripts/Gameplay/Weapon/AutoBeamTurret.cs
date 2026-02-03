@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -7,26 +7,26 @@ public class AutoBeamTurret : MonoBehaviour
     private enum TurretState { Idle, Charging, Firing, Cooldown }
     private TurretState currentState = TurretState.Idle;
 
-    [Header("ÒÆ¶¯ÉèÖÃ")]
+    [Header("ç§»åŠ¨è®¾ç½®")]
     public float moveSpeed = 4.0f;
     public float followDistance = 3.0f;
 
-    [Header("ÅÚËş½á¹¹")]
-    public Transform rotationPivot; // ÅÚËşĞı×ªÖá
-    public Transform firePoint;     // Ç¹¿Ú·¢Éäµã
+    [Header("ç‚®å¡”ç»“æ„")]
+    public Transform rotationPivot; // ç‚®å¡”æ—‹è½¬è½´
+    public Transform firePoint;     // æªå£å‘å°„ç‚¹
 
-    [Header("ÊÓ¾õÌØĞ§ (VFX)")]
-    [Tooltip("Ç¹¿ÚĞîÁ¦ÌØĞ§")]
+    [Header("è§†è§‰ç‰¹æ•ˆ (VFX)")]
+    [Tooltip("æªå£è“„åŠ›ç‰¹æ•ˆ")]
     public GameObject chargeVfxPrefab;
-    [Tooltip("ÃüÖĞ±¬ÁÑÌØĞ§")]
+    [Tooltip("å‘½ä¸­çˆ†è£‚ç‰¹æ•ˆ")]
     public GameObject impactVfxPrefab;
-    [Tooltip("Ëø¶¨Ãé×¼È¦ UI Prefab (¹ÒÔØ LockOnEffect ½Å±¾)")]
+    [Tooltip("é”å®šç„å‡†åœˆ UI Prefab (æŒ‚è½½ LockOnEffect è„šæœ¬)")]
     public GameObject lockOnPrefab;
 
     public float fireWidth = 0.6f;
     public Color fireColor = Color.cyan;
 
-    [Header("Õ½¶·²ÎÊı")]
+    [Header("æˆ˜æ–—å‚æ•°")]
     public float detectionRadius = 15f;
     public float rotationSpeed = 20f;
     public LayerMask enemyLayer;
@@ -34,7 +34,7 @@ public class AutoBeamTurret : MonoBehaviour
     public float fireDuration = 2.0f;
     public float cooldownTime = 1.5f;
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private LineRenderer lineRenderer;
     private WeaponPart ownerWeapon;
     private Transform ownerPlayer;
@@ -42,18 +42,18 @@ public class AutoBeamTurret : MonoBehaviour
     private float stateTimer;
     private float damageTickTimer;
 
-    // --- ÉËº¦Ïà¹Ø ---
+    // --- ä¼¤å®³ç›¸å…³ ---
     private int damagePerTick;
     private float tickRate;
-    private float critRate;          // ¡¾ĞÂÔö¡¿±©»÷ÂÊ
-    private float critDamageMult;    // ¡¾ĞÂÔö¡¿±©»÷±¶ÂÊ
+    private float critRate;          // ã€æ–°å¢ã€‘æš´å‡»ç‡
+    private float critDamageMult;    // ã€æ–°å¢ã€‘æš´å‡»å€ç‡
 
-    // ÒıÓÃ±äÁ¿
+    // å¼•ç”¨å˜é‡
     private GameObject currentChargeVfx;
     private GameObject currentLockOnInstance;
     private LockOnEffect currentLockOnScript;
 
-    // ¡¾ĞŞ¸Ä¡¿Initialize Ôö¼Ó±©»÷²ÎÊı
+    // ã€ä¿®æ”¹ã€‘Initialize å¢åŠ æš´å‡»å‚æ•°
     public void Initialize(WeaponPart weapon, int damage, float tickRate, Transform owner, float cRate, float cDmgMult)
     {
         this.ownerWeapon = weapon;
@@ -61,7 +61,7 @@ public class AutoBeamTurret : MonoBehaviour
         this.tickRate = tickRate;
         this.ownerPlayer = owner;
 
-        // ¼ÇÂ¼±©»÷ÊôĞÔ
+        // è®°å½•æš´å‡»å±æ€§
         this.critRate = cRate;
         this.critDamageMult = cDmgMult;
 
@@ -93,7 +93,7 @@ public class AutoBeamTurret : MonoBehaviour
         }
     }
 
-    // --- ×´Ì¬»úÂß¼­ ---
+    // --- çŠ¶æ€æœºé€»è¾‘ ---
 
     void HandleIdle()
     {
@@ -183,7 +183,7 @@ public class AutoBeamTurret : MonoBehaviour
         if (stateTimer <= 0) currentState = TurretState.Idle;
     }
 
-    // --- ÉËº¦ÓëÌØĞ§Âß¼­ ---
+    // --- ä¼¤å®³ä¸ç‰¹æ•ˆé€»è¾‘ ---
 
     void DrawLaserAndDamage()
     {
@@ -201,7 +201,7 @@ public class AutoBeamTurret : MonoBehaviour
             Vector3 dir = (targetHitPos - startPos).normalized;
             float dist = Vector3.Distance(startPos, targetHitPos);
 
-            // ¹á´©ÉËº¦
+            // è´¯ç©¿ä¼¤å®³
             RaycastHit[] hits = Physics.SphereCastAll(startPos, fireWidth * 0.5f, dir, dist, enemyLayer);
 
             foreach (var hit in hits)
@@ -209,7 +209,7 @@ public class AutoBeamTurret : MonoBehaviour
                 Health h = hit.collider.GetComponentInParent<Health>();
                 if (h != null && !h.IsDead)
                 {
-                    // --- ¡¾ºËĞÄĞŞ¸Ä¡¿±©»÷ÅĞ¶¨ ---
+                    // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘æš´å‡»åˆ¤å®š ---
                     bool isCrit = Random.value <= critRate;
                     int finalDamage = damagePerTick;
 
@@ -218,7 +218,7 @@ public class AutoBeamTurret : MonoBehaviour
                         finalDamage = Mathf.RoundToInt(damagePerTick * critDamageMult);
                     }
 
-                    // ´«µİ isCrit ²ÎÊıÓÃÓÚÆ®×Ö
+                    // ä¼ é€’ isCrit å‚æ•°ç”¨äºé£˜å­—
                     h.TakeDamage(finalDamage, hit.point, ownerWeapon.gameObject, AttackType.Standard, null, null, "", isCrit);
 
                     if (impactVfxPrefab != null)

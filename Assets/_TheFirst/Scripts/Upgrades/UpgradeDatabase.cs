@@ -1,12 +1,12 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "UpgradeDatabase", menuName = "Game/Upgrade Database")]
 public class UpgradeDatabase : ScriptableObject
 {
-    [Header("Í¨ÓÃ±»¶¯¼¼ÄÜ (ÒÆËÙ/´ÅÌúµÈ) - ±£³ÖÔ­Ñù")]
+    [Header("é€šç”¨è¢«åŠ¨æŠ€èƒ½ (ç§»é€Ÿ/ç£é“ç­‰) - ä¿æŒåŸæ ·")]
     public List<SkillTreeNodeData> passiveUpgrades;
 
-    [Header("ÎäÆ÷Éı¼¶Á´ (ĞÂÏµÍ³)")]
+    [Header("æ­¦å™¨å‡çº§é“¾ (æ–°ç³»ç»Ÿ)")]
     public List<WeaponUpgradeChainSO> weaponChains;
 }

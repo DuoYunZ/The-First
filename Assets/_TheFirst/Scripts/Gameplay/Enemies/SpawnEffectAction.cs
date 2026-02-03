@@ -1,13 +1,13 @@
-// --- SpawnEffectAction.cs ---
+ï»¿// --- SpawnEffectAction.cs ---
 using UnityEngine;
 
 public class SpawnEffectAction : Node
 {
-    [Header("ÌØĞ§ÉèÖÃ")]
+    [Header("ç‰¹æ•ˆè®¾ç½®")]
     public GameObject effectPrefab;
-    [Tooltip("£¨¿ÉÑ¡£©Ö¸¶¨ÌØĞ§Éú³ÉµÄÎ»ÖÃ£¬Ä¬ÈÏÎªBoss×ÔÉíÎ»ÖÃ")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰æŒ‡å®šç‰¹æ•ˆç”Ÿæˆçš„ä½ç½®ï¼Œé»˜è®¤ä¸ºBossè‡ªèº«ä½ç½®")]
     public Transform spawnPoint;
-    [Tooltip("ÌØĞ§Éú³Éºó¶à¾Ã×Ô¶¯Ïú»Ù£¬0±íÊ¾²»×Ô¶¯Ïú»Ù")]
+    [Tooltip("ç‰¹æ•ˆç”Ÿæˆåå¤šä¹…è‡ªåŠ¨é”€æ¯ï¼Œ0è¡¨ç¤ºä¸è‡ªåŠ¨é”€æ¯")]
     public float destroyAfter = 5f;
 
     private Transform selfTransform;

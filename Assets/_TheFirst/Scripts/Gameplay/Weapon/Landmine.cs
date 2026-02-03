@@ -1,4 +1,4 @@
-// Landmine.cs
+ï»¿// Landmine.cs
 using UnityEngine;
 using System.Collections;
 
@@ -8,15 +8,15 @@ public class Landmine : MonoBehaviour
     private int damage;
     private float radius;
     private GameObject explosionVfxPrefab;
-    private GameObject attacker; // ÉËº¦À´Ô´
+    private GameObject attacker; // ä¼¤å®³æ¥æº
     private LayerMask damageableLayers;
 
-    private WeaponPart launcher; // ÓÃÓÚ»ñÈ¡ÎäÆ÷Ãû³Æ½øĞĞÍ³¼Æ
+    private WeaponPart launcher; // ç”¨äºè·å–æ­¦å™¨åç§°è¿›è¡Œç»Ÿè®¡
 
     private bool isArmed = false;
 
     /// <summary>
-    /// ÓÉWeaponPartÔÚÊµÀı»¯ºóµ÷ÓÃ£¬ÓÃÓÚ´«µİÊôĞÔ
+    /// ç”±WeaponPartåœ¨å®ä¾‹åŒ–åè°ƒç”¨ï¼Œç”¨äºä¼ é€’å±æ€§
     /// </summary>
     public void Initialize(int damage, float radius, float armingTime, float duration, GameObject attacker, GameObject vfxPrefab, LayerMask layersToDamage, WeaponPart launcher)
     {
@@ -27,9 +27,9 @@ public class Landmine : MonoBehaviour
         this.damageableLayers = layersToDamage;
         this.launcher = launcher;
 
-        // ÔÚÖ¸¶¨Ê±¼äºó¼¤»î
+        // åœ¨æŒ‡å®šæ—¶é—´åæ¿€æ´»
         StartCoroutine(ArmingRoutine(armingTime));
-        // ÔÚÖ¸¶¨ÉúÃüÖÜÆÚºóÏú»Ù
+        // åœ¨æŒ‡å®šç”Ÿå‘½å‘¨æœŸåé”€æ¯
         Destroy(gameObject, duration);
     }
 
@@ -43,22 +43,22 @@ public class Landmine : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        // Èç¹ûµØÀ×ÉĞÎ´¼¤»î£¬»òÕßÅöµ½µÄ²»ÊÇµĞÈË£¬Ôò²»·´Ó¦
+        // å¦‚æœåœ°é›·å°šæœªæ¿€æ´»ï¼Œæˆ–è€…ç¢°åˆ°çš„ä¸æ˜¯æ•Œäººï¼Œåˆ™ä¸ååº”
         if (!isArmed || !other.CompareTag("Enemy")) return;
 
-        // Èç¹ûÌõ¼şÂú×ã£¬ÔòÒı±¬
+        // å¦‚æœæ¡ä»¶æ»¡è¶³ï¼Œåˆ™å¼•çˆ†
         Explode();
     }
 
     private void Explode()
     {
-        // ²¥·Å±¬Õ¨ÌØĞ§
+        // æ’­æ”¾çˆ†ç‚¸ç‰¹æ•ˆ
         if (explosionVfxPrefab != null)
         {
             Instantiate(explosionVfxPrefab, transform.position, Quaternion.identity);
         }
 
-        // ½øĞĞ·¶Î§ÉËº¦¼ì²â
+        // è¿›è¡ŒèŒƒå›´ä¼¤å®³æ£€æµ‹
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, damageableLayers);
         foreach (Collider hit in hits)
         {
@@ -66,17 +66,17 @@ public class Landmine : MonoBehaviour
             if (enemyHealth != null && !enemyHealth.IsDead)
             {
                 string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "Landmine";
-                // ¶Ô·¶Î§ÄÚµÄËùÓĞµĞÈËÔì³ÉÉËº¦
+                // å¯¹èŒƒå›´å†…çš„æ‰€æœ‰æ•Œäººé€ æˆä¼¤å®³
                 enemyHealth.TakeDamage(damage, transform.position, attacker, AttackType.Standard, null, null, weaponName);
                 
             }
         }
 
-        // Ïú»ÙµØÀ××ÔÉí
+        // é”€æ¯åœ°é›·è‡ªèº«
         Destroy(gameObject);
     }
 
-    // ÔÚ³¡¾°ÖĞ»æÖÆ¸¨ÖúÏß£¬·½±ãµ÷ÊÔ
+    // åœ¨åœºæ™¯ä¸­ç»˜åˆ¶è¾…åŠ©çº¿ï¼Œæ–¹ä¾¿è°ƒè¯•
     void OnDrawGizmos()
     {
         Gizmos.color = isArmed ? Color.red : Color.yellow;

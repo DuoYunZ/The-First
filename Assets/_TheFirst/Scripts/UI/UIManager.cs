@@ -1,7 +1,7 @@
-using UnityEngine;
-using UnityEngine.UI; // ÒıÈëUIÃüÃû¿Õ¼ä
-using System.Collections; // <--- Ìí¼ÓÕâÒ»ĞĞ (Add this line)
-using TMPro; // <--- È·±£ÓĞÕâÒ»ĞĞ
+ï»¿using UnityEngine;
+using UnityEngine.UI; // å¼•å…¥UIå‘½åç©ºé—´
+using System.Collections; // <--- æ·»åŠ è¿™ä¸€è¡Œ (Add this line)
+using TMPro; // <--- ç¡®ä¿æœ‰è¿™ä¸€è¡Œ
 
 
 
@@ -9,39 +9,39 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("UI Ãæ°åÒıÓÃ")]
+    [Header("UI é¢æ¿å¼•ç”¨")]
     public GameObject gameOverPanel;
     public GameObject combatUIContainer;
 
-    [Header("UIÔªËØÒıÓÃ")]
-    public TextMeshProUGUI waveNumberText;         // <--- ĞŞ¸ÄÀàĞÍ
-    public TextMeshProUGUI nextWaveTimerText;      // <--- ĞŞ¸ÄÀàĞÍ
-    public TextMeshProUGUI enemiesRemainingText;   // <--- ĞŞ¸ÄÀàĞÍ
-    public GameObject waveMessagePanel;            // Õâ¸öÊÇ GameObject ÀàĞÍ£¬±£³Ö²»±ä
-    public TextMeshProUGUI waveMessageText;        // <--- ĞŞ¸ÄÀàĞÍ (PanelÏÂµÄÎÄ±¾)
+    [Header("UIå…ƒç´ å¼•ç”¨")]
+    public TextMeshProUGUI waveNumberText;         // <--- ä¿®æ”¹ç±»å‹
+    public TextMeshProUGUI nextWaveTimerText;      // <--- ä¿®æ”¹ç±»å‹
+    public TextMeshProUGUI enemiesRemainingText;   // <--- ä¿®æ”¹ç±»å‹
+    public GameObject waveMessagePanel;            // è¿™ä¸ªæ˜¯ GameObject ç±»å‹ï¼Œä¿æŒä¸å˜
+    public TextMeshProUGUI waveMessageText;        // <--- ä¿®æ”¹ç±»å‹ (Panelä¸‹çš„æ–‡æœ¬)
     public PlayerHealthUI playerHealthUI;
     public TextMeshProUGUI goldDisplayText;
 
-    [Header("UI Ãæ°åÒıÓÃ")]
-    [Tooltip("¶Ô SkillTreeUIManager ½Å±¾µÄÒıÓÃ")]
+    [Header("UI é¢æ¿å¼•ç”¨")]
+    [Tooltip("å¯¹ SkillTreeUIManager è„šæœ¬çš„å¼•ç”¨")]
     public SkillTreeUIManager skillTreeUIManager;
 
-    public Transform weaponUiContainer; // ÍÏÈë Canvas ÀïµÄÒ»¸ö Layout Group
-    public GameObject weaponSlotPrefab; // ÍÏÈëÉÏÃæ×öºÃµÄ Prefab
+    public Transform weaponUiContainer; // æ‹–å…¥ Canvas é‡Œçš„ä¸€ä¸ª Layout Group
+    public GameObject weaponSlotPrefab; // æ‹–å…¥ä¸Šé¢åšå¥½çš„ Prefab
     void Start()
     {
         if (PlayerProgressManager.Instance != null)
         {
-            // Ö±½Óµ÷ÓÃÒÑÓĞµÄ¸üĞÂ·½·¨£¬´«Èëµ±Ç°µÄ½ğ±ÒÖµ
+            // ç›´æ¥è°ƒç”¨å·²æœ‰çš„æ›´æ–°æ–¹æ³•ï¼Œä¼ å…¥å½“å‰çš„é‡‘å¸å€¼
             UpdateGoldDisplay(PlayerProgressManager.Instance.currentGold);
         }
         else
         {
-            // ÕâÊÇÒ»¸ö±£ÏÕ´ëÊ©£¬Õı³£Çé¿öÏÂ²»Ó¦¸Ã·¢Éú
-            Debug.LogWarning("ÔÚUIManagerÆô¶¯Ê±Î´ÄÜÕÒµ½PlayerProgressManager£¡");
+            // è¿™æ˜¯ä¸€ä¸ªä¿é™©æªæ–½ï¼Œæ­£å¸¸æƒ…å†µä¸‹ä¸åº”è¯¥å‘ç”Ÿ
+            Debug.LogWarning("åœ¨UIManagerå¯åŠ¨æ—¶æœªèƒ½æ‰¾åˆ°PlayerProgressManagerï¼");
         }
         // if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        // if (combatUIContainer != null) combatUIContainer.SetActive(false); // ‘ğôYUIîAÔOÒ²êPé]
+        // if (combatUIContainer != null) combatUIContainer.SetActive(false); // æˆ°é¬¥UIé è¨­ä¹Ÿé—œé–‰
 
     }
 
@@ -50,7 +50,7 @@ public class UIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // Èç¹ûÄúµÄUIManagerÊÇ³Ö¾Ã»¯µÄ
+            // DontDestroyOnLoad(gameObject); // å¦‚æœæ‚¨çš„UIManageræ˜¯æŒä¹…åŒ–çš„
         }
         else
         {
@@ -60,31 +60,31 @@ public class UIManager : MonoBehaviour
 
     public void InitializeCombatUIReferences()
     {
-        Debug.Log("[UIManager] ÕıÔÚ³õÊ¼»¯Õ½¶·UIÒıÓÃ...");
+        Debug.Log("[UIManager] æ­£åœ¨åˆå§‹åŒ–æˆ˜æ–—UIå¼•ç”¨...");
 
-        // 1. Ñ°ÕÒÕ½¶·UIµÄ¸ùÈİÆ÷
-        // ×¢Òâ£ºÕâÀïµÄÃû×Ö±ØĞëºÍÄú³¡¾°HierarchyÖĞµÄÍêÈ«Ò»ÖÂ
+        // 1. å¯»æ‰¾æˆ˜æ–—UIçš„æ ¹å®¹å™¨
+        // æ³¨æ„ï¼šè¿™é‡Œçš„åå­—å¿…é¡»å’Œæ‚¨åœºæ™¯Hierarchyä¸­çš„å®Œå…¨ä¸€è‡´
         GameObject combatUI_Container_GO = GameObject.Find("---Combat UI Container---");
 
         if (combatUI_Container_GO == null)
         {
-            Debug.LogError("[UIManager] ³õÊ¼»¯Ê§°Ü: ÔÚ³¡¾°ÖĞÎ´ÄÜÕÒµ½ÃûÎª '---Combat UI Container---' µÄ¶ÔÏó£¡");
+            Debug.LogError("[UIManager] åˆå§‹åŒ–å¤±è´¥: åœ¨åœºæ™¯ä¸­æœªèƒ½æ‰¾åˆ°åä¸º '---Combat UI Container---' çš„å¯¹è±¡ï¼");
             return;
         }
 
-        // 2. ½«ÕÒµ½µÄ¸ùÈİÆ÷¸³Öµ¸ø combatUIContainer ±äÁ¿
+        // 2. å°†æ‰¾åˆ°çš„æ ¹å®¹å™¨èµ‹å€¼ç»™ combatUIContainer å˜é‡
         combatUIContainer = combatUI_Container_GO;
 
-        // 3. ÔÚÕâ¸ö¸ùÈİÆ÷ÏÂ£¬¸ù¾İ²ã¼¶½á¹¹²éÕÒÃ¿Ò»¸ö¾ßÌåµÄUIÔªËØ
-        // ÎÒÃÇÊ¹ÓÃ transform.Find() À´¾«È·¶¨Î»
+        // 3. åœ¨è¿™ä¸ªæ ¹å®¹å™¨ä¸‹ï¼Œæ ¹æ®å±‚çº§ç»“æ„æŸ¥æ‰¾æ¯ä¸€ä¸ªå…·ä½“çš„UIå…ƒç´ 
+        // æˆ‘ä»¬ä½¿ç”¨ transform.Find() æ¥ç²¾ç¡®å®šä½
         Transform canvasTransform = combatUIContainer.transform.Find("Canvas");
         if (canvasTransform == null)
         {
-            Debug.LogError("[UIManager] ³õÊ¼»¯Ê§°Ü: ÔÚ '---Combat UI Container---' ÏÂÎ´ÄÜÕÒµ½ÃûÎª 'Canvas' µÄ×Ó¶ÔÏó£¡");
+            Debug.LogError("[UIManager] åˆå§‹åŒ–å¤±è´¥: åœ¨ '---Combat UI Container---' ä¸‹æœªèƒ½æ‰¾åˆ°åä¸º 'Canvas' çš„å­å¯¹è±¡ï¼");
             return;
         }
 
-        // ¸ù¾İÄúÖ®Ç°µÄ½ØÍ¼½á¹¹£¬ÎÒÃÇÀ´²éÕÒ¸÷¸ö×é¼ş
+        // æ ¹æ®æ‚¨ä¹‹å‰çš„æˆªå›¾ç»“æ„ï¼Œæˆ‘ä»¬æ¥æŸ¥æ‰¾å„ä¸ªç»„ä»¶
         waveNumberText = canvasTransform.Find("WaveNumber_Text")?.GetComponent<TextMeshProUGUI>();
         nextWaveTimerText = canvasTransform.Find("NextWaveTimer_Text")?.GetComponent<TextMeshProUGUI>();
         enemiesRemainingText = canvasTransform.Find("EnemiesRemaining_Text")?.GetComponent<TextMeshProUGUI>();
@@ -92,32 +92,32 @@ public class UIManager : MonoBehaviour
         waveMessagePanel = canvasTransform.Find("WaveMessage_Panel")?.gameObject;
         if (waveMessagePanel != null)
         {
-            // waveMessageText ÊÇ waveMessagePanel µÄ×Ó¶ÔÏó
+            // waveMessageText æ˜¯ waveMessagePanel çš„å­å¯¹è±¡
             waveMessageText = waveMessagePanel.transform.Find("WaveMessage_Text")?.GetComponent<TextMeshProUGUI>();
         }
 
-        // 4. µ¥¶ÀÑ°ÕÒ GameOverPanel (¼ÙÉèËüÔÚ³¡¾°¸ù²ã¼¶)
+        // 4. å•ç‹¬å¯»æ‰¾ GameOverPanel (å‡è®¾å®ƒåœ¨åœºæ™¯æ ¹å±‚çº§)
         //gameOverPanel = GameObject.Find("GameOverPanel");
 
 
-        // 5. Ìí¼ÓÒ»Ğ©°²È«¼ì²é£¬È·±£¶¼ÕÒµ½ÁË
-        if (waveNumberText == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ WaveNumber_Text");
-        if (nextWaveTimerText == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ NextWaveTimer_Text");
-        if (enemiesRemainingText == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ EnemiesRemaining_Text");
-        if (waveMessagePanel == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ WaveMessage_Panel");
-        if (waveMessageText == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ WaveMessage_Text");
-        //if (gameOverPanel == null) Debug.LogWarning("UIManager: Î´ÄÜÕÒµ½ GameOverPanel");
+        // 5. æ·»åŠ ä¸€äº›å®‰å…¨æ£€æŸ¥ï¼Œç¡®ä¿éƒ½æ‰¾åˆ°äº†
+        if (waveNumberText == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° WaveNumber_Text");
+        if (nextWaveTimerText == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° NextWaveTimer_Text");
+        if (enemiesRemainingText == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° EnemiesRemaining_Text");
+        if (waveMessagePanel == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° WaveMessage_Panel");
+        if (waveMessageText == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° WaveMessage_Text");
+        //if (gameOverPanel == null) Debug.LogWarning("UIManager: æœªèƒ½æ‰¾åˆ° GameOverPanel");
 
 
-        // 6. ³õÊ¼»¯Íê³Éºó£¬È·±£Õ½¶·UIÊÇ¿É¼ûµÄ
+        // 6. åˆå§‹åŒ–å®Œæˆåï¼Œç¡®ä¿æˆ˜æ–—UIæ˜¯å¯è§çš„
         ShowCombatUI();
-        Debug.Log("[UIManager] Õ½¶·UIÒıÓÃ³õÊ¼»¯³É¹¦£¬²¢ÒÑÏÔÊ¾¡£");
+        Debug.Log("[UIManager] æˆ˜æ–—UIå¼•ç”¨åˆå§‹åŒ–æˆåŠŸï¼Œå¹¶å·²æ˜¾ç¤ºã€‚");
        
     }
     public void UpdateWaveNumber(int waveNum, string waveName = "", WaveType type = WaveType.Normal)
     {
-        if (waveNumberText != null) waveNumberText.text = $"²¨´Î: {waveNum}" + (string.IsNullOrEmpty(waveName) ? "" : $" - {waveName}");
-        // ¿ÉÒÔ¸ù¾İ WaveType ¸Ä±äUI·ç¸ñµÈ
+        if (waveNumberText != null) waveNumberText.text = $"æ³¢æ¬¡: {waveNum}" + (string.IsNullOrEmpty(waveName) ? "" : $" - {waveName}");
+        // å¯ä»¥æ ¹æ® WaveType æ”¹å˜UIé£æ ¼ç­‰
     }
 
     public void UpdateNextWaveTimer(float time)
@@ -127,7 +127,7 @@ public class UIManager : MonoBehaviour
             if (time > 0)
             {
                 nextWaveTimerText.gameObject.SetActive(true);
-                nextWaveTimerText.text = $"ÏÂÒ»²¨: {Mathf.CeilToInt(time)}s";
+                nextWaveTimerText.text = $"ä¸‹ä¸€æ³¢: {Mathf.CeilToInt(time)}s";
             }
             else
             {
@@ -143,7 +143,7 @@ public class UIManager : MonoBehaviour
             if (count > 0)
             {
                 enemiesRemainingText.gameObject.SetActive(true);
-                enemiesRemainingText.text = $"Ê£ÓàµĞÈË: {count}";
+                enemiesRemainingText.text = $"å‰©ä½™æ•Œäºº: {count}";
             }
             else
             {
@@ -168,7 +168,7 @@ public class UIManager : MonoBehaviour
         waveMessagePanel.SetActive(false);
     }
 
-    // --- Ìá¹©½o GameManager ºô½ĞµÄ¹«¹²·½·¨ ---
+    // --- æä¾›çµ¦ GameManager å‘¼å«çš„å…¬å…±æ–¹æ³• ---
     public void ShowCombatUI()
     {
         if (combatUIContainer != null) combatUIContainer.SetActive(true);
@@ -197,7 +197,7 @@ public class UIManager : MonoBehaviour
         GameObject slotObj = Instantiate(weaponSlotPrefab, weaponUiContainer);
         WeaponStatusSlot slotScript = slotObj.GetComponent<WeaponStatusSlot>();
 
-        // ¡¾¹Ø¼ü¡¿°ó¶¨
+        // ã€å…³é”®ã€‘ç»‘å®š
         slotScript.BindWeapon(weapon);
     }
 }

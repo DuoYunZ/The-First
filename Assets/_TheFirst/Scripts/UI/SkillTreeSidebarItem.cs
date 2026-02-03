@@ -1,13 +1,13 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class SkillTreeSidebarItem : MonoBehaviour, IPointerClickHandler
 {
-    [Header("UI ×é¼ş")]
+    [Header("UI ç»„ä»¶")]
     public Image iconImage;
-    public GameObject selectionHighlight; // Ñ¡ÖĞ×´Ì¬µÄ¸ßÁÁ¿ò
-    public GameObject lockOverlay;        // Î´½âËøÊ±µÄ»ÒÉ«ÕÚÕÖ
+    public GameObject selectionHighlight; // é€‰ä¸­çŠ¶æ€çš„é«˜äº®æ¡†
+    public GameObject lockOverlay;        // æœªè§£é”æ—¶çš„ç°è‰²é®ç½©
 
     public WeaponSkillTree MyTreeData { get; private set; }
     private SkillTreeUIManager manager;
@@ -17,31 +17,31 @@ public class SkillTreeSidebarItem : MonoBehaviour, IPointerClickHandler
         MyTreeData = treeData;
         manager = uiManager;
 
-        // 1. ÉèÖÃÍ¼±ê
+        // 1. è®¾ç½®å›¾æ ‡
         if (treeData.associatedWeapon != null)
         {
             iconImage.sprite = treeData.associatedWeapon.weaponIcon;
         }
 
-        // 2. ÉèÖÃÑ¡ÖĞ¸ßÁÁ
+        // 2. è®¾ç½®é€‰ä¸­é«˜äº®
         if (selectionHighlight) selectionHighlight.SetActive(isSelected);
 
-        // 3. ¡¾ºËĞÄĞŞ¸Ä¡¿´¦Àí½âËø×´Ì¬ºÍ¼ôÓ°
+        // 3. ã€æ ¸å¿ƒä¿®æ”¹ã€‘å¤„ç†è§£é”çŠ¶æ€å’Œå‰ªå½±
         if (isUnlocked)
         {
-            // ÒÑ½âËø£ºÏÔÊ¾Ô­É«£¬Òş²ØËøÍ¼±ê
+            // å·²è§£é”ï¼šæ˜¾ç¤ºåŸè‰²ï¼Œéšè—é”å›¾æ ‡
             iconImage.color = Color.white;
             if (lockOverlay) lockOverlay.SetActive(false);
         }
         else
         {
-            // Î´½âËø£º±ä³É´¿ºÚ¼ôÓ°
+            // æœªè§£é”ï¼šå˜æˆçº¯é»‘å‰ªå½±
             iconImage.color = Color.black;
 
-            // Ñ¡Ïî A£ºÈç¹ûÄãÏëÔÚºÚÉ«¼ôÓ°ÉÏ»¹¸ÇÒ»¸öËøµÄÍ¼±ê£¬¾Í±£ÁôÕâĞĞ
+            // é€‰é¡¹ Aï¼šå¦‚æœä½ æƒ³åœ¨é»‘è‰²å‰ªå½±ä¸Šè¿˜ç›–ä¸€ä¸ªé”çš„å›¾æ ‡ï¼Œå°±ä¿ç•™è¿™è¡Œ
             //if (lockOverlay) lockOverlay.SetActive(true);
 
-            // Ñ¡Ïî B£ºÈç¹ûÄã¾õµÃºÚÉ«¼ôÓ°¾Í¹»ÁË£¬²»ĞèÒªÄÇ¸ö»ÒÉ«µÄÁù±ßĞÎµ×Í¼ÁË£¬¾Í¸Ä³É false
+            // é€‰é¡¹ Bï¼šå¦‚æœä½ è§‰å¾—é»‘è‰²å‰ªå½±å°±å¤Ÿäº†ï¼Œä¸éœ€è¦é‚£ä¸ªç°è‰²çš„å…­è¾¹å½¢åº•å›¾äº†ï¼Œå°±æ”¹æˆ false
              if (lockOverlay) lockOverlay.SetActive(false);
         }
     }

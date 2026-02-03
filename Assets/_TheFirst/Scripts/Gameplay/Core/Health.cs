@@ -230,6 +230,13 @@ public class Health : MonoBehaviour
                 VFXDamageController vfx = attacker.GetComponent<VFXDamageController>();
                 if (vfx != null) sourcePart = vfx.sourceWeapon;
             }
+
+            // D. 【新增】尝试从 attacker 身上获取 FlyingDaggerController (如果是飞刀)
+            if (sourcePart == null && attacker != null)
+            {
+                FlyingDaggerController dagger = attacker.GetComponent<FlyingDaggerController>();
+                if (dagger != null) sourcePart = dagger.sourceWeapon;
+            }
             // ----------------------------------------------------
             if (sourcePart == null)
             {

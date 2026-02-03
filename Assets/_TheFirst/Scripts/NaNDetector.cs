@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class NaNDetector : MonoBehaviour
 {
     void Update()
     {
-        // ¼ì²éËùÓĞµĞÈË
+        // æ£€æŸ¥æ‰€æœ‰æ•Œäºº
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (var enemy in enemies)
         {
             if (IsNaN(enemy.transform.position))
             {
-                Debug.LogError($"[NaN ¾¯±¨] ·¢ÏÖ×ø±êËğ»µµÄµĞÈË: {enemy.name}¡£Î»ÖÃ: {enemy.transform.position}¡£ÒÑ½ô¼±Ïú»Ù£¡");
+                Debug.LogError($"[NaN è­¦æŠ¥] å‘ç°åæ ‡æŸåçš„æ•Œäºº: {enemy.name}ã€‚ä½ç½®: {enemy.transform.position}ã€‚å·²ç´§æ€¥é”€æ¯ï¼");
                 Destroy(enemy);
             }
         }

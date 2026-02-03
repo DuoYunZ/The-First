@@ -1,20 +1,20 @@
-// ÔÚ DataManager.cs (»òÕßÄãµÄ GameManager ½Å±¾) ÖĞ
+ï»¿// åœ¨ DataManager.cs (æˆ–è€…ä½ çš„ GameManager è„šæœ¬) ä¸­
 using UnityEngine;
 
 public class DataManager : MonoBehaviour
 {
-    public static DataManager Instance { get; private set; } // µ¥ÀıÄ£Ê½·½±ã·ÃÎÊ
+    public static DataManager Instance { get; private set; } // å•ä¾‹æ¨¡å¼æ–¹ä¾¿è®¿é—®
     public CharacterData selectedCharacter;
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Ê¹ÆäÔÚ¼ÓÔØĞÂ³¡¾°Ê±²»±»Ïú»Ù
+            DontDestroyOnLoad(gameObject); // ä½¿å…¶åœ¨åŠ è½½æ–°åœºæ™¯æ—¶ä¸è¢«é”€æ¯
         }
         else
         {
-            Destroy(gameObject); // Ïú»ÙÖØ¸´µÄÊµÀı
+            Destroy(gameObject); // é”€æ¯é‡å¤çš„å®ä¾‹
         }
     }
 }

@@ -1,47 +1,47 @@
-// GoldPickup.cs (Enhanced Version)
+ï»¿// GoldPickup.cs (Enhanced Version)
 using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Collider))]
 public class GoldPickup : MonoBehaviour
 {
-    [Header("½ğ±ÒÉèÖÃ")]
-    [Tooltip("´Ë½ğ±ÒÌá¹©µÄ¼ÛÖµ")]
+    [Header("é‡‘å¸è®¾ç½®")]
+    [Tooltip("æ­¤é‡‘å¸æä¾›çš„ä»·å€¼")]
     public int goldValue = 10;
 
-    [Header("Ê°È¡ÉèÖÃ")]
-    [Tooltip("Íæ¼Ò¿¿½üµ½¶àÉÙ¾àÀëÄÚ¿ªÊ¼±»ÎüÒı")]
+    [Header("æ‹¾å–è®¾ç½®")]
+    [Tooltip("ç©å®¶é è¿‘åˆ°å¤šå°‘è·ç¦»å†…å¼€å§‹è¢«å¸å¼•")]
     public float magnetRadius = 4f;
-    [Tooltip("·ÉÏòÍæ¼ÒµÄËÙ¶È")]
+    [Tooltip("é£å‘ç©å®¶çš„é€Ÿåº¦")]
     public float collectionSpeed = 8f;
-    [Tooltip("½ğ±ÒÉú³Éºó£¬ÑÓ³Ù¶à¾Ã²ÅÄÜ±»Ê°È¡£¨Ãë£©")]
+    [Tooltip("é‡‘å¸ç”Ÿæˆåï¼Œå»¶è¿Ÿå¤šä¹…æ‰èƒ½è¢«æ‹¾å–ï¼ˆç§’ï¼‰")]
     public float pickupDelay = 0.5f;
 
-    [Header("µôÂä¶¯»­")]
-    [Tooltip("½ğ±ÒÏòÉÏµ¯ÌøµÄ¸ß¶È")]
+    [Header("æ‰è½åŠ¨ç”»")]
+    [Tooltip("é‡‘å¸å‘ä¸Šå¼¹è·³çš„é«˜åº¦")]
     public float popHeight = 0.75f;
-    [Tooltip("½ğ±ÒÍê³Éµ¯Ìø¶¯»­ËùĞèµÄÊ±¼ä")]
+    [Tooltip("é‡‘å¸å®Œæˆå¼¹è·³åŠ¨ç”»æ‰€éœ€çš„æ—¶é—´")]
     public float popDuration = 0.3f;
 
-    [Header("ÎüÊÕ¸¡¿ÕĞ§¹û")]
-    [Tooltip("ÎüÊÕÊ±ÏòÉÏ¸¡¿ÕµÄ¸ß¶È")]
+    [Header("å¸æ”¶æµ®ç©ºæ•ˆæœ")]
+    [Tooltip("å¸æ”¶æ—¶å‘ä¸Šæµ®ç©ºçš„é«˜åº¦")]
     public float absorbFloatHeight = 1.0f;
-    [Tooltip("ÎüÊÕ¸¡¿ÕµÄÊ±¼ä")]
+    [Tooltip("å¸æ”¶æµ®ç©ºçš„æ—¶é—´")]
     public float absorbFloatDuration = 0.3f;
-    [Tooltip("¸¡¿ÕºóÍ£ÖÍµÄÊ±¼ä")]
+    [Tooltip("æµ®ç©ºååœæ»çš„æ—¶é—´")]
     public float absorbHoverDuration = 0.2f;
 
-    [Header("´ı»úĞı×ª")]
-    [Tooltip("½ğ±Ò´ı»úÊ±µÄ×Ô×ªËÙ¶È£¨¶È/Ãë£©")]
+    [Header("å¾…æœºæ—‹è½¬")]
+    [Tooltip("é‡‘å¸å¾…æœºæ—¶çš„è‡ªè½¬é€Ÿåº¦ï¼ˆåº¦/ç§’ï¼‰")]
     public float rotationSpeed = 180f;
 
-    [Header("ÒôĞ§ÓëÌØĞ§")]
-    [Tooltip("½ğ±Ò±»Íæ¼ÒÊÕ¼¯Ê±²¥·ÅµÄÒôĞ§")]
+    [Header("éŸ³æ•ˆä¸ç‰¹æ•ˆ")]
+    [Tooltip("é‡‘å¸è¢«ç©å®¶æ”¶é›†æ—¶æ’­æ”¾çš„éŸ³æ•ˆ")]
     public AudioClip collectionSound;
-    [Tooltip("½ğ±Ò±»Íæ¼ÒÊÕ¼¯Ê±£¬ÔÚÍæ¼ÒÉíÉÏ²¥·ÅµÄÁ£×ÓÌØĞ§")]
+    [Tooltip("é‡‘å¸è¢«ç©å®¶æ”¶é›†æ—¶ï¼Œåœ¨ç©å®¶èº«ä¸Šæ’­æ”¾çš„ç²’å­ç‰¹æ•ˆ")]
     public GameObject collectionVfxPrefab;
 
-    // --- ÄÚ²¿×´Ì¬±äÁ¿ ---
+    // --- å†…éƒ¨çŠ¶æ€å˜é‡ ---
     private Transform collectionTarget;
     private bool isCollecting = false;
     private bool canBePickedUp = false;
@@ -53,12 +53,12 @@ public class GoldPickup : MonoBehaviour
     {
         GetComponent<Collider>().isTrigger = true;
 
-        // Ñ°ÕÒÍæ¼Ò×÷ÎªÎüÊÕÄ¿±ê
+        // å¯»æ‰¾ç©å®¶ä½œä¸ºå¸æ”¶ç›®æ ‡
         if (GameManager.Instance != null && GameManager.Instance.playerTransform != null)
         {
             Transform playerRoot = GameManager.Instance.playerTransform;
 
-            // ÓÅÏÈ·ÉÏò AimTargetPoint ÒÔ»ñµÃ¸üºÃµÄÊÓ¾õĞ§¹û
+            // ä¼˜å…ˆé£å‘ AimTargetPoint ä»¥è·å¾—æ›´å¥½çš„è§†è§‰æ•ˆæœ
             Transform aimTarget = playerRoot.Find("AimTargetPoint");
             collectionTarget = (aimTarget != null) ? aimTarget : playerRoot;
         }
@@ -66,12 +66,12 @@ public class GoldPickup : MonoBehaviour
         StartCoroutine(SpawnRoutine());
     }
 
-    // Éú³ÉÊ±µÄ¶¯»­ºÍÑÓ³Ù
+    // ç”Ÿæˆæ—¶çš„åŠ¨ç”»å’Œå»¶è¿Ÿ
     IEnumerator SpawnRoutine()
     {
-        // 1. µôÂäµ¯Ìø¶¯»­
+        // 1. æ‰è½å¼¹è·³åŠ¨ç”»
         Vector3 startPoint = transform.position;
-        // Ëæ»úÒ»¸öĞ¡µÄÂäµØÆ«ÒÆ£¬ÈÃµôÂä¸ü×ÔÈ»
+        // éšæœºä¸€ä¸ªå°çš„è½åœ°åç§»ï¼Œè®©æ‰è½æ›´è‡ªç„¶
         Vector3 endPoint = startPoint + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
 
         float timer = 0f;
@@ -88,10 +88,10 @@ public class GoldPickup : MonoBehaviour
         }
         transform.position = new Vector3(endPoint.x, startPoint.y, endPoint.z);
 
-        // 2. Ê°È¡ÑÓ³Ù
+        // 2. æ‹¾å–å»¶è¿Ÿ
         yield return new WaitForSeconds(pickupDelay);
 
-        // 3. ¼¤»îÊ°È¡
+        // 3. æ¿€æ´»æ‹¾å–
         canBePickedUp = true;
         isSpinning = true;
     }
@@ -104,21 +104,21 @@ public class GoldPickup : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, collectionTarget.position);
 
-        // --- ¡¾ĞŞ¸´¡¿Ó¦ÓÃÊ°È¡·¶Î§¼Ó³É ---
+        // --- ã€ä¿®å¤ã€‘åº”ç”¨æ‹¾å–èŒƒå›´åŠ æˆ ---
         float finalRadius = magnetRadius;
         if (PlayerStats.Instance != null)
         {
             finalRadius *= PlayerStats.Instance.pickupRadiusMultiplier;
         }
 
-        if (!isCollecting && distanceToPlayer <= finalRadius) // Ê¹ÓÃ finalRadius
+        if (!isCollecting && distanceToPlayer <= finalRadius) // ä½¿ç”¨ finalRadius
         {
             StartAbsorbSequence();
         }
         // -----------------------------
     }
 
-    // ¿ªÊ¼ÎüÊÕĞòÁĞ£¨¸¡¿Õ -> ·ÉÏòÍæ¼Ò£©
+    // å¼€å§‹å¸æ”¶åºåˆ—ï¼ˆæµ®ç©º -> é£å‘ç©å®¶ï¼‰
     private void StartAbsorbSequence()
     {
         if (isCollecting) return;
@@ -130,10 +130,10 @@ public class GoldPickup : MonoBehaviour
         StartCoroutine(AbsorbFloatRoutine());
     }
 
-    // ÎüÊÕÇ°µÄ¸¡¿Õ¶¯»­
+    // å¸æ”¶å‰çš„æµ®ç©ºåŠ¨ç”»
     IEnumerator AbsorbFloatRoutine()
     {
-        // (1. ÏòÉÏ¸¡¿Õ - ±£³Ö²»±ä)
+        // (1. å‘ä¸Šæµ®ç©º - ä¿æŒä¸å˜)
         Vector3 floatTarget = absorbStartPosition + Vector3.up * absorbFloatHeight;
         float timer = 0f;
         while (timer < absorbFloatDuration)
@@ -144,19 +144,19 @@ public class GoldPickup : MonoBehaviour
             yield return null;
         }
 
-        // (2. ¶ÌÔİĞüÍ£ - ±£³Ö²»±ä)
+        // (2. çŸ­æš‚æ‚¬åœ - ä¿æŒä¸å˜)
         yield return new WaitForSeconds(absorbHoverDuration);
 
-        // (3. ½áÊø¸¡¿Õ)
+        // (3. ç»“æŸæµ®ç©º)
         isAbsorbFloating = false; //
 
-        // --- vvv [ĞÂÔö] vvv ---
-        // (4. Á¢¼´¿ªÊ¼·ÉÏòÍæ¼Ò£¬Ö±µ½±» Collect() Ïú»Ù)
+        // --- vvv [æ–°å¢] vvv ---
+        // (4. ç«‹å³å¼€å§‹é£å‘ç©å®¶ï¼Œç›´åˆ°è¢« Collect() é”€æ¯)
         while (true)
         {
             if (collectionTarget == null)
             {
-                Destroy(gameObject); // Íæ¼ÒÏûÊ§ÁË£¿Ïú»Ù×Ô¼º
+                Destroy(gameObject); // ç©å®¶æ¶ˆå¤±äº†ï¼Ÿé”€æ¯è‡ªå·±
                 yield break;
             }
 
@@ -168,10 +168,10 @@ public class GoldPickup : MonoBehaviour
             }
             yield return null;
         }
-        // --- ^^^ [ĞÂÔö] ^^^ ---
+        // --- ^^^ [æ–°å¢] ^^^ ---
     }
 
-    // Íæ¼ÒÖ±½Ó×ßÉÏÈ¥Åö×²Ê°È¡
+    // ç©å®¶ç›´æ¥èµ°ä¸Šå»ç¢°æ’æ‹¾å–
     void OnTriggerEnter(Collider other)
     {
         if (canBePickedUp && other.CompareTag("Player") && !isCollecting)
@@ -182,7 +182,7 @@ public class GoldPickup : MonoBehaviour
 
     public void TriggerMagnet(Transform target)
     {
-        // È·±£Ö»´¥·¢Ò»´Î
+        // ç¡®ä¿åªè§¦å‘ä¸€æ¬¡
         if (isCollecting || !canBePickedUp) return;
 
         if (collectionTarget == null)
@@ -193,17 +193,17 @@ public class GoldPickup : MonoBehaviour
         StartAbsorbSequence();
     }
 
-    // Íê³ÉÊÕ¼¯
+    // å®Œæˆæ”¶é›†
     void Collect()
     {
-        // --- ºËĞÄÂß¼­ĞŞ¸Ä£º¸øÓè½ğ±Ò¶ø·Ç¾­Ñé ---
+        // --- æ ¸å¿ƒé€»è¾‘ä¿®æ”¹ï¼šç»™äºˆé‡‘å¸è€Œéç»éªŒ ---
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.AddGold(goldValue);
         }
-        // --- ĞŞ¸Ä½áÊø ---
+        // --- ä¿®æ”¹ç»“æŸ ---
        
-        // ²¥·ÅÒôĞ§ºÍÌØĞ§£¨Óë¾­ÑéÇòÂß¼­ÏàÍ¬£©
+        // æ’­æ”¾éŸ³æ•ˆå’Œç‰¹æ•ˆï¼ˆä¸ç»éªŒçƒé€»è¾‘ç›¸åŒï¼‰
         if (collectionTarget != null)
         {
             if (collectionVfxPrefab != null)

@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class BattleStatisticsManager : MonoBehaviour
 {
     public static BattleStatisticsManager Instance { get; private set; }
 
-    // --- Í³¼ÆÊı¾İ ---
+    // --- ç»Ÿè®¡æ•°æ® ---
     public float StartTime { get; private set; }
     public int TotalKills { get; private set; }
     public int TotalGoldEarned { get; private set; }
 
-    // ×Öµä£ºÎäÆ÷Ãû³Æ -> Ôì³ÉµÄ×ÜÉËº¦
+    // å­—å…¸ï¼šæ­¦å™¨åç§° -> é€ æˆçš„æ€»ä¼¤å®³
     public Dictionary<string, int> WeaponDamageStats = new Dictionary<string, int>();
 
     void Awake()
@@ -29,19 +29,19 @@ public class BattleStatisticsManager : MonoBehaviour
         return Time.time - StartTime;
     }
 
-    // 1. ¼ÇÂ¼»÷É± (ÔÚ Health.Die µ÷ÓÃ)
+    // 1. è®°å½•å‡»æ€ (åœ¨ Health.Die è°ƒç”¨)
     public void AddKill()
     {
         TotalKills++;
     }
 
-    // 2. ¼ÇÂ¼½ğ±Ò (ÔÚ GoldPickup.Collect µ÷ÓÃ)
+    // 2. è®°å½•é‡‘å¸ (åœ¨ GoldPickup.Collect è°ƒç”¨)
     public void AddGold(int amount)
     {
         TotalGoldEarned += amount;
     }
 
-    // 3. ¼ÇÂ¼ÉËº¦ (ºËĞÄ£ºÔÚ WeaponPart/Projectile Ôì³ÉÉËº¦Ê±µ÷ÓÃ)
+    // 3. è®°å½•ä¼¤å®³ (æ ¸å¿ƒï¼šåœ¨ WeaponPart/Projectile é€ æˆä¼¤å®³æ—¶è°ƒç”¨)
     public void AddDamage(string weaponName, int damage)
     {
         if (string.IsNullOrEmpty(weaponName)) return;

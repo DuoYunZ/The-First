@@ -1,33 +1,33 @@
-using System.Collections.Generic; // ÓÃÓÚ List
+ï»¿using System.Collections.Generic; // ç”¨äº List
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI; // ÓÃÓÚ UI ÔªËØ
+using UnityEngine.UI; // ç”¨äº UI å…ƒç´ 
 
 public class FusionUIManager : MonoBehaviour
 {
     public static FusionUIManager Instance { get; private set; }
 
-    [Header("UI Ãæ°å")]
-    [Tooltip("°üº¬ËùÓĞÈÚºÏUIÔªËØµÄ¸¸Ãæ°å")]
+    [Header("UI é¢æ¿")]
+    [Tooltip("åŒ…å«æ‰€æœ‰èåˆUIå…ƒç´ çš„çˆ¶é¢æ¿")]
     public GameObject fusionPanel;
 
-    [Header("ÄÜÁ¿Ê¯ĞÅÏ¢ (UI)")]
+    [Header("èƒ½é‡çŸ³ä¿¡æ¯ (UI)")]
     public Image stoneIcon;
     public TextMeshProUGUI stoneNameText;
     public TextMeshProUGUI stoneDescriptionText;
 
-    [Header("ÎäÆ÷Ñ¡Ôñ (UI)")]
-    [Tooltip("ÏÔÊ¾ÎäÆ÷Í¼±êµÄImage")]
-    public Image weaponIcon; // (ÀıÈç½ØÍ¼ ÖĞ»ÒÉ«·½¿é)
-    [Tooltip("ÏÔÊ¾ÎäÆ÷Ãû³ÆµÄText (ÀıÈç '¹â»·')")]
+    [Header("æ­¦å™¨é€‰æ‹© (UI)")]
+    [Tooltip("æ˜¾ç¤ºæ­¦å™¨å›¾æ ‡çš„Image")]
+    public Image weaponIcon; // (ä¾‹å¦‚æˆªå›¾ ä¸­ç°è‰²æ–¹å—)
+    [Tooltip("æ˜¾ç¤ºæ­¦å™¨åç§°çš„Text (ä¾‹å¦‚ 'å…‰ç¯')")]
     public TextMeshProUGUI weaponNameText;
-    [Tooltip("ÏÔÊ¾²å²Û×´Ì¬µÄText (ÀıÈç '[ ¿Õ²å²Û ]')")]
+    [Tooltip("æ˜¾ç¤ºæ’æ§½çŠ¶æ€çš„Text (ä¾‹å¦‚ '[ ç©ºæ’æ§½ ]')")]
     public TextMeshProUGUI weaponSlotText;
-    [Tooltip("¡°ÉÏÒ»¸ö¡±ÎäÆ÷°´Å¥ (<)")]
+    [Tooltip("â€œä¸Šä¸€ä¸ªâ€æ­¦å™¨æŒ‰é’® (<)")]
     public Button prevWeaponButton;
-    [Tooltip("¡°ÏÂÒ»¸ö¡±ÎäÆ÷°´Å¥ (>)")]
+    [Tooltip("â€œä¸‹ä¸€ä¸ªâ€æ­¦å™¨æŒ‰é’® (>)")]
     public Button nextWeaponButton;
-    [Tooltip("¡°ÈÚºÏ¡±°´Å¥")]
+    [Tooltip("â€œèåˆâ€æŒ‰é’®")]
     public Button fuseButton;
 
     private EnergyStoneSO pendingStone;
@@ -46,34 +46,34 @@ public class FusionUIManager : MonoBehaviour
         if (fuseButton != null)
             fuseButton.onClick.AddListener(OnFuseClicked);
 
-        fusionPanel.SetActive(false); // Ä¬ÈÏÒş²Ø
+        fusionPanel.SetActive(false); // é»˜è®¤éšè—
     }
 
     /// <summary>
-    /// ÓÉ EnergyStonePickup µ÷ÓÃ
+    /// ç”± EnergyStonePickup è°ƒç”¨
     /// </summary>
     public void StartFusion(EnergyStoneSO stoneToFuse)
     {
         this.pendingStone = stoneToFuse;
         if (this.pendingStone == null) return;
 
-        // 1. ÔİÍ£ÓÎÏ·
+        // 1. æš‚åœæ¸¸æˆ
         Time.timeScale = 0f;
 
-        // 2. ¸üĞÂÄÜÁ¿Ê¯ĞÅÏ¢ (±£³Ö²»±ä)
+        // 2. æ›´æ–°èƒ½é‡çŸ³ä¿¡æ¯ (ä¿æŒä¸å˜)
         stoneIcon.sprite = pendingStone.icon;
         stoneNameText.text = pendingStone.stoneName;
         stoneDescriptionText.text = pendingStone.description;
 
-        // 3. [ĞÂÂß¼­] Ìî³ä¿ÉÓÃµÄÎäÆ÷ÁĞ±í
+        // 3. [æ–°é€»è¾‘] å¡«å……å¯ç”¨çš„æ­¦å™¨åˆ—è¡¨
         availableWeapons.Clear();
 
         var controller = WeaponController.Instance; //
         if (controller == null)
         {
-            Debug.LogError("FusionUIManager: ÕÒ²»µ½ WeaponController!");
-            // (°²È«Æğ¼û£¬¹Ø±ÕÃæ°å)
-            OnFuseClicked(); // (µ÷ÓÃ OnFuseClicked À´¹Ø±ÕÃæ°å²¢»Ö¸´ÓÎÏ·)
+            Debug.LogError("FusionUIManager: æ‰¾ä¸åˆ° WeaponController!");
+            // (å®‰å…¨èµ·è§ï¼Œå…³é—­é¢æ¿)
+            OnFuseClicked(); // (è°ƒç”¨ OnFuseClicked æ¥å…³é—­é¢æ¿å¹¶æ¢å¤æ¸¸æˆ)
             return;
         }
         if (controller.builtInBladeWeapon != null)
@@ -90,11 +90,11 @@ public class FusionUIManager : MonoBehaviour
             }
         }
 
-        // 4. [ĞÂÂß¼­] ÏÔÊ¾µÚÒ»¸öÎäÆ÷
+        // 4. [æ–°é€»è¾‘] æ˜¾ç¤ºç¬¬ä¸€ä¸ªæ­¦å™¨
         currentWeaponIndex = 0;
         UpdateWeaponDisplay();
 
-        // 5. ÏÔÊ¾Ãæ°å
+        // 5. æ˜¾ç¤ºé¢æ¿
         fusionPanel.SetActive(true);
     }
 
@@ -102,47 +102,47 @@ public class FusionUIManager : MonoBehaviour
     {
         if (availableWeapons.Count == 0)
         {
-            // (´¦ÀíÃ»ÓĞÎäÆ÷µÄº±¼ûÇé¿ö)
-            weaponNameText.text = "Ã»ÓĞÎäÆ÷";
+            // (å¤„ç†æ²¡æœ‰æ­¦å™¨çš„ç½•è§æƒ…å†µ)
+            weaponNameText.text = "æ²¡æœ‰æ­¦å™¨";
             weaponSlotText.text = "";
-            weaponIcon.sprite = null; // (»òÒ»¸öÄ¬ÈÏµÄ 'X' Í¼±ê)
-            fuseButton.interactable = false; // ½ûÓÃÈÚºÏ°´Å¥
+            weaponIcon.sprite = null; // (æˆ–ä¸€ä¸ªé»˜è®¤çš„ 'X' å›¾æ ‡)
+            fuseButton.interactable = false; // ç¦ç”¨èåˆæŒ‰é’®
             return;
         }
 
-        fuseButton.interactable = true; // È·±£°´Å¥¿ÉÓÃ
+        fuseButton.interactable = true; // ç¡®ä¿æŒ‰é’®å¯ç”¨
 
-        // »ñÈ¡µ±Ç°Ñ¡ÖĞµÄÎäÆ÷
+        // è·å–å½“å‰é€‰ä¸­çš„æ­¦å™¨
         WeaponPart selectedWeapon = availableWeapons[currentWeaponIndex]; //
         if (selectedWeapon == null || selectedWeapon.StatBlock == null) return; //
 
-        // ¸üĞÂUI
+        // æ›´æ–°UI
         weaponNameText.text = selectedWeapon.StatBlock.weaponName; //                                                         
                                                                  
         weaponIcon.sprite = selectedWeapon.StatBlock.weaponIcon; 
 
         if (selectedWeapon.currentStone != null) //
         {
-            weaponSlotText.text = $"[ÒÑÏâÇ¶: {selectedWeapon.currentStone.stoneName}]"; //
+            weaponSlotText.text = $"[å·²é•¶åµŒ: {selectedWeapon.currentStone.stoneName}]"; //
         }
         else
         {
-            weaponSlotText.text = "[ ¿Õ²å²Û ]"; //
+            weaponSlotText.text = "[ ç©ºæ’æ§½ ]"; //
         }
     }
 
     /// <summary>
-    /// (ĞÂ) ' > ' °´Å¥µ÷ÓÃµÄ·½·¨
+    /// (æ–°) ' > ' æŒ‰é’®è°ƒç”¨çš„æ–¹æ³•
     /// </summary>
     public void SelectNextWeapon()
     {
         if (availableWeapons.Count == 0) return;
-        currentWeaponIndex = (currentWeaponIndex + 1) % availableWeapons.Count; // Ñ­»·µ½ÏÂÒ»¸ö
+        currentWeaponIndex = (currentWeaponIndex + 1) % availableWeapons.Count; // å¾ªç¯åˆ°ä¸‹ä¸€ä¸ª
         UpdateWeaponDisplay();
     }
 
     /// <summary>
-    /// (ĞÂ) ' < ' °´Å¥µ÷ÓÃµÄ·½·¨
+    /// (æ–°) ' < ' æŒ‰é’®è°ƒç”¨çš„æ–¹æ³•
     /// </summary>
     public void SelectPreviousWeapon()
     {
@@ -150,22 +150,22 @@ public class FusionUIManager : MonoBehaviour
         currentWeaponIndex--;
         if (currentWeaponIndex < 0)
         {
-            currentWeaponIndex = availableWeapons.Count - 1; // Ñ­»·µ½Ä©Î²
+            currentWeaponIndex = availableWeapons.Count - 1; // å¾ªç¯åˆ°æœ«å°¾
         }
         UpdateWeaponDisplay();
     }
 
     /// <summary>
-    /// (ĞÂ) ¡°ÈÚºÏ¡± °´Å¥µ÷ÓÃµÄ·½·¨
+    /// (æ–°) â€œèåˆâ€ æŒ‰é’®è°ƒç”¨çš„æ–¹æ³•
     /// </summary>
     public void OnFuseClicked()
     {
         if (pendingStone == null || availableWeapons.Count == 0) return;
 
-        // 1. »ñÈ¡µ±Ç°Ñ¡ÖĞµÄÎäÆ÷
+        // 1. è·å–å½“å‰é€‰ä¸­çš„æ­¦å™¨
         WeaponPart selectedWeapon = availableWeapons[currentWeaponIndex]; //
 
-        // 2. Ö´ĞĞÈÚºÏ
+        // 2. æ‰§è¡Œèåˆ
         selectedWeapon.FuseEnergyStone(pendingStone); //
 
         if (WeaponUI.Instance != null)
@@ -173,7 +173,7 @@ public class FusionUIManager : MonoBehaviour
             WeaponUI.Instance.UpdateWeaponIcons();
         }
 
-        // 3. ÇåÀíºÍ»Ö¸´ÓÎÏ·
+        // 3. æ¸…ç†å’Œæ¢å¤æ¸¸æˆ
         pendingStone = null;
         availableWeapons.Clear();
         fusionPanel.SetActive(false);

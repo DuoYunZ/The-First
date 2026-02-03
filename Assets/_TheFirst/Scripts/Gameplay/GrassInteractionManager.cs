@@ -1,47 +1,47 @@
-// GrassInteractionManager.cs (ĞŞ¸Ä°æ)
+ï»¿// GrassInteractionManager.cs (ä¿®æ”¹ç‰ˆ)
 using UnityEngine;
 using System.Collections.Generic;
 
 public class GrassInteractionManager : MonoBehaviour
 {
-    [Tooltip("½«ĞèÒªÓë²İµØ½»»¥µÄÎïÌå£¨ÀıÈçÍæ¼Ò»ú¼×£©µÄ Transform ÍÏµ½ÕâÀï")]
+    [Tooltip("å°†éœ€è¦ä¸è‰åœ°äº¤äº’çš„ç‰©ä½“ï¼ˆä¾‹å¦‚ç©å®¶æœºç”²ï¼‰çš„ Transform æ‹–åˆ°è¿™é‡Œ")]
     public List<Transform> interactors;
-    [Tooltip("½»»¥ÎïÌåÓ°Ïì²İµØµÄÄ¬ÈÏ°ë¾¶")]
+    [Tooltip("äº¤äº’ç‰©ä½“å½±å“è‰åœ°çš„é»˜è®¤åŠå¾„")]
     public float defaultInteractionRadius = 2.0f;
-    [Tooltip("½»»¥Ç¿¶È£¬Èç¹û Shader Graph ÖĞÒ²ÓÃ´ËÊôĞÔ¿ØÖÆÇ¿¶È")]
-    public float interactionStrength = 1f; // Èç¹ûÄãµÄShader GraphÒ²ÓÃÕâ¸öÊôĞÔ
+    [Tooltip("äº¤äº’å¼ºåº¦ï¼Œå¦‚æœ Shader Graph ä¸­ä¹Ÿç”¨æ­¤å±æ€§æ§åˆ¶å¼ºåº¦")]
+    public float interactionStrength = 1f; // å¦‚æœä½ çš„Shader Graphä¹Ÿç”¨è¿™ä¸ªå±æ€§
 
-    // Shader Graph ÖĞ¶¨ÒåµÄÊôĞÔµÄÒıÓÃÃû³Æ (ÓÃ×÷È«¾Ö±äÁ¿Ãû)
-    // È·±£ÕâĞ©×Ö·û´®ÓëÄãÔÚ Shader Graph Blackboard ÖĞ¶ÔÓ¦ÊôĞÔµÄ "Reference" Ãû³ÆÍêÈ«Ò»ÖÂ
+    // Shader Graph ä¸­å®šä¹‰çš„å±æ€§çš„å¼•ç”¨åç§° (ç”¨ä½œå…¨å±€å˜é‡å)
+    // ç¡®ä¿è¿™äº›å­—ç¬¦ä¸²ä¸ä½ åœ¨ Shader Graph Blackboard ä¸­å¯¹åº”å±æ€§çš„ "Reference" åç§°å®Œå…¨ä¸€è‡´
     private static readonly int InteractorCountID = Shader.PropertyToID("_GrassInteractorCount");
     private static readonly int InteractorPosRadius0ID = Shader.PropertyToID("_GrassInteractorPosRadius0");
     private static readonly int InteractorPosRadius1ID = Shader.PropertyToID("_GrassInteractorPosRadius1");
-    private static readonly int InteractionStrengthID = Shader.PropertyToID("_GrassInteractionStrength"); // Èç¹û Shader Graph ÖĞÓĞÕâ¸ö
-    // Èç¹ûÓĞ¸ü¶à½»»¥Ìå£¬¼ÌĞøÌí¼Ó ...ID
+    private static readonly int InteractionStrengthID = Shader.PropertyToID("_GrassInteractionStrength"); // å¦‚æœ Shader Graph ä¸­æœ‰è¿™ä¸ª
+    // å¦‚æœæœ‰æ›´å¤šäº¤äº’ä½“ï¼Œç»§ç»­æ·»åŠ  ...ID
     // private static readonly int InteractionStrengthID = Shader.PropertyToID("_GrassInteractionStrength");
 
 
-    // ¼ÙÉèÎÒÃÇ×î¶à´¦Àí2¸ö½»»¥Ìå£¬¶ÔÓ¦ Shader Graph ÖĞµÄ _GrassInteractorPosRadius0 ºÍ _GrassInteractorPosRadius1
+    // å‡è®¾æˆ‘ä»¬æœ€å¤šå¤„ç†2ä¸ªäº¤äº’ä½“ï¼Œå¯¹åº” Shader Graph ä¸­çš„ _GrassInteractorPosRadius0 å’Œ _GrassInteractorPosRadius1
     private const int MAX_INTERACTORS_SUPPORTED = 2;
     private Vector4[] _interactorShaderData = new Vector4[MAX_INTERACTORS_SUPPORTED];
 
-    void Awake() // Ê¹ÓÃ Awake È·±£ÔÚÈÎºÎ Start ºÍµÚÒ»Ö¡ Update Ö®Ç°Ö´ĞĞ
+    void Awake() // ä½¿ç”¨ Awake ç¡®ä¿åœ¨ä»»ä½• Start å’Œç¬¬ä¸€å¸§ Update ä¹‹å‰æ‰§è¡Œ
     {
         Debug.Log("GrassInteractionManager: Awake - Initializing global shader variables for grass interaction to safe defaults.");
-        // ÉèÖÃÒ»¸öÃ÷È·µÄ¡°ÎŞ½»»¥¡±×´Ì¬
+        // è®¾ç½®ä¸€ä¸ªæ˜ç¡®çš„â€œæ— äº¤äº’â€çŠ¶æ€
         Shader.SetGlobalFloat(InteractorCountID, 0.0f);
 
-        Vector4 inactiveInteractorData = new Vector4(0, -10000, 0, 0); // Î»ÖÃÔ¶£¬°ë¾¶Îª0
+        Vector4 inactiveInteractorData = new Vector4(0, -10000, 0, 0); // ä½ç½®è¿œï¼ŒåŠå¾„ä¸º0
         Shader.SetGlobalVector(InteractorPosRadius0ID, inactiveInteractorData);
-        if (MAX_INTERACTORS_SUPPORTED > 1) // Èç¹û Shader Graph Ö§³Ö¸ü¶à
+        if (MAX_INTERACTORS_SUPPORTED > 1) // å¦‚æœ Shader Graph æ”¯æŒæ›´å¤š
         {
             Shader.SetGlobalVector(InteractorPosRadius1ID, inactiveInteractorData);
         }
-        // ¸ù¾İĞèÒªÉèÖÃ¸ü¶à ...
+        // æ ¹æ®éœ€è¦è®¾ç½®æ›´å¤š ...
 
-        // Èç¹û½»»¥Ç¿¶ÈÒ²ÓÉÈ«¾Ö±äÁ¿¿ØÖÆ£¬Ò²ÔÚÕâÀï³õÊ¼»¯
-        // Shader.SetGlobalFloat(InteractionStrengthID, 0.0f); // ÀıÈç£¬0Ç¿¶È±íÊ¾ÎŞÓ°Ïì
-        // »òÕßÈç¹ûÄãÔÚShader GraphÖĞÖ±½ÓÊ¹ÓÃÁËÄãInspectorÉèÖÃµÄInteractionStrength£¬ÄÇ¾Í²»ĞèÒªÕâĞĞ
+        // å¦‚æœäº¤äº’å¼ºåº¦ä¹Ÿç”±å…¨å±€å˜é‡æ§åˆ¶ï¼Œä¹Ÿåœ¨è¿™é‡Œåˆå§‹åŒ–
+        // Shader.SetGlobalFloat(InteractionStrengthID, 0.0f); // ä¾‹å¦‚ï¼Œ0å¼ºåº¦è¡¨ç¤ºæ— å½±å“
+        // æˆ–è€…å¦‚æœä½ åœ¨Shader Graphä¸­ç›´æ¥ä½¿ç”¨äº†ä½ Inspectorè®¾ç½®çš„InteractionStrengthï¼Œé‚£å°±ä¸éœ€è¦è¿™è¡Œ
     }
 
     void Update()
@@ -55,8 +55,8 @@ public class GrassInteractionManager : MonoBehaviour
                 {
                     Vector3 pos = interactors[i].position;
                     float radius = defaultInteractionRadius;
-                    // --- Ìí¼ÓÈÕÖ¾ ---
-                    if (Time.frameCount % 60 == 0 && validInteractorCount == 0) // Ö»ÔÚµÚÒ»¸öÓĞĞ§½»»¥ÌåÊ±´òÓ¡Ò»´Î£¬±ÜÃâË¢ÆÁ
+                    // --- æ·»åŠ æ—¥å¿— ---
+                    if (Time.frameCount % 60 == 0 && validInteractorCount == 0) // åªåœ¨ç¬¬ä¸€ä¸ªæœ‰æ•ˆäº¤äº’ä½“æ—¶æ‰“å°ä¸€æ¬¡ï¼Œé¿å…åˆ·å±
                     {
                         //Debug.Log($"Interactor {i} Data: Pos={pos}, Radius={radius}");
                     }
@@ -84,11 +84,11 @@ public class GrassInteractionManager : MonoBehaviour
             }
             // ...
         }
-        // Èç¹û½»»¥Ç¿¶ÈÓÉ½Å±¾¿ØÖÆ²¢×÷ÎªÈ«¾Ö±äÁ¿´«µİ
+        // å¦‚æœäº¤äº’å¼ºåº¦ç”±è„šæœ¬æ§åˆ¶å¹¶ä½œä¸ºå…¨å±€å˜é‡ä¼ é€’
         // Shader.SetGlobalFloat(InteractionStrengthID, this.interactionStrength);
     }
 
-    // ÔÚ²»ĞèÒª½»»¥Ê±£¨ÀıÈçÇĞ»»³¡¾°»òÓÎÏ·½áÊø£©£¬¿ÉÄÜĞèÒªÇå³ıÕâĞ©È«¾Ö±äÁ¿
+    // åœ¨ä¸éœ€è¦äº¤äº’æ—¶ï¼ˆä¾‹å¦‚åˆ‡æ¢åœºæ™¯æˆ–æ¸¸æˆç»“æŸï¼‰ï¼Œå¯èƒ½éœ€è¦æ¸…é™¤è¿™äº›å…¨å±€å˜é‡
     void OnDisable()
     {
         Debug.Log("GrassInteractionManager: OnDisable - Resetting global shader variables for grass interaction.");

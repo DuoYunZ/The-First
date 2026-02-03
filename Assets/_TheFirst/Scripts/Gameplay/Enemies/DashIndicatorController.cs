@@ -1,54 +1,54 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using DG.Tweening;
 
 public class DashIndicatorController : MonoBehaviour
 {
-    [Header("×é¼şÒıÓÃ")]
-    [Tooltip("×÷Îª¾²Ì¬Íâ¿òµÄTransform")]
+    [Header("ç»„ä»¶å¼•ç”¨")]
+    [Tooltip("ä½œä¸ºé™æ€å¤–æ¡†çš„Transform")]
     public Transform outerFrame;
-    [Tooltip("ÓÃÓÚ²¥·ÅÌî³ä¶¯»­µÄTransform")]
+    [Tooltip("ç”¨äºæ’­æ”¾å¡«å……åŠ¨ç”»çš„Transform")]
     public Transform innerFill;
 
-    // ¡¾ĞÂÔö¡¿»ñÈ¡ SpriteRenderer µÄÒıÓÃ
+    // ã€æ–°å¢ã€‘è·å– SpriteRenderer çš„å¼•ç”¨
     private SpriteRenderer outerFrameRenderer;
     private SpriteRenderer innerFillRenderer;
 
     void Awake()
     {
-        // ÔÚ Awake ÖĞ»ñÈ¡ÒıÓÃ
+        // åœ¨ Awake ä¸­è·å–å¼•ç”¨
         if (outerFrame != null) outerFrameRenderer = outerFrame.GetComponent<SpriteRenderer>();
         if (innerFill != null) innerFillRenderer = innerFill.GetComponent<SpriteRenderer>();
     }
     /// <summary>
-    /// Æô¶¯Ìî³ä¶¯»­
+    /// å¯åŠ¨å¡«å……åŠ¨ç”»
     /// </summary>
-    /// <param name="duration">Ìî³ä¶¯»­µÄ³ÖĞøÊ±¼ä</param>
-    /// <param name="width">Ô¤¾¯¿òµÄ¿í¶È</param>
-    /// <param name="length">Ô¤¾¯¿òµÄ³¤¶È/³å´Ì¾àÀë</param>
+    /// <param name="duration">å¡«å……åŠ¨ç”»çš„æŒç»­æ—¶é—´</param>
+    /// <param name="width">é¢„è­¦æ¡†çš„å®½åº¦</param>
+    /// <param name="length">é¢„è­¦æ¡†çš„é•¿åº¦/å†²åˆºè·ç¦»</param>
     public void Animate(float duration, float width, float length)
     {
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿ÎÒÃÇÏÖÔÚ¿ØÖÆ Size ÊôĞÔ£¬¶ø²»ÊÇ transform.localScale
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æˆ‘ä»¬ç°åœ¨æ§åˆ¶ Size å±æ€§ï¼Œè€Œä¸æ˜¯ transform.localScale
         if (outerFrameRenderer != null)
         {
-            // 1. Á¢¼´ÉèÖÃÍâ¿òµÄ×îÖÕ³ß´ç
+            // 1. ç«‹å³è®¾ç½®å¤–æ¡†çš„æœ€ç»ˆå°ºå¯¸
             outerFrameRenderer.size = new Vector2(width, length);
         }
 
         if (innerFillRenderer != null)
         {
-            // 2. ½«Ìî³äÎïµÄ³õÊ¼¿í¶ÈÉèÎª0£¬³¤¶ÈÉèÎª×îÖÕ³¤¶È
+            // 2. å°†å¡«å……ç‰©çš„åˆå§‹å®½åº¦è®¾ä¸º0ï¼Œé•¿åº¦è®¾ä¸ºæœ€ç»ˆé•¿åº¦
             innerFillRenderer.size = new Vector2(0, length);
 
-            // 3. Ê¹ÓÃ DOTween µÄÍ¨ÓÃ .To() ·½·¨À´ÖÆ×÷Ìî³ä¶¯»­
-            DOTween.To(() => innerFillRenderer.size, // ÎÒÃÇÒª¸Ä±äµÄÖµ
-                       x => innerFillRenderer.size = x,   // ÈçºÎÉèÖÃÕâ¸öÖµ
-                       new Vector2(width, length),        // ×îÖÕµÄÄ¿±êÖµ
-                       duration)                          // ¶¯»­Ê±³¤
+            // 3. ä½¿ç”¨ DOTween çš„é€šç”¨ .To() æ–¹æ³•æ¥åˆ¶ä½œå¡«å……åŠ¨ç”»
+            DOTween.To(() => innerFillRenderer.size, // æˆ‘ä»¬è¦æ”¹å˜çš„å€¼
+                       x => innerFillRenderer.size = x,   // å¦‚ä½•è®¾ç½®è¿™ä¸ªå€¼
+                       new Vector2(width, length),        // æœ€ç»ˆçš„ç›®æ ‡å€¼
+                       duration)                          // åŠ¨ç”»æ—¶é•¿
                 .SetEase(Ease.Linear)
                 .SetUpdate(true);
         }
 
-        // 4. ¶¯»­½áÊøºóÏú»Ù¶ÔÏó
+        // 4. åŠ¨ç”»ç»“æŸåé”€æ¯å¯¹è±¡
         Destroy(gameObject, duration + 0.1f);
     }
 }

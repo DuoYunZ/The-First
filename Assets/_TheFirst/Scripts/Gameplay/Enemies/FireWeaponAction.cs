@@ -1,24 +1,24 @@
-// --- FireWeaponAction.cs (×îÖÕÕıÈ·°æ) ---
+ï»¿// --- FireWeaponAction.cs (æœ€ç»ˆæ­£ç¡®ç‰ˆ) ---
 using UnityEngine;
 using System.Collections;
 
 public class FireWeaponAction : Node
 {
-    [Header("ÎäÆ÷ÉèÖÃ")]
-    [Tooltip("ÍÏÈëÒ»¸öWeaponStatBlockÊı¾İ×Ê²ú£¬¶¨Òå±¾´Î¹¥»÷µÄÀàĞÍ")]
+    [Header("æ­¦å™¨è®¾ç½®")]
+    [Tooltip("æ‹–å…¥ä¸€ä¸ªWeaponStatBlockæ•°æ®èµ„äº§ï¼Œå®šä¹‰æœ¬æ¬¡æ”»å‡»çš„ç±»å‹")]
     public WeaponStatBlock weaponToFire;
 
-    [Header("¹¥»÷²ÎÊı")]
-    [Tooltip("ÔÚÒ»´ÎĞĞ¶¯ÖĞ£¬Á¬ĞøÉä»÷µÄ´ÎÊı")]
+    [Header("æ”»å‡»å‚æ•°")]
+    [Tooltip("åœ¨ä¸€æ¬¡è¡ŒåŠ¨ä¸­ï¼Œè¿ç»­å°„å‡»çš„æ¬¡æ•°")]
     public int burstCount = 1;
-    [Tooltip("Ã¿´ÎÁ¬ĞøÉä»÷Ö®¼äµÄ¼ä¸ôÊ±¼ä")]
+    [Tooltip("æ¯æ¬¡è¿ç»­å°„å‡»ä¹‹é—´çš„é—´éš”æ—¶é—´")]
     public float timeBetweenBursts = 0.2f;
 
-    [Header("·¢Éäµã")]
-    [Tooltip("£¨¿ÉÑ¡£©Ö¸¶¨Ò»¸ö·¢Éäµã£¬Èç¹û²»Ö¸¶¨£¬ÔòÊ¹ÓÃBoss×ÔÉíÎ»ÖÃ")]
+    [Header("å‘å°„ç‚¹")]
+    [Tooltip("ï¼ˆå¯é€‰ï¼‰æŒ‡å®šä¸€ä¸ªå‘å°„ç‚¹ï¼Œå¦‚æœä¸æŒ‡å®šï¼Œåˆ™ä½¿ç”¨Bossè‡ªèº«ä½ç½®")]
     public Transform firePoint;
 
-    // ÄÚ²¿×´Ì¬
+    // å†…éƒ¨çŠ¶æ€
     private int burstsFired = 0;
     private float timer;
     private bool isFiring = false;
@@ -80,34 +80,34 @@ public class FireWeaponAction : Node
         Projectile projectileScript = projectileGO.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            // ¡¾ºËĞÄĞŞÕı¡¿¸ù¾İÄãÌá¹©µÄ WeaponStatBlock.cs ºÍ Projectile.cs µÄÈ·ÇĞ±äÁ¿ÃûºÍ·½·¨½øĞĞµ÷ÓÃ
+            // ã€æ ¸å¿ƒä¿®æ­£ã€‘æ ¹æ®ä½ æä¾›çš„ WeaponStatBlock.cs å’Œ Projectile.cs çš„ç¡®åˆ‡å˜é‡åå’Œæ–¹æ³•è¿›è¡Œè°ƒç”¨
 
-            // ¼ì²éÎäÆ÷ĞĞÎªÀàĞÍ£¬ÎÒÃÇÏÈÖ»´¦Àí×î»ù´¡µÄÖ±Ïßµ¯(Standard/Pierce)
+            // æ£€æŸ¥æ­¦å™¨è¡Œä¸ºç±»å‹ï¼Œæˆ‘ä»¬å…ˆåªå¤„ç†æœ€åŸºç¡€çš„ç›´çº¿å¼¹(Standard/Pierce)
             if (weaponToFire.behavior == WeaponBehaviorType.Standard || weaponToFire.behavior == WeaponBehaviorType.Pierce)
             {
                 projectileScript.InitializeAsStraight(
-                    spawnPoint.forward,                         // dir: ·¢Éä·½Ïò
-                    weaponToFire.baseLaunchForce,               // spd: Ê¹ÓÃ baseLaunchForce ×÷ÎªËÙ¶È
-                    weaponToFire.baseDirectDamage,              // directDmg: Ê¹ÓÃ baseDirectDamage
+                    spawnPoint.forward,                         // dir: å‘å°„æ–¹å‘
+                    weaponToFire.baseLaunchForce,               // spd: ä½¿ç”¨ baseLaunchForce ä½œä¸ºé€Ÿåº¦
+                    weaponToFire.baseDirectDamage,              // directDmg: ä½¿ç”¨ baseDirectDamage
                     true,                                       // isEnemyBullet: true
-                    weaponToFire.basePierceCount,               // pierce: Ê¹ÓÃ basePierceCount
-                    weaponToFire.baseProjectileLifetime,        // life: Ê¹ÓÃ baseProjectileLifetime
-                    weaponToFire.shieldImpactEffectPrefab,      // shieldVfx: Ê¹ÓÃ shieldImpactEffectPrefab
-                    weaponToFire.defaultImpactEffectPrefab,     // defaultVfx: Ê¹ÓÃ defaultImpactEffectPrefab
-                    weaponToFire.baseDotDamage,                 // dotDmg: Ê¹ÓÃ baseDotDamage
-                    weaponToFire.baseDotDuration,               // dotDur: Ê¹ÓÃ baseDotDuration
-                    weaponToFire.dotTickInterval,               // dotTick: Ê¹ÓÃ dotTickInterval
-                    weaponToFire.baseSlowPercentage,            // slowPct: Ê¹ÓÃ baseSlowPercentage
-                    weaponToFire.baseSlowDuration,              // slowDur: Ê¹ÓÃ baseSlowDuration
-                    AttackType.Standard                         // type: ÔİÊ±Ê¹ÓÃÄ¬ÈÏµÄ±ê×¼¹¥»÷ÀàĞÍ
+                    weaponToFire.basePierceCount,               // pierce: ä½¿ç”¨ basePierceCount
+                    weaponToFire.baseProjectileLifetime,        // life: ä½¿ç”¨ baseProjectileLifetime
+                    weaponToFire.shieldImpactEffectPrefab,      // shieldVfx: ä½¿ç”¨ shieldImpactEffectPrefab
+                    weaponToFire.defaultImpactEffectPrefab,     // defaultVfx: ä½¿ç”¨ defaultImpactEffectPrefab
+                    weaponToFire.baseDotDamage,                 // dotDmg: ä½¿ç”¨ baseDotDamage
+                    weaponToFire.baseDotDuration,               // dotDur: ä½¿ç”¨ baseDotDuration
+                    weaponToFire.dotTickInterval,               // dotTick: ä½¿ç”¨ dotTickInterval
+                    weaponToFire.baseSlowPercentage,            // slowPct: ä½¿ç”¨ baseSlowPercentage
+                    weaponToFire.baseSlowDuration,              // slowDur: ä½¿ç”¨ baseSlowDuration
+                    AttackType.Standard                         // type: æš‚æ—¶ä½¿ç”¨é»˜è®¤çš„æ ‡å‡†æ”»å‡»ç±»å‹
                 );
             }
-            // ºóĞø¿ÉÒÔÔÚÕâÀïÌí¼Ó¶ÔÆäËûĞĞÎªÀàĞÍ (ÈçÅ×ÎïÏß¡¢×·×Ùµ¯µÈ) µÄÖ§³Ö
+            // åç»­å¯ä»¥åœ¨è¿™é‡Œæ·»åŠ å¯¹å…¶ä»–è¡Œä¸ºç±»å‹ (å¦‚æŠ›ç‰©çº¿ã€è¿½è¸ªå¼¹ç­‰) çš„æ”¯æŒ
             // else if (weaponToFire.behavior == WeaponBehaviorType.ParabolicAOE) { ... }
         }
         else
         {
-            Debug.LogWarning("FireWeaponAction: ÊµÀı»¯µÄ×Óµ¯ÉÏÃ»ÓĞÕÒµ½Projectile½Å±¾£¡", projectileGO);
+            Debug.LogWarning("FireWeaponAction: å®ä¾‹åŒ–çš„å­å¼¹ä¸Šæ²¡æœ‰æ‰¾åˆ°Projectileè„šæœ¬ï¼", projectileGO);
         }
     }
 }

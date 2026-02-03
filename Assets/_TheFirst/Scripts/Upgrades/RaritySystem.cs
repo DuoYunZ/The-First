@@ -1,49 +1,49 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-// ÕâÊÇÒ»¸ö¾²Ì¬Àà£¬²»ĞèÒª¹ÒÔØµ½ÈÎºÎÓÎÏ·¶ÔÏóÉÏ
+// è¿™æ˜¯ä¸€ä¸ªé™æ€ç±»ï¼Œä¸éœ€è¦æŒ‚è½½åˆ°ä»»ä½•æ¸¸æˆå¯¹è±¡ä¸Š
 public static class RaritySystem
 {
-    // ¶¨Òå²»Í¬Æ·ÖÊµÄ»ù´¡È¨ÖØ£¨¸ÅÂÊ£©¡£Äú¿ÉÒÔ¸ù¾İÓÎÏ·Æ½ºâĞÔËæÊ±µ÷ÕûÕâĞ©ÊıÖµ¡£
+    // å®šä¹‰ä¸åŒå“è´¨çš„åŸºç¡€æƒé‡ï¼ˆæ¦‚ç‡ï¼‰ã€‚æ‚¨å¯ä»¥æ ¹æ®æ¸¸æˆå¹³è¡¡æ€§éšæ—¶è°ƒæ•´è¿™äº›æ•°å€¼ã€‚
     private static readonly Dictionary<Rarity, float> baseWeights = new Dictionary<Rarity, float>
     {
-        { Rarity.Common,   70f }, // °×É«
-        { Rarity.Uncommon, 20f }, // À¶É«
-        { Rarity.Rare,     8f  }, // ×ÏÉ«
-        { Rarity.Epic,     2f  }  // ³ÈÉ«
+        { Rarity.Common,   70f }, // ç™½è‰²
+        { Rarity.Uncommon, 20f }, // è“è‰²
+        { Rarity.Rare,     8f  }, // ç´«è‰²
+        { Rarity.Epic,     2f  }  // æ©™è‰²
     };
 
     /// <summary>
-    /// ¸ù¾İÒ»¸ö¡°Éı¼¶Ñ¡Ïî¡±ÁĞ±íºÍÍæ¼ÒµÄĞÒÔËÖµ£¬°´Æ·ÖÊ¸ÅÂÊËæ»ú³éÈ¡Ò»¸öÑ¡Ïî¡£
+    /// æ ¹æ®ä¸€ä¸ªâ€œå‡çº§é€‰é¡¹â€åˆ—è¡¨å’Œç©å®¶çš„å¹¸è¿å€¼ï¼ŒæŒ‰å“è´¨æ¦‚ç‡éšæœºæŠ½å–ä¸€ä¸ªé€‰é¡¹ã€‚
     /// </summary>
-    /// <param name="options">¿É¹©Ñ¡ÔñµÄÉı¼¶Ñ¡ÏîÁĞ±í</param>
-    /// <param name="luck">Íæ¼ÒµÄĞÒÔËÖµ (ÀıÈç, 1.1 ´ú±í 10% µÄĞÒÔË¼Ó³É)</param>
-    /// <returns>Ëæ»ú³éÈ¡³öµÄÒ»¸öÉı¼¶Ñ¡Ïî</returns>
+    /// <param name="options">å¯ä¾›é€‰æ‹©çš„å‡çº§é€‰é¡¹åˆ—è¡¨</param>
+    /// <param name="luck">ç©å®¶çš„å¹¸è¿å€¼ (ä¾‹å¦‚, 1.1 ä»£è¡¨ 10% çš„å¹¸è¿åŠ æˆ)</param>
+    /// <returns>éšæœºæŠ½å–å‡ºçš„ä¸€ä¸ªå‡çº§é€‰é¡¹</returns>
     public static UpgradeOption GetRandomOptionByRarity(List<UpgradeOption> options, float luck = 1.0f)
     {
         if (options == null || options.Count == 0) return null;
 
-        // 1. ¸ù¾İĞÒÔËÖµµ÷ÕûÈ¨ÖØ
+        // 1. æ ¹æ®å¹¸è¿å€¼è°ƒæ•´æƒé‡
         Dictionary<Rarity, float> adjustedWeights = new Dictionary<Rarity, float>();
         float totalWeight = 0;
 
-        // ĞÒÔËÖµ»á½µµÍ°×É«Æ·ÖÊµÄÈ¨ÖØ£¬²¢ÌáÉıÆäËû¸ßÆ·ÖÊµÄÈ¨ÖØ
-        // Äú¿ÉÒÔ×Ô¶¨Òå¸ü¸´ÔÓµÄĞÒÔËÖµÓ°Ïì¹«Ê½
+        // å¹¸è¿å€¼ä¼šé™ä½ç™½è‰²å“è´¨çš„æƒé‡ï¼Œå¹¶æå‡å…¶ä»–é«˜å“è´¨çš„æƒé‡
+        // æ‚¨å¯ä»¥è‡ªå®šä¹‰æ›´å¤æ‚çš„å¹¸è¿å€¼å½±å“å…¬å¼
         adjustedWeights[Rarity.Common] = baseWeights[Rarity.Common] / luck;
         adjustedWeights[Rarity.Uncommon] = baseWeights[Rarity.Uncommon] * luck;
         adjustedWeights[Rarity.Rare] = baseWeights[Rarity.Rare] * luck * 1.1f;
         adjustedWeights[Rarity.Epic] = baseWeights[Rarity.Epic] * luck * 1.2f;
 
-        // 2. Ëæ»úÑ¡ÔñÒ»¸ö¡°Æ·ÖÊ¡±
+        // 2. éšæœºé€‰æ‹©ä¸€ä¸ªâ€œå“è´¨â€
         foreach (var weight in adjustedWeights.Values)
         {
             totalWeight += weight;
         }
         float randomPoint = Random.value * totalWeight;
-        Rarity chosenRarity = Rarity.Common; // Ä¬ÈÏÎª°×É«
+        Rarity chosenRarity = Rarity.Common; // é»˜è®¤ä¸ºç™½è‰²
 
-        // ´Ó×î¸ßÆ·ÖÊ¿ªÊ¼ÏòÏÂ¼ì²é£¬¿´Ëæ»úµãÂäÔÚÄÄ¸öÇø¼ä
+        // ä»æœ€é«˜å“è´¨å¼€å§‹å‘ä¸‹æ£€æŸ¥ï¼Œçœ‹éšæœºç‚¹è½åœ¨å“ªä¸ªåŒºé—´
         foreach (var rarity in adjustedWeights.Keys.OrderByDescending(k => k))
         {
             if (randomPoint < adjustedWeights[rarity])
@@ -54,25 +54,25 @@ public static class RaritySystem
             randomPoint -= adjustedWeights[rarity];
         }
 
-        // 3. ´Ó´«ÈëµÄÑ¡ÏîÁĞ±íÖĞ£¬É¸Ñ¡³öËùÓĞ·ûºÏÑ¡ÖĞÆ·ÖÊµÄÑ¡Ïî
+        // 3. ä»ä¼ å…¥çš„é€‰é¡¹åˆ—è¡¨ä¸­ï¼Œç­›é€‰å‡ºæ‰€æœ‰ç¬¦åˆé€‰ä¸­å“è´¨çš„é€‰é¡¹
         var availableOptionsOfRarity = options.Where(opt => opt.rarity == chosenRarity).ToList();
 
-        // 4. Èç¹û¸ÃÆ·ÖÊÓĞ¿ÉÑ¡µÄÉı¼¶Ïî£¬ÔòËæ»ú·µ»ØÒ»¸ö
+        // 4. å¦‚æœè¯¥å“è´¨æœ‰å¯é€‰çš„å‡çº§é¡¹ï¼Œåˆ™éšæœºè¿”å›ä¸€ä¸ª
         if (availableOptionsOfRarity.Count > 0)
         {
             return availableOptionsOfRarity[Random.Range(0, availableOptionsOfRarity.Count)];
         }
         else
         {
-            // ºó±¸·½°¸£ºÈç¹û³éÖĞµÄÆ·ÖÊÃ»ÓĞÈÎºÎ¿ÉÓÃÑ¡Ïî£¨ÀıÈç£¬ÄúÃ»ÓĞÅäÖÃ³ÈÉ«Æ·ÖÊµÄ»ğÅÚÉı¼¶£©
-            // Ôò´ÓËùÓĞµÍÓÚ¸ÃÆ·ÖÊµÄÑ¡ÏîÖĞËæ»úÌôÑ¡Ò»¸ö£¬È·±£Íæ¼Ò×ÜÄÜ»ñµÃÉı¼¶
+            // åå¤‡æ–¹æ¡ˆï¼šå¦‚æœæŠ½ä¸­çš„å“è´¨æ²¡æœ‰ä»»ä½•å¯ç”¨é€‰é¡¹ï¼ˆä¾‹å¦‚ï¼Œæ‚¨æ²¡æœ‰é…ç½®æ©™è‰²å“è´¨çš„ç«ç‚®å‡çº§ï¼‰
+            // åˆ™ä»æ‰€æœ‰ä½äºè¯¥å“è´¨çš„é€‰é¡¹ä¸­éšæœºæŒ‘é€‰ä¸€ä¸ªï¼Œç¡®ä¿ç©å®¶æ€»èƒ½è·å¾—å‡çº§
             var fallbackOptions = options.Where(opt => opt.rarity < chosenRarity).ToList();
             if (fallbackOptions.Count > 0)
             {
                 return fallbackOptions[Random.Range(0, fallbackOptions.Count)];
             }
 
-            // ×îÖÕºó±¸£ºÈç¹ûÃ»ÓĞÈÎºÎ¸üµÍÆ·ÖÊµÄ£¬¾Í´ÓËùÓĞÑ¡ÏîÀïËæ±ãÑ¡Ò»¸ö
+            // æœ€ç»ˆåå¤‡ï¼šå¦‚æœæ²¡æœ‰ä»»ä½•æ›´ä½å“è´¨çš„ï¼Œå°±ä»æ‰€æœ‰é€‰é¡¹é‡Œéšä¾¿é€‰ä¸€ä¸ª
             return options[Random.Range(0, options.Count)];
         }
     }

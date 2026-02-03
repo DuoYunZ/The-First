@@ -1,30 +1,30 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 [RequireComponent(typeof(Rigidbody))]
 public class EnergyStonePickup : MonoBehaviour
 {
-    [Header("ÄÜÁ¿Ê¯Êı¾İ")]
-    [Tooltip("´ËÊ°È¡Îï´ú±íµÄÄÜÁ¿Ê¯ (±ØĞëÔÚÉú³ÉÊ±Ö¸¶¨)")]
+    [Header("èƒ½é‡çŸ³æ•°æ®")]
+    [Tooltip("æ­¤æ‹¾å–ç‰©ä»£è¡¨çš„èƒ½é‡çŸ³ (å¿…é¡»åœ¨ç”Ÿæˆæ—¶æŒ‡å®š)")]
     public EnergyStoneSO stoneData;
 
-    [Header("Ê°È¡ÉèÖÃ")]
+    [Header("æ‹¾å–è®¾ç½®")]
     public float rotationSpeed = 90f;
     public float popDuration = 0.3f;
     public float popHeight = 1f;
 
-    // (Äã¿ÉÒÔÏñ GoldPickup ºÍ ExperienceGem Ò»ÑùÌí¼Ó´ÅÌú/ÎüÊÕÂß¼­)
+    // (ä½ å¯ä»¥åƒ GoldPickup å’Œ ExperienceGem ä¸€æ ·æ·»åŠ ç£é“/å¸æ”¶é€»è¾‘)
 
     void Start()
     {
-        // (¿ÉÑ¡£ºÌí¼ÓÒ»¸öÏñ½ğ±Ò/¾­ÑéÒ»ÑùµÄ³öÉú¶¯»­)
+        // (å¯é€‰ï¼šæ·»åŠ ä¸€ä¸ªåƒé‡‘å¸/ç»éªŒä¸€æ ·çš„å‡ºç”ŸåŠ¨ç”»)
         // StartCoroutine(SpawnRoutine(popHeight, popDuration));
     }
 
 
     void Update()
     {
-        // ¼òµ¥µÄ´ı»úĞı×ª
+        // ç®€å•çš„å¾…æœºæ—‹è½¬
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
     }
 
@@ -32,19 +32,19 @@ public class EnergyStonePickup : MonoBehaviour
     {
         if (stoneData == null)
         {
-            Debug.LogError("ÄÜÁ¿Ê¯Ê°È¡ÎïÃ»ÓĞ·ÖÅä stoneData!", this);
+            Debug.LogError("èƒ½é‡çŸ³æ‹¾å–ç‰©æ²¡æœ‰åˆ†é… stoneData!", this);
             return;
         }
 
         if (other.CompareTag("Player"))
         {
-            // ¹Ø¼ü£ºÍ¨Öª FusionUIManager ¿ªÊ¼ÈÚºÏÁ÷³Ì
-            // ÎÒÃÇ¼ÙÉè FusionUIManager ÊÇÒ»¸öµ¥Àı
+            // å…³é”®ï¼šé€šçŸ¥ FusionUIManager å¼€å§‹èåˆæµç¨‹
+            // æˆ‘ä»¬å‡è®¾ FusionUIManager æ˜¯ä¸€ä¸ªå•ä¾‹
             FusionUIManager.Instance.StartFusion(stoneData);
 
-            // (²¥·ÅÊ°È¡ÒôĞ§/ÌØĞ§)
+            // (æ’­æ”¾æ‹¾å–éŸ³æ•ˆ/ç‰¹æ•ˆ)
 
-            // Ïú»ÙÊ°È¡Îï
+            // é”€æ¯æ‹¾å–ç‰©
             Destroy(gameObject);
         }
     }

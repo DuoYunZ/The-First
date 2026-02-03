@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class WanderingAOE : MonoBehaviour
 {
-    [Header("ºËĞÄÉèÖÃ")]
-    public Transform target; // ×·×ÙÄ¿±ê
-    public float wanderRadius = 7f; // ÓÎµ´°ë¾¶
-    public float moveSpeed = 6f; // ÒÆ¶¯ËÙ¶È
-    public float turnSpeed = 5f; // ×ªÏòÆ½»¬¶È
+    [Header("æ ¸å¿ƒè®¾ç½®")]
+    public Transform target; // è¿½è¸ªç›®æ ‡
+    public float wanderRadius = 7f; // æ¸¸è¡åŠå¾„
+    public float moveSpeed = 6f; // ç§»åŠ¨é€Ÿåº¦
+    public float turnSpeed = 5f; // è½¬å‘å¹³æ»‘åº¦
 
-    [Header("·À¿¨ËÀÉèÖÃ")]
-    public float reachThreshold = 0.5f; // µ½´ïÅĞ¶¨¾àÀë
-    public float changeDestInterval = 3.0f; // Ç¿ÖÆ»»µã¼ä¸ô
+    [Header("é˜²å¡æ­»è®¾ç½®")]
+    public float reachThreshold = 0.5f; // åˆ°è¾¾åˆ¤å®šè·ç¦»
+    public float changeDestInterval = 3.0f; // å¼ºåˆ¶æ¢ç‚¹é—´éš”
 
     private Vector3 currentDestination;
     private float changeTimer;
@@ -21,7 +21,7 @@ public class WanderingAOE : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();        
 
-        // 2. Ëø¶¨Ä¿±ê (ÓÅÏÈÕÒ WeaponController£¬ËüÊÇÍæ¼Ò¸ùÎïÌå)
+        // 2. é”å®šç›®æ ‡ (ä¼˜å…ˆæ‰¾ WeaponControllerï¼Œå®ƒæ˜¯ç©å®¶æ ¹ç‰©ä½“)
         if (target == null)
         {
             if (WeaponController.Instance != null)
@@ -29,7 +29,7 @@ public class WanderingAOE : MonoBehaviour
             else if (GameManager.Instance != null)
                 target = GameManager.Instance.playerTransform;
             else
-                target = transform; // ±£µ×
+                target = transform; // ä¿åº•
         }
 
         PickNewDestination();
@@ -39,32 +39,32 @@ public class WanderingAOE : MonoBehaviour
     {
         if (target == null) return;
 
-        // --- Âß¼­ÅĞ¶¨ ---
+        // --- é€»è¾‘åˆ¤å®š ---
         float distToPlayer = Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z), new Vector3(target.position.x, 0, target.position.z));
         float distToDest = Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z), new Vector3(currentDestination.x, 0, currentDestination.z));
 
-        // 1. ±ß½ç¼ì²é£º·É³öÈ¥ÁËÂğ£¿
+        // 1. è¾¹ç•Œæ£€æŸ¥ï¼šé£å‡ºå»äº†å—ï¼Ÿ
         if (distToPlayer > wanderRadius)
         {
             isReturning = true;
-            currentDestination = target.position; // Ç¿ÖÆÉèÎª»ØÔ²ĞÄ
+            currentDestination = target.position; // å¼ºåˆ¶è®¾ä¸ºå›åœ†å¿ƒ
         }
 
-        // 2. ×´Ì¬ÇĞ»»
+        // 2. çŠ¶æ€åˆ‡æ¢
         if (isReturning)
         {
-            // ·µº½Ä£Ê½£º±ØĞë»Øµ½ÀëÔ²ĞÄºÜ½üµÄµØ·½ (°ë¾¶µÄ 20%) ²Å»á½â³ı£¬·ÀÖ¹ÔÚ±ß½ç·´¸´ºáÌø
+            // è¿”èˆªæ¨¡å¼ï¼šå¿…é¡»å›åˆ°ç¦»åœ†å¿ƒå¾ˆè¿‘çš„åœ°æ–¹ (åŠå¾„çš„ 20%) æ‰ä¼šè§£é™¤ï¼Œé˜²æ­¢åœ¨è¾¹ç•Œåå¤æ¨ªè·³
             if (distToPlayer < wanderRadius * 0.2f)
             {
                 isReturning = false;
                 PickNewDestination();
             }
-            // ·ñÔò±£³Ö·µº½×´Ì¬£¬¼ÌĞø·ÉÏò currentDestination (Íæ¼ÒÎ»ÖÃ)
+            // å¦åˆ™ä¿æŒè¿”èˆªçŠ¶æ€ï¼Œç»§ç»­é£å‘ currentDestination (ç©å®¶ä½ç½®)
             currentDestination = target.position;
         }
         else
         {
-            // ÓÎµ´Ä£Ê½£ºµ½ÁËÄ¿µÄµØ£¬»òÕßÊ±¼äµ½ÁË£¬¾Í»»µã
+            // æ¸¸è¡æ¨¡å¼ï¼šåˆ°äº†ç›®çš„åœ°ï¼Œæˆ–è€…æ—¶é—´åˆ°äº†ï¼Œå°±æ¢ç‚¹
             changeTimer -= Time.fixedDeltaTime;
             if (distToDest < reachThreshold || changeTimer <= 0)
             {
@@ -72,13 +72,13 @@ public class WanderingAOE : MonoBehaviour
             }
         }
 
-        // --- ÒÆ¶¯Ö´ĞĞ ---
+        // --- ç§»åŠ¨æ‰§è¡Œ ---
         MoveKinematic();
     }
 
     void PickNewDestination()
     {
-        // Ëæ»úÈ¡µã
+        // éšæœºå–ç‚¹
         Vector2 randomPoint = Random.insideUnitCircle * wanderRadius;
         currentDestination = target.position + new Vector3(randomPoint.x, 0, randomPoint.y);
         changeTimer = changeDestInterval;
@@ -86,19 +86,19 @@ public class WanderingAOE : MonoBehaviour
 
     void MoveKinematic()
     {
-        // ¼ÆËã·½Ïò (ºöÂÔ¸ß¶È²î)
+        // è®¡ç®—æ–¹å‘ (å¿½ç•¥é«˜åº¦å·®)
         Vector3 dir = (currentDestination - transform.position);
         dir.y = 0;
 
         if (dir.sqrMagnitude > 0.001f)
         {
-            // 1. Æ½»¬×ªÏò
+            // 1. å¹³æ»‘è½¬å‘
             Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.fixedDeltaTime);
         }
 
-        // 2. Ç¿ÖÆÎ»ÒÆ (²»Ê¹ÓÃÁ¦£¬Ö±½ÓĞŞ¸ÄÎ»ÖÃ£¬×îÎÈ)
-        // Ê¼ÖÕ³¯Ïò×Ô¼ºÇ°·½ÒÆ¶¯
+        // 2. å¼ºåˆ¶ä½ç§» (ä¸ä½¿ç”¨åŠ›ï¼Œç›´æ¥ä¿®æ”¹ä½ç½®ï¼Œæœ€ç¨³)
+        // å§‹ç»ˆæœå‘è‡ªå·±å‰æ–¹ç§»åŠ¨
         Vector3 moveStep = transform.forward * moveSpeed * Time.fixedDeltaTime;
 
         if (rb != null)

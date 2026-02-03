@@ -1,9 +1,9 @@
-// --- StartCooldownAction.cs ---
+ï»¿// --- StartCooldownAction.cs ---
 using UnityEngine;
 
 public class StartCooldownAction : Node
 {
-    [Header("ÀäÈ´´¥·¢Æ÷")]
+    [Header("å†·å´è§¦å‘å™¨")]
     public string attackName;
     public float cooldownDuration;
 
@@ -14,7 +14,7 @@ public class StartCooldownAction : Node
         {
             behaviorTree.StartCooldown(attackName, cooldownDuration);
         }
-        // Õâ¸ö¶¯×÷ÊÇË²Ê±Íê³ÉµÄ
+        // è¿™ä¸ªåŠ¨ä½œæ˜¯ç¬æ—¶å®Œæˆçš„
         return NodeState.SUCCESS;
     }
 }

@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
@@ -8,29 +8,29 @@ public class UpgradeManager : MonoBehaviour
 {
     public static UpgradeManager Instance { get; private set; }
 
-    [Header("UIÒıÓÃ")]
+    [Header("UIå¼•ç”¨")]
     public GameObject upgradePanel;
     public Transform cardContainer;
 
-    [Header("¿¨Æ¬Ô¤ÖÆ¼ş¿â (°´Æ·ÖÊ)")]
+    [Header("å¡ç‰‡é¢„åˆ¶ä»¶åº“ (æŒ‰å“è´¨)")]
     public GameObject commonCardPrefab;
     public GameObject uncommonCardPrefab;
     public GameObject rareCardPrefab;
     public GameObject epicCardPrefab;
     public GameObject unlockCardPrefab;
 
-    [Header("Éı¼¶Êı¾İ¿â")]
+    [Header("å‡çº§æ•°æ®åº“")]
     public UpgradeDatabase upgradeDatabase;
 
-    [Header("¶¯»­ÉèÖÃ")] // ¡¾ĞÂÔö¡¿
-    [Tooltip("Ã¿ÕÅ¿¨Æ¬³öÏÖµÄ¼ä¸ôÊ±¼ä£¨Ãë£©")]
-    public float delayBetweenCards = 0.2f; // ¡¾ĞÂÔö¡¿
-    // ¼ÇÂ¼Íæ¼ÒÒÑÓµÓĞµÄ¼¼ÄÜ½Úµã¼°Æäµ±Ç°µÈ¼¶
+    [Header("åŠ¨ç”»è®¾ç½®")] // ã€æ–°å¢ã€‘
+    [Tooltip("æ¯å¼ å¡ç‰‡å‡ºç°çš„é—´éš”æ—¶é—´ï¼ˆç§’ï¼‰")]
+    public float delayBetweenCards = 0.2f; // ã€æ–°å¢ã€‘
+    // è®°å½•ç©å®¶å·²æ‹¥æœ‰çš„æŠ€èƒ½èŠ‚ç‚¹åŠå…¶å½“å‰ç­‰çº§
     private Dictionary<SkillTreeNodeData, int> ownedUpgrades = new Dictionary<SkillTreeNodeData, int>();
 
-    // ÓÃÓÚ´æ´¢±¾´ÎÎªÍæ¼ÒÌá¹©µÄÈı¸ö¡°Éı¼¶»ú»á¡±
+    // ç”¨äºå­˜å‚¨æœ¬æ¬¡ä¸ºç©å®¶æä¾›çš„ä¸‰ä¸ªâ€œå‡çº§æœºä¼šâ€
     private List<SkillTreeNodeData> offeredUpgrades = new List<SkillTreeNodeData>();
-    private List<UpgradeCardUI> activeCardUIs = new List<UpgradeCardUI>(); // ¡¾ĞÂÔö¡¿ÓÃÓÚ´æ´¢µ±Ç°¿¨Æ¬ÊµÀı
+    private List<UpgradeCardUI> activeCardUIs = new List<UpgradeCardUI>(); // ã€æ–°å¢ã€‘ç”¨äºå­˜å‚¨å½“å‰å¡ç‰‡å®ä¾‹
 
     void Awake()
     {
@@ -60,8 +60,8 @@ public class UpgradeManager : MonoBehaviour
         Time.timeScale = 0f;
         offeredUpgrades.Clear();
 
-        // 1. ÓÅÏÈ¼ì²éÈÚºÏ (±¦ÏäÂß¼­Í¨³£²»ÔÚÕâÀï£¬Éı¼¶½çÃæÍ¨³£²»Ö±½Ó¸ø³¬Îä£¬³ı·ÇÄãµÄÉè¼ÆÔÊĞí)
-        // (±£³ÖÄãÔ­ÓĞµÄÂß¼­£¬Èç¹ûÕâÊÇÄãÏë±£ÁôµÄ¡°Éı¼¶Ö±½ÓËÍ³¬Îä¡±»úÖÆ)
+        // 1. ä¼˜å…ˆæ£€æŸ¥èåˆ (å®ç®±é€»è¾‘é€šå¸¸ä¸åœ¨è¿™é‡Œï¼Œå‡çº§ç•Œé¢é€šå¸¸ä¸ç›´æ¥ç»™è¶…æ­¦ï¼Œé™¤éä½ çš„è®¾è®¡å…è®¸)
+        // (ä¿æŒä½ åŸæœ‰çš„é€»è¾‘ï¼Œå¦‚æœè¿™æ˜¯ä½ æƒ³ä¿ç•™çš„â€œå‡çº§ç›´æ¥é€è¶…æ­¦â€æœºåˆ¶)
         FusionRecipeSO fusionRecipe = null;
         if (WeaponController.Instance != null)
         {
@@ -72,16 +72,16 @@ public class UpgradeManager : MonoBehaviour
         {
             SkillTreeNodeData evoNode = CreateFusionNode(fusionRecipe);
             offeredUpgrades.Add(evoNode);
-            Debug.Log($"[UpgradeManager] ·¢ÏÖÈÚºÏÅä·½: {fusionRecipe.resultWeapon.weaponName}");
+            Debug.Log($"[UpgradeManager] å‘ç°èåˆé…æ–¹: {fusionRecipe.resultWeapon.weaponName}");
         }
         else
         {
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿6:4 È¨ÖØ³é¿¨Âß¼­ ---
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘6:4 æƒé‡æŠ½å¡é€»è¾‘ ---
 
-            // A. »ñÈ¡ËùÓĞ¿ÉÓÃµÄÎäÆ÷Éı¼¶
+            // A. è·å–æ‰€æœ‰å¯ç”¨çš„æ­¦å™¨å‡çº§
             List<SkillTreeNodeData> validWeapons = GenerateWeaponNodes();
 
-            // B. »ñÈ¡ËùÓĞ¿ÉÓÃµÄ±»¶¯Éı¼¶
+            // B. è·å–æ‰€æœ‰å¯ç”¨çš„è¢«åŠ¨å‡çº§
             List<SkillTreeNodeData> validPassives = new List<SkillTreeNodeData>();
             int currentPassiveCount = ownedUpgrades.Count;
             int maxPassiveSlots = 6;
@@ -96,20 +96,20 @@ public class UpgradeManager : MonoBehaviour
                 }
             }
 
-            // ´òÂÒÁĞ±í
+            // æ‰“ä¹±åˆ—è¡¨
             var shuffledWeapons = validWeapons.OrderBy(a => Random.value).ToList();
             var shuffledPassives = validPassives.OrderBy(a => Random.value).ToList();
 
-            // C. ³éÈ¡ 3 ÕÅ¿¨
+            // C. æŠ½å– 3 å¼ å¡
             int slotsToFill = 3;
 
             for (int i = 0; i < slotsToFill; i++)
             {
-                // ÅĞ¶¨È¨ÖØ£ºÈç¹û Ëæ»úÊı < 0.6 (60%) ÇÒ »¹ÓĞÎäÆ÷¿ÉÉı£¬¾Í¸øÎäÆ÷
-                // ·ñÔò¸ø±»¶¯¡£Èç¹ûÃ»ÓĞ±»¶¯ÁË£¬Ò²µÃ¸øÎäÆ÷¡£
+                // åˆ¤å®šæƒé‡ï¼šå¦‚æœ éšæœºæ•° < 0.6 (60%) ä¸” è¿˜æœ‰æ­¦å™¨å¯å‡ï¼Œå°±ç»™æ­¦å™¨
+                // å¦åˆ™ç»™è¢«åŠ¨ã€‚å¦‚æœæ²¡æœ‰è¢«åŠ¨äº†ï¼Œä¹Ÿå¾—ç»™æ­¦å™¨ã€‚
                 bool wantWeapon = Random.value < 0.6f;
 
-                // È·±£³Ø×ÓÀïÓĞ¶«Î÷
+                // ç¡®ä¿æ± å­é‡Œæœ‰ä¸œè¥¿
                 bool hasWeapon = shuffledWeapons.Count > 0;
                 bool hasPassive = shuffledPassives.Count > 0;
 
@@ -125,7 +125,7 @@ public class UpgradeManager : MonoBehaviour
                     pickedNode = shuffledPassives[0];
                     shuffledPassives.RemoveAt(0);
                 }
-                else if (hasWeapon) // Ã»±»¶¯ÁË£¬Ö»ÄÜ¸øÎäÆ÷
+                else if (hasWeapon) // æ²¡è¢«åŠ¨äº†ï¼Œåªèƒ½ç»™æ­¦å™¨
                 {
                     pickedNode = shuffledWeapons[0];
                     shuffledWeapons.RemoveAt(0);
@@ -138,7 +138,7 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // ... ºóĞø UI Ë¢ĞÂÂß¼­±£³Ö²»±ä ...
+        // ... åç»­ UI åˆ·æ–°é€»è¾‘ä¿æŒä¸å˜ ...
         if (offeredUpgrades.Count == 0)
         {
             Time.timeScale = 1f;
@@ -153,33 +153,33 @@ public class UpgradeManager : MonoBehaviour
 
     private SkillTreeNodeData CreateFusionNode(FusionRecipeSO recipe)
     {
-        // ÔÚÄÚ´æÖĞ´´½¨Ò»¸öÁÙÊ±µÄ ScriptableObject ÊµÀı
+        // åœ¨å†…å­˜ä¸­åˆ›å»ºä¸€ä¸ªä¸´æ—¶çš„ ScriptableObject å®ä¾‹
         SkillTreeNodeData node = ScriptableObject.CreateInstance<SkillTreeNodeData>();
 
-        // ÏÔÊ¾½á¹ûÎäÆ÷µÄÃû×ÖºÍÍ¼±ê (ÀıÈç "Á¶Óü·ç±©")
+        // æ˜¾ç¤ºç»“æœæ­¦å™¨çš„åå­—å’Œå›¾æ ‡ (ä¾‹å¦‚ "ç‚¼ç‹±é£æš´")
         node.skillName = recipe.resultWeapon.weaponName;
-        node.skillIcon = recipe.resultWeapon.weaponIcon; // »òÕßÊÇ recipe.fusionIcon
+        node.skillIcon = recipe.resultWeapon.weaponIcon; // æˆ–è€…æ˜¯ recipe.fusionIcon
 
-        // ´´½¨Ò»¸öÑ¡Ïî
+        // åˆ›å»ºä¸€ä¸ªé€‰é¡¹
         UpgradeOption option = new UpgradeOption();
-        option.description = recipe.description; // "ÈÚºÏ£¡ÁÒÑæÓë¼²·çµÄ½áºÏ..."
-        option.rarity = Rarity.Epic; // ÈÚºÏÍ¨³£ÊÇÊ·Ê«¼¶µÄ½ğÉ«
+        option.description = recipe.description; // "èåˆï¼çƒˆç„°ä¸ç–¾é£çš„ç»“åˆ..."
+        option.rarity = Rarity.Epic; // èåˆé€šå¸¸æ˜¯å²è¯—çº§çš„é‡‘è‰²
         option.effects = new List<UpgradeEffect>();
 
-        // ´´½¨Ò»¸öÌØÊâµÄ Effect
+        // åˆ›å»ºä¸€ä¸ªç‰¹æ®Šçš„ Effect
         UpgradeEffect effect = new UpgradeEffect();
-        // ÎÒÃÇĞèÒªÒ»ÖÖ ActionType À´¸æËßÏµÍ³¡°Ö´ĞĞÈÚºÏ¡±
-        // ¼ÈÈ»ÄãÖ®Ç°Ã»ÓĞ EvolveWeapon Ã¶¾Ù£¬ÎÒÃÇ¾ÍÓÃ ModifyStat + ÌØÊâÖµÀ´±ê¼Ç£¬
-        // »òÕß×îºÃÈ¥¼ÓÒ»¸ö EffectActionType.FuseWeapon
+        // æˆ‘ä»¬éœ€è¦ä¸€ç§ ActionType æ¥å‘Šè¯‰ç³»ç»Ÿâ€œæ‰§è¡Œèåˆâ€
+        // æ—¢ç„¶ä½ ä¹‹å‰æ²¡æœ‰ EvolveWeapon æšä¸¾ï¼Œæˆ‘ä»¬å°±ç”¨ ModifyStat + ç‰¹æ®Šå€¼æ¥æ ‡è®°ï¼Œ
+        // æˆ–è€…æœ€å¥½å»åŠ ä¸€ä¸ª EffectActionType.FuseWeapon
 
-        // ¼ÙÉèÎÒÃÇÔÚ UpgradeEffect.cs Àï¼ÓÁË FuseWeapon (Ç¿ÁÒ½¨Òé¼ÓÒ»¸ö)
-        effect.actionType = EffectActionType.EvolveWeapon; // ÔİÊ±¸´ÓÃ EvolveWeapon
+        // å‡è®¾æˆ‘ä»¬åœ¨ UpgradeEffect.cs é‡ŒåŠ äº† FuseWeapon (å¼ºçƒˆå»ºè®®åŠ ä¸€ä¸ª)
+        effect.actionType = EffectActionType.EvolveWeapon; // æš‚æ—¶å¤ç”¨ EvolveWeapon
 
-        // ÕâÀïÉÔÎ¢ hack Ò»ÏÂ£º
-        // ÎÒÃÇĞèÒª°Ñ recipe ´«¸ø OnUpgradeOptionSelected
-        // µ« UpgradeEffect Ã»ÓĞ FusionRecipeSO ×Ö¶Î¡£
-        // ¼ÈÈ»ÕâÊÇÁÙÊ±µÄ£¬ÎÒÃÇ¿ÉÒÔ°Ñ recipe.resultWeapon ·ÅÔÚ weaponToUnlock Àï
-        // È»ºóÔÚ OnUpgradeOptionSelected ÀïÍ¨¹ı CheckForAvailableFusion ÔÙ´ÎÈ·ÈÏ
+        // è¿™é‡Œç¨å¾® hack ä¸€ä¸‹ï¼š
+        // æˆ‘ä»¬éœ€è¦æŠŠ recipe ä¼ ç»™ OnUpgradeOptionSelected
+        // ä½† UpgradeEffect æ²¡æœ‰ FusionRecipeSO å­—æ®µã€‚
+        // æ—¢ç„¶è¿™æ˜¯ä¸´æ—¶çš„ï¼Œæˆ‘ä»¬å¯ä»¥æŠŠ recipe.resultWeapon æ”¾åœ¨ weaponToUnlock é‡Œ
+        // ç„¶ååœ¨ OnUpgradeOptionSelected é‡Œé€šè¿‡ CheckForAvailableFusion å†æ¬¡ç¡®è®¤
         effect.weaponToUnlock = recipe.resultWeapon;
 
         option.effects.Add(effect);
@@ -192,7 +192,7 @@ public class UpgradeManager : MonoBehaviour
     {
         foreach (var upgradeNode in offeredUpgrades)
         {
-            // --- Õâ²¿·ÖÂß¼­ÓëÄúÔ­À´µÄÒ»ÖÂ ---
+            // --- è¿™éƒ¨åˆ†é€»è¾‘ä¸æ‚¨åŸæ¥çš„ä¸€è‡´ ---
             float playerLuck = PlayerStats.Instance != null ? PlayerStats.Instance.luck : 1.0f;
             UpgradeOption chosenOption = RaritySystem.GetRandomOptionByRarity(upgradeNode.possibleOptions, playerLuck);
 
@@ -201,21 +201,21 @@ public class UpgradeManager : MonoBehaviour
             GameObject prefabToInstantiate = GetPrefabForOption(chosenOption);
             GameObject cardGO = Instantiate(prefabToInstantiate, cardContainer);
             var cardUI = cardGO.GetComponent<UpgradeCardUI>();
-            // --- Âß¼­½áÊø ---
+            // --- é€»è¾‘ç»“æŸ ---
 
             if (cardUI != null)
             {
-                // 1. ÏÈÉèÖÃ¿¨Æ¬Êı¾İ
+                // 1. å…ˆè®¾ç½®å¡ç‰‡æ•°æ®
                 cardUI.Setup(upgradeNode, chosenOption);
 
-                // 2. ÔÙµ÷ÓÃShow()·½·¨À´´¥·¢Animator¶¯»­
+                // 2. å†è°ƒç”¨Show()æ–¹æ³•æ¥è§¦å‘AnimatoråŠ¨ç”»
                 cardUI.Show();
 
-                // 3. ½«ÊµÀı»¯µÄ¿¨Æ¬UI´æÈëÁĞ±í
+                // 3. å°†å®ä¾‹åŒ–çš„å¡ç‰‡UIå­˜å…¥åˆ—è¡¨
                 activeCardUIs.Add(cardUI);
             }
 
-            // ¡¾¹Ø¼ü¡¿µÈ´ıÖ¸¶¨µÄÊ±¼ä£¬ÔÙ½øĞĞÏÂÒ»´ÎÑ­»·
+            // ã€å…³é”®ã€‘ç­‰å¾…æŒ‡å®šçš„æ—¶é—´ï¼Œå†è¿›è¡Œä¸‹ä¸€æ¬¡å¾ªç¯
             yield return new WaitForSecondsRealtime(delayBetweenCards);
         }
     }
@@ -223,15 +223,15 @@ public class UpgradeManager : MonoBehaviour
     {
         List<SkillTreeNodeData> availableNodes = new List<SkillTreeNodeData>();
 
-        // --- 1. »ñÈ¡Í¨ÓÃ±»¶¯¼¼ÄÜ (Ô­Âß¼­) ---
-        // ÒÔÇ°ÊÇ±éÀú allUpgrades£¬ÏÖÔÚ±éÀú passiveUpgrades
+        // --- 1. è·å–é€šç”¨è¢«åŠ¨æŠ€èƒ½ (åŸé€»è¾‘) ---
+        // ä»¥å‰æ˜¯éå† allUpgradesï¼Œç°åœ¨éå† passiveUpgrades
         if (upgradeDatabase.passiveUpgrades != null)
         {
             foreach (var node in upgradeDatabase.passiveUpgrades)
             {
-                // ¼ì²éÇ°ÖÃÌõ¼ş
+                // æ£€æŸ¥å‰ç½®æ¡ä»¶
                 bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
-                // ¼ì²éµÈ¼¶ÉÏÏŞ
+                // æ£€æŸ¥ç­‰çº§ä¸Šé™
                 bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
 
                 if (prerequisitesMet && notMaxed)
@@ -241,8 +241,8 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // --- 2. »ñÈ¡ÎäÆ÷Éı¼¶ (ĞÂÂß¼­ - ¶¯Ì¬Éú³É½Úµã) ---
-        // ÕâÀïµ÷ÓÃÎÒÃÇÖ®Ç°ÌÖÂÛµÄ GenerateWeaponNodes ·½·¨
+        // --- 2. è·å–æ­¦å™¨å‡çº§ (æ–°é€»è¾‘ - åŠ¨æ€ç”ŸæˆèŠ‚ç‚¹) ---
+        // è¿™é‡Œè°ƒç”¨æˆ‘ä»¬ä¹‹å‰è®¨è®ºçš„ GenerateWeaponNodes æ–¹æ³•
         availableNodes.AddRange(GenerateWeaponNodes());
 
         return availableNodes;
@@ -253,19 +253,19 @@ public class UpgradeManager : MonoBehaviour
 
         if (WeaponController.Instance == null) return nodes;
 
-        // [ÅÅ²éÈÕÖ¾ 1] ´òÓ¡µ±Ç°´æµµÀïËùÓĞµÄ½âËøÎïÆ·£¬¿´¿´ "Molotov" µ½µ×ÔÚ²»ÔÚÀïÃæ
+        // [æ’æŸ¥æ—¥å¿— 1] æ‰“å°å½“å‰å­˜æ¡£é‡Œæ‰€æœ‰çš„è§£é”ç‰©å“ï¼Œçœ‹çœ‹ "Molotov" åˆ°åº•åœ¨ä¸åœ¨é‡Œé¢
         if (PlayerProgressManager.Instance != null)
         {
             string allUnlocked = string.Join(", ", PlayerProgressManager.Instance.unlockedItems);
-            // ¡¾ĞŞ¸Ä¡¿È¥µôÅĞ¿Õ£¬Ç¿ÖÆ´òÓ¡£¬Èç¹ûÊÇ¿ÕµÄ¾ÍÏÔÊ¾ "ÎŞ"
-            Debug.Log($"[UpgradeManagerÅÅ²é] µ±Ç°´æµµÒÑ½âËøÎïÆ·: {(string.IsNullOrEmpty(allUnlocked) ? "ÎŞ (ÁĞ±íÎª¿Õ)" : allUnlocked)}");
+            // ã€ä¿®æ”¹ã€‘å»æ‰åˆ¤ç©ºï¼Œå¼ºåˆ¶æ‰“å°ï¼Œå¦‚æœæ˜¯ç©ºçš„å°±æ˜¾ç¤º "æ— "
+            Debug.Log($"[UpgradeManageræ’æŸ¥] å½“å‰å­˜æ¡£å·²è§£é”ç‰©å“: {(string.IsNullOrEmpty(allUnlocked) ? "æ—  (åˆ—è¡¨ä¸ºç©º)" : allUnlocked)}");
         }
 
-        // --- 1. »ñÈ¡µ±Ç°ÎäÆ÷ÊıÁ¿ºÍÉÏÏŞ ---
+        // --- 1. è·å–å½“å‰æ­¦å™¨æ•°é‡å’Œä¸Šé™ ---
         int currentWeaponCount = WeaponController.Instance.ownedWeapons.Count;
         int maxWeaponSlots = 6;
 
-        // »ñÈ¡³¬ÎäÁĞ±í
+        // è·å–è¶…æ­¦åˆ—è¡¨
         HashSet<WeaponStatBlock> evolutionOnlyWeapons = new HashSet<WeaponStatBlock>();
         if (WeaponController.Instance.fusionRecipes != null)
         {
@@ -275,18 +275,18 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // ±éÀúÊı¾İ¿â
+        // éå†æ•°æ®åº“
         foreach (var chain in upgradeDatabase.weaponChains)
         {
             if (chain.targetWeapon == null) continue;
 
-            // ¹ıÂËµô³¬Îä
+            // è¿‡æ»¤æ‰è¶…æ­¦
             bool isEvoWeapon = evolutionOnlyWeapons.Contains(chain.targetWeapon);
 
-            // ¹ıÂËµôºÚÃûµ¥
+            // è¿‡æ»¤æ‰é»‘åå•
             if (WeaponController.Instance.banList.Contains(chain.targetWeapon)) continue;
 
-            // »ñÈ¡ÓµÓĞ×´Ì¬
+            // è·å–æ‹¥æœ‰çŠ¶æ€
             var ownedWeapon = WeaponController.Instance.ownedWeapons
                 .FirstOrDefault(w => w.stats == chain.targetWeapon);
 
@@ -297,26 +297,26 @@ public class UpgradeManager : MonoBehaviour
                                     : chain.targetWeapon.maxLevel;
 
             // ---------------------------------------------------------
-            // Çé¿ö A: ÉĞÎ´ÓµÓĞ -> Ìá¹©½âËøÑ¡Ïî
+            // æƒ…å†µ A: å°šæœªæ‹¥æœ‰ -> æä¾›è§£é”é€‰é¡¹
             // ---------------------------------------------------------
             if (ownedWeapon == null)
             {
-                // [ÅÅ²éÈÕÖ¾ 2] Õë¶ÔÈ¼ÉÕÆ¿µÄ×¨Ïî¼ì²é
-                // Èç¹ûÃû×ÖÀï°üº¬ Molotov »ò È¼ÉÕ£¬¾Í´òÓ¡ÏêÏ¸ÈÕÖ¾
-                bool isTargetDebug = chain.weaponName.Contains("Molotov") || chain.weaponName.Contains("È¼ÉÕ");
+                // [æ’æŸ¥æ—¥å¿— 2] é’ˆå¯¹ç‡ƒçƒ§ç“¶çš„ä¸“é¡¹æ£€æŸ¥
+                // å¦‚æœåå­—é‡ŒåŒ…å« Molotov æˆ– ç‡ƒçƒ§ï¼Œå°±æ‰“å°è¯¦ç»†æ—¥å¿—
+                bool isTargetDebug = chain.weaponName.Contains("Molotov") || chain.weaponName.Contains("ç‡ƒçƒ§");
 
-                // 1. ¼ì²é¸ñ×Ó
+                // 1. æ£€æŸ¥æ ¼å­
                 if (currentWeaponCount >= maxWeaponSlots)
                 {
-                    if (isTargetDebug) Debug.Log($"[UpgradeManagerÅÅ²é] È¼ÉÕÆ¿±»Ìø¹ı£ºÎäÆ÷²ÛÒÑÂú ({currentWeaponCount}/{maxWeaponSlots})");
+                    if (isTargetDebug) Debug.Log($"[UpgradeManageræ’æŸ¥] ç‡ƒçƒ§ç“¶è¢«è·³è¿‡ï¼šæ­¦å™¨æ§½å·²æ»¡ ({currentWeaponCount}/{maxWeaponSlots})");
                     continue;
                 }
 
-                // 2. ¼ì²é³¬Îä
+                // 2. æ£€æŸ¥è¶…æ­¦
                 if (isEvoWeapon) continue;
 
                 // =========================================================
-                // 3. ½âËø×Ê¸ñ¼ì²é (´øÈÕÖ¾)
+                // 3. è§£é”èµ„æ ¼æ£€æŸ¥ (å¸¦æ—¥å¿—)
                 // =========================================================
                 bool isUnlocked = chain.isDefaultUnlocked;
 
@@ -325,19 +325,19 @@ public class UpgradeManager : MonoBehaviour
 
                 if (!isUnlocked && PlayerProgressManager.Instance != null)
                 {
-                    // A. ¼ì²é ID
+                    // A. æ£€æŸ¥ ID
                     bool hasID = !string.IsNullOrEmpty(wID) && PlayerProgressManager.Instance.unlockedItems.Contains(wID);
-                    // B. ¼ì²é Name
+                    // B. æ£€æŸ¥ Name
                     bool hasName = PlayerProgressManager.Instance.unlockedItems.Contains(wName);
 
                     if (isTargetDebug)
                     {
-                        Debug.Log($"[UpgradeManagerÅÅ²é] È¼ÉÕÆ¿½âËøÅĞ¶¨:\n" +
-                                  $"  - Ä¿±êID: '{wID}'\n" +
-                                  $"  - Ä¿±êName: '{wName}'\n" +
+                        Debug.Log($"[UpgradeManageræ’æŸ¥] ç‡ƒçƒ§ç“¶è§£é”åˆ¤å®š:\n" +
+                                  $"  - ç›®æ ‡ID: '{wID}'\n" +
+                                  $"  - ç›®æ ‡Name: '{wName}'\n" +
                                   $"  - IsDefault: {chain.isDefaultUnlocked}\n" +
-                                  $"  - ´æµµº¬ID?: {hasID}\n" +
-                                  $"  - ´æµµº¬Name?: {hasName}");
+                                  $"  - å­˜æ¡£å«ID?: {hasID}\n" +
+                                  $"  - å­˜æ¡£å«Name?: {hasName}");
                     }
 
                     if (hasID || hasName)
@@ -346,25 +346,25 @@ public class UpgradeManager : MonoBehaviour
                     }
                 }
 
-                // ×îÖÕÅĞ¶¨
+                // æœ€ç»ˆåˆ¤å®š
                 if (!isUnlocked)
                 {
-                    if (isTargetDebug) Debug.Log($"[UpgradeManagerÅÅ²é] È¼ÉÕÆ¿×îÖÕÅĞ¶¨: ¡¾Î´½âËø¡¿£¬Òò´Ë²»Éú³É¿¨Æ¬¡£");
+                    if (isTargetDebug) Debug.Log($"[UpgradeManageræ’æŸ¥] ç‡ƒçƒ§ç“¶æœ€ç»ˆåˆ¤å®š: ã€æœªè§£é”ã€‘ï¼Œå› æ­¤ä¸ç”Ÿæˆå¡ç‰‡ã€‚");
                     continue;
                 }
 
-                if (isTargetDebug) Debug.Log($"[UpgradeManagerÅÅ²é] È¼ÉÕÆ¿×îÖÕÅĞ¶¨: ¡¾ÒÑ½âËø¡¿£¬Éú³É½âËø¿¨Æ¬£¡");
+                if (isTargetDebug) Debug.Log($"[UpgradeManageræ’æŸ¥] ç‡ƒçƒ§ç“¶æœ€ç»ˆåˆ¤å®š: ã€å·²è§£é”ã€‘ï¼Œç”Ÿæˆè§£é”å¡ç‰‡ï¼");
                 // =========================================================
 
                 SkillTreeNodeData unlockNode = ScriptableObject.CreateInstance<SkillTreeNodeData>();
-                unlockNode.skillName = $"½âËø {chain.weaponName}";
+                unlockNode.skillName = $"è§£é” {chain.weaponName}";
                 unlockNode.skillIcon = chain.icon;
                 unlockNode.associatedWeapon = chain.targetWeapon;
                 unlockNode.possibleOptions = new List<UpgradeOption> { chain.unlockOption };
                 nodes.Add(unlockNode);
             }
             // ---------------------------------------------------------
-            // Çé¿ö B: ÒÑÓµÓĞ (Éı¼¶)
+            // æƒ…å†µ B: å·²æ‹¥æœ‰ (å‡çº§)
             // ---------------------------------------------------------
             else if (currentLevel < dynamicMaxLevel)
             {
@@ -381,7 +381,7 @@ public class UpgradeManager : MonoBehaviour
                 }
             }
             // ---------------------------------------------------------
-            // Çé¿ö C: ½ø»¯ (Âú¼¶)
+            // æƒ…å†µ C: è¿›åŒ– (æ»¡çº§)
             // ---------------------------------------------------------
             else if (ownedWeapon != null && currentLevel >= dynamicMaxLevel)
             {
@@ -399,12 +399,12 @@ public class UpgradeManager : MonoBehaviour
                         }
                         else if (wID == "LightningStrike")
                         {
-                            // ±ØĞëÔÚ¼¼ÄÜÊ÷Àï½âËøÁË "Lightning_Meta_Evolution" ½Úµã
+                            // å¿…é¡»åœ¨æŠ€èƒ½æ ‘é‡Œè§£é”äº† "Lightning_Meta_Evolution" èŠ‚ç‚¹
                             metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Lightning_Meta_Evolution");
                         }
                         else if (wID == "IceShard")
                         {
-                            // ±ØĞëÈ·±£ÄãÓĞÒ»¸ö½Ğ "Ice_Meta_Evolution" µÄ¾ÖÍâÉı¼¶ÎÄ¼ş£¬²¢ÇÒÒÑ½âËø
+                            // å¿…é¡»ç¡®ä¿ä½ æœ‰ä¸€ä¸ªå« "Ice_Meta_Evolution" çš„å±€å¤–å‡çº§æ–‡ä»¶ï¼Œå¹¶ä¸”å·²è§£é”
                             metaEvoUnlocked = PlayerProgressManager.Instance.IsNodeUnlockedRaw("Ice_Meta_Evolution");
                         }
                     }
@@ -412,12 +412,12 @@ public class UpgradeManager : MonoBehaviour
                     if (metaEvoUnlocked)
                     {
                         SkillTreeNodeData evoNode = ScriptableObject.CreateInstance<SkillTreeNodeData>();
-                        evoNode.skillName = $"½ø»¯: {evoTarget.weaponName}";
+                        evoNode.skillName = $"è¿›åŒ–: {evoTarget.weaponName}";
                         evoNode.skillIcon = evoTarget.weaponIcon;
                         evoNode.associatedWeapon = ownedWeapon.stats;
 
                         UpgradeOption option = new UpgradeOption();
-                        option.description = "Í»ÆÆ¼«ÏŞ£¡";
+                        option.description = "çªç ´æé™ï¼";
                         option.rarity = Rarity.Epic;
                         option.effects = new List<UpgradeEffect>();
 
@@ -437,7 +437,7 @@ public class UpgradeManager : MonoBehaviour
     }
     private GameObject GetPrefabForOption(UpgradeOption option)
     {
-        // ¼ì²éÊÇ·ñÓĞ½âËøÎäÆ÷µÄĞ§¹û£¬ÕâÀàĞ§¹ûÓÅÏÈÊ¹ÓÃ×¨Êô¿¨Æ¬ÑùÊ½
+        // æ£€æŸ¥æ˜¯å¦æœ‰è§£é”æ­¦å™¨çš„æ•ˆæœï¼Œè¿™ç±»æ•ˆæœä¼˜å…ˆä½¿ç”¨ä¸“å±å¡ç‰‡æ ·å¼
         if (option.effects.Any(e => e.actionType == EffectActionType.UnlockWeapon))
         {
             return unlockCardPrefab;
@@ -454,21 +454,21 @@ public class UpgradeManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ÓÉ¿¨Æ¬UIÔÚ±»µã»÷ºóµ÷ÓÃ
+    /// ç”±å¡ç‰‡UIåœ¨è¢«ç‚¹å‡»åè°ƒç”¨
     /// </summary>
     public void OnUpgradeOptionSelected(SkillTreeNodeData sourceNode, UpgradeOption chosenOption)
     {
-        // --- 1. ±ê¼ÇÎ»£ºÕâ´Î²Ù×÷ÊÇ·ñÊÇ½âËøÎäÆ÷£¿ ---
+        // --- 1. æ ‡è®°ä½ï¼šè¿™æ¬¡æ“ä½œæ˜¯å¦æ˜¯è§£é”æ­¦å™¨ï¼Ÿ ---
         bool isUnlockOperation = false;
 
         foreach (UpgradeEffect effect in chosenOption.effects)
         {
-            // ¡¾ĞŞ¸´¹Ø¼üµã¡¿ÔÚÕâÀï¶¨Òå appliedLocally ±äÁ¿£¬Ä¬ÈÏÊÇ false
+            // ã€ä¿®å¤å…³é”®ç‚¹ã€‘åœ¨è¿™é‡Œå®šä¹‰ appliedLocally å˜é‡ï¼Œé»˜è®¤æ˜¯ false
             bool appliedLocally = false;
 
             if (sourceNode.associatedWeapon != null && WeaponController.Instance != null)
             {
-                // ³¢ÊÔÔÚ±³°üÀïÕÒµ½Õâ°ÑÎäÆ÷µÄÊµÀı
+                // å°è¯•åœ¨èƒŒåŒ…é‡Œæ‰¾åˆ°è¿™æŠŠæ­¦å™¨çš„å®ä¾‹
                 var weaponWrapper = WeaponController.Instance.ownedWeapons
                     .FirstOrDefault(w => w.stats == sourceNode.associatedWeapon);
 
@@ -476,26 +476,26 @@ public class UpgradeManager : MonoBehaviour
                 {
                     WeaponPart part = weaponWrapper.weaponPartInstance;
 
-                    // ´¦ÀíÊıÖµ (°Ù·Ö±È×ªĞ¡Êı)
+                    // å¤„ç†æ•°å€¼ (ç™¾åˆ†æ¯”è½¬å°æ•°)
                     float val = effect.value;
                     if (effect.modType == ModifierType.Percentage) val /= 100f;
 
                     // =========================================================
-                    // ¡¾ºËĞÄĞŞ¸´¡¿À¹½ØËùÓĞÎäÆ÷ÊôĞÔ£¬´æÈë¾Ö²¿±äÁ¿
+                    // ã€æ ¸å¿ƒä¿®å¤ã€‘æ‹¦æˆªæ‰€æœ‰æ­¦å™¨å±æ€§ï¼Œå­˜å…¥å±€éƒ¨å˜é‡
                     // =========================================================
                     switch (effect.statToModify)
                     {
                         case UpgradeType.WeaponDamage:
                             part.localDamageBonus += val;
                             appliedLocally = true;
-                            Debug.Log($"[¾Ö²¿Éı¼¶] {sourceNode.associatedWeapon.weaponName} ÉËº¦ +{val:P0}");
+                            Debug.Log($"[å±€éƒ¨å‡çº§] {sourceNode.associatedWeapon.weaponName} ä¼¤å®³ +{val:P0}");
                             break;
 
                         case UpgradeType.WeaponFireRate:
-                            // ¼ÙÉèÀäÈ´Ëõ¼õÊÇÕıÊı (Èç 0.1 ´ú±í -10% CD)
+                            // å‡è®¾å†·å´ç¼©å‡æ˜¯æ­£æ•° (å¦‚ 0.1 ä»£è¡¨ -10% CD)
                             part.localFireRateBonus += val;
                             appliedLocally = true;
-                            Debug.Log($"[¾Ö²¿Éı¼¶] {sourceNode.associatedWeapon.weaponName} ÀäÈ´Ëõ¼õ +{val:P0}");
+                            Debug.Log($"[å±€éƒ¨å‡çº§] {sourceNode.associatedWeapon.weaponName} å†·å´ç¼©å‡ +{val:P0}");
                             break;
 
                         case UpgradeType.AoeRadius:
@@ -503,11 +503,11 @@ public class UpgradeManager : MonoBehaviour
                             appliedLocally = true;
                             break;
 
-                        case UpgradeType.OrbitalSpeed:      // ¹ìµÀËÙ¶È
-                        case UpgradeType.WeaponProjectileSpeed: // »òÕß×Óµ¯ËÙ¶È
+                        case UpgradeType.OrbitalSpeed:      // è½¨é“é€Ÿåº¦
+                        case UpgradeType.WeaponProjectileSpeed: // æˆ–è€…å­å¼¹é€Ÿåº¦
                             part.localSpeedBonus += val;
                             appliedLocally = true;
-                            Debug.Log($"[¾Ö²¿Éı¼¶] {sourceNode.associatedWeapon.weaponName} ËÙ¶È +{val:P0}");
+                            Debug.Log($"[å±€éƒ¨å‡çº§] {sourceNode.associatedWeapon.weaponName} é€Ÿåº¦ +{val:P0}");
                             break;
 
                         case UpgradeType.WeaponDuration:
@@ -534,20 +534,20 @@ public class UpgradeManager : MonoBehaviour
                         case UpgradeType.SlashCount:
                             part.localSlashCountBonus += Mathf.RoundToInt(effect.value);
                             appliedLocally = true;
-                            // Ìí¼ÓÈÕÖ¾£¬È·±£´æÇ®³É¹¦
-                            Debug.Log($"<color=green>[Éı¼¶ÉúĞ§] {sourceNode.associatedWeapon.weaponName} µ¶¹âÊıÁ¿ +{effect.value}¡£µ±Ç°×Ü¾Ö²¿¼Ó³É: {part.localSlashCountBonus}</color>");
+                            // æ·»åŠ æ—¥å¿—ï¼Œç¡®ä¿å­˜é’±æˆåŠŸ
+                            Debug.Log($"<color=green>[å‡çº§ç”Ÿæ•ˆ] {sourceNode.associatedWeapon.weaponName} åˆ€å…‰æ•°é‡ +{effect.value}ã€‚å½“å‰æ€»å±€éƒ¨åŠ æˆ: {part.localSlashCountBonus}</color>");
                             break;
                         
                     }
                 }
             }
 
-            // Èç¹ûÃ»ÓĞ¾Ö²¿Ó¦ÓÃ£¨ËµÃ÷ÊÇÍ¨ÓÃÊôĞÔ£¬±ÈÈç¼ÓÑªÉÏÏŞ£©£¬ÔòÓ¦ÓÃµ½È«¾Ö PlayerStats
+            // å¦‚æœæ²¡æœ‰å±€éƒ¨åº”ç”¨ï¼ˆè¯´æ˜æ˜¯é€šç”¨å±æ€§ï¼Œæ¯”å¦‚åŠ è¡€ä¸Šé™ï¼‰ï¼Œåˆ™åº”ç”¨åˆ°å…¨å±€ PlayerStats
             if (!appliedLocally && PlayerStats.Instance != null && effect.actionType == EffectActionType.ModifyStat)
             {
                 PlayerStats.Instance.ApplyEffect(effect);
             }
-            // ´¦ÀíÌØÊâ²Ù×÷ÀàĞÍ
+            // å¤„ç†ç‰¹æ®Šæ“ä½œç±»å‹
             else if (effect.actionType == EffectActionType.UnlockWeapon)
             {
                 isUnlockOperation = true;
@@ -564,30 +564,30 @@ public class UpgradeManager : MonoBehaviour
             {
                 if (WeaponController.Instance != null && effect.weaponToUnlock != null)
                 {
-                    // 1. ³¢ÊÔÈÚºÏ (±£³Ö²»±ä)
+                    // 1. å°è¯•èåˆ (ä¿æŒä¸å˜)
                     var recipe = WeaponController.Instance.fusionRecipes.FirstOrDefault(r => r.resultWeapon == effect.weaponToUnlock);
                     if (recipe != null)
                     {
                         WeaponController.Instance.PerformFusion(recipe);
-                        Debug.Log($"<color=gold>[UpgradeManager] ÈÚºÏ½ø»¯³É¹¦£¡»ñµÃÁË: {effect.weaponToUnlock.weaponName}</color>");
+                        Debug.Log($"<color=gold>[UpgradeManager] èåˆè¿›åŒ–æˆåŠŸï¼è·å¾—äº†: {effect.weaponToUnlock.weaponName}</color>");
                     }
                     else
                     {
-                        // 2. ¡¾ºËĞÄĞŞ¸Ä¡¿µ¥Ìå½ø»¯Âß¼­
-                        // ²»ÔÙ×Ô¼º´¦ÀíÊı¾İÌæ»»£¬¶øÊÇÎ¯ÍĞ¸ø WeaponController ³¹µ×»»Ç¹
+                        // 2. ã€æ ¸å¿ƒä¿®æ”¹ã€‘å•ä½“è¿›åŒ–é€»è¾‘
+                        // ä¸å†è‡ªå·±å¤„ç†æ•°æ®æ›¿æ¢ï¼Œè€Œæ˜¯å§”æ‰˜ç»™ WeaponController å½»åº•æ¢æª
 
-                        // ÕÒµ½ÊÇË­½ø»¯³ÉÕâ¸öĞÂÎäÆ÷
+                        // æ‰¾åˆ°æ˜¯è°è¿›åŒ–æˆè¿™ä¸ªæ–°æ­¦å™¨
                         var oldWeaponWrapper = WeaponController.Instance.ownedWeapons
                             .FirstOrDefault(w => w.stats.evolutionTarget == effect.weaponToUnlock);
 
                         if (oldWeaponWrapper != null)
                         {
-                            // µ÷ÓÃÎÒÃÇ¸Õ²ÅĞ´µÄĞÂ·½·¨
+                            // è°ƒç”¨æˆ‘ä»¬åˆšæ‰å†™çš„æ–°æ–¹æ³•
                             WeaponController.Instance.EvolveWeapon(oldWeaponWrapper.stats, effect.weaponToUnlock);
                         }
                         else
                         {
-                            // ±£µ×£ºÕÒ²»µ½¾ÉµÄÖ±½Ó¸øĞÂµÄ
+                            // ä¿åº•ï¼šæ‰¾ä¸åˆ°æ—§çš„ç›´æ¥ç»™æ–°çš„
                             WeaponController.Instance.AddNewWeapon(effect.weaponToUnlock);
                         }
                     }
@@ -595,7 +595,7 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // --- 2. Ö»ÓĞµ±¡¾²»ÊÇ¡¿½âËø²Ù×÷Ê±£¬²ÅÈ¥Ôö¼ÓÎäÆ÷µÈ¼¶ ---
+        // --- 2. åªæœ‰å½“ã€ä¸æ˜¯ã€‘è§£é”æ“ä½œæ—¶ï¼Œæ‰å»å¢åŠ æ­¦å™¨ç­‰çº§ ---
         if (!isUnlockOperation && WeaponController.Instance != null)
         {
             foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
@@ -612,7 +612,7 @@ public class UpgradeManager : MonoBehaviour
                         dynamicMaxLevel = ownedWrapper.weaponPartInstance.maxLevel;
                     }
 
-                    // Ê¹ÓÃ¶¯Ì¬ÉÏÏŞ½øĞĞÅĞ¶Ï
+                    // ä½¿ç”¨åŠ¨æ€ä¸Šé™è¿›è¡Œåˆ¤æ–­
                     if (ownedWrapper.currentLevel < dynamicMaxLevel)
                     {
                         ownedWrapper.currentLevel++;
@@ -626,11 +626,11 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // 3. ¸üĞÂÉı¼¶¼ÇÂ¼
+        // 3. æ›´æ–°å‡çº§è®°å½•
         if (ownedUpgrades.ContainsKey(sourceNode)) { ownedUpgrades[sourceNode]++; }
         else { ownedUpgrades.Add(sourceNode, 1); }
 
-        // 4. Ë¢ĞÂ×´Ì¬²¢¹Ø±ÕÃæ°å
+        // 4. åˆ·æ–°çŠ¶æ€å¹¶å…³é—­é¢æ¿
         if (WeaponController.Instance != null) { WeaponController.Instance.RefreshAllWeaponStates(); }
         if (PassiveItemsUI.Instance != null) { PassiveItemsUI.Instance.UpdateIcons(); }
         if (upgradePanel != null) upgradePanel.SetActive(false);
@@ -641,18 +641,18 @@ public class UpgradeManager : MonoBehaviour
     {
         if (nodeToGrant == null) return;
 
-        // 1. ´ÓÕâ¸ö½ÚµãÖĞ£¬Ëæ»ú³éÈ¡Ò»¸ö×î¸ßÆ·ÖÊµÄĞ§¹ûÀ´Ó¦ÓÃ
-        // (ÔÚµ÷ÊÔÊ±£¬ÎÒÃÇÍ¨³£Ï£Íû²âÊÔ×îÇ¿µÄĞ§¹û)
+        // 1. ä»è¿™ä¸ªèŠ‚ç‚¹ä¸­ï¼ŒéšæœºæŠ½å–ä¸€ä¸ªæœ€é«˜å“è´¨çš„æ•ˆæœæ¥åº”ç”¨
+        // (åœ¨è°ƒè¯•æ—¶ï¼Œæˆ‘ä»¬é€šå¸¸å¸Œæœ›æµ‹è¯•æœ€å¼ºçš„æ•ˆæœ)
         var bestOption = nodeToGrant.possibleOptions.OrderByDescending(opt => opt.rarity).FirstOrDefault();
 
         if (bestOption != null)
         {
-            // 2. Ö±½Óµ÷ÓÃÎÒÃÇÒÑÓĞµÄ¡°Ó¦ÓÃĞ§¹û¡±µÄÂß¼­
+            // 2. ç›´æ¥è°ƒç”¨æˆ‘ä»¬å·²æœ‰çš„â€œåº”ç”¨æ•ˆæœâ€çš„é€»è¾‘
             OnUpgradeOptionSelected(nodeToGrant, bestOption);
         }
         else
         {
-            Debug.LogError($"¼¼ÄÜ½Úµã '{nodeToGrant.skillName}' ÖĞÃ»ÓĞÈÎºÎ¿ÉÓÃµÄÉı¼¶Ñ¡Ïî£¡");
+            Debug.LogError($"æŠ€èƒ½èŠ‚ç‚¹ '{nodeToGrant.skillName}' ä¸­æ²¡æœ‰ä»»ä½•å¯ç”¨çš„å‡çº§é€‰é¡¹ï¼");
         }
     }
 }

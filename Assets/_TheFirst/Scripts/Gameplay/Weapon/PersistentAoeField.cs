@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -9,12 +9,12 @@ public class PersistentAoeField : MonoBehaviour
     private float duration;
     private GameObject attacker;
 
-    // ƒ¦´æ®”Ç°ÔÚîIÓòƒÈµÄ”³ÈË
+    // å„²å­˜ç•¶å‰åœ¨é ˜åŸŸå…§çš„æ•µäºº
     private List<Health> enemiesInField = new List<Health>();
     private Coroutine damageCoroutine;
 
     /// <summary>
-    /// ³õÊ¼»¯‚ûº¦îIÓòµÄŒÙĞÔ
+    /// åˆå§‹åŒ–å‚·å®³é ˜åŸŸçš„å±¬æ€§
     /// </summary>
     public void Setup(int dmgPerTick, float interval, float dur, GameObject creator)
     {
@@ -23,13 +23,13 @@ public class PersistentAoeField : MonoBehaviour
         this.duration = dur;
         this.attacker = creator;
 
-        // ÔÚÖ¸¶¨µÄ³ÖÀm•régááäNš§×Ô¼º
+        // åœ¨æŒ‡å®šçš„æŒçºŒæ™‚é–“å¾ŒéŠ·æ¯€è‡ªå·±
         Destroy(gameObject, duration);
-        // †¢„ÓÔì³É‚ûº¦µÄ…f³Ì
+        // å•Ÿå‹•é€ æˆå‚·å®³çš„å”ç¨‹
         damageCoroutine = StartCoroutine(DamageRoutine());
     }
 
-    // ®”ÓĞÎïówßMÈëÓ|°lÆ÷•r
+    // ç•¶æœ‰ç‰©é«”é€²å…¥è§¸ç™¼å™¨æ™‚
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Enemy"))
@@ -37,13 +37,13 @@ public class PersistentAoeField : MonoBehaviour
             Health enemyHealth = other.GetComponentInParent<Health>();
             if (enemyHealth != null && !enemiesInField.Contains(enemyHealth))
             {
-                // Œ¢”³ÈËÌí¼Óµ½ÁĞ±íÖĞ
+                // å°‡æ•µäººæ·»åŠ åˆ°åˆ—è¡¨ä¸­
                 enemiesInField.Add(enemyHealth);
             }
         }
     }
 
-    // ®”ÓĞÎïówëxé_Ó|°lÆ÷•r
+    // ç•¶æœ‰ç‰©é«”é›¢é–‹è§¸ç™¼å™¨æ™‚
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Enemy"))
@@ -51,22 +51,22 @@ public class PersistentAoeField : MonoBehaviour
             Health enemyHealth = other.GetComponentInParent<Health>();
             if (enemyHealth != null && enemiesInField.Contains(enemyHealth))
             {
-                // ÄÁĞ±íÖĞÒÆ³ı”³ÈË
+                // å¾åˆ—è¡¨ä¸­ç§»é™¤æ•µäºº
                 enemiesInField.Remove(enemyHealth);
             }
         }
     }
 
-    // ³ÖÀmÔì³É‚ûº¦µÄ…f³Ì
+    // æŒçºŒé€ æˆå‚·å®³çš„å”ç¨‹
     private IEnumerator DamageRoutine()
     {
-        while (true) // Ò»‚€ŸoÏŞÑ­­h£¬ÒòéÕû‚€Îï¼ş•şÔÚ³ÖÀm•rég½YÊøáá±»äNš§
+        while (true) // ä¸€å€‹ç„¡é™å¾ªç’°ï¼Œå› ç‚ºæ•´å€‹ç‰©ä»¶æœƒåœ¨æŒçºŒæ™‚é–“çµæŸå¾Œè¢«éŠ·æ¯€
         {
-            // µÈ´ıÒ»‚€‚ûº¦ég¸ô
+            // ç­‰å¾…ä¸€å€‹å‚·å®³é–“éš”
             yield return new WaitForSeconds(tickInterval);
 
-            // Œ¦ÁĞ±íÖĞµÄËùÓĞ”³ÈËÔì³É‚ûº¦
-            // ÎÒ‚ƒÄááÍùÇ°±éšv£¬ÒÔ·ÀÓĞ”³ÈËÔÚÖĞÍ¾ËÀÍöŒ§ÖÂÁĞ±í×ƒ»¯
+            // å°åˆ—è¡¨ä¸­çš„æ‰€æœ‰æ•µäººé€ æˆå‚·å®³
+            // æˆ‘å€‘å¾å¾Œå¾€å‰éæ­·ï¼Œä»¥é˜²æœ‰æ•µäººåœ¨ä¸­é€”æ­»äº¡å°è‡´åˆ—è¡¨è®ŠåŒ–
             for (int i = enemiesInField.Count - 1; i >= 0; i--)
             {
                 if (enemiesInField[i] != null && !enemiesInField[i].IsDead)
@@ -75,7 +75,7 @@ public class PersistentAoeField : MonoBehaviour
                 }
                 else
                 {
-                    // Èç¹û”³ÈËÔÚÁĞ±íÖĞµ«ÒÑ½›ËÀÍö»òÊ§Ğ§£¬„tŒ¢ÆäÒÆ³ı
+                    // å¦‚æœæ•µäººåœ¨åˆ—è¡¨ä¸­ä½†å·²ç¶“æ­»äº¡æˆ–å¤±æ•ˆï¼Œå‰‡å°‡å…¶ç§»é™¤
                     enemiesInField.RemoveAt(i);
                 }
             }

@@ -1,43 +1,43 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-// Õâ¸ö½Å±¾×¨ÃÅ¹ÒÔÚ BOSS Ô¤ÖÆÌåÉÏ
-// ËüµÄ×÷ÓÃÖ»ÓĞÁ½¸ö£º
-// 1. ¸æËß UI "ÎÒÀ´ÁË£¬ÏÔÊ¾ÑªÌõ"
-// 2. ¸æËß UI "ÎÒËÀÁË/ÏûÊ§ÁË£¬Òş²ØÑªÌõ"
+// è¿™ä¸ªè„šæœ¬ä¸“é—¨æŒ‚åœ¨ BOSS é¢„åˆ¶ä½“ä¸Š
+// å®ƒçš„ä½œç”¨åªæœ‰ä¸¤ä¸ªï¼š
+// 1. å‘Šè¯‰ UI "æˆ‘æ¥äº†ï¼Œæ˜¾ç¤ºè¡€æ¡"
+// 2. å‘Šè¯‰ UI "æˆ‘æ­»äº†/æ¶ˆå¤±äº†ï¼Œéšè—è¡€æ¡"
 public class BossUnit : MonoBehaviour
 {
-    [Header("Boss ĞÅÏ¢ÅäÖÃ")]
-    public string bossName = "ÖÕ¼«»ú¼×¡¤Ô­ĞÍ»ú"; // Äã¿ÉÒÔÔÚ Inspector ÀïËæ±ã¸ÄÃû×Ö
+    [Header("Boss ä¿¡æ¯é…ç½®")]
+    public string bossName = "ç»ˆææœºç”²Â·åŸå‹æœº"; // ä½ å¯ä»¥åœ¨ Inspector é‡Œéšä¾¿æ”¹åå­—
 
     private Health myHealth;
 
     void Start()
     {
-        // 1. »ñÈ¡×ÔÉíµÄ Health ×é¼ş
-        // (Ç°ÌáÊÇÄãµÄ Boss ÉíÉÏ±ØĞë¹Ò×ÅÍ¨ÓÃµÄ Health ½Å±¾)
+        // 1. è·å–è‡ªèº«çš„ Health ç»„ä»¶
+        // (å‰ææ˜¯ä½ çš„ Boss èº«ä¸Šå¿…é¡»æŒ‚ç€é€šç”¨çš„ Health è„šæœ¬)
         myHealth = GetComponent<Health>();
 
         if (myHealth == null)
         {
-            Debug.LogError($"[BossUnit] ´íÎó£ºÔÚ {name} ÉíÉÏÕÒ²»µ½ Health ×é¼ş£¡ÑªÌõÎŞ·¨³õÊ¼»¯¡£");
+            Debug.LogError($"[BossUnit] é”™è¯¯ï¼šåœ¨ {name} èº«ä¸Šæ‰¾ä¸åˆ° Health ç»„ä»¶ï¼è¡€æ¡æ— æ³•åˆå§‹åŒ–ã€‚");
             return;
         }
 
-        // 2. ºô½Ğ UI µ¥Àı£¬°Ñ×Ô¼ºµÄÑªÁ¿Êı¾İ´«¹ıÈ¥
+        // 2. å‘¼å« UI å•ä¾‹ï¼ŒæŠŠè‡ªå·±çš„è¡€é‡æ•°æ®ä¼ è¿‡å»
         if (BossHealthBarUI.Instance != null)
         {
             BossHealthBarUI.Instance.InitializeBossBar(myHealth, bossName);
         }
         else
         {
-            // Èç¹û³¡¾°ÀïÍüÁË·Å UI Canvas£¬ÕâÀï»áÌáĞÑÄã
-            Debug.LogWarning("³¡¾°ÀïÕÒ²»µ½ BossHealthBarUI£¡Çë¼ì²éÊÇ·ñ´´½¨ÁË Canvas/BossHealthPanel¡£");
+            // å¦‚æœåœºæ™¯é‡Œå¿˜äº†æ”¾ UI Canvasï¼Œè¿™é‡Œä¼šæé†’ä½ 
+            Debug.LogWarning("åœºæ™¯é‡Œæ‰¾ä¸åˆ° BossHealthBarUIï¼è¯·æ£€æŸ¥æ˜¯å¦åˆ›å»ºäº† Canvas/BossHealthPanelã€‚");
         }
     }
 
     void OnDestroy()
     {
-        // µ± Boss ±»Ïú»ÙÊ±£¨ÎŞÂÛÊÇ±»´òËÀ»¹ÊÇ±»´úÂëÉ¾µô£©£¬Í¨Öª UI ¹Ø±ÕÑªÌõ
+        // å½“ Boss è¢«é”€æ¯æ—¶ï¼ˆæ— è®ºæ˜¯è¢«æ‰“æ­»è¿˜æ˜¯è¢«ä»£ç åˆ æ‰ï¼‰ï¼Œé€šçŸ¥ UI å…³é—­è¡€æ¡
         if (BossHealthBarUI.Instance != null)
         {
             BossHealthBarUI.Instance.HideBossBar();

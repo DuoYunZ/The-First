@@ -1,15 +1,15 @@
-// PlayerBeamController.cs
+ï»¿// PlayerBeamController.cs
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
 public class PlayerBeamController : MonoBehaviour
 {
     private LineRenderer lineRenderer;
-    private Transform target; // Ä£Ê½ A: Ëø¶¨Ä¿±ê
-    private Vector3 fireDirection; // Ä£Ê½ B: ¹Ì¶¨·½Ïò
-    private bool isDirectionalMode = false; // ÊÇ·ñÎª·½ÏòÄ£Ê½
-    private float beamLength = 10f; // ¼¤¹â³¤¶È
-    private LayerMask enemyLayer; // µĞÈË²ã¼¶
+    private Transform target; // æ¨¡å¼ A: é”å®šç›®æ ‡
+    private Vector3 fireDirection; // æ¨¡å¼ B: å›ºå®šæ–¹å‘
+    private bool isDirectionalMode = false; // æ˜¯å¦ä¸ºæ–¹å‘æ¨¡å¼
+    private float beamLength = 10f; // æ¿€å…‰é•¿åº¦
+    private LayerMask enemyLayer; // æ•Œäººå±‚çº§
 
     private WeaponPart launcher;
     private WeaponStatBlock stats;
@@ -18,7 +18,7 @@ public class PlayerBeamController : MonoBehaviour
     private float tickTimer;
     private int damagePerTick;
 
-    // ÓÉ WeaponPart µ÷ÓÃ
+    // ç”± WeaponPart è°ƒç”¨
     public void Initialize(WeaponStatBlock stats, WeaponPart launcher, Transform target)
     {
         InitCommon(stats, launcher);
@@ -26,7 +26,7 @@ public class PlayerBeamController : MonoBehaviour
         this.isDirectionalMode = false;
     }
 
-    // --- ³õÊ¼»¯·½·¨ 2: ·½Ïò´©Í¸Ä£Ê½ (ÓÃÓÚ¾Û½¹¼¤¹â) ---
+    // --- åˆå§‹åŒ–æ–¹æ³• 2: æ–¹å‘ç©¿é€æ¨¡å¼ (ç”¨äºèšç„¦æ¿€å…‰) ---
     public void InitializeDirectional(WeaponStatBlock stats, WeaponPart launcher, Vector3 direction, float length, LayerMask layer)
     {
         InitCommon(stats, launcher);
@@ -41,7 +41,7 @@ public class PlayerBeamController : MonoBehaviour
         this.lineRenderer = GetComponent<LineRenderer>();
         this.stats = stats;
         this.launcher = launcher;
-        // ¼ÆËãÃ¿Ò»ÌøµÄÉËº¦
+        // è®¡ç®—æ¯ä¸€è·³çš„ä¼¤å®³
         this.damagePerTick = Mathf.CeilToInt((float)stats.beamDamagePerSecond / stats.beamDamageTickRate);
     }
 
@@ -69,12 +69,12 @@ public class PlayerBeamController : MonoBehaviour
         Transform aimPoint = target.Find("AimTargetPoint");
         Vector3 endPoint = (aimPoint != null) ? aimPoint.position : target.position;
 
-        // ¸üĞÂÊÓ¾õ
+        // æ›´æ–°è§†è§‰
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
         UpdateImpactVFX(endPoint);
 
-        // Ôì³ÉÉËº¦ (µ¥Ìå)
+        // é€ æˆä¼¤å®³ (å•ä½“)
         tickTimer += Time.deltaTime;
         if (tickTimer >= (1f / stats.beamDamageTickRate))
         {
@@ -85,24 +85,24 @@ public class PlayerBeamController : MonoBehaviour
     }
     void UpdateDirectionalBeam()
     {
-        // ¼¤¹âÊ¼ÖÕ¸úËæ·¢ÉäÕß(Íæ¼Ò/ÎŞÈË»ú)ÒÆ¶¯£¬·½Ïò±£³Ö³õÊ¼»¯Ê±µÄ·½Ïò (»òÕßÃ¿Ö¡¸üĞÂ transform.forward)
-        // ÕâÀï¼ÙÉè¼¤¹â¸úËæ¸¸ÎïÌåĞı×ª£º
+        // æ¿€å…‰å§‹ç»ˆè·Ÿéšå‘å°„è€…(ç©å®¶/æ— äººæœº)ç§»åŠ¨ï¼Œæ–¹å‘ä¿æŒåˆå§‹åŒ–æ—¶çš„æ–¹å‘ (æˆ–è€…æ¯å¸§æ›´æ–° transform.forward)
+        // è¿™é‡Œå‡è®¾æ¿€å…‰è·Ÿéšçˆ¶ç‰©ä½“æ—‹è½¬ï¼š
         Vector3 startPoint = transform.position;
         Vector3 endPoint = startPoint + transform.forward * beamLength;
 
-        // ¸üĞÂÊÓ¾õ
+        // æ›´æ–°è§†è§‰
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
 
-        // ·½ÏòÄ£Ê½ÏÂ£¬ÊÜ»÷ÌØĞ§Í¨³£²»ÏÔÊ¾£¬»òÕßÏÔÊ¾ÔÚ×îÔ¶µÄÇ½±ÚÉÏ£¬ÕâÀïÔİÊ±ºöÂÔ
+        // æ–¹å‘æ¨¡å¼ä¸‹ï¼Œå—å‡»ç‰¹æ•ˆé€šå¸¸ä¸æ˜¾ç¤ºï¼Œæˆ–è€…æ˜¾ç¤ºåœ¨æœ€è¿œçš„å¢™å£ä¸Šï¼Œè¿™é‡Œæš‚æ—¶å¿½ç•¥
         if (activeImpactVfxInstance != null) activeImpactVfxInstance.SetActive(false);
 
-        // Ôì³ÉÉËº¦ (´©Í¸ AOE)
+        // é€ æˆä¼¤å®³ (ç©¿é€ AOE)
         tickTimer += Time.deltaTime;
         if (tickTimer >= (1f / stats.beamDamageTickRate))
         {
             tickTimer = 0f;
-            // Ê¹ÓÃ SphereCast »ò BoxCast ¼ì²âÂ·¾¶ÉÏËùÓĞµĞÈË
+            // ä½¿ç”¨ SphereCast æˆ– BoxCast æ£€æµ‹è·¯å¾„ä¸Šæ‰€æœ‰æ•Œäºº
             RaycastHit[] hits = Physics.SphereCastAll(startPoint, 0.5f, transform.forward, beamLength, enemyLayer);
             foreach (var hit in hits)
             {
@@ -127,7 +127,7 @@ public class PlayerBeamController : MonoBehaviour
     {
         if (enemyHealth == null) return;
 
-        // 1. »ù´¡ÉËº¦
+        // 1. åŸºç¡€ä¼¤å®³
         enemyHealth.TakeDamage(damagePerTick, enemyHealth.transform.position, launcher.gameObject, AttackType.Standard);
 
         if (BattleStatisticsManager.Instance != null && stats != null)
@@ -135,7 +135,7 @@ public class PlayerBeamController : MonoBehaviour
             BattleStatisticsManager.Instance.AddDamage(stats.weaponName, damagePerTick);
         }
 
-        // 2. ÄÜÁ¿Ê¯Âß¼­ (Ö±½Ó¸´ÓÃÄãÖ®Ç°µÄ´úÂë£¬·â×°ÔÚÕâÀï)
+        // 2. èƒ½é‡çŸ³é€»è¾‘ (ç›´æ¥å¤ç”¨ä½ ä¹‹å‰çš„ä»£ç ï¼Œå°è£…åœ¨è¿™é‡Œ)
         StatusEffectReceiver receiver = enemyHealth.GetComponent<StatusEffectReceiver>();
         if (receiver != null && launcher != null && launcher.currentStone != null)
         {
@@ -150,7 +150,7 @@ public class PlayerBeamController : MonoBehaviour
                     receiver.ApplyBurn(stone.burnDamage, stone.burnDuration, stone.burnTickInterval); //
             }
 
-            // 2. º®±ùÊ¯
+            // 2. å¯’å†°çŸ³
             if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow)) //
             {
                 receiver.ApplySlow(stone.slowPercentage, stone.slowDuration, stone.slowColor); //
@@ -159,7 +159,7 @@ public class PlayerBeamController : MonoBehaviour
                     receiver.ApplyStun(stone.freezeDuration, stone.freezeVfxPrefab); //
             }
 
-            // 3. À×µçÊ¯
+            // 3. é›·ç”µçŸ³
             if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain)) //
             {
                 int smiteDamage = Mathf.RoundToInt(stone.smiteDamage * (PlayerStats.Instance.damageMultiplier + stone.damageModifier) + PlayerStats.Instance.flatDamageBonus); //
@@ -178,7 +178,7 @@ public class PlayerBeamController : MonoBehaviour
                 }
             }
 
-            // 4. ´óµØÊ¯ (Ñ£ÔÎ)
+            // 4. å¤§åœ°çŸ³ (çœ©æ™•)
             if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun)) //
             {
                 float finalStunChance = (PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyStun) >= 2) ? stone.stunChance_Stacked : stone.stunChance; //
@@ -186,7 +186,7 @@ public class PlayerBeamController : MonoBehaviour
                     receiver.ApplyStun(stone.stunDuration); //
             }
 
-            // 5. ·ç±©Ê¯ (»÷ÍË)
+            // 5. é£æš´çŸ³ (å‡»é€€)
             if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback)) //
             {
                 float finalKnockbackForce = (PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback) >= 2) ? stone.knockbackForce_Stacked : stone.knockbackForce; //
@@ -195,11 +195,11 @@ public class PlayerBeamController : MonoBehaviour
                 receiver.ApplyKnockback(pushDir, finalKnockbackForce); //
             }
 
-            // 6. ¸¯Ê´Ê¯
+            // 6. è…èš€çŸ³
             if (stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode)) //
             {
                 float finalCorrodeMultiplier = (PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyCorrode) >= 2) ? stone.corrodeMultiplier_Stacked : stone.corrodeMultiplier; //
-                receiver.ApplyCorrode(finalCorrodeMultiplier, 5f, stone.corrodeColor); // (5f ÊÇË²Ê±debuffµÄÊ¾Àı³ÖĞøÊ±¼ä)
+                receiver.ApplyCorrode(finalCorrodeMultiplier, 5f, stone.corrodeColor); // (5f æ˜¯ç¬æ—¶debuffçš„ç¤ºä¾‹æŒç»­æ—¶é—´)
             }
         }
     }

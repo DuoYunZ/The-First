@@ -1,32 +1,32 @@
-// ´´½¨ĞÂ½Å±¾ Orbiter.cs
+ï»¿// åˆ›å»ºæ–°è„šæœ¬ Orbiter.cs
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 public class Orbiter : MonoBehaviour
 {
-    [Header("»ù´¡ÉèÖÃ")]
+    [Header("åŸºç¡€è®¾ç½®")]
     public float selfRotationSpeed = 1440f;
     private int damage = 10;
     private WeaponPart launcher;
 
-    [Header("ÀäÈ´ÉèÖÃ")]
+    [Header("å†·å´è®¾ç½®")]
     private float hitCooldown = 0.5f;
     private float lastHitTime = -1f;
     private Dictionary<Health, float> hitTargetsCooldown = new Dictionary<Health, float>();
 
-    [Header("·ç±©½ø»¯ (Wind Evolution)")]
+    [Header("é£æš´è¿›åŒ– (Wind Evolution)")]
     private float currentSpinSpeed;
     private float windSpinTimer = 0f;
-    // ¼ÙÉè WeaponStatBlock ÀïÎÒÃÇÒªÈ¥¶ÁÈ¡ÕâĞ©ÌØÊâ²ÎÊı£¬
-    // ÎªÁË·½±ã£¬ÕâÀïÒ²¿ÉÒÔÖ±½Ó¶¨ÒåÄ¬ÈÏÖµ£¬»òÕß´Ó launcher.StatBlock ¶ÁÈ¡×Ô¶¨Òå×Ö¶Î
-    private float windMaxSpeedMultiplier = 3.0f; // ×î´ó×ªËÙ±¶ÂÊ
-    private float windRampUpTime = 3.0f; // ¼ÓËÙËùĞèÊ±¼ä
+    // å‡è®¾ WeaponStatBlock é‡Œæˆ‘ä»¬è¦å»è¯»å–è¿™äº›ç‰¹æ®Šå‚æ•°ï¼Œ
+    // ä¸ºäº†æ–¹ä¾¿ï¼Œè¿™é‡Œä¹Ÿå¯ä»¥ç›´æ¥å®šä¹‰é»˜è®¤å€¼ï¼Œæˆ–è€…ä» launcher.StatBlock è¯»å–è‡ªå®šä¹‰å­—æ®µ
+    private float windMaxSpeedMultiplier = 3.0f; // æœ€å¤§è½¬é€Ÿå€ç‡
+    private float windRampUpTime = 3.0f; // åŠ é€Ÿæ‰€éœ€æ—¶é—´
     private bool isWindEvolution = false;
 
-    [Header("´óµØ½ø»¯ (Earth Evolution)")]
+    [Header("å¤§åœ°è¿›åŒ– (Earth Evolution)")]
     private bool isEarthEvolution = false;
 
-    [Header("À×µç½ø»¯ (Lightning Evolution)")]
+    [Header("é›·ç”µè¿›åŒ– (Lightning Evolution)")]
     private bool isLightningEvolution = false;
 
     public void Initialize(int damage, WeaponPart part)
@@ -35,18 +35,18 @@ public class Orbiter : MonoBehaviour
         this.launcher = part;
         this.currentSpinSpeed = selfRotationSpeed;
 
-        // --- Ê¶±ğ½ø»¯ÀàĞÍ ---
+        // --- è¯†åˆ«è¿›åŒ–ç±»å‹ ---
         if (launcher != null && launcher.StatBlock != null)
         {
             WeaponStatBlock stats = launcher.StatBlock;
 
-            // ÕâÀïÎÒÃÇÍ¨¹ı¼òµ¥µÄÂß¼­ÅĞ¶Ï½ø»¯ÀàĞÍ
-            // Êµ¼ÊÏîÄ¿ÖĞ£¬½¨ÒéÔÚ WeaponStatBlock Àï¼Ó¸ö Enum EvolutionType
-            isEarthEvolution = stats.weaponName.Contains("¶Ü") || stats.weaponName.Contains("Shield"); // Ê¾ÀıÅĞ¶Ï
-            isWindEvolution = stats.weaponName.Contains("·ç") || stats.weaponName.Contains("Storm");
-            isLightningEvolution = stats.baseChainCount > 0 || stats.weaponName.Contains("À×");
+            // è¿™é‡Œæˆ‘ä»¬é€šè¿‡ç®€å•çš„é€»è¾‘åˆ¤æ–­è¿›åŒ–ç±»å‹
+            // å®é™…é¡¹ç›®ä¸­ï¼Œå»ºè®®åœ¨ WeaponStatBlock é‡ŒåŠ ä¸ª Enum EvolutionType
+            isEarthEvolution = stats.weaponName.Contains("ç›¾") || stats.weaponName.Contains("Shield"); // ç¤ºä¾‹åˆ¤æ–­
+            isWindEvolution = stats.weaponName.Contains("é£") || stats.weaponName.Contains("Storm");
+            isLightningEvolution = stats.baseChainCount > 0 || stats.weaponName.Contains("é›·");
 
-            // Èç¹ûÊÇ·çÊôĞÔ£¬Ó¦ÓÃÔ­Éú»÷ÍË
+            // å¦‚æœæ˜¯é£å±æ€§ï¼Œåº”ç”¨åŸç”Ÿå‡»é€€
             if (stats.nativeKnockback) isWindEvolution = true;
         }
     }
@@ -55,25 +55,25 @@ public class Orbiter : MonoBehaviour
     {
         float speedToUse = selfRotationSpeed;
 
-        // --- ·ç±©½ø»¯Âß¼­£ºÔ½×ªÔ½¿ì ---
+        // --- é£æš´è¿›åŒ–é€»è¾‘ï¼šè¶Šè½¬è¶Šå¿« ---
         if (isWindEvolution)
         {
             windSpinTimer += Time.deltaTime;
 
-            // ¼ÆËãµ±Ç°¼ÓËÙ±ÈÀı (0 µ½ 1)
+            // è®¡ç®—å½“å‰åŠ é€Ÿæ¯”ä¾‹ (0 åˆ° 1)
             float t = Mathf.Clamp01(windSpinTimer / windRampUpTime);
-            // ËÙ¶È²åÖµ
+            // é€Ÿåº¦æ’å€¼
             speedToUse = Mathf.Lerp(selfRotationSpeed, selfRotationSpeed * windMaxSpeedMultiplier, t);
 
-            // ´ïµ½×î´óËÙ¶È£¬Ë¦³öÁú¾í·ç²¢ÖØÖÃ
+            // è¾¾åˆ°æœ€å¤§é€Ÿåº¦ï¼Œç”©å‡ºé¾™å·é£å¹¶é‡ç½®
             if (windSpinTimer >= windRampUpTime)
             {
                 ThrowTornado();
-                windSpinTimer = 0f; // ÖØÖÃ£¬ÖØĞÂ¿ªÊ¼¼ÓËÙÑ­»·
+                windSpinTimer = 0f; // é‡ç½®ï¼Œé‡æ–°å¼€å§‹åŠ é€Ÿå¾ªç¯
             }
         }
 
-        // ÈÆ Y ÖáĞı×ª
+        // ç»• Y è½´æ—‹è½¬
         transform.Rotate(Vector3.up, speedToUse * Time.deltaTime);
     }
 
@@ -83,7 +83,7 @@ public class Orbiter : MonoBehaviour
 
         if (launcher.StatBlock.subProjectilePrefab != null)
         {
-            // 1. ¼ÆËãÅ×³ö·½Ïò (±³ÀëÔ²ĞÄ)
+            // 1. è®¡ç®—æŠ›å‡ºæ–¹å‘ (èƒŒç¦»åœ†å¿ƒ)
             Vector3 throwDir = Vector3.zero;
 
             if (transform.parent != null)
@@ -91,23 +91,23 @@ public class Orbiter : MonoBehaviour
                 throwDir = (transform.position - transform.parent.position).normalized;
             }
 
-            // ¡¾ĞŞ¸´¡¿Èç¹ûËã³öÀ´µÄ·½ÏòÊÇ0 (±ÈÈçÔ²ĞÄÖØºÏ)£¬¾ÍÄ¬ÈÏÏòÇ°·É£¬·ÀÖ¹²»¶¯
+            // ã€ä¿®å¤ã€‘å¦‚æœç®—å‡ºæ¥çš„æ–¹å‘æ˜¯0 (æ¯”å¦‚åœ†å¿ƒé‡åˆ)ï¼Œå°±é»˜è®¤å‘å‰é£ï¼Œé˜²æ­¢ä¸åŠ¨
             if (throwDir == Vector3.zero)
             {
                 throwDir = transform.forward;
             }
 
-            // Ç¿ÖÆË®Æ½
+            // å¼ºåˆ¶æ°´å¹³
             throwDir.y = 0;
             throwDir.Normalize();
 
-            // 2. Éú³ÉÁú¾í·ç
-            // ÉÔÎ¢ÏòÍâÆ«ÒÆÒ»µãÉú³É£¬·ÀÖ¹ºÍ¶ÜÅÆÖØµş
+            // 2. ç”Ÿæˆé¾™å·é£
+            // ç¨å¾®å‘å¤–åç§»ä¸€ç‚¹ç”Ÿæˆï¼Œé˜²æ­¢å’Œç›¾ç‰Œé‡å 
             Vector3 spawnPos = transform.position + throwDir * 1.0f;
 
             GameObject tornado = Instantiate(launcher.StatBlock.subProjectilePrefab, spawnPos, Quaternion.LookRotation(throwDir));
 
-            // 3. ³õÊ¼»¯
+            // 3. åˆå§‹åŒ–
             Projectile p = tornado.GetComponent<Projectile>();
             int tornadoDmg = Mathf.RoundToInt(damage * 0.5f);
             if (tornadoDmg < 1) tornadoDmg = 1;
@@ -116,11 +116,11 @@ public class Orbiter : MonoBehaviour
             {
                 p.InitializeAsStraight(
                     throwDir,
-                    8f, // ËÙ¶ÈÉÔÎ¢ÂıÒ»µã£¬·½±ãÎü¹Ö
-                    0,  // ¡¾¹Ø¼ü¡¿Projectile Ö±½ÓÉËº¦ÉèÎª 0£¡ÍêÈ«ÓÉ TornadoController ½Ó¹ÜÉËº¦
+                    8f, // é€Ÿåº¦ç¨å¾®æ…¢ä¸€ç‚¹ï¼Œæ–¹ä¾¿å¸æ€ª
+                    0,  // ã€å…³é”®ã€‘Projectile ç›´æ¥ä¼¤å®³è®¾ä¸º 0ï¼å®Œå…¨ç”± TornadoController æ¥ç®¡ä¼¤å®³
                     false,
-                    999, // ÎŞÏŞ´©Í¸
-                    4f,  // ´æ»î 4 Ãë
+                    999, // æ— é™ç©¿é€
+                    4f,  // å­˜æ´» 4 ç§’
                     launcher.StatBlock.shieldImpactEffectPrefab,
                     launcher.StatBlock.defaultImpactEffectPrefab,
                     0, 0, 0, 0, 0,
@@ -129,7 +129,7 @@ public class Orbiter : MonoBehaviour
                 );
             }
 
-            // 4. ¡¾ĞÂÔö¡¿³õÊ¼»¯Áú¾í·çÂß¼­ (TornadoController)
+            // 4. ã€æ–°å¢ã€‘åˆå§‹åŒ–é¾™å·é£é€»è¾‘ (TornadoController)
             TornadoController tc = tornado.GetComponent<TornadoController>();
             if (tc != null)
             {
@@ -137,7 +137,7 @@ public class Orbiter : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("Éú³ÉµÄÁú¾í·çÔ¤ÖÆÌåÉÏÈ±ÉÙ 'TornadoController' ½Å±¾£¡");
+                Debug.LogWarning("ç”Ÿæˆçš„é¾™å·é£é¢„åˆ¶ä½“ä¸Šç¼ºå°‘ 'TornadoController' è„šæœ¬ï¼");
             }
         }
     }
@@ -148,11 +148,11 @@ public class Orbiter : MonoBehaviour
         {
             if (other.CompareTag("EnemyProjectile"))
             {
-                // ²¥·ÅÒ»¸ö¸ñµ²ÌØĞ§ (Èç¹ûĞèÒª)
+                // æ’­æ”¾ä¸€ä¸ªæ ¼æŒ¡ç‰¹æ•ˆ (å¦‚æœéœ€è¦)
                 // Instantiate(blockEffect, transform.position, ...);
 
                 Destroy(other.gameObject);
-                return; // µ²×¡×Óµ¯¾Í²»´¦ÀíºóÃæµÄÉËº¦Âß¼­ÁË
+                return; // æŒ¡ä½å­å¼¹å°±ä¸å¤„ç†åé¢çš„ä¼¤å®³é€»è¾‘äº†
             }
         }
 
@@ -160,69 +160,69 @@ public class Orbiter : MonoBehaviour
 
         Health enemyHealth = other.GetComponentInParent<Health>();
 
-        // ¼ì²éÊÇ·ñ»ñÈ¡µ½ÓĞĞ§µÄHealth×é¼ş£¬ÒÔ¼°µĞÈËÊÇ·ñÒÑËÀÍö
+        // æ£€æŸ¥æ˜¯å¦è·å–åˆ°æœ‰æ•ˆçš„Healthç»„ä»¶ï¼Œä»¥åŠæ•Œäººæ˜¯å¦å·²æ­»äº¡
         if (enemyHealth == null || enemyHealth.IsDead) return;
 
-        // ¡¾ĞŞ¸Äºó¡¿µÄÀäÈ´ÅĞ¶ÏÂß¼­
-        // ¼ì²é1: ×ÖµäÀïÊÇ·ñÒÑ¾­ÓĞÕâ¸öµĞÈËÁË£¿
+        // ã€ä¿®æ”¹åã€‘çš„å†·å´åˆ¤æ–­é€»è¾‘
+        // æ£€æŸ¥1: å­—å…¸é‡Œæ˜¯å¦å·²ç»æœ‰è¿™ä¸ªæ•Œäººäº†ï¼Ÿ
         if (hitTargetsCooldown.ContainsKey(enemyHealth))
         {
-            // Èç¹ûÓĞ£¬ÔÙ¼ì²éËüµÄ¶ÀÁ¢ÀäÈ´Ê±¼äÊÇ·ñÒÑ¹ı
+            // å¦‚æœæœ‰ï¼Œå†æ£€æŸ¥å®ƒçš„ç‹¬ç«‹å†·å´æ—¶é—´æ˜¯å¦å·²è¿‡
             if (Time.time > hitTargetsCooldown[enemyHealth] + hitCooldown)
             {
-                // ÀäÈ´ÒÑ¹ı£¬¿ÉÒÔÔÙ´ÎÔì³ÉÉËº¦
+                // å†·å´å·²è¿‡ï¼Œå¯ä»¥å†æ¬¡é€ æˆä¼¤å®³
                 ApplyDamage(enemyHealth);
             }
-            // Èç¹ûÀäÈ´Ã»¹ı£¬ÔòÊ²Ã´¶¼²»×ö
+            // å¦‚æœå†·å´æ²¡è¿‡ï¼Œåˆ™ä»€ä¹ˆéƒ½ä¸åš
         }
         else
         {
-            // Èç¹û×ÖµäÀïÃ»ÓĞÕâ¸öµĞÈË£¬ËµÃ÷ÊÇµÚÒ»´ÎÃüÖĞ£¬Ö±½ÓÔì³ÉÉËº¦
+            // å¦‚æœå­—å…¸é‡Œæ²¡æœ‰è¿™ä¸ªæ•Œäººï¼Œè¯´æ˜æ˜¯ç¬¬ä¸€æ¬¡å‘½ä¸­ï¼Œç›´æ¥é€ æˆä¼¤å®³
             ApplyDamage(enemyHealth);
         }
     }
     private void ApplyDamage(Health enemyHealth)
     {
-        // 1. Ôì³É»ù´¡ÉËº¦
+        // 1. é€ æˆåŸºç¡€ä¼¤å®³
         enemyHealth.TakeDamage(damage, transform.position, this.gameObject, AttackType.Standard);
 
-        // 2. ¸üĞÂ¸ÃµĞÈËµÄÀäÈ´Ê±¼ä
+        // 2. æ›´æ–°è¯¥æ•Œäººçš„å†·å´æ—¶é—´
         hitTargetsCooldown[enemyHealth] = Time.time;
 
-        // 3. Í³¼ÆÉËº¦Êı¾İ
+        // 3. ç»Ÿè®¡ä¼¤å®³æ•°æ®
         if (BattleStatisticsManager.Instance != null && launcher != null && launcher.StatBlock != null)
         {
             BattleStatisticsManager.Instance.AddDamage(launcher.StatBlock.weaponName, damage);
         }
 
         // =========================================================
-        //  ºËĞÄÂß¼­£ºÔªËØÓëÒì³£×´Ì¬ÅĞ¶¨
+        //  æ ¸å¿ƒé€»è¾‘ï¼šå…ƒç´ ä¸å¼‚å¸¸çŠ¶æ€åˆ¤å®š
         // =========================================================
 
-        // »ù´¡°²È«¼ì²é
+        // åŸºç¡€å®‰å…¨æ£€æŸ¥
         if (launcher == null) return;
 
         StatusEffectReceiver receiver = enemyHealth.GetComponent<StatusEffectReceiver>();
         WeaponStatBlock stats = launcher.StatBlock;
-        EnergyStoneSO stone = launcher.currentStone; // »ñÈ¡µ±Ç°ÏâÇ¶µÄÊ¯Í·
+        EnergyStoneSO stone = launcher.currentStone; // è·å–å½“å‰é•¶åµŒçš„çŸ³å¤´
 
-        // Èç¹ûÃ»ÓĞ½ÓÊÕÆ÷»òÎäÆ÷Êı¾İ£¬ÎŞ·¨Ó¦ÓÃÌØĞ§
+        // å¦‚æœæ²¡æœ‰æ¥æ”¶å™¨æˆ–æ­¦å™¨æ•°æ®ï¼Œæ— æ³•åº”ç”¨ç‰¹æ•ˆ
         if (receiver == null || stats == null) return;
 
         // ---------------------------------------------------------
-        // 1. À×µçÂß¼­ (Lightning Logic) - [ºËĞÄĞŞ¸Ä£º¸ĞµçÁª¶¯]
+        // 1. é›·ç”µé€»è¾‘ (Lightning Logic) - [æ ¸å¿ƒä¿®æ”¹ï¼šæ„Ÿç”µè”åŠ¨]
         // ---------------------------------------------------------
-        // ÅĞ¶¨Ìõ¼ş£ºÊÇÀ×µç½ø»¯ÎäÆ÷ OR ÏâÇ¶ÁËÀ×Ê¯
+        // åˆ¤å®šæ¡ä»¶ï¼šæ˜¯é›·ç”µè¿›åŒ–æ­¦å™¨ OR é•¶åµŒäº†é›·çŸ³
         bool isLightningWeapon = isLightningEvolution || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain));
 
         if (isLightningWeapon)
         {
-            // Æô¶¯Ğ­³Ì£¬´¦ÀíÀ×µçµÄÑÓ³Ù´¥·¢
+            // å¯åŠ¨åç¨‹ï¼Œå¤„ç†é›·ç”µçš„å»¶è¿Ÿè§¦å‘
             StartCoroutine(DelayedLightningRoutine(enemyHealth, receiver, stone, stats));
         }
 
         // ---------------------------------------------------------
-        // 2. »ğÑæÂß¼­ (Fire Logic)
+        // 2. ç«ç„°é€»è¾‘ (Fire Logic)
         // ---------------------------------------------------------
         bool hasBurn = stats.nativeBurn || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn));
 
@@ -230,54 +230,54 @@ public class Orbiter : MonoBehaviour
         {
             int fireStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyBurn);
 
-            // È·¶¨ÊıÖµ£ºÓÅÏÈÓÃÊ¯Í·£¬·ñÔòÓÃÔ­Éú
+            // ç¡®å®šæ•°å€¼ï¼šä¼˜å…ˆç”¨çŸ³å¤´ï¼Œå¦åˆ™ç”¨åŸç”Ÿ
             int bDmg = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDamage : stats.baseDotDamage;
             float bDur = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnDuration : stats.baseDotDuration;
             float bTick = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyBurn)) ? stone.burnTickInterval : stats.dotTickInterval;
 
-            // ¶ÑµşÒı±¬Âß¼­
+            // å †å å¼•çˆ†é€»è¾‘
             if (fireStoneCount >= 2 && receiver.IsBurning)
             {
                 receiver.Ignite();
             }
             else if (!receiver.IsBurning)
             {
-                // Ê©¼ÓÈ¼ÉÕ
+                // æ–½åŠ ç‡ƒçƒ§
                 receiver.ApplyBurn(bDmg, bDur, bTick, stats.weaponName);
             }
         }
 
         // ---------------------------------------------------------
-        // 3. ·ç±©/»÷ÍËÂß¼­ (Wind Logic)
+        // 3. é£æš´/å‡»é€€é€»è¾‘ (Wind Logic)
         // ---------------------------------------------------------
-        // ÕâÀïµÄ»÷ÍË¶ÔÓÚ»·ÈÆÎïºÜÓĞÓÃ£¬¿ÉÒÔ°Ñ¹ÖÍÆ¿ª·ÀÖ¹ÌùÁ³
+        // è¿™é‡Œçš„å‡»é€€å¯¹äºç¯ç»•ç‰©å¾ˆæœ‰ç”¨ï¼Œå¯ä»¥æŠŠæ€ªæ¨å¼€é˜²æ­¢è´´è„¸
         bool hasKnockback = stats.nativeKnockback || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback));
 
         if (hasKnockback)
         {
             float kForce = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyKnockback)) ? stone.knockbackForce : stats.nativeKnockbackForce;
 
-            // ¶ÑµşÔöÇ¿
+            // å †å å¢å¼º
             int windStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback);
             if (windStoneCount >= 2 && stone != null) kForce = stone.knockbackForce_Stacked;
 
-            // ¼ÆËã·½Ïò£º´ÓÍæ¼ÒÖĞĞÄ -> ÍÆÏò¹ÖÎï (¾¶ÏòÍÆ¿ª)
+            // è®¡ç®—æ–¹å‘ï¼šä»ç©å®¶ä¸­å¿ƒ -> æ¨å‘æ€ªç‰© (å¾„å‘æ¨å¼€)
             Vector3 pushDir = (enemyHealth.transform.position - transform.parent.position).normalized;
             pushDir.y = 0;
 
-            // Ê©¼Ó»÷ÍË (¸øÓè½Ï¶ÌµÄÊ±¼ä 0.1f£¬ÒòÎª»·ÈÆÎï¹¥ËÙ¿ì)
+            // æ–½åŠ å‡»é€€ (ç»™äºˆè¾ƒçŸ­çš„æ—¶é—´ 0.1fï¼Œå› ä¸ºç¯ç»•ç‰©æ”»é€Ÿå¿«)
             receiver.ApplyKnockback(pushDir, kForce, 0.1f);
         }
 
         // ---------------------------------------------------------
-        // 4. º®±ù/¼õËÙÂß¼­ (Ice Logic)
+        // 4. å¯’å†°/å‡é€Ÿé€»è¾‘ (Ice Logic)
         // ---------------------------------------------------------
         if (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplySlow))
         {
             receiver.ApplySlow(stone.slowPercentage, stone.slowDuration, stone.slowColor);
 
             int iceStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplySlow);
-            // ±ù¶³ÅĞ¶¨
+            // å†°å†»åˆ¤å®š
             if (iceStoneCount >= 2 && receiver.IsSlowed && !receiver.IsStunned)
             {
                 if (Random.value <= stone.freezeChance)
@@ -288,7 +288,7 @@ public class Orbiter : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // 5. ¸¯Ê´/¾ç¶¾Âß¼­ (Corrode Logic)
+        // 5. è…èš€/å‰§æ¯’é€»è¾‘ (Corrode Logic)
         // ---------------------------------------------------------
         bool hasCorrode = stats.nativeCorrode || (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyCorrode));
 
@@ -312,7 +312,7 @@ public class Orbiter : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // 6. ´óµØ/Ñ£ÔÎÂß¼­ (Earth Logic)
+        // 6. å¤§åœ°/çœ©æ™•é€»è¾‘ (Earth Logic)
         // ---------------------------------------------------------
         if (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyStun))
         {
@@ -328,18 +328,18 @@ public class Orbiter : MonoBehaviour
 
     private IEnumerator DelayedLightningRoutine(Health target, StatusEffectReceiver receiver, EnergyStoneSO stone, WeaponStatBlock stats)
     {
-        // 1. ÑÓ³Ù 0.1 Ãë (ÈÃÉËº¦Ìø×Ö´í¿ª)
+        // 1. å»¶è¿Ÿ 0.1 ç§’ (è®©ä¼¤å®³è·³å­—é”™å¼€)
         yield return new WaitForSeconds(0.1f);
 
         if (target == null || target.IsDead) yield break;
 
-        // 2. ÅĞ¶¨´¥·¢¸ÅÂÊ
+        // 2. åˆ¤å®šè§¦å‘æ¦‚ç‡
         float chance = (stone != null && stone.stoneEffects.Contains(EnergyStoneEffectType.ApplyChain))
                        ? stone.lightningChance
                        : stats.nativeLightningChance;
 
-        // 3. ÅĞ¶¨À×»÷ (¸Ğµç±Ø±¬ OR Ëæ»ú)
-        // ×¢Òâ£ºÕâÀïµÄ IsElectrified ¼ì²éµÄÊÇ 0.1ÃëÇ°µÄ×´Ì¬£¬»òÕßÊÇÆäËûÎäÆ÷¹ÒÉÏµÄ
+        // 3. åˆ¤å®šé›·å‡» (æ„Ÿç”µå¿…çˆ† OR éšæœº)
+        // æ³¨æ„ï¼šè¿™é‡Œçš„ IsElectrified æ£€æŸ¥çš„æ˜¯ 0.1ç§’å‰çš„çŠ¶æ€ï¼Œæˆ–è€…æ˜¯å…¶ä»–æ­¦å™¨æŒ‚ä¸Šçš„
         bool shouldTriggerSmite = receiver.IsElectrified || (Random.value <= chance);
 
         if (shouldTriggerSmite)
@@ -347,17 +347,17 @@ public class Orbiter : MonoBehaviour
             TriggerLightningEffect(target, stone, stats, damage);
         }
 
-        // 4. ¡¾ºËĞÄĞŞ¸´¡¿Ê©¼Ó¸Ğµç (½öÏŞ½ø»¯ÎäÆ÷£¡)
-        // ¹æÔò£ºµ¥´¿µÄÀ×Ê¯(Stone)²»¸ø¸Ğµç£¬Ö»ÓĞ½ø»¯ºóµÄ(Native)²Å¸ø
+        // 4. ã€æ ¸å¿ƒä¿®å¤ã€‘æ–½åŠ æ„Ÿç”µ (ä»…é™è¿›åŒ–æ­¦å™¨ï¼)
+        // è§„åˆ™ï¼šå•çº¯çš„é›·çŸ³(Stone)ä¸ç»™æ„Ÿç”µï¼Œåªæœ‰è¿›åŒ–åçš„(Native)æ‰ç»™
         if (stats.nativeElectrify)
         {
-            // Ê©¼Ó¸Ğµç£¬ÎªÏÂÒ»´Î¹¥»÷×ö±Ø±¬ÆÌµæ
+            // æ–½åŠ æ„Ÿç”µï¼Œä¸ºä¸‹ä¸€æ¬¡æ”»å‡»åšå¿…çˆ†é“ºå«
             receiver.ApplyElectrified(3.0f);
         }
     }
     private void TriggerLightningEffect(Health target, EnergyStoneSO stone, WeaponStatBlock stats, int baseDmg)
     {
-        // 1. ¼ÆËãÀ×»÷ÉËº¦
+        // 1. è®¡ç®—é›·å‡»ä¼¤å®³
         int smiteDmg = 0;
         GameObject smiteVfx = null;
 
@@ -372,17 +372,17 @@ public class Orbiter : MonoBehaviour
             smiteVfx = stats.nativeSmiteVfxPrefab;
         }
 
-        // 2. Ôì³ÉÉËº¦
+        // 2. é€ æˆä¼¤å®³
         target.TakeDamage(smiteDmg, target.transform.position, launcher.gameObject, AttackType.Standard);
         if (smiteVfx != null) Instantiate(smiteVfx, target.transform.position, Quaternion.identity);
 
-        // 3. ¼ÆÊıÆ÷ & Á¬Ëø
+        // 3. è®¡æ•°å™¨ & è¿é”
         int chainStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyChain);
-        // Èç¹ûÊÇÀ×½ø»¯ÎäÆ÷£¬ÎŞÌõ¼ş¼ÆÊı
+        // å¦‚æœæ˜¯é›·è¿›åŒ–æ­¦å™¨ï¼Œæ— æ¡ä»¶è®¡æ•°
         if (isLightningEvolution || chainStoneCount >= 1)
         {
             PlayerStats.Instance.lightningSmiteCounter++;
-            // »·ÈÆÎï¹¥ËÙ¼«¿ì£¬½¨ÒéãĞÖµµ÷¸ßÒ»µã£¬±ÈÈç 5 »ò 8£¬·ñÔòÂúÆÁÉÁµçÌ«¿¨ÁË
+            // ç¯ç»•ç‰©æ”»é€Ÿæå¿«ï¼Œå»ºè®®é˜ˆå€¼è°ƒé«˜ä¸€ç‚¹ï¼Œæ¯”å¦‚ 5 æˆ– 8ï¼Œå¦åˆ™æ»¡å±é—ªç”µå¤ªå¡äº†
             int threshold = 5;
 
             if (PlayerStats.Instance.lightningSmiteCounter >= threshold)
@@ -394,8 +394,8 @@ public class Orbiter : MonoBehaviour
                 GameObject cVfx = (stone != null) ? stone.chainVfxPrefab : stats.nativeChainVfxPrefab;
                 GameObject cImp = (stone != null) ? stone.chainImpactVfxPrefab : stats.nativeChainImpactVfxPrefab;
 
-                // ÎÒÃÇÃ»ÓĞÖ±½ÓÒıÓÃ launcher.ChainLightningFromTarget ÒòÎªËüÀïÃæ¿ÉÄÜÓĞ¾ÉÂß¼­
-                // ×îºÃÊÇ°ÑÄÇ¸öĞ­³Ì¹«¿ª£¬»òÕßÔÚÕâÀïÖ±½ÓÓÃ launcher µ÷ÓÃ
+                // æˆ‘ä»¬æ²¡æœ‰ç›´æ¥å¼•ç”¨ launcher.ChainLightningFromTarget å› ä¸ºå®ƒé‡Œé¢å¯èƒ½æœ‰æ—§é€»è¾‘
+                // æœ€å¥½æ˜¯æŠŠé‚£ä¸ªåç¨‹å…¬å¼€ï¼Œæˆ–è€…åœ¨è¿™é‡Œç›´æ¥ç”¨ launcher è°ƒç”¨
                 launcher.ChainLightningFromTarget(target.transform, cCount, smiteDmg, cRange);
             }
         }

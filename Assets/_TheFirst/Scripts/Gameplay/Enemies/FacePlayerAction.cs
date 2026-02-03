@@ -1,4 +1,4 @@
-// --- FacePlayerAction.cs ---
+ï»¿// --- FacePlayerAction.cs ---
 using UnityEngine;
 
 public class FacePlayerAction : Node
@@ -8,7 +8,7 @@ public class FacePlayerAction : Node
 
     void Awake()
     {
-        // Í¬Ñù£¬°²È«µØ»ñÈ¡BossµÄ¸ùTransform
+        // åŒæ ·ï¼Œå®‰å…¨åœ°è·å–Bossçš„æ ¹Transform
         Rigidbody bossRb = GetComponentInParent<Rigidbody>();
         if (bossRb != null)
         {
@@ -29,15 +29,15 @@ public class FacePlayerAction : Node
             return NodeState.FAILURE;
         }
 
-        // ¼ÆËãÍûÏòÍæ¼ÒµÄ·½Ïò
+        // è®¡ç®—æœ›å‘ç©å®¶çš„æ–¹å‘
         Vector3 direction = (playerTarget.position - selfTransform.position).normalized;
-        direction.y = 0; // ±£³ÖË®Æ½
+        direction.y = 0; // ä¿æŒæ°´å¹³
 
-        // ´´½¨Ä¿±êĞı×ªÖµ²¢ÈÃBossË²¼ä×ªÏò
+        // åˆ›å»ºç›®æ ‡æ—‹è½¬å€¼å¹¶è®©Bossç¬é—´è½¬å‘
         Quaternion targetRotation = Quaternion.LookRotation(direction);
         selfTransform.rotation = targetRotation;
 
-        // Õâ¸ö¶¯×÷Ë²¼äÍê³É£¬ËùÒÔÖ±½Ó·µ»Ø³É¹¦
+        // è¿™ä¸ªåŠ¨ä½œç¬é—´å®Œæˆï¼Œæ‰€ä»¥ç›´æ¥è¿”å›æˆåŠŸ
         return NodeState.SUCCESS;
     }
 }

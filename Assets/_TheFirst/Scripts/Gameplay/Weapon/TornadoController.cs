@@ -1,13 +1,13 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(Collider))]
 public class TornadoController : MonoBehaviour
 {
-    [Header("Áú¾í·çÊôĞÔ")]
-    public float pullForce = 15f; // ÎüÁ¦£¨ÒÆ¶¯ËÙ¶È£©
-    public float damageInterval = 0.2f; // ÉËº¦¼ä¸ô (0.2s = 1Ãë5Ìø)
+    [Header("é¾™å·é£å±æ€§")]
+    public float pullForce = 15f; // å¸åŠ›ï¼ˆç§»åŠ¨é€Ÿåº¦ï¼‰
+    public float damageInterval = 0.2f; // ä¼¤å®³é—´éš” (0.2s = 1ç§’5è·³)
 
     private int damagePerTick;
     private WeaponPart launcher;
@@ -15,20 +15,20 @@ public class TornadoController : MonoBehaviour
 
     private float timer = 0f;
 
-    // ¼ÇÂ¼¾íÈë·çÖĞµÄµĞÈË
+    // è®°å½•å·å…¥é£ä¸­çš„æ•Œäºº
     private HashSet<Health> victims = new HashSet<Health>();
 
-    // ³õÊ¼»¯·½·¨ (ÓÉ Orbiter µ÷ÓÃ)
+    // åˆå§‹åŒ–æ–¹æ³• (ç”± Orbiter è°ƒç”¨)
     public void Setup(int damage, WeaponPart source)
     {
-        this.damagePerTick = damage; // ½¨ÒéÉËº¦ÉèµÍÒ»µã£¬ÒòÎªÆµÂÊºÜ¸ß
+        this.damagePerTick = damage; // å»ºè®®ä¼¤å®³è®¾ä½ä¸€ç‚¹ï¼Œå› ä¸ºé¢‘ç‡å¾ˆé«˜
         this.launcher = source;
         if (source != null && source.StatBlock != null)
         {
             this.weaponName = source.StatBlock.weaponName;
         }
 
-        // Áú¾í·çÍ¨³£³ÖĞø¼¸ÃëºóÏûÊ§£¬Projectile ½Å±¾ÒÑ¾­´¦ÀíÁË Destroy£¬ÕâÀï²»ÓÃ¹Ü
+        // é¾™å·é£é€šå¸¸æŒç»­å‡ ç§’åæ¶ˆå¤±ï¼ŒProjectile è„šæœ¬å·²ç»å¤„ç†äº† Destroyï¼Œè¿™é‡Œä¸ç”¨ç®¡
     }
 
     void OnTriggerEnter(Collider other)
@@ -51,7 +51,7 @@ public class TornadoController : MonoBehaviour
 
     void Update()
     {
-        // 1. ´¦ÀíÉËº¦ (½ÊÉ±)
+        // 1. å¤„ç†ä¼¤å®³ (ç»æ€)
         timer += Time.deltaTime;
         if (timer >= damageInterval)
         {
@@ -59,35 +59,35 @@ public class TornadoController : MonoBehaviour
             timer = 0f;
         }
 
-        // 2. ´¦ÀíÎü¸½ (¾íÈë) - ·ÅÔÚ LateUpdate Ğ§¹û¸üºÃ£¬µ«ÔÚ Update ×öÒ²¿ÉÒÔ
-        // ÎªÁËÆ½»¬£¬ÎÒÃÇÃ¿Ö¡¶¼À­
+        // 2. å¤„ç†å¸é™„ (å·å…¥) - æ”¾åœ¨ LateUpdate æ•ˆæœæ›´å¥½ï¼Œä½†åœ¨ Update åšä¹Ÿå¯ä»¥
+        // ä¸ºäº†å¹³æ»‘ï¼Œæˆ‘ä»¬æ¯å¸§éƒ½æ‹‰
         ApplySuction();
     }
 
     private void ApplySuction()
     {
-        // ÇåÀíËÀÍöµ¥Î»
+        // æ¸…ç†æ­»äº¡å•ä½
         victims.RemoveWhere(h => h == null || h.IsDead);
 
         foreach (var h in victims)
         {
             Transform enemyTrans = h.transform;
 
-            // --- ºËĞÄÎü¸½Âß¼­ (²Î¿¼ BlackHole) ---
+            // --- æ ¸å¿ƒå¸é™„é€»è¾‘ (å‚è€ƒ BlackHole) ---
 
-            // 1. Ñ¹ÖÆ AI
+            // 1. å‹åˆ¶ AI
             NavMeshAgent agent = enemyTrans.GetComponent<NavMeshAgent>();
             if (agent != null && agent.enabled)
             {
                 agent.velocity = Vector3.zero;
             }
 
-            // 2. Ç¿ÖÆÎ»ÒÆ (ÏòÁú¾í·çÖĞĞÄÒÆ¶¯)
-            // ±£³Ö Y Öá²»±ä£¬·ÀÖ¹°Ñ¹ÖÀ­µ½ÌìÉÏ»òµØÏÂ
+            // 2. å¼ºåˆ¶ä½ç§» (å‘é¾™å·é£ä¸­å¿ƒç§»åŠ¨)
+            // ä¿æŒ Y è½´ä¸å˜ï¼Œé˜²æ­¢æŠŠæ€ªæ‹‰åˆ°å¤©ä¸Šæˆ–åœ°ä¸‹
             Vector3 targetPos = transform.position;
             targetPos.y = enemyTrans.position.y;
 
-            // Ê¹ÓÃ MoveTowards Æ½»¬ÎüÈë
+            // ä½¿ç”¨ MoveTowards å¹³æ»‘å¸å…¥
             float step = pullForce * Time.deltaTime;
             enemyTrans.position = Vector3.MoveTowards(enemyTrans.position, targetPos, step);
         }
@@ -95,31 +95,31 @@ public class TornadoController : MonoBehaviour
 
     private void DealDamagePulse()
     {
-        // ÔÙ´ÎÇåÀí£¬·ÀÖ¹±¨´í
+        // å†æ¬¡æ¸…ç†ï¼Œé˜²æ­¢æŠ¥é”™
         victims.RemoveWhere(h => h == null || h.IsDead);
 
         foreach (var h in victims)
         {
-            // Ôì³ÉÉËº¦
-            // ×¢Òâ£ºÕâÀïÎÒÃÇ²»ÔÙ´«µİ Projectile ÒıÓÃ£¬·ÀÖ¹´¥·¢ Projectile ×ÔÉíµÄ OnHit Âß¼­ (·ÀÖ¹Ë«ÖØ»÷ÍË)
+            // é€ æˆä¼¤å®³
+            // æ³¨æ„ï¼šè¿™é‡Œæˆ‘ä»¬ä¸å†ä¼ é€’ Projectile å¼•ç”¨ï¼Œé˜²æ­¢è§¦å‘ Projectile è‡ªèº«çš„ OnHit é€»è¾‘ (é˜²æ­¢åŒé‡å‡»é€€)
             h.TakeDamage(damagePerTick, h.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
 
-            // --- ´¥·¢ÔªËØĞ§¹û ---
-            // ÒòÎªÊÇ³ÖĞøÉËº¦£¬ÎÒÃÇÊÖ¶¯´¥·¢ StatusEffectReceiver
-            // ÕâÑùÁú¾í·çÒ²ÄÜ´¥·¢¸Ğµç¡¢µãÈ¼µÈ
+            // --- è§¦å‘å…ƒç´ æ•ˆæœ ---
+            // å› ä¸ºæ˜¯æŒç»­ä¼¤å®³ï¼Œæˆ‘ä»¬æ‰‹åŠ¨è§¦å‘ StatusEffectReceiver
+            // è¿™æ ·é¾™å·é£ä¹Ÿèƒ½è§¦å‘æ„Ÿç”µã€ç‚¹ç‡ƒç­‰
             if (launcher != null && launcher.currentStone != null)
             {
-                // ÕâÀï¿ÉÒÔ¸´ÓÃ Orbiter »ò Projectile ÀïµÄ ApplyElementalEffects Âß¼­
-                // ÎªÁË¼òµ¥£¬ÎÒÃÇÕâÀïÖ»¼òµ¥´¦Àí×îÖØÒªµÄ£º¸Ğµç
+                // è¿™é‡Œå¯ä»¥å¤ç”¨ Orbiter æˆ– Projectile é‡Œçš„ ApplyElementalEffects é€»è¾‘
+                // ä¸ºäº†ç®€å•ï¼Œæˆ‘ä»¬è¿™é‡Œåªç®€å•å¤„ç†æœ€é‡è¦çš„ï¼šæ„Ÿç”µ
                 StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
                 if (receiver != null)
                 {
-                    // Èç¹ûÄ¸ÎäÆ÷ÓĞÀ×µçÊôĞÔ£¬Áú¾í·çÒ²ÄÜ¹Ò¸Ğµç
+                    // å¦‚æœæ¯æ­¦å™¨æœ‰é›·ç”µå±æ€§ï¼Œé¾™å·é£ä¹Ÿèƒ½æŒ‚æ„Ÿç”µ
                     if (launcher.StatBlock.nativeElectrify)
                     {
-                        receiver.ApplyElectrified(1.0f); // ³ÖĞøË¢ĞÂ
+                        receiver.ApplyElectrified(1.0f); // æŒç»­åˆ·æ–°
                     }
-                    // Èç¹ûÓĞ»ğÊôĞÔ£¬¹ÒµãÈ¼
+                    // å¦‚æœæœ‰ç«å±æ€§ï¼ŒæŒ‚ç‚¹ç‡ƒ
                     if (launcher.StatBlock.nativeBurn)
                     {
                         receiver.ApplyBurn(5, 3f, 1f, weaponName);

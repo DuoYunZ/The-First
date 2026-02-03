@@ -1,14 +1,14 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class MetaUpgradeManager : MonoBehaviour
 {
     public static MetaUpgradeManager Instance;
 
-    [Header("ÅäÖÃ")]
-    public List<MetaUpgradeSO> allUpgrades; // °Ñ×öºÃµÄ SO ÍÏ½øÈ¥
+    [Header("é…ç½®")]
+    public List<MetaUpgradeSO> allUpgrades; // æŠŠåšå¥½çš„ SO æ‹–è¿›å»
 
-    [Header("´æµµ¼üÇ°×º")]
+    [Header("å­˜æ¡£é”®å‰ç¼€")]
     public string saveKeyPrefix = "MetaUpgrade_";
 
     private void Awake()
@@ -16,7 +16,7 @@ public class MetaUpgradeManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // ¿ç³¡¾°´æÔÚ
+            DontDestroyOnLoad(gameObject); // è·¨åœºæ™¯å­˜åœ¨
         }
         else
         {
@@ -26,14 +26,14 @@ public class MetaUpgradeManager : MonoBehaviour
 
     private void Start()
     {
-        // ÓÎÏ·¿ªÊ¼Ê±£¬Ó¦ÓÃËùÓĞÒÑ¹ºÂòµÄÊôĞÔ
+        // æ¸¸æˆå¼€å§‹æ—¶ï¼Œåº”ç”¨æ‰€æœ‰å·²è´­ä¹°çš„å±æ€§
         ApplyAllUpgrades();
     }
 
-    // --- ºËĞÄ¹¦ÄÜ£ºÓ¦ÓÃÊôĞÔµ½ PlayerStats ---
+    // --- æ ¸å¿ƒåŠŸèƒ½ï¼šåº”ç”¨å±æ€§åˆ° PlayerStats ---
     public void ApplyAllUpgrades()
     {
-        // È·±£ PlayerStats ´æÔÚ
+        // ç¡®ä¿ PlayerStats å­˜åœ¨
         if (PlayerStats.Instance == null) return;
 
         foreach (var upgrade in allUpgrades)
@@ -45,7 +45,7 @@ public class MetaUpgradeManager : MonoBehaviour
                 ApplyStatToPlayer(upgrade.statType, bonus);
             }
         }
-        Debug.Log("ËùÓĞ¾ÖÍâ³É³¤ÊôĞÔÒÑÓ¦ÓÃ£¡");
+        Debug.Log("æ‰€æœ‰å±€å¤–æˆé•¿å±æ€§å·²åº”ç”¨ï¼");
     }
 
     private void ApplyStatToPlayer(UpgradeType type, float value)
@@ -57,7 +57,7 @@ public class MetaUpgradeManager : MonoBehaviour
                 stats.bonusMaxHealth += (int)value;
                 break;
             case UpgradeType.WeaponDamage:
-                // ¼ÙÉè value ÊÇ 0.1 (10%)
+                // å‡è®¾ value æ˜¯ 0.1 (10%)
                 stats.damageMultiplier += value;
                 break;
             case UpgradeType.CritRate:
@@ -69,11 +69,11 @@ public class MetaUpgradeManager : MonoBehaviour
             case UpgradeType.MoveSpeed:
                 stats.moveSpeedMultiplier += value;
                 break;
-                // Èç¹ûÄãÓĞÆäËûÊôĞÔ£¨±ÈÈç¸´»î´ÎÊı£©£¬ÔÚÕâÀï¼Ó case
+                // å¦‚æœä½ æœ‰å…¶ä»–å±æ€§ï¼ˆæ¯”å¦‚å¤æ´»æ¬¡æ•°ï¼‰ï¼Œåœ¨è¿™é‡ŒåŠ  case
         }
     }
 
-    // --- ¹ºÂòÂß¼­ ---
+    // --- è´­ä¹°é€»è¾‘ ---
     public bool TryPurchaseUpgrade(MetaUpgradeSO upgrade)
     {
         int currentLevel = GetLevel(upgrade);
@@ -88,11 +88,11 @@ public class MetaUpgradeManager : MonoBehaviour
             DeductPlayerGold(cost);
             SetLevel(upgrade, currentLevel + 1);
 
-            // ¹ºÂòºóÁ¢¼´ÉúĞ§
-            // ×¢Òâ£ºÕâÀïÎÒÃÇÖ»¼Ó¡°ÔöÁ¿¡±£¬±ÈÈç´ÓLv1ÉıLv2£¬Ö»¼ÓÄÇÒ»¼¶µÄ²îÖµ£¿
-            // »òÕß¸ü¼òµ¥µÄ×ö·¨£ºÎÒÃÇ²»ÓÃÔöÁ¿£¬¶øÊÇÖØĞÂ¸²¸ÇÓ¦ÓÃ¡£
-            // µ«ÒòÎª ApplyAllUpgrades ÊÇÀÛ¼ÓµÄ£¬ÕâÀïÎªÁË°²È«£¬
-            // ÎÒÃÇÖ»°Ñ¡°¸Õ¸ÕÉıµÄÄÇÒ»¼¶¡±Ôö¼ÓµÄÊıÖµ¼ÓÉÏÈ¥¡£
+            // è´­ä¹°åç«‹å³ç”Ÿæ•ˆ
+            // æ³¨æ„ï¼šè¿™é‡Œæˆ‘ä»¬åªåŠ â€œå¢é‡â€ï¼Œæ¯”å¦‚ä»Lv1å‡Lv2ï¼ŒåªåŠ é‚£ä¸€çº§çš„å·®å€¼ï¼Ÿ
+            // æˆ–è€…æ›´ç®€å•çš„åšæ³•ï¼šæˆ‘ä»¬ä¸ç”¨å¢é‡ï¼Œè€Œæ˜¯é‡æ–°è¦†ç›–åº”ç”¨ã€‚
+            // ä½†å› ä¸º ApplyAllUpgrades æ˜¯ç´¯åŠ çš„ï¼Œè¿™é‡Œä¸ºäº†å®‰å…¨ï¼Œ
+            // æˆ‘ä»¬åªæŠŠâ€œåˆšåˆšå‡çš„é‚£ä¸€çº§â€å¢åŠ çš„æ•°å€¼åŠ ä¸Šå»ã€‚
             ApplyStatToPlayer(upgrade.statType, upgrade.valuePerLevel);
 
             return true;
@@ -101,7 +101,7 @@ public class MetaUpgradeManager : MonoBehaviour
         return false;
     }
 
-    // --- ´æÈ¡½Ó¿Ú ---
+    // --- å­˜å–æ¥å£ ---
     public int GetLevel(MetaUpgradeSO upgrade)
     {
         return PlayerPrefs.GetInt(saveKeyPrefix + upgrade.name, 0);
@@ -114,7 +114,7 @@ public class MetaUpgradeManager : MonoBehaviour
     }
 
     // ==========================================
-    // ¡¾ĞŞÕı¡¿½ğ±Ò½Ó¿ÚÊÊÅä -> Á¬½Ó PlayerProgressManager
+    // ã€ä¿®æ­£ã€‘é‡‘å¸æ¥å£é€‚é… -> è¿æ¥ PlayerProgressManager
     // ==========================================
     public int GetPlayerGold()
     {
@@ -129,10 +129,10 @@ public class MetaUpgradeManager : MonoBehaviour
     {
         if (PlayerProgressManager.Instance != null)
         {
-            // 1. ¿ÛÇ®²¢¸üĞÂUI
+            // 1. æ‰£é’±å¹¶æ›´æ–°UI
             PlayerProgressManager.Instance.SpendGold(amount);
 
-            // 2. ¡¾ÖØÒª¡¿±£´æ½ø¶È£¬·ÀÖ¹¿ÛÁËÇ®Ã»´æµµ
+            // 2. ã€é‡è¦ã€‘ä¿å­˜è¿›åº¦ï¼Œé˜²æ­¢æ‰£äº†é’±æ²¡å­˜æ¡£
             PlayerProgressManager.Instance.SaveGame();
         }
     }

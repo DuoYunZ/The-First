@@ -1,4 +1,4 @@
-// StaticPopup.cs
+ï»¿// StaticPopup.cs
 using UnityEngine;
 using TMPro;
 
@@ -7,7 +7,7 @@ public class StaticPopup : MonoBehaviour
     private TextMeshPro textMesh;
     private Color textColor;
 
-    [Header("¶¯»­²ÎÊı")]
+    [Header("åŠ¨ç”»å‚æ•°")]
     public float moveSpeed = 2f;
     public float fadeOutSpeed = 3f;
     public float lifetime = 1.0f;
@@ -17,7 +17,7 @@ public class StaticPopup : MonoBehaviour
         textMesh = GetComponent<TextMeshPro>();
     }
 
-    // ĞÂµÄSetup·½·¨£¬¿ÉÒÔ½ÓÊÕÈÎÒâÎÄ±¾ºÍÑÕÉ«
+    // æ–°çš„Setupæ–¹æ³•ï¼Œå¯ä»¥æ¥æ”¶ä»»æ„æ–‡æœ¬å’Œé¢œè‰²
     public void Setup(string text, Color color)
     {
         if (textMesh != null)

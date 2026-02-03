@@ -1,27 +1,27 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 public class WarningUIManager : MonoBehaviour
 {
     public static WarningUIManager Instance { get; private set; }
 
-    [Header("Ô¤¾¯UIÔªËØ (8¸ö·½Ïò)")]
-    [Tooltip("±±²à£¨ÉÏ£©Ô¤¾¯UI¶ÔÏó")]
+    [Header("é¢„è­¦UIå…ƒç´  (8ä¸ªæ–¹å‘)")]
+    [Tooltip("åŒ—ä¾§ï¼ˆä¸Šï¼‰é¢„è­¦UIå¯¹è±¡")]
     public GameObject northWarningUI;
-    [Tooltip("¶«±±£¨ÓÒÉÏ£©Ô¤¾¯UI¶ÔÏó")]
-    public GameObject northeastWarningUI; // <--- ĞÂÔö
-    [Tooltip("¶«²à£¨ÓÒ£©Ô¤¾¯UI¶ÔÏó")]
+    [Tooltip("ä¸œåŒ—ï¼ˆå³ä¸Šï¼‰é¢„è­¦UIå¯¹è±¡")]
+    public GameObject northeastWarningUI; // <--- æ–°å¢
+    [Tooltip("ä¸œä¾§ï¼ˆå³ï¼‰é¢„è­¦UIå¯¹è±¡")]
     public GameObject eastWarningUI;
-    [Tooltip("¶«ÄÏ£¨ÓÒÏÂ£©Ô¤¾¯UI¶ÔÏó")]
-    public GameObject southeastWarningUI; // <--- ĞÂÔö
-    [Tooltip("ÄÏ²à£¨ÏÂ£©Ô¤¾¯UI¶ÔÏó")]
+    [Tooltip("ä¸œå—ï¼ˆå³ä¸‹ï¼‰é¢„è­¦UIå¯¹è±¡")]
+    public GameObject southeastWarningUI; // <--- æ–°å¢
+    [Tooltip("å—ä¾§ï¼ˆä¸‹ï¼‰é¢„è­¦UIå¯¹è±¡")]
     public GameObject southWarningUI;
-    [Tooltip("Î÷ÄÏ£¨×óÏÂ£©Ô¤¾¯UI¶ÔÏó")]
-    public GameObject southwestWarningUI; // <--- ĞÂÔö
-    [Tooltip("Î÷²à£¨×ó£©Ô¤¾¯UI¶ÔÏó")]
+    [Tooltip("è¥¿å—ï¼ˆå·¦ä¸‹ï¼‰é¢„è­¦UIå¯¹è±¡")]
+    public GameObject southwestWarningUI; // <--- æ–°å¢
+    [Tooltip("è¥¿ä¾§ï¼ˆå·¦ï¼‰é¢„è­¦UIå¯¹è±¡")]
     public GameObject westWarningUI;
-    [Tooltip("Î÷±±£¨×óÉÏ£©Ô¤¾¯UI¶ÔÏó")]
-    public GameObject northwestWarningUI; // <--- ĞÂÔö
+    [Tooltip("è¥¿åŒ—ï¼ˆå·¦ä¸Šï¼‰é¢„è­¦UIå¯¹è±¡")]
+    public GameObject northwestWarningUI; // <--- æ–°å¢
 
     void Awake()
     {
@@ -37,19 +37,19 @@ public class WarningUIManager : MonoBehaviour
 
     void Start()
     {
-        // ÓÎÏ·¿ªÊ¼Ê±Òş²ØËùÓĞÔ¤¾¯
+        // æ¸¸æˆå¼€å§‹æ—¶éšè—æ‰€æœ‰é¢„è­¦
         if (northWarningUI != null) northWarningUI.SetActive(false);
-        if (northeastWarningUI != null) northeastWarningUI.SetActive(false); // <--- ĞÂÔö
+        if (northeastWarningUI != null) northeastWarningUI.SetActive(false); // <--- æ–°å¢
         if (eastWarningUI != null) eastWarningUI.SetActive(false);
-        if (southeastWarningUI != null) southeastWarningUI.SetActive(false); // <--- ĞÂÔö
+        if (southeastWarningUI != null) southeastWarningUI.SetActive(false); // <--- æ–°å¢
         if (southWarningUI != null) southWarningUI.SetActive(false);
-        if (southwestWarningUI != null) southwestWarningUI.SetActive(false); // <--- ĞÂÔö
+        if (southwestWarningUI != null) southwestWarningUI.SetActive(false); // <--- æ–°å¢
         if (westWarningUI != null) westWarningUI.SetActive(false);
-        if (northwestWarningUI != null) northwestWarningUI.SetActive(false); // <--- ĞÂÔö    
+        if (northwestWarningUI != null) northwestWarningUI.SetActive(false); // <--- æ–°å¢    
 }
 
     /// <summary>
-    /// ¸ù¾İ·½ÏòÏÔÊ¾Ò»¸öUIÔ¤¾¯£¬²¢ÔÚÖ¸¶¨Ê±¼äºó×Ô¶¯Òş²Ø
+    /// æ ¹æ®æ–¹å‘æ˜¾ç¤ºä¸€ä¸ªUIé¢„è­¦ï¼Œå¹¶åœ¨æŒ‡å®šæ—¶é—´åè‡ªåŠ¨éšè—
     /// </summary>
     public void ShowStampedeGroupWarning(SpawnDirectionHint direction, float duration)
     {
@@ -61,25 +61,25 @@ public class WarningUIManager : MonoBehaviour
                 warningUI = northWarningUI;
                 break;
             case SpawnDirectionHint.Northeast:
-                warningUI = northeastWarningUI; // <--- ĞÂÔö
+                warningUI = northeastWarningUI; // <--- æ–°å¢
                 break;
             case SpawnDirectionHint.East:
                 warningUI = eastWarningUI;
                 break;
             case SpawnDirectionHint.Southeast:
-                warningUI = southeastWarningUI; // <--- ĞÂÔö
+                warningUI = southeastWarningUI; // <--- æ–°å¢
                 break;
             case SpawnDirectionHint.South:
                 warningUI = southWarningUI;
                 break;
             case SpawnDirectionHint.Southwest:
-                warningUI = southwestWarningUI; // <--- ĞÂÔö
+                warningUI = southwestWarningUI; // <--- æ–°å¢
                 break;
             case SpawnDirectionHint.West:
                 warningUI = westWarningUI;
                 break;
             case SpawnDirectionHint.Northwest:
-                warningUI = northwestWarningUI; // <--- ĞÂÔö
+                warningUI = northwestWarningUI; // <--- æ–°å¢
                 break;
             case SpawnDirectionHint.Random:
             default:

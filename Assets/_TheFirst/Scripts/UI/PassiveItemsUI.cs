@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,17 +6,17 @@ public class PassiveItemsUI : MonoBehaviour
 {
     public static PassiveItemsUI Instance { get; private set; }
 
-    [Header("UI ÒýÓÃ")]
-    [Tooltip("·ÅÖÃÍ¼±êµÄ¸¸ÈÝÆ÷ (Horizontal Layout Group)")]
+    [Header("UI å¼•ç”¨")]
+    [Tooltip("æ”¾ç½®å›¾æ ‡çš„çˆ¶å®¹å™¨ (Horizontal Layout Group)")]
     public Transform iconContainer;
-    [Tooltip("Í¼±êÔ¤ÖÆ¼þ (¿ÉÒÔÖ±½Ó¸´ÓÃ WeaponIconPrefab)")]
+    [Tooltip("å›¾æ ‡é¢„åˆ¶ä»¶ (å¯ä»¥ç›´æŽ¥å¤ç”¨ WeaponIconPrefab)")]
     public GameObject iconPrefab;
 
-    [Header("ÑÕÉ«ÉèÖÃ")]
+    [Header("é¢œè‰²è®¾ç½®")]
     public Color emptySlotColor = new Color(0, 0, 0, 0.5f);
-    public Color equippedSlotColor = new Color(0.1f, 0.5f, 0.8f, 1f); // À¶É«µ÷£¬Çø±ðÓÚÎäÆ÷
+    public Color equippedSlotColor = new Color(0.1f, 0.5f, 0.8f, 1f); // è“è‰²è°ƒï¼ŒåŒºåˆ«äºŽæ­¦å™¨
 
-    [Header("ÉèÖÃ")]
+    [Header("è®¾ç½®")]
     public int maxIcons = 6;
 
     private class PassiveSlot
@@ -36,14 +36,14 @@ public class PassiveItemsUI : MonoBehaviour
     void Start()
     {
         InitializeSlots();
-        // ¶©ÔÄ PlayerStats µÄ±ä»¯ (Èç¹ûÄãÓÐ×öÊÂ¼þ)£¬»òÕßÔÚ Update/Enable ÖÐË¢ÐÂ
-        // ÔÝÊ±ÎÒÃÇÊÖ¶¯µ÷ÓÃ UpdateIcons
+        // è®¢é˜… PlayerStats çš„å˜åŒ– (å¦‚æžœä½ æœ‰åšäº‹ä»¶)ï¼Œæˆ–è€…åœ¨ Update/Enable ä¸­åˆ·æ–°
+        // æš‚æ—¶æˆ‘ä»¬æ‰‹åŠ¨è°ƒç”¨ UpdateIcons
         UpdateIcons();
     }
 
     private void InitializeSlots()
     {
-        // ÇåÀí¾ÉµÄ×ÓÎïÌå
+        // æ¸…ç†æ—§çš„å­ç‰©ä½“
         foreach (Transform child in iconContainer) Destroy(child.gameObject);
         slots.Clear();
 
@@ -51,7 +51,7 @@ public class PassiveItemsUI : MonoBehaviour
         {
             GameObject go = Instantiate(iconPrefab, iconContainer);
 
-            // »ñÈ¡×é¼þ (¼ÙÉè prefab ½á¹¹ÊÇ BG -> Icon)
+            // èŽ·å–ç»„ä»¶ (å‡è®¾ prefab ç»“æž„æ˜¯ BG -> Icon)
             Image bg = go.GetComponent<Image>();
             Image icon = null;
             if (go.transform.childCount > 0)
@@ -76,7 +76,7 @@ public class PassiveItemsUI : MonoBehaviour
         {
             if (i < items.Count)
             {
-                // ÓÐµÀ¾ß
+                // æœ‰é“å…·
                 PassiveSlot slot = slots[i];
                 var itemData = items[i].data;
 
@@ -87,7 +87,7 @@ public class PassiveItemsUI : MonoBehaviour
             }
             else
             {
-                // ¿Õ²Û
+                // ç©ºæ§½
                 PassiveSlot slot = slots[i];
                 slot.backgroundImage.color = emptySlotColor;
                 slot.iconImage.enabled = false;

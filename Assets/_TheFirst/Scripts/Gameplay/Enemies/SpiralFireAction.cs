@@ -1,47 +1,47 @@
-// --- SpiralFireAction.cs (ĞŞÕıÆğÊ¼½Ç¶È×îÖÕ°æ) ---
+ï»¿// --- SpiralFireAction.cs (ä¿®æ­£èµ·å§‹è§’åº¦æœ€ç»ˆç‰ˆ) ---
 using UnityEngine;
 
 public class SpiralFireAction : Node
 {
-    // ... ËùÓĞpublic²ÎÊı±£³Ö²»±ä ...
-    [Header("ÎäÆ÷ÉèÖÃ")]
+    // ... æ‰€æœ‰publicå‚æ•°ä¿æŒä¸å˜ ...
+    [Header("æ­¦å™¨è®¾ç½®")]
     public WeaponStatBlock weaponToFire;
     public Transform firePoint;
-    [Header("¶¯×÷±íÏÖÓëÊ±¼ä")]
+    [Header("åŠ¨ä½œè¡¨ç°ä¸æ—¶é—´")]
     public string windupAnimationTrigger;
     public float windupDuration = 1f;
     public string firingAnimationBool = "isFiringSpiral";
     public string recoveryAnimationTrigger;
     public float recoveryDuration = 1f;
-    [Header("ÂİĞıµ¯Ä»²ÎÊı")]
+    [Header("èºæ—‹å¼¹å¹•å‚æ•°")]
     public int totalProjectiles = 60;
     public float totalDuration = 5f;
     public float rotationSpeed = 180f;
-    [Header("ÀäÈ´ÉèÖÃ")]
+    [Header("å†·å´è®¾ç½®")]
     public string attackName = "SpiralAttack";
     public float cooldownDuration = 15f;
 
-    [Header("ÅäºÏÌØĞ§µÄÔ¤ÖÆ¼ş")] // ¡¾ĞÂÔö¡¿
+    [Header("é…åˆç‰¹æ•ˆçš„é¢„åˆ¶ä»¶")] // ã€æ–°å¢ã€‘
     public GameObject windupEffectPrefab;
-    public GameObject firingLoopEffectPrefab; // ³ÖĞøÊ©·¨Ñ­»·ÌØĞ§
+    public GameObject firingLoopEffectPrefab; // æŒç»­æ–½æ³•å¾ªç¯ç‰¹æ•ˆ
     public GameObject recoveryEffectPrefab;
 
-    // ÄÚ²¿×´Ì¬»ú
+    // å†…éƒ¨çŠ¶æ€æœº
     private enum ActionState { Ready, WindingUp, Firing, Recovering, Completed }
     private ActionState currentState;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private int projectilesFired;
     private float actionTimer;
     private float fireIntervalTimer;
     private float fireInterval;
-    private float currentRotationOffset; // µ±Ç°µÄĞı×ªÆ«ÒÆ½Ç¶È
-    private Vector3 initialForwardDirection; // ¡¾ºËĞÄ¡¿Ê©·¨¿ªÊ¼Ê±µÄ³õÊ¼Ç°·½
+    private float currentRotationOffset; // å½“å‰çš„æ—‹è½¬åç§»è§’åº¦
+    private Vector3 initialForwardDirection; // ã€æ ¸å¿ƒã€‘æ–½æ³•å¼€å§‹æ—¶çš„åˆå§‹å‰æ–¹
     private Transform selfTransform;
     private EnemyAI regularAI;
     private Animator animator;
 
-    private GameObject activeLoopEffect; // ÓÃÓÚ´æ´¢Ñ­»·ÌØĞ§µÄÊµÀı
+    private GameObject activeLoopEffect; // ç”¨äºå­˜å‚¨å¾ªç¯ç‰¹æ•ˆçš„å®ä¾‹
 
     void Awake()
     {
@@ -81,9 +81,9 @@ public class SpiralFireAction : Node
                     projectilesFired = 0;
                     fireIntervalTimer = 0f;
 
-                    // ¡¾ºËĞÄĞŞÕı¡¿ÔÚ¿ª»ğÇ°£¬¼ÇÂ¼ÏÂBossµ±Ç°µÄÕıÇ°·½×÷Îª³õÊ¼·½Ïò
+                    // ã€æ ¸å¿ƒä¿®æ­£ã€‘åœ¨å¼€ç«å‰ï¼Œè®°å½•ä¸‹Bosså½“å‰çš„æ­£å‰æ–¹ä½œä¸ºåˆå§‹æ–¹å‘
                     initialForwardDirection = selfTransform.forward;
-                    currentRotationOffset = 0f; // Ğı×ªÆ«ÒÆÁ¿´Ó0¿ªÊ¼
+                    currentRotationOffset = 0f; // æ—‹è½¬åç§»é‡ä»0å¼€å§‹
 
                     if (totalProjectiles > 0)
                     {
@@ -144,7 +144,7 @@ public class SpiralFireAction : Node
     {
         Vector3 firePosition = (firePoint != null) ? firePoint.position : selfTransform.position;
 
-        // ¡¾ºËĞÄĞŞÕı¡¿ÔÚ³õÊ¼·½ÏòµÄ»ù´¡ÉÏ£¬Ó¦ÓÃµ±Ç°µÄĞı×ªÆ«ÒÆÁ¿
+        // ã€æ ¸å¿ƒä¿®æ­£ã€‘åœ¨åˆå§‹æ–¹å‘çš„åŸºç¡€ä¸Šï¼Œåº”ç”¨å½“å‰çš„æ—‹è½¬åç§»é‡
         Vector3 fireDirection = Quaternion.Euler(0, currentRotationOffset, 0) * initialForwardDirection;
         Quaternion fireRotation = Quaternion.LookRotation(fireDirection);
 
@@ -159,7 +159,7 @@ public class SpiralFireAction : Node
     {
         if (windupEffectPrefab != null)
         {
-            // ÌØĞ§Í¨³£ÔÚ·¢Éäµã(firePoint)»òÄ£ĞÍ¸ù½Úµã(selfTransform)Éú³É
+            // ç‰¹æ•ˆé€šå¸¸åœ¨å‘å°„ç‚¹(firePoint)æˆ–æ¨¡å‹æ ¹èŠ‚ç‚¹(selfTransform)ç”Ÿæˆ
             Transform spawnPoint = (firePoint != null) ? firePoint : selfTransform;
             Instantiate(windupEffectPrefab, spawnPoint.position, spawnPoint.rotation, spawnPoint);
         }
@@ -178,7 +178,7 @@ public class SpiralFireAction : Node
     {
         if (activeLoopEffect != null)
         {
-            // ÕâÀï¿ÉÒÔµ÷ÓÃÌØĞ§ÉÏµÄÁ£×ÓÍ£Ö¹²¥·Å·½·¨£¬»òÕßÖ±½ÓÏú»Ù
+            // è¿™é‡Œå¯ä»¥è°ƒç”¨ç‰¹æ•ˆä¸Šçš„ç²’å­åœæ­¢æ’­æ”¾æ–¹æ³•ï¼Œæˆ–è€…ç›´æ¥é”€æ¯
             Destroy(activeLoopEffect);
         }
     }

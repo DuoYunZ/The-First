@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
@@ -6,14 +6,14 @@ using TMPro;
 
 public class CharacterSelectManager : MonoBehaviour
 {
-    [Header("½ÇÉ«Êı¾İÁĞ±í")]
-    [Tooltip("½«ËùÓĞ¿ÉÑ¡ÔñµÄ½ÇÉ«Data×Ê²úÍÏ×§µ½ÕâÀï")]
+    [Header("è§’è‰²æ•°æ®åˆ—è¡¨")]
+    [Tooltip("å°†æ‰€æœ‰å¯é€‰æ‹©çš„è§’è‰²Dataèµ„äº§æ‹–æ‹½åˆ°è¿™é‡Œ")]
     public List<CharacterData> availableCharacters;
 
     public Transform characterPreviewContainer;
     private GameObject currentPreviewModel;
 
-    [Header("UI ÔªËØÒıÓÃ")]
+    [Header("UI å…ƒç´ å¼•ç”¨")]
     public Image characterIconImage;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI descriptionText;
@@ -21,49 +21,49 @@ public class CharacterSelectManager : MonoBehaviour
     public Button nextButton;
     public Button startButton;
 
-    [Header("³¡¾°ÉèÖÃ")]
-    [Tooltip("Òª¼ÓÔØµÄÕ½¶·³¡¾°Ãû³Æ")]
+    [Header("åœºæ™¯è®¾ç½®")]
+    [Tooltip("è¦åŠ è½½çš„æˆ˜æ–—åœºæ™¯åç§°")]
     public string combatSceneName = "CombatArena01";
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private int currentCharacterIndex = 0;
 
     void Start()
     {
-        // Îª°´Å¥°ó¶¨µã»÷ÊÂ¼ş
+        // ä¸ºæŒ‰é’®ç»‘å®šç‚¹å‡»äº‹ä»¶
         previousButton.onClick.AddListener(PreviousCharacter);
         nextButton.onClick.AddListener(NextCharacter);
         startButton.onClick.AddListener(StartCombat);
 
-        // ¼ì²éÊÇ·ñÓĞ¿ÉÑ¡½ÇÉ«
+        // æ£€æŸ¥æ˜¯å¦æœ‰å¯é€‰è§’è‰²
         if (availableCharacters == null || availableCharacters.Count == 0)
         {
-            Debug.LogError("Ã»ÓĞ¿ÉÑ¡ÔñµÄ½ÇÉ«Êı¾İ£¡ÇëÔÚCharacterSelectManagerµÄInspectorÖĞÉèÖÃ¡£");
-            // ½ûÓÃËùÓĞ°´Å¥
+            Debug.LogError("æ²¡æœ‰å¯é€‰æ‹©çš„è§’è‰²æ•°æ®ï¼è¯·åœ¨CharacterSelectManagerçš„Inspectorä¸­è®¾ç½®ã€‚");
+            // ç¦ç”¨æ‰€æœ‰æŒ‰é’®
             previousButton.interactable = false;
             nextButton.interactable = false;
             startButton.interactable = false;
             return;
         }
 
-        // ³õÊ¼»¯UI£¬ÏÔÊ¾µÚÒ»¸ö½ÇÉ«
+        // åˆå§‹åŒ–UIï¼Œæ˜¾ç¤ºç¬¬ä¸€ä¸ªè§’è‰²
         SelectCharacter(0);
     }
 
-    // ÇĞ»»µ½Ö¸¶¨Ë÷ÒıµÄ½ÇÉ«²¢¸üĞÂUI
+    // åˆ‡æ¢åˆ°æŒ‡å®šç´¢å¼•çš„è§’è‰²å¹¶æ›´æ–°UI
     private void SelectCharacter(int index)
     {
         if (index < 0 || index >= availableCharacters.Count) return;
         currentCharacterIndex = index;
         CharacterData selectedChar = availableCharacters[(int)currentCharacterIndex];
-        // ¸üĞÂUIÏÔÊ¾
+        // æ›´æ–°UIæ˜¾ç¤º
         characterIconImage.sprite = selectedChar.characterIcon;
         nameText.text = selectedChar.characterName;
         descriptionText.text = selectedChar.description;
-        // ¸üĞÂ°´Å¥×´Ì¬
+        // æ›´æ–°æŒ‰é’®çŠ¶æ€
         previousButton.interactable = (availableCharacters.Count > 1);
         nextButton.interactable = (availableCharacters.Count > 1);
-        // ´¦Àí3DÔ¤ÀÀÄ£ĞÍ
+        // å¤„ç†3Dé¢„è§ˆæ¨¡å‹
         if (currentPreviewModel != null)
         {
             Destroy(currentPreviewModel);
@@ -72,19 +72,19 @@ public class CharacterSelectManager : MonoBehaviour
         {
             currentPreviewModel = Instantiate(selectedChar.characterPreviewPrefab, characterPreviewContainer);
             SetLayerRecursively(currentPreviewModel, LayerMask.NameToLayer("UI_CharacterPreview"));
-            // È·±£Ä£ĞÍÔÚÕıÈ·µÄÎ»ÖÃºÍĞı×ª
+            // ç¡®ä¿æ¨¡å‹åœ¨æ­£ç¡®çš„ä½ç½®å’Œæ—‹è½¬
             currentPreviewModel.transform.localPosition = Vector3.zero;
             currentPreviewModel.transform.localRotation = Quaternion.identity;
-            // ³¢ÊÔ»ñÈ¡ Animator ×é¼ş²¢²¥·Å´ı»ú¶¯»­
+            // å°è¯•è·å– Animator ç»„ä»¶å¹¶æ’­æ”¾å¾…æœºåŠ¨ç”»
             Animator previewAnimator = currentPreviewModel.GetComponent<Animator>();
             if (previewAnimator != null)
             {
-                // ¼ÙÉèÄúµÄ´ı»ú¶¯»­×´Ì¬Ãû³ÆÊÇ "Idle"
+                // å‡è®¾æ‚¨çš„å¾…æœºåŠ¨ç”»çŠ¶æ€åç§°æ˜¯ "Idle"
                 previewAnimator.Play("Idle");
             }
             else
             {
-                Debug.LogWarning($"½ÇÉ« '{selectedChar.characterName}' µÄÔ¤ÀÀÄ£ĞÍÉÏÃ»ÓĞ Animator ×é¼ş¡£");
+                Debug.LogWarning($"è§’è‰² '{selectedChar.characterName}' çš„é¢„è§ˆæ¨¡å‹ä¸Šæ²¡æœ‰ Animator ç»„ä»¶ã€‚");
             }
         }
     }
@@ -99,43 +99,43 @@ public class CharacterSelectManager : MonoBehaviour
             SetLayerRecursively(child.gameObject, newLayer);
         }
     }
-    // ¡°ÉÏÒ»¸ö½ÇÉ«¡±°´Å¥µÄÏìÓ¦·½·¨
+    // â€œä¸Šä¸€ä¸ªè§’è‰²â€æŒ‰é’®çš„å“åº”æ–¹æ³•
     public void PreviousCharacter()
     {
         int newIndex = currentCharacterIndex - 1;
         if (newIndex < 0)
         {
-            newIndex = availableCharacters.Count - 1; // Ñ­»·µ½×îºóÒ»¸ö
+            newIndex = availableCharacters.Count - 1; // å¾ªç¯åˆ°æœ€åä¸€ä¸ª
         }
         SelectCharacter(newIndex);
     }
 
-    // ¡°ÏÂÒ»¸ö½ÇÉ«¡±°´Å¥µÄÏìÓ¦·½·¨
+    // â€œä¸‹ä¸€ä¸ªè§’è‰²â€æŒ‰é’®çš„å“åº”æ–¹æ³•
     public void NextCharacter()
     {
         int newIndex = currentCharacterIndex + 1;
         if (newIndex >= availableCharacters.Count)
         {
-            newIndex = 0; // Ñ­»·µ½µÚÒ»¸ö
+            newIndex = 0; // å¾ªç¯åˆ°ç¬¬ä¸€ä¸ª
         }
         SelectCharacter(newIndex);
     }
 
-    // ¡°¿ªÊ¼Õ½¶·¡±°´Å¥µÄÏìÓ¦·½·¨
+    // â€œå¼€å§‹æˆ˜æ–—â€æŒ‰é’®çš„å“åº”æ–¹æ³•
     public void StartCombat()
     {
         if (DataManager.Instance == null)
         {
-            Debug.LogError("DataManager Î´ÕÒµ½£¡ÎŞ·¨¿ªÊ¼ÓÎÏ·¡£");
+            Debug.LogError("DataManager æœªæ‰¾åˆ°ï¼æ— æ³•å¼€å§‹æ¸¸æˆã€‚");
             return;
         }
 
-        // ½«µ±Ç°Ñ¡ÔñµÄ½ÇÉ«Êı¾İ´æÈë DataManager
+        // å°†å½“å‰é€‰æ‹©çš„è§’è‰²æ•°æ®å­˜å…¥ DataManager
         DataManager.Instance.selectedCharacter = availableCharacters[currentCharacterIndex];
 
-        Debug.Log($"Ñ¡ÔñÁË½ÇÉ«: {DataManager.Instance.selectedCharacter.characterName}£¬×¼±¸½øÈëÕ½¶·³¡¾°...");
+        Debug.Log($"é€‰æ‹©äº†è§’è‰²: {DataManager.Instance.selectedCharacter.characterName}ï¼Œå‡†å¤‡è¿›å…¥æˆ˜æ–—åœºæ™¯...");
 
-        // ¼ÓÔØÕ½¶·³¡¾°
+        // åŠ è½½æˆ˜æ–—åœºæ™¯
         SceneManager.LoadScene(combatSceneName);
     }
 }

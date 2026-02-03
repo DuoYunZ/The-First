@@ -1,12 +1,12 @@
-using UnityEngine;
-using TMPro; // ÒıÈë TextMeshPro ÃüÃû¿Õ¼ä
+ï»¿using UnityEngine;
+using TMPro; // å¼•å…¥ TextMeshPro å‘½åç©ºé—´
 
 public class GameTimer : MonoBehaviour
 {
     public static GameTimer Instance { get; private set; }
 
-    [Header("UI ÒıÓÃ")]
-    [Tooltip("ÓÃÓÚÏÔÊ¾¼ÆÊ±Æ÷µÄ TextMeshPro UGUI ×é¼ş")]
+    [Header("UI å¼•ç”¨")]
+    [Tooltip("ç”¨äºæ˜¾ç¤ºè®¡æ—¶å™¨çš„ TextMeshPro UGUI ç»„ä»¶")]
     public TextMeshProUGUI timerText;
 
     private float elapsedTime;
@@ -28,10 +28,10 @@ public class GameTimer : MonoBehaviour
     {
         if (timerText == null)
         {
-            Debug.LogError("¼ÆÊ±Æ÷UIÎÄ±¾Î´·ÖÅä!", this);
+            Debug.LogError("è®¡æ—¶å™¨UIæ–‡æœ¬æœªåˆ†é…!", this);
             return;
         }
-        // ÖØÖÃ²¢¿ªÊ¼¼ÆÊ±
+        // é‡ç½®å¹¶å¼€å§‹è®¡æ—¶
         ResetTimer();
         StartTimer();
     }
@@ -63,11 +63,11 @@ public class GameTimer : MonoBehaviour
 
     private void UpdateTimerDisplay()
     {
-        // ½«×ÜÃëÊı×ª»»Îª·ÖÖÓºÍÃë
+        // å°†æ€»ç§’æ•°è½¬æ¢ä¸ºåˆ†é’Ÿå’Œç§’
         int minutes = (int)(elapsedTime / 60);
         int seconds = (int)(elapsedTime % 60);
 
-        // ¸ñÊ½»¯Îª "MM:SS" ×Ö·û´®
+        // æ ¼å¼åŒ–ä¸º "MM:SS" å­—ç¬¦ä¸²
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 

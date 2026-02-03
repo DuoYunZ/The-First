@@ -1,4 +1,4 @@
-// --- BossBeamController.cs (RaycastÉËº¦ÓëÊÓ¾õÍ³Ò»×îÖÕ°æ) ---
+ï»¿// --- BossBeamController.cs (Raycastä¼¤å®³ä¸è§†è§‰ç»Ÿä¸€æœ€ç»ˆç‰ˆ) ---
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -8,20 +8,20 @@ public class BossBeamController : MonoBehaviour
     private Transform target;
     private GameObject attacker;
 
-    // ÌØĞ§ÓëÉËº¦Ïà¹Ø
+    // ç‰¹æ•ˆä¸ä¼¤å®³ç›¸å…³
     private GameObject impactVfxPrefab;
-    private GameObject impactEffectInstance; // ¡¾ĞŞÕı¡¿ÃüÖĞÌØĞ§ÊµÀı±äÁ¿
+    private GameObject impactEffectInstance; // ã€ä¿®æ­£ã€‘å‘½ä¸­ç‰¹æ•ˆå®ä¾‹å˜é‡
     private int damagePerTick;
     private float tickInterval;
     private float tickTimer;
 
-    // ¹âÊøĞĞÎªÏà¹Ø
+    // å…‰æŸè¡Œä¸ºç›¸å…³
     private Vector3 currentBeamDirection;
     private float beamTurnSpeed;
     private float maxDistance;
-    public LayerMask hitLayers; // ¡¾ÖØÒª¡¿ÉäÏß¿ÉÒÔÃüÖĞµÄ²ã
+    public LayerMask hitLayers; // ã€é‡è¦ã€‘å°„çº¿å¯ä»¥å‘½ä¸­çš„å±‚
 
-    // µØÃæÓ¡¼ÇÏà¹Ø±äÁ¿
+    // åœ°é¢å°è®°ç›¸å…³å˜é‡
     private GameObject scorchMarkPrefab;
     private float scorchMarkInterval;
     private LayerMask groundLayer;
@@ -52,7 +52,7 @@ public class BossBeamController : MonoBehaviour
             this.currentBeamDirection = transform.forward;
         }
 
-        // ¡¾ĞŞÕı¡¿ÔÚ³õÊ¼»¯Ê±£¬ÌáÇ°Éú³ÉÃüÖĞÌØĞ§ÊµÀı²¢Òş²Ø
+        // ã€ä¿®æ­£ã€‘åœ¨åˆå§‹åŒ–æ—¶ï¼Œæå‰ç”Ÿæˆå‘½ä¸­ç‰¹æ•ˆå®ä¾‹å¹¶éšè—
         if (this.impactVfxPrefab != null)
         {
             impactEffectInstance = Instantiate(this.impactVfxPrefab);
@@ -70,20 +70,20 @@ public class BossBeamController : MonoBehaviour
             return;
         }
 
-        // 1. Æ½»¬¸üĞÂ¹âÊøµÄ×·×Ù·½Ïò
+        // 1. å¹³æ»‘æ›´æ–°å…‰æŸçš„è¿½è¸ªæ–¹å‘
         Vector3 desiredDirection = (target.position - transform.position).normalized;
         currentBeamDirection = Vector3.Slerp(currentBeamDirection, desiredDirection, beamTurnSpeed * Time.deltaTime);
 
         Vector3 startPoint = transform.position;
         Vector3 endPoint;
 
-        // 2. ½øĞĞÉäÏß¼ì²â£¬´¦ÀíËùÓĞÃüÖĞÂß¼­
+        // 2. è¿›è¡Œå°„çº¿æ£€æµ‹ï¼Œå¤„ç†æ‰€æœ‰å‘½ä¸­é€»è¾‘
         RaycastHit hit;
         if (Physics.Raycast(transform.position, currentBeamDirection, out hit, maxDistance, hitLayers, QueryTriggerInteraction.Collide))
         {
             endPoint = hit.point;
 
-            // ¡¾ĞŞÕı¡¿¸üĞÂÃüÖĞÌØĞ§µÄÎ»ÖÃ²¢ÏÔÊ¾
+            // ã€ä¿®æ­£ã€‘æ›´æ–°å‘½ä¸­ç‰¹æ•ˆçš„ä½ç½®å¹¶æ˜¾ç¤º
             if (impactEffectInstance != null)
             {
                 impactEffectInstance.SetActive(true);
@@ -91,7 +91,7 @@ public class BossBeamController : MonoBehaviour
                 impactEffectInstance.transform.rotation = Quaternion.LookRotation(hit.normal);
             }
 
-            // ÉËº¦ÅĞ¶¨Âß¼­
+            // ä¼¤å®³åˆ¤å®šé€»è¾‘
             tickTimer += Time.deltaTime;
             if (tickTimer >= tickInterval)
             {
@@ -103,7 +103,7 @@ public class BossBeamController : MonoBehaviour
                 }
             }
 
-            // µØÃæÓ¡¼ÇÂß¼­
+            // åœ°é¢å°è®°é€»è¾‘
             if (scorchMarkPrefab != null && groundLayer == (groundLayer | (1 << hit.collider.gameObject.layer)))
             {
                 scorchMarkTimer += Time.deltaTime;
@@ -118,26 +118,26 @@ public class BossBeamController : MonoBehaviour
         {
             endPoint = transform.position + currentBeamDirection * maxDistance;
 
-            // ¡¾ĞŞÕı¡¿Èç¹ûÃ»ÃüÖĞ£¬ÔòÒş²ØÌØĞ§
+            // ã€ä¿®æ­£ã€‘å¦‚æœæ²¡å‘½ä¸­ï¼Œåˆ™éšè—ç‰¹æ•ˆ
             if (impactEffectInstance != null)
             {
                 impactEffectInstance.SetActive(false);
             }
         }
 
-        // 3. ¸üĞÂLineRendererµÄÊÓ¾õ±íÏÖ
+        // 3. æ›´æ–°LineRendererçš„è§†è§‰è¡¨ç°
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
     }
 
     void OnDestroy()
     {
-        // ¡¾ĞŞÕı¡¿ÔÚÏú»ÙÊ±£¬ÇåÀíÌØĞ§ÊµÀı£¬·ÀÖ¹ÄÚ´æĞ¹Â©
+        // ã€ä¿®æ­£ã€‘åœ¨é”€æ¯æ—¶ï¼Œæ¸…ç†ç‰¹æ•ˆå®ä¾‹ï¼Œé˜²æ­¢å†…å­˜æ³„æ¼
         if (impactEffectInstance != null)
         {
             Destroy(impactEffectInstance);
         }
     }
 
-    // OnDestroy ºÍ OnTriggerStay ²»ÔÙĞèÒª
+    // OnDestroy å’Œ OnTriggerStay ä¸å†éœ€è¦
 }

@@ -1,4 +1,4 @@
-// EnemyExplosionAttack.cs
+ï»¿// EnemyExplosionAttack.cs
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
@@ -15,7 +15,7 @@ public class EnemyExplosionAttack : MonoBehaviour
     private Health health;
     private NavMeshAgent agent;
     private Rigidbody rb;
-    private EnemyType enemyData; // ÓÃÓÚ´æ´¢´ÓSpawner´«ÈëµÄÊı¾İ
+    private EnemyType enemyData; // ç”¨äºå­˜å‚¨ä»Spawnerä¼ å…¥çš„æ•°æ®
 
     private bool isAttacking = false;
     private bool requestedAttack = false;
@@ -28,7 +28,7 @@ public class EnemyExplosionAttack : MonoBehaviour
 
     void Start()
     {
-        // »ñÈ¡ºËĞÄ×é¼şµÄÒıÓÃ
+        // è·å–æ ¸å¿ƒç»„ä»¶çš„å¼•ç”¨
         enemyAI = GetComponent<EnemyAI>();
         health = GetComponent<Health>();
 
@@ -37,17 +37,17 @@ public class EnemyExplosionAttack : MonoBehaviour
             playerTarget = GameManager.Instance.playerTransform;
         }
 
-        // °²È«¼ì²é
+        // å®‰å…¨æ£€æŸ¥
         if (enemyData == null)
         {
-            Debug.LogWarning($"'{gameObject.name}' ÉÏµÄ EnemyExplosionAttack Ã»ÓĞ±»ÕıÈ·³õÊ¼»¯ EnemyType Êı¾İ£¡", this);
+            Debug.LogWarning($"'{gameObject.name}' ä¸Šçš„ EnemyExplosionAttack æ²¡æœ‰è¢«æ­£ç¡®åˆå§‹åŒ– EnemyType æ•°æ®ï¼", this);
             enabled = false;
         }
     }
 
     public void OnJumpFinished()
     {
-        // ¿ªÊ¼Ö´ĞĞÌøÔ¾½áÊøºóµÄÂß¼­£¨µØÃæÔ¤¾¯ -> ±¬Õ¨£©
+        // å¼€å§‹æ‰§è¡Œè·³è·ƒç»“æŸåçš„é€»è¾‘ï¼ˆåœ°é¢é¢„è­¦ -> çˆ†ç‚¸ï¼‰
         StartCoroutine(ArmAndExplodeSequenceAfterJump());
     }
 
@@ -56,13 +56,13 @@ public class EnemyExplosionAttack : MonoBehaviour
     {
         if (playerTarget == null || requestedAttack || health.IsDead) return;
 
-        // ¡¾¹Ø¼üĞŞ¸Ä¡¿ÏÖÔÚ¼ì²éµÄÊÇ EnemyAI µÄ¹«¹²×´Ì¬ CurrentState
-        // Ö»ÓĞµ±AI´¦ÓÚ×·Öğ×´Ì¬£¬²¢ÇÒÂú×ã¾àÀëÌõ¼şÊ±£¬²Å¡°ÇëÇó¡±¹¥»÷
+        // ã€å…³é”®ä¿®æ”¹ã€‘ç°åœ¨æ£€æŸ¥çš„æ˜¯ EnemyAI çš„å…¬å…±çŠ¶æ€ CurrentState
+        // åªæœ‰å½“AIå¤„äºè¿½é€çŠ¶æ€ï¼Œå¹¶ä¸”æ»¡è¶³è·ç¦»æ¡ä»¶æ—¶ï¼Œæ‰â€œè¯·æ±‚â€æ”»å‡»
         if (enemyAI.CurrentState == EnemyAI.AIState.Chasing &&
             Vector3.Distance(transform.position, playerTarget.position) <= enemyData.jumpTriggerRange)
         {
             requestedAttack = true;
-            // ÏòÖ÷¿ØÖÆÆ÷¡°ÇëÇó¡±Ö´ĞĞÌøÔ¾¹¥»÷£¬´«µİËùÓĞĞèÒªµÄ²ÎÊı
+            // å‘ä¸»æ§åˆ¶å™¨â€œè¯·æ±‚â€æ‰§è¡Œè·³è·ƒæ”»å‡»ï¼Œä¼ é€’æ‰€æœ‰éœ€è¦çš„å‚æ•°
             enemyAI.RequestJumpAttack(playerTarget.position, enemyData.jumpAirTime, enemyData.jumpArcHeight);
         }
     }
@@ -85,16 +85,16 @@ public class EnemyExplosionAttack : MonoBehaviour
 
     private void Explode()
     {
-        // 1. ÈÃ×Ô¼ºËÀÍö£¨µ«²»Á¢¼´Ïú»Ù£¬ÒÔ±ãÍê³É±¬Õ¨Âß¼­£©
+        // 1. è®©è‡ªå·±æ­»äº¡ï¼ˆä½†ä¸ç«‹å³é”€æ¯ï¼Œä»¥ä¾¿å®Œæˆçˆ†ç‚¸é€»è¾‘ï¼‰
         health.Die(false);
 
-        // 2. ²¥·Å±¬Õ¨ÌØĞ§
+        // 2. æ’­æ”¾çˆ†ç‚¸ç‰¹æ•ˆ
         if (enemyData.explosionVfxPrefab != null)
         {
             Instantiate(enemyData.explosionVfxPrefab, transform.position, Quaternion.identity);
         }
 
-        // 3. ½øĞĞ·¶Î§ÉËº¦¼ì²â
+        // 3. è¿›è¡ŒèŒƒå›´ä¼¤å®³æ£€æµ‹
         Collider[] hits = Physics.OverlapSphere(transform.position, enemyData.explosionRadius, LayerMask.GetMask("Player"));
         foreach (Collider hit in hits)
         {
@@ -104,17 +104,17 @@ public class EnemyExplosionAttack : MonoBehaviour
             }
         }
 
-        // 4. ¡¾ÖØÒª¡¿ÔÚËùÓĞ²Ù×÷Íê³Éºó£¬Í¨ÖªAIÖ÷¿ØÖÆÆ÷£¬¹¥»÷Á÷³Ì½áÊø
+        // 4. ã€é‡è¦ã€‘åœ¨æ‰€æœ‰æ“ä½œå®Œæˆåï¼Œé€šçŸ¥AIä¸»æ§åˆ¶å™¨ï¼Œæ”»å‡»æµç¨‹ç»“æŸ
         if (enemyAI != null)
         {
             enemyAI.ResumeNormalBehavior();
         }
 
-        // 5. ×îºó£¬Ïú»Ù×Ô¼º
+        // 5. æœ€åï¼Œé”€æ¯è‡ªå·±
         Destroy(gameObject);
     }
 
-    // ÔÚ³¡¾°ÖĞ»æÖÆ¸¨ÖúÏß£¬·½±ãµ÷ÊÔ
+    // åœ¨åœºæ™¯ä¸­ç»˜åˆ¶è¾…åŠ©çº¿ï¼Œæ–¹ä¾¿è°ƒè¯•
     void OnDrawGizmosSelected()
     {
         if (enemyData != null)

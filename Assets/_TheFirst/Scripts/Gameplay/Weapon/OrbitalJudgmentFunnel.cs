@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -7,44 +7,44 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
     private enum State { Orbiting, Attacking, Cooldown }
     private State currentState = State.Orbiting;
 
-    [Header("¸¡ÓÎÅÚ×ËÌ¬")]
+    [Header("æµ®æ¸¸ç‚®å§¿æ€")]
     public float orbitDistance = 4.0f;
-    public float orbitHeight = 5.0f;      // ·É¸ßÒ»µã£¬ÏñÉñÖ®¹â»·
-    public float orbitSpeed = 45f;        // ×ªÂıÒ»µã£¬ÏÔÍşÑÏ
+    public float orbitHeight = 5.0f;      // é£é«˜ä¸€ç‚¹ï¼Œåƒç¥ä¹‹å…‰ç¯
+    public float orbitSpeed = 45f;        // è½¬æ…¢ä¸€ç‚¹ï¼Œæ˜¾å¨ä¸¥
     public float smoothTime = 2.0f;
 
-    [Header("½×¶ÎÒ»£ºĞÇÔÉµ¼µ¯")]
+    [Header("é˜¶æ®µä¸€ï¼šæ˜Ÿé™¨å¯¼å¼¹")]
     public GameObject missilePrefab;
     public int missileCount = 4;
     public float missileInterval = 0.15f;
 
-    [Header("½×¶Î¶ş£ºÌì»ù´ò»÷")]
-    public float laserDuration = 2.0f;     // ´ò»÷³ÖĞøÊ±¼ä
-    public float laserWidth = 1.2f;        // ¹âÖù·Ç³£´Ö
-    public Color laserColor = new Color(1f, 0.8f, 0f); // ½ğÉ«
-    public GameObject chargeVfxPrefab;     // ¸¡ÓÎÅÚ¿ÚµÄÒıµ¼ÌØĞ§
-    public GameObject orbitalBeamVfxPrefab; // ¡¾ĞÂÔö¡¿Ìì½µ¹âÖùµÄµ×²¿³å»÷ÌØĞ§
-    public GameObject lockOnPrefab;        // Ëø¶¨È¦
+    [Header("é˜¶æ®µäºŒï¼šå¤©åŸºæ‰“å‡»")]
+    public float laserDuration = 2.0f;     // æ‰“å‡»æŒç»­æ—¶é—´
+    public float laserWidth = 1.2f;        // å…‰æŸ±éå¸¸ç²—
+    public Color laserColor = new Color(1f, 0.8f, 0f); // é‡‘è‰²
+    public GameObject chargeVfxPrefab;     // æµ®æ¸¸ç‚®å£çš„å¼•å¯¼ç‰¹æ•ˆ
+    public GameObject orbitalBeamVfxPrefab; // ã€æ–°å¢ã€‘å¤©é™å…‰æŸ±çš„åº•éƒ¨å†²å‡»ç‰¹æ•ˆ
+    public GameObject lockOnPrefab;        // é”å®šåœˆ
 
-    [Header("Õ½¶·²ÎÊı")]
+    [Header("æˆ˜æ–—å‚æ•°")]
     public float detectionRadius = 25f;
     public float cooldownTime = 2.0f;
     public LayerMask enemyLayer;
     public Transform firePoint;
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private Transform ownerPlayer;
     private WeaponPart ownerWeapon;
     private Transform currentTarget;
     private LineRenderer lineRenderer;
     private float orbitAngle;
 
-    // ÒıÓÃ
+    // å¼•ç”¨
     private GameObject currentLockOn;
     private LockOnEffect currentLockOnScript;
     private GameObject currentChargeVfx;
 
-    // ÉËº¦
+    // ä¼¤å®³
     private int damage;
     private float tickRate;
     private float damageTickTimer;
@@ -64,7 +64,7 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
         lineRenderer.useWorldSpace = true;
         lineRenderer.enabled = false;
 
-        // ÉèÖÃ¹âÖù²ÄÖÊÑÕÉ«
+        // è®¾ç½®å…‰æŸ±æè´¨é¢œè‰²
         lineRenderer.startWidth = laserWidth;
         lineRenderer.endWidth = laserWidth;
         lineRenderer.startColor = laserColor;
@@ -84,12 +84,12 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
                 break;
 
             case State.Attacking:
-                // ¹¥»÷Ê±£¬¸¡ÓÎÅÚÉÔÎ¢Í£¶Ù»ò¼õËÙ£¬±£³Ö¸ß±Æ¸ñ
+                // æ”»å‡»æ—¶ï¼Œæµ®æ¸¸ç‚®ç¨å¾®åœé¡¿æˆ–å‡é€Ÿï¼Œä¿æŒé«˜é€¼æ ¼
                 HandleOrbit(0.2f);
                 break;
 
             case State.Cooldown:
-                HandleOrbit(1.5f); // ÀäÈ´Ê±¿ìËÙ¹éÎ»
+                HandleOrbit(1.5f); // å†·å´æ—¶å¿«é€Ÿå½’ä½
                 break;
         }
     }
@@ -98,33 +98,33 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
     {
         currentState = State.Attacking;
 
-        // === ½×¶Î 1: ĞÇÔÉµ¼µ¯ (ĞŞ¸´°æ) ===
+        // === é˜¶æ®µ 1: æ˜Ÿé™¨å¯¼å¼¹ (ä¿®å¤ç‰ˆ) ===
         ShowLockOn(true);
 
         for (int i = 0; i < missileCount; i++)
         {
             if (currentTarget == null) FindTarget();
-            if (currentTarget != null) FireMissileFixed(); // µ÷ÓÃĞŞ¸´ºóµÄ·¢ÉäÂß¼­
+            if (currentTarget != null) FireMissileFixed(); // è°ƒç”¨ä¿®å¤åçš„å‘å°„é€»è¾‘
             yield return new WaitForSeconds(missileInterval);
         }
 
         yield return new WaitForSeconds(0.3f);
 
-        // === ½×¶Î 2: Òıµ¼Ìì·£ ===
-        // ¸¡ÓÎÅÚÁÁÆğ£¬±íÊ¾ÕıÔÚÏòÎÀĞÇ·¢ËÍ×ø±ê
+        // === é˜¶æ®µ 2: å¼•å¯¼å¤©ç½š ===
+        // æµ®æ¸¸ç‚®äº®èµ·ï¼Œè¡¨ç¤ºæ­£åœ¨å‘å«æ˜Ÿå‘é€åæ ‡
         if (chargeVfxPrefab != null && firePoint != null)
         {
             currentChargeVfx = Instantiate(chargeVfxPrefab, firePoint.position, Quaternion.identity, firePoint);
         }
-        yield return new WaitForSeconds(0.4f); // ¶ÌÔİÑÓ³Ù
+        yield return new WaitForSeconds(0.4f); // çŸ­æš‚å»¶è¿Ÿ
 
-        // === ½×¶Î 3: Ìì½µ¹âÖù (Vertical Beam) ===
+        // === é˜¶æ®µ 3: å¤©é™å…‰æŸ± (Vertical Beam) ===
         if (currentChargeVfx != null) Destroy(currentChargeVfx);
 
         float laserTimer = laserDuration;
         lineRenderer.enabled = true;
 
-        // Éú³ÉµØÃæµÄ³ÖĞø³å»÷ÌØĞ§
+        // ç”Ÿæˆåœ°é¢çš„æŒç»­å†²å‡»ç‰¹æ•ˆ
         GameObject groundImpact = null;
         if (orbitalBeamVfxPrefab != null && currentTarget != null)
         {
@@ -135,14 +135,14 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
         {
             if (currentTarget == null) FindTarget();
 
-            // ºËĞÄĞŞ¸Ä£º¹âÖù²»ÔÙÁ¬½Ó¸¡ÓÎÅÚ£¬¶øÊÇ´ÓÌì¶ø½µ
+            // æ ¸å¿ƒä¿®æ”¹ï¼šå…‰æŸ±ä¸å†è¿æ¥æµ®æ¸¸ç‚®ï¼Œè€Œæ˜¯ä»å¤©è€Œé™
             UpdateOrbitalBeam(groundImpact);
 
             laserTimer -= Time.deltaTime;
             yield return null;
         }
 
-        // === ½áÊø ===
+        // === ç»“æŸ ===
         lineRenderer.enabled = false;
         ShowLockOn(false);
         if (groundImpact != null) Destroy(groundImpact);
@@ -152,88 +152,88 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
         currentState = State.Orbiting;
     }
 
-    // --- ¡¾ĞŞ¸´¡¿µ¼µ¯·¢ÉäÂß¼­ ---
+    // --- ã€ä¿®å¤ã€‘å¯¼å¼¹å‘å°„é€»è¾‘ ---
     void FireMissileFixed()
     {
         if (missilePrefab == null || firePoint == null) return;
 
-        // 1. Éú³É
+        // 1. ç”Ÿæˆ
         GameObject missileObj = Instantiate(missilePrefab, firePoint.position, firePoint.rotation);
 
-        // 2. »ñÈ¡ºËĞÄ½Å±¾
+        // 2. è·å–æ ¸å¿ƒè„šæœ¬
         Projectile proj = missileObj.GetComponent<Projectile>();
 
-        // 3. ¡¾¹Ø¼ü¡¿ÊÖ¶¯³õÊ¼»¯£¡Ä£Äâ WeaponPart µÄĞĞÎª
+        // 3. ã€å…³é”®ã€‘æ‰‹åŠ¨åˆå§‹åŒ–ï¼æ¨¡æ‹Ÿ WeaponPart çš„è¡Œä¸º
         if (proj != null)
         {
-            // Èç¹ûÄãµÄµ¼µ¯ÊÇÓÃ Homing Ä£Ê½
-            // ÎÒÃÇÊÖ¶¯µ÷ÓÃ InitializeAsHoming£¬»òÕß InitializeAsStraight È»ºóÓÉ HomingProjectile ½Ó¹Ü
-            // ÕâÀï¼ÙÉèÄãµÄµ¼µ¯ Prefab ¹ÒÁË HomingProjectile ÇÒ Projectile.mode ÉèÎªÁË Homing
+            // å¦‚æœä½ çš„å¯¼å¼¹æ˜¯ç”¨ Homing æ¨¡å¼
+            // æˆ‘ä»¬æ‰‹åŠ¨è°ƒç”¨ InitializeAsHomingï¼Œæˆ–è€… InitializeAsStraight ç„¶åç”± HomingProjectile æ¥ç®¡
+            // è¿™é‡Œå‡è®¾ä½ çš„å¯¼å¼¹ Prefab æŒ‚äº† HomingProjectile ä¸” Projectile.mode è®¾ä¸ºäº† Homing
 
-            // ¸³ÓèÉËº¦ºÍÖ÷ÈË
-            proj.damage = Mathf.RoundToInt(damage * 0.5f); // µ¼µ¯ÉËº¦¼õ°ë
+            // èµ‹äºˆä¼¤å®³å’Œä¸»äºº
+            proj.damage = Mathf.RoundToInt(damage * 0.5f); // å¯¼å¼¹ä¼¤å®³å‡åŠ
             proj.owner = ownerWeapon.gameObject;
 
-            // Èç¹û Projectile ½Å±¾ÀïÓĞ InitializeAsHoming£¬×îºÃµ÷ÓÃËü
-            // ÕâÀïÎÒÃÇÊÖ¶¯Ä£Äâ³õÊ¼»¯²ÎÊı£¬·ÀÖ¹Ëü·¢´ô
+            // å¦‚æœ Projectile è„šæœ¬é‡Œæœ‰ InitializeAsHomingï¼Œæœ€å¥½è°ƒç”¨å®ƒ
+            // è¿™é‡Œæˆ‘ä»¬æ‰‹åŠ¨æ¨¡æ‹Ÿåˆå§‹åŒ–å‚æ•°ï¼Œé˜²æ­¢å®ƒå‘å‘†
             proj.speed = 25f;
-            // È·±£ËüÊôÓÚÍæ¼Ò×Óµ¯
+            // ç¡®ä¿å®ƒå±äºç©å®¶å­å¼¹
             proj.MarkAsPlayerProjectile();
 
-            // Ç¿ÖÆ¼¤»î Rigidbody
+            // å¼ºåˆ¶æ¿€æ´» Rigidbody
             Rigidbody rb = missileObj.GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.useGravity = false;
-                // ¸øÒ»¸öÏòÉÏµÄ³õËÙ¶È£¬ÖÆÔì¡°·¢Éä¡±¸Ğ
+                // ç»™ä¸€ä¸ªå‘ä¸Šçš„åˆé€Ÿåº¦ï¼Œåˆ¶é€ â€œå‘å°„â€æ„Ÿ
                 Vector3 launchDir = (firePoint.up + Random.insideUnitSphere * 0.2f).normalized;
                 rb.velocity = launchDir * 10f;
             }
         }
 
-        // 4. ´¦Àí HomingProjectile ½Å±¾
+        // 4. å¤„ç† HomingProjectile è„šæœ¬
         HomingProjectile hp = missileObj.GetComponent<HomingProjectile>();
         if (hp != null)
         {
-            // ÏÖÔÚµÄ HomingProjectile »áÔÚ Start Àï×Ô¶¯ÕÒÄ¿±ê
-            // µ«ÎªÁË±£ÏÕ£¬ÎÒÃÇ°Ñµ±Ç°Ëø¶¨µÄÄ¿±êÖ±½ÓÈû¸øËü£¨Èç¹ûÄãĞŞ¸Ä¹ı´úÂëÖ§³ÖÍâ²¿¸³Öµ£©
-            // Èç¹ûÃ»ÓĞÍâ²¿¸³Öµ½Ó¿Ú£¬Ëü»áÔÚ Start ÀïµÄ FindNearestTarget ×Ô¶¯ÉúĞ§
-            // Ö»Òª Projectile.owner Éè¶ÔÁË£¬Ëü¾Í²»»á´ò×Ô¼ºÈË
+            // ç°åœ¨çš„ HomingProjectile ä¼šåœ¨ Start é‡Œè‡ªåŠ¨æ‰¾ç›®æ ‡
+            // ä½†ä¸ºäº†ä¿é™©ï¼Œæˆ‘ä»¬æŠŠå½“å‰é”å®šçš„ç›®æ ‡ç›´æ¥å¡ç»™å®ƒï¼ˆå¦‚æœä½ ä¿®æ”¹è¿‡ä»£ç æ”¯æŒå¤–éƒ¨èµ‹å€¼ï¼‰
+            // å¦‚æœæ²¡æœ‰å¤–éƒ¨èµ‹å€¼æ¥å£ï¼Œå®ƒä¼šåœ¨ Start é‡Œçš„ FindNearestTarget è‡ªåŠ¨ç”Ÿæ•ˆ
+            // åªè¦ Projectile.owner è®¾å¯¹äº†ï¼Œå®ƒå°±ä¸ä¼šæ‰“è‡ªå·±äºº
         }
     }
 
-    // --- ¡¾ĞÂ¡¿Ìì½µ¹âÖùÂß¼­ ---
+    // --- ã€æ–°ã€‘å¤©é™å…‰æŸ±é€»è¾‘ ---
     void UpdateOrbitalBeam(GameObject impactVfx)
     {
-        // Ä¿±êµã£ºµĞÈËÎ»ÖÃ (Èç¹ûµĞÈËËÀÁË£¬±£³ÖÔÚ×îºóµÄÎ»ÖÃ)
+        // ç›®æ ‡ç‚¹ï¼šæ•Œäººä½ç½® (å¦‚æœæ•Œäººæ­»äº†ï¼Œä¿æŒåœ¨æœ€åçš„ä½ç½®)
         Vector3 targetPos = transform.position + transform.forward * 10f;
         if (currentTarget != null) targetPos = currentTarget.position;
         else if (currentLockOn != null) targetPos = currentLockOn.transform.position;
 
-        // Ëø¶¨È¦¸úËæ
+        // é”å®šåœˆè·Ÿéš
         if (currentLockOnScript != null && currentTarget != null)
             currentLockOnScript.SetTarget(currentTarget);
         else if (currentLockOn != null)
             currentLockOn.transform.position = targetPos;
 
-        // ÌØĞ§¸úËæ
+        // ç‰¹æ•ˆè·Ÿéš
         if (impactVfx != null) impactVfx.transform.position = targetPos;
 
-        // 1. »æÖÆ´¹Ö±¹âÖù
-        // Æğµã£ºÔÆ¶Ë (Ä¿±êÉÏ·½ 30Ã×)
+        // 1. ç»˜åˆ¶å‚ç›´å…‰æŸ±
+        // èµ·ç‚¹ï¼šäº‘ç«¯ (ç›®æ ‡ä¸Šæ–¹ 30ç±³)
         Vector3 skyPos = targetPos + Vector3.up * 30f;
-        // ÖÕµã£ºµØµ× (Ä¿±êÏÂ·½ 2Ã×£¬È·±£´©Í¸)
+        // ç»ˆç‚¹ï¼šåœ°åº• (ç›®æ ‡ä¸‹æ–¹ 2ç±³ï¼Œç¡®ä¿ç©¿é€)
         Vector3 groundPos = targetPos - Vector3.up * 2.0f;
 
         lineRenderer.SetPosition(0, skyPos);
         lineRenderer.SetPosition(1, groundPos);
 
-        // 2. Ôì³ÉÉËº¦ (Ô²ÖùÌåÅĞ¶¨)
+        // 2. é€ æˆä¼¤å®³ (åœ†æŸ±ä½“åˆ¤å®š)
         damageTickTimer += Time.deltaTime;
         if (damageTickTimer >= (1f / tickRate))
         {
             damageTickTimer = 0f;
-            // ´ÓÌì¶ø½µµÄÅĞ¶¨
+            // ä»å¤©è€Œé™çš„åˆ¤å®š
             RaycastHit[] hits = Physics.SphereCastAll(skyPos, laserWidth * 0.5f, Vector3.down, 40f, enemyLayer);
 
             foreach (var hit in hits)
@@ -252,23 +252,23 @@ public class OrbitalJudgmentFunnel : MonoBehaviour
         orbitAngle += orbitSpeed * speedMultiplier * Time.deltaTime;
         float rad = orbitAngle * Mathf.Deg2Rad;
 
-        // ÍÖÔ²¹ì¼££¬ÈÃËü¿´ÆğÀ´¸üÁ¢Ìå
+        // æ¤­åœ†è½¨è¿¹ï¼Œè®©å®ƒçœ‹èµ·æ¥æ›´ç«‹ä½“
         Vector3 offset = new Vector3(Mathf.Cos(rad) * orbitDistance, orbitHeight + Mathf.Sin(rad * 0.5f), Mathf.Sin(rad) * orbitDistance);
         Vector3 targetPos = ownerPlayer.position + offset;
 
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * smoothTime);
 
-        // Ê¼ÖÕ³¯ÏòÍâ²à£¬»òÕß³¯ÏòÄ¿±ê
+        // å§‹ç»ˆæœå‘å¤–ä¾§ï¼Œæˆ–è€…æœå‘ç›®æ ‡
         if (currentState == State.Attacking && currentTarget != null)
         {
-            // ¹¥»÷Ê±£¬ÅÚ¿ÚÖ¸ÏòÌì¿Õ£¨ÕÙ»½×ËÌ¬£©»òÕßÖ¸ÏòµĞÈË
-            // ÕâÀïÉèÎªÖ¸ÏòµĞÈË£¬µ«¹âÖùÊÇ´¹Ö±µÄ£¬ĞÎ³É·´²î
+            // æ”»å‡»æ—¶ï¼Œç‚®å£æŒ‡å‘å¤©ç©ºï¼ˆå¬å”¤å§¿æ€ï¼‰æˆ–è€…æŒ‡å‘æ•Œäºº
+            // è¿™é‡Œè®¾ä¸ºæŒ‡å‘æ•Œäººï¼Œä½†å…‰æŸ±æ˜¯å‚ç›´çš„ï¼Œå½¢æˆåå·®
             Vector3 dir = (currentTarget.position - transform.position).normalized;
             transform.forward = Vector3.Lerp(transform.forward, dir, Time.deltaTime * 10f);
         }
         else
         {
-            // Ñ²º½Ê±×Ô×ª
+            // å·¡èˆªæ—¶è‡ªè½¬
             transform.Rotate(Vector3.up, 30f * Time.deltaTime);
         }
     }

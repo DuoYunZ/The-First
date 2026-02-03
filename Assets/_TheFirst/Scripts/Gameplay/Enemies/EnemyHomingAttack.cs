@@ -1,43 +1,43 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAI))]
-[RequireComponent(typeof(Animator))] // ¡¾ĞÂÔö¡¿È·±£¹ÖÎïÓĞAnimator×é¼ş
+[RequireComponent(typeof(Animator))] // ã€æ–°å¢ã€‘ç¡®ä¿æ€ªç‰©æœ‰Animatorç»„ä»¶
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyHomingAttack : MonoBehaviour
 {
-    [Header("¹¥»÷ÉèÖÃ")]
+    [Header("æ”»å‡»è®¾ç½®")]
     public GameObject homingProjectilePrefab;
     public Transform firePoint;
     public float attackRange = 20f;
-    [Tooltip("¹¥»÷ÆµÂÊ£¨´Î/Ãë£©")]
+    [Tooltip("æ”»å‡»é¢‘ç‡ï¼ˆæ¬¡/ç§’ï¼‰")]
     public float fireRate = 0.3f;
-    [Tooltip("¹¥»÷¶¯»­µÄ³ÖĞøÊ±¼ä£¨Ãë£©¡£×Óµ¯»áÔÚÕâ¶ÎÊ±¼äºó·¢Éä¡£")]
-    public float attackAnimationDuration = 1.2f; // ĞÂÔö£º¹¥»÷Ç°Ò¡/¶¯»­Ê±³¤
-    [Tooltip("¹ÖÎïÔÚ¹¥»÷·¶Î§ÄÚ×ªÏòÍæ¼ÒµÄËÙ¶È")]
+    [Tooltip("æ”»å‡»åŠ¨ç”»çš„æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰ã€‚å­å¼¹ä¼šåœ¨è¿™æ®µæ—¶é—´åå‘å°„ã€‚")]
+    public float attackAnimationDuration = 1.2f; // æ–°å¢ï¼šæ”»å‡»å‰æ‘‡/åŠ¨ç”»æ—¶é•¿
+    [Tooltip("æ€ªç‰©åœ¨æ”»å‡»èŒƒå›´å†…è½¬å‘ç©å®¶çš„é€Ÿåº¦")]
     public float turnSpeed = 5f;
 
-    [Header("×Óµ¯ÊôĞÔ")]
+    [Header("å­å¼¹å±æ€§")]
     public int projectileDamage = 15;
     public float projectileSpeed = 15f;
-    [Tooltip("×Óµ¯µÄ×ªÏòËÙ¶È£¬ÊıÖµÔ½´ó×ªÍäÔ½¼±")]
+    [Tooltip("å­å¼¹çš„è½¬å‘é€Ÿåº¦ï¼Œæ•°å€¼è¶Šå¤§è½¬å¼¯è¶Šæ€¥")]
     public float homingTurnSpeed = 8f;
 
-    [Tooltip("×Óµ¯µÄ´æ»îÊ±¼ä£¨Ãë£©")]
-    public float projectileLifetime = 3f; // Ä¬ÈÏÖµ¿ÉÒÔÉèÎªÄúÏëÒªµÄ 3
+    [Tooltip("å­å¼¹çš„å­˜æ´»æ—¶é—´ï¼ˆç§’ï¼‰")]
+    public float projectileLifetime = 3f; // é»˜è®¤å€¼å¯ä»¥è®¾ä¸ºæ‚¨æƒ³è¦çš„ 3
 
-    [Header("ÊÓ¾õĞ§¹û")]
-    [Tooltip("×Óµ¯ÃüÖĞ¡¾Íæ¼Ò»¤¶Ü¡¿Ê±µÄ×¨ÊôÌØĞ§")]
+    [Header("è§†è§‰æ•ˆæœ")]
+    [Tooltip("å­å¼¹å‘½ä¸­ã€ç©å®¶æŠ¤ç›¾ã€‘æ—¶çš„ä¸“å±ç‰¹æ•ˆ")]
     public GameObject shieldHitVfxPrefab;
-    [Tooltip("×Óµ¯ÃüÖĞ¡¾ÎŞ»¤¶ÜÍæ¼Ò¡¿Ê±µÄÍ¨ÓÃÌØĞ§")]
+    [Tooltip("å­å¼¹å‘½ä¸­ã€æ— æŠ¤ç›¾ç©å®¶ã€‘æ—¶çš„é€šç”¨ç‰¹æ•ˆ")]
     public GameObject defaultHitVfxPrefab;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float attackCooldownTimer;
     private EnemyAI enemyAI;
-    private Animator animator; // ¡¾ĞÂÔö¡¿¶¯»­¿ØÖÆÆ÷ÒıÓÃ
+    private Animator animator; // ã€æ–°å¢ã€‘åŠ¨ç”»æ§åˆ¶å™¨å¼•ç”¨
     private NavMeshAgent agent;
     private bool isInAttackRange = false;
     private bool isInAttackSequence = false;
@@ -50,7 +50,7 @@ public class EnemyHomingAttack : MonoBehaviour
         }
         else
         {
-            Debug.LogError("EnemyHomingAttack: Î´ÄÜÕÒµ½ GameManager »òÍæ¼ÒÒıÓÃ£¡", this);
+            Debug.LogError("EnemyHomingAttack: æœªèƒ½æ‰¾åˆ° GameManager æˆ–ç©å®¶å¼•ç”¨ï¼", this);
             enabled = false;
         }
         enemyAI = GetComponent<EnemyAI>();
@@ -69,15 +69,15 @@ public class EnemyHomingAttack : MonoBehaviour
 
         if (isInAttackRange)
         {
-            // --- Íæ¼ÒÔÚ¹¥»÷·¶Î§ÄÚ ---
+            // --- ç©å®¶åœ¨æ”»å‡»èŒƒå›´å†… ---
             if (agent.isStopped == false)
             {
-                agent.isStopped = true; // ĞŞ¸Ä
+                agent.isStopped = true; // ä¿®æ”¹
                 agent.velocity = Vector3.zero;
                 animator.SetBool("isMoving", false);
             }
 
-            // ³ÖĞø¡¢Æ½»¬µØ×ªÏòÍæ¼Ò
+            // æŒç»­ã€å¹³æ»‘åœ°è½¬å‘ç©å®¶
             Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
@@ -89,10 +89,10 @@ public class EnemyHomingAttack : MonoBehaviour
         }
         else
         {
-            // --- Íæ¼ÒÔÚ¹¥»÷·¶Î§Íâ ---
+            // --- ç©å®¶åœ¨æ”»å‡»èŒƒå›´å¤– ---
             if (agent.isStopped == true)
             {
-                agent.isStopped = false; // ĞŞ¸Ä
+                agent.isStopped = false; // ä¿®æ”¹
             }
         }
     }
@@ -102,13 +102,13 @@ public class EnemyHomingAttack : MonoBehaviour
         isInAttackSequence = true;
         attackCooldownTimer = 1f / fireRate;
 
-        // 1. ´¥·¢¹¥»÷¶¯»­
+        // 1. è§¦å‘æ”»å‡»åŠ¨ç”»
         animator.SetTrigger("Attack");
 
-        // 2. µÈ´ı¹¥»÷¶¯»­²¥·Å
+        // 2. ç­‰å¾…æ”»å‡»åŠ¨ç”»æ’­æ”¾
         yield return new WaitForSeconds(attackAnimationDuration);
 
-        // 3. ¶¯»­²¥·ÅÍê±Ïºó£¬·¢Éä×Óµ¯
+        // 3. åŠ¨ç”»æ’­æ”¾å®Œæ¯•åï¼Œå‘å°„å­å¼¹
         if (playerTarget != null && isInAttackRange)
         {
             GameObject bullet = Instantiate(homingProjectilePrefab, firePoint.position, firePoint.rotation);
@@ -116,14 +116,14 @@ public class EnemyHomingAttack : MonoBehaviour
 
             if (projectileScript != null)
             {
-                // --- ¡¾ºËĞÄĞŞ¸Ä B¡¿Ê¹ÓÃÎÒÃÇĞÂÔöµÄ projectileLifetime ±äÁ¿£¬¶ø²»ÊÇÓ²±àÂëµÄ 8f ---
+                // --- ã€æ ¸å¿ƒä¿®æ”¹ Bã€‘ä½¿ç”¨æˆ‘ä»¬æ–°å¢çš„ projectileLifetime å˜é‡ï¼Œè€Œä¸æ˜¯ç¡¬ç¼–ç çš„ 8f ---
                 projectileScript.InitializeAsHoming(
                     playerTarget,
                     projectileSpeed,
                     projectileDamage,
                     true, // isEnemyBullet
                     homingTurnSpeed,
-                    this.projectileLifetime, // <-- Ê¹ÓÃĞÂ±äÁ¿
+                    this.projectileLifetime, // <-- ä½¿ç”¨æ–°å˜é‡
                     this.shieldHitVfxPrefab,
                     this.defaultHitVfxPrefab
                 );

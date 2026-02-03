@@ -1,14 +1,14 @@
-// --- Repeater.cs ---
+ï»¿// --- Repeater.cs ---
 using UnityEngine;
 
-// ÕâÊÇÒ»¸ö×°ÊÎ½Úµã£¬ËüÖ»ÓĞÒ»¸ö×Ó½Úµã
+// è¿™æ˜¯ä¸€ä¸ªè£…é¥°èŠ‚ç‚¹ï¼Œå®ƒåªæœ‰ä¸€ä¸ªå­èŠ‚ç‚¹
 public class Repeater : Node
 {
     private Node child;
 
     void Awake()
     {
-        // ×Ô¶¯»ñÈ¡Î¨Ò»µÄ×Ó½Úµã
+        // è‡ªåŠ¨è·å–å”¯ä¸€çš„å­èŠ‚ç‚¹
         Transform firstChild = transform.GetChild(0);
         if (firstChild != null)
         {
@@ -20,11 +20,11 @@ public class Repeater : Node
     {
         if (child == null) return NodeState.FAILURE;
 
-        // ÆÀ¹À×Ó½Úµã
+        // è¯„ä¼°å­èŠ‚ç‚¹
         child.Evaluate();
 
-        // ¡¾ºËĞÄ¡¿ÎŞÂÛ×Ó½Úµã·µ»ØÊ²Ã´£¬ÎÒÃÇ¶¼¸æËßÉÏ¼¶¡°ÎÒ»¹ÔÚÔËĞĞ¡±
-        // Õâ¾Í´´½¨ÁËÒ»¸öÎŞÏŞÑ­»·
+        // ã€æ ¸å¿ƒã€‘æ— è®ºå­èŠ‚ç‚¹è¿”å›ä»€ä¹ˆï¼Œæˆ‘ä»¬éƒ½å‘Šè¯‰ä¸Šçº§â€œæˆ‘è¿˜åœ¨è¿è¡Œâ€
+        // è¿™å°±åˆ›å»ºäº†ä¸€ä¸ªæ— é™å¾ªç¯
         return NodeState.RUNNING;
     }
 }

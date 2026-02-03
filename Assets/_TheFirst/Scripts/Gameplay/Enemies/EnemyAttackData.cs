@@ -1,14 +1,14 @@
-// EnemyAttackData.cs
+ï»¿// EnemyAttackData.cs
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewEnemyAttack", menuName = "Enemies/Enemy Attack Data")]
 public class EnemyAttackData : ScriptableObject
 {
-    [Header("Í¨ÓÃÉèÖÃ")]
-    [Tooltip("¶¨Òå´Ë¹¥»÷µÄÀàĞÍ£¬ÒÔ¾ö¶¨ÓëÍæ¼Ò»¤¶ÜµÄ½»»¥·½Ê½")]
+    [Header("é€šç”¨è®¾ç½®")]
+    [Tooltip("å®šä¹‰æ­¤æ”»å‡»çš„ç±»å‹ï¼Œä»¥å†³å®šä¸ç©å®¶æŠ¤ç›¾çš„äº¤äº’æ–¹å¼")]
     public AttackType attackType = AttackType.Standard;
 
-    [Header("¹âÊø¹¥»÷ÊôĞÔ")]
+    [Header("å…‰æŸæ”»å‡»å±æ€§")]
     public GameObject beamVfxPrefab;
     public GameObject beamImpactVfxPrefab;
     public float beamMaxDistance = 25f;
@@ -17,7 +17,7 @@ public class EnemyAttackData : ScriptableObject
     public float beamDuration = 3f;
     public float beamCooldown = 5f;
 
-    // ÄúÎ´À´¿ÉÒÔÎªÆäËû¹¥»÷ÀàĞÍ£¨ÈçÅ×ÎïÏß¡¢×·×Ùµ¯µÈ£©ÔÚÕâÀïÌí¼Ó×¨ÊôÊôĞÔ
-    // [Header("Å×ÎïÏß¹¥»÷ÊôĞÔ")]
+    // æ‚¨æœªæ¥å¯ä»¥ä¸ºå…¶ä»–æ”»å‡»ç±»å‹ï¼ˆå¦‚æŠ›ç‰©çº¿ã€è¿½è¸ªå¼¹ç­‰ï¼‰åœ¨è¿™é‡Œæ·»åŠ ä¸“å±å±æ€§
+    // [Header("æŠ›ç‰©çº¿æ”»å‡»å±æ€§")]
     // public ...
 }

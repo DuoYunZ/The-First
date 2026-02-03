@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using System.Text;
@@ -7,12 +7,12 @@ public class InGameDebugLog : MonoBehaviour
 {
     public static InGameDebugLog Instance { get; private set; }
 
-    [Header("UIÒıÓÃ")]
-    [Tooltip("ÓÃÓÚÏÔÊ¾ÈÕÖ¾µÄ TextMeshProUGUI ×é¼ş")]
+    [Header("UIå¼•ç”¨")]
+    [Tooltip("ç”¨äºæ˜¾ç¤ºæ—¥å¿—çš„ TextMeshProUGUI ç»„ä»¶")]
     public TextMeshProUGUI logText;
 
-    [Header("ÉèÖÃ")]
-    [Tooltip("ÆÁÄ»ÉÏ×î¶àÏÔÊ¾µÄÈÕÖ¾ĞĞÊı")]
+    [Header("è®¾ç½®")]
+    [Tooltip("å±å¹•ä¸Šæœ€å¤šæ˜¾ç¤ºçš„æ—¥å¿—è¡Œæ•°")]
     public int maxLines = 20;
 
     private readonly Queue<string> logMessages = new Queue<string>();
@@ -23,7 +23,7 @@ public class InGameDebugLog : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // Èç¹ûÄúĞèÒªÔÚ¶à¸ö³¡¾°ÖĞ³ÖĞøÏÔÊ¾ÈÕÖ¾£¬¿ÉÒÔÈ¡ÏûÕâĞĞ×¢ÊÍ
+            // DontDestroyOnLoad(gameObject); // å¦‚æœæ‚¨éœ€è¦åœ¨å¤šä¸ªåœºæ™¯ä¸­æŒç»­æ˜¾ç¤ºæ—¥å¿—ï¼Œå¯ä»¥å–æ¶ˆè¿™è¡Œæ³¨é‡Š
         }
         else
         {
@@ -35,40 +35,40 @@ public class InGameDebugLog : MonoBehaviour
     {
         if (logText == null)
         {
-            Debug.LogError("InGameDebugLog: logText ×Ö¶ÎÎ´ÔÚ Inspector ÖĞÉèÖÃ!");
+            Debug.LogError("InGameDebugLog: logText å­—æ®µæœªåœ¨ Inspector ä¸­è®¾ç½®!");
             enabled = false;
         }
     }
 
     public static void Log(string message)
     {
-        // È·±£µ¥Àı´æÔÚ
+        // ç¡®ä¿å•ä¾‹å­˜åœ¨
         if (Instance == null)
         {
-            Debug.Log(message); // Èç¹ûµ¥Àı²»´æÔÚ£¬Ôò»ØÍËµ½±ê×¼ÈÕÖ¾
+            Debug.Log(message); // å¦‚æœå•ä¾‹ä¸å­˜åœ¨ï¼Œåˆ™å›é€€åˆ°æ ‡å‡†æ—¥å¿—
             return;
         }
 
-        // µ÷ÓÃÊµÀı·½·¨
+        // è°ƒç”¨å®ä¾‹æ–¹æ³•
         Instance.AddMessage(message);
     }
 
     private void AddMessage(string message)
     {
-        // ¸ñÊ½»¯ÏûÏ¢£¬¼ÓÈëÊ±¼ä´Á
+        // æ ¼å¼åŒ–æ¶ˆæ¯ï¼ŒåŠ å…¥æ—¶é—´æˆ³
         string formattedMessage = $"[{Time.time:F2}] {message}";
 
-        // Í¬Ê±Êä³öµ½ Unity µÄ±ê×¼ÈÕÖ¾£¬·½±ãÔÚ Player.log ÖĞÒ²¿´µ½
+        // åŒæ—¶è¾“å‡ºåˆ° Unity çš„æ ‡å‡†æ—¥å¿—ï¼Œæ–¹ä¾¿åœ¨ Player.log ä¸­ä¹Ÿçœ‹åˆ°
         Debug.Log(formattedMessage);
 
-        // ½«ÏûÏ¢Ìí¼Óµ½¶ÓÁĞ
+        // å°†æ¶ˆæ¯æ·»åŠ åˆ°é˜Ÿåˆ—
         if (logMessages.Count >= maxLines)
         {
-            logMessages.Dequeue(); // Èç¹û³¬¹ı×î´óĞĞÊı£¬ÒÆ³ı×î¾ÉµÄÒ»Ìõ
+            logMessages.Dequeue(); // å¦‚æœè¶…è¿‡æœ€å¤§è¡Œæ•°ï¼Œç§»é™¤æœ€æ—§çš„ä¸€æ¡
         }
         logMessages.Enqueue(formattedMessage);
 
-        // ¸üĞÂUIÎÄ±¾
+        // æ›´æ–°UIæ–‡æœ¬
         UpdateLogText();
     }
 

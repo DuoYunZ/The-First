@@ -1,4 +1,4 @@
-// EnemyBeamAttack.cs
+ï»¿// EnemyBeamAttack.cs
 using UnityEngine;
 using System.Collections;
 
@@ -6,26 +6,26 @@ using System.Collections;
 [RequireComponent(typeof(Animator))]
 public class EnemyBeamAttack : MonoBehaviour
 {
-    [Header("¹¥»÷Êı¾İ")]
-    [Tooltip("½«¶ÔÓ¦´Ë¹¥»÷µÄ EnemyAttackData ×Ê²úÍÏµ½ÕâÀï")]
+    [Header("æ”»å‡»æ•°æ®")]
+    [Tooltip("å°†å¯¹åº”æ­¤æ”»å‡»çš„ EnemyAttackData èµ„äº§æ‹–åˆ°è¿™é‡Œ")]
     public EnemyAttackData attackData;
 
 
-    [Header("¹¥»÷ÉèÖÃ")]
+    [Header("æ”»å‡»è®¾ç½®")]
     public Transform firePoint;
-    [Tooltip("½øÈë´Ë·¶Î§ºó£¬¹ÖÎï»á×¼±¸·¢Éä¼¤¹â")]
+    [Tooltip("è¿›å…¥æ­¤èŒƒå›´åï¼Œæ€ªç‰©ä¼šå‡†å¤‡å‘å°„æ¿€å…‰")]
     public float attackRange = 20f;
-    [Tooltip("¹¥»÷Ç°Ò¡/²¥·Å¶¯»­µÄÊ±¼ä")]
+    [Tooltip("æ”»å‡»å‰æ‘‡/æ’­æ”¾åŠ¨ç”»çš„æ—¶é—´")]
     public float animationDuration = 1f;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float cooldownTimer;
     private EnemyAI enemyAI;
     private Animator animator;
     private bool isAttacking = false;
     private EnemyBeamController activeBeamInstance = null;
-    private int attackCycleCounter = 0; // ¡¾ĞÂÔö¡¿¹¥»÷ÂÖ´Î¼ÆÊıÆ÷
+    private int attackCycleCounter = 0; // ã€æ–°å¢ã€‘æ”»å‡»è½®æ¬¡è®¡æ•°å™¨
     private float durationTimer;
 
     void Start()
@@ -37,10 +37,10 @@ public class EnemyBeamAttack : MonoBehaviour
         enemyAI = GetComponent<EnemyAI>();
         animator = GetComponent<Animator>();
 
-        // È·±£µĞÈËÓĞ "Enemy" ±êÇ©£¬ÒÔ±ãLaserBeamControllerÄÜÕıÈ·Ê¶±ğÄ¿±ê
+        // ç¡®ä¿æ•Œäººæœ‰ "Enemy" æ ‡ç­¾ï¼Œä»¥ä¾¿LaserBeamControllerèƒ½æ­£ç¡®è¯†åˆ«ç›®æ ‡
         if (!gameObject.CompareTag("Enemy"))
         {
-            Debug.LogWarning($"¼¤¹âµĞÈË '{gameObject.name}' È±ÉÙ 'Enemy' ±êÇ©£¬¿ÉÄÜ»áµ¼ÖÂÉËº¦ÅĞ¶¨Ê§°Ü£¡");
+            Debug.LogWarning($"æ¿€å…‰æ•Œäºº '{gameObject.name}' ç¼ºå°‘ 'Enemy' æ ‡ç­¾ï¼Œå¯èƒ½ä¼šå¯¼è‡´ä¼¤å®³åˆ¤å®šå¤±è´¥ï¼");
         }
     }
 
@@ -48,13 +48,13 @@ public class EnemyBeamAttack : MonoBehaviour
     {
         if (playerTarget == null || isAttacking || attackData == null) return;
 
-        // ¸üĞÂÀäÈ´¼ÆÊ±Æ÷
+        // æ›´æ–°å†·å´è®¡æ—¶å™¨
         if (cooldownTimer > 0f)
         {
             cooldownTimer -= Time.deltaTime;
         }
 
-        // ¼ì²éÊÇ·ñ¿ÉÒÔ¹¥»÷
+        // æ£€æŸ¥æ˜¯å¦å¯ä»¥æ”»å‡»
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
         if (distanceToPlayer <= attackRange && cooldownTimer <= 0f)
         {
@@ -78,17 +78,17 @@ public class EnemyBeamAttack : MonoBehaviour
         if (attackData.beamVfxPrefab != null)
         {
             GameObject beamGO = Instantiate(attackData.beamVfxPrefab, firePoint.position, firePoint.rotation, firePoint);
-            activeBeamInstance = beamGO.GetComponent<EnemyBeamController>(); // »ñÈ¡ĞÂ½Å±¾µÄÒıÓÃ
+            activeBeamInstance = beamGO.GetComponent<EnemyBeamController>(); // è·å–æ–°è„šæœ¬çš„å¼•ç”¨
             if (activeBeamInstance != null)
             {
-                // Ê¹ÓÃĞÂ½Å±¾µÄ³õÊ¼»¯·½·¨
+                // ä½¿ç”¨æ–°è„šæœ¬çš„åˆå§‹åŒ–æ–¹æ³•
                 activeBeamInstance.Initialize(attackData, this.gameObject, playerTarget);
             }
         }
 
         durationTimer = attackData.beamDuration;
 
-        // --- ¡¾ºËĞÄĞŞ¸Ä¡¿Ñ­»·ÖĞ²»ÔÙ¸üĞÂ¹âÊøÎ»ÖÃ£¬Ö»¼ì²é¾àÀëºÍ¼ÆÊ± ---
+        // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘å¾ªç¯ä¸­ä¸å†æ›´æ–°å…‰æŸä½ç½®ï¼Œåªæ£€æŸ¥è·ç¦»å’Œè®¡æ—¶ ---
         while (durationTimer > 0f)
         {
             if (playerTarget == null || !playerTarget.gameObject.activeInHierarchy || Vector3.Distance(transform.position, playerTarget.position) > attackRange)
@@ -96,7 +96,7 @@ public class EnemyBeamAttack : MonoBehaviour
                 break;
             }
 
-            // ²»ÔÙĞèÒªÔÚÕâÀïµ÷ÓÃ UpdateBeamPositions
+            // ä¸å†éœ€è¦åœ¨è¿™é‡Œè°ƒç”¨ UpdateBeamPositions
             durationTimer -= Time.deltaTime;
             yield return null;
         }

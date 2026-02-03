@@ -1,10 +1,10 @@
-// --- BossAnimationBridge.cs (À©Õ¹°æ) ---
+ï»¿// --- BossAnimationBridge.cs (æ‰©å±•ç‰ˆ) ---
 using UnityEngine;
 
 public class BossAnimationBridge : MonoBehaviour
 {
-    [Header("ĞĞÎªÊ÷ÒıÓÃ")]
-    [Tooltip("½«ÄãµÄĞĞÎªÊ÷¸ù½Úµã£¨ÀıÈçBoss_AIÄÇ¸ö¶ÔÏó£©ÍÏµ½ÕâÀï")]
+    [Header("è¡Œä¸ºæ ‘å¼•ç”¨")]
+    [Tooltip("å°†ä½ çš„è¡Œä¸ºæ ‘æ ¹èŠ‚ç‚¹ï¼ˆä¾‹å¦‚Boss_AIé‚£ä¸ªå¯¹è±¡ï¼‰æ‹–åˆ°è¿™é‡Œ")]
     public GameObject behaviorTreeRoot;
 
     // --- SpiralFireAction Events ---
@@ -25,9 +25,9 @@ public class BossAnimationBridge : MonoBehaviour
             action.StartFiringLoopEffect();
         }
     }
-    // ... ¿ÉÒÔÎªSpiralFireActionÌí¼Ó¸ü¶àÊÂ¼ş...
+    // ... å¯ä»¥ä¸ºSpiralFireActionæ·»åŠ æ›´å¤šäº‹ä»¶...
 
-    // --- ¡¾ĞÂÔö¡¿CircularFireAction Events ---
+    // --- ã€æ–°å¢ã€‘CircularFireAction Events ---
     public void AnimEvent_TriggerCircularWindupEffect()
     {
         if (behaviorTreeRoot == null) return;
@@ -48,7 +48,7 @@ public class BossAnimationBridge : MonoBehaviour
         }
     }
 
-    // --- ¡¾ĞÂÔö¡¿DashAttackAction Events ---
+    // --- ã€æ–°å¢ã€‘DashAttackAction Events ---
     public void AnimEvent_TriggerDashWindupEffect()
     {
         if (behaviorTreeRoot == null) return;

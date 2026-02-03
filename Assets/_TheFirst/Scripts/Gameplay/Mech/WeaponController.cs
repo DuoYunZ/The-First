@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -17,21 +17,21 @@ public class WeaponController : MonoBehaviour
 
     private Transform weaponMountPoint;
 
-    [Header("¾²Ì¬/×Ô´øÎäÆ÷")]
+    [Header("é™æ€/è‡ªå¸¦æ­¦å™¨")]
     public WeaponPart builtInBladeWeapon;
 
-    [Header("×Ô¶¯¿ª»ğÉèÖÃ")]
+    [Header("è‡ªåŠ¨å¼€ç«è®¾ç½®")]
     public bool autoFire = true;
 
-    [Header("Ãé×¼ÉèÖÃ")]
+    [Header("ç„å‡†è®¾ç½®")]
     public float aimTurnSpeed = 25f;
 
-    [Header("ÎäÆ÷¿â")]
+    [Header("æ­¦å™¨åº“")]
     public List<OwnedWeapon> ownedWeapons = new List<OwnedWeapon>();
 
-    [Header("ÈÚºÏÏµÍ³ (Fusion)")]
-    [Tooltip("ÔÚÕâÀïÅäÖÃËùÓĞµÄÈÚºÏÅä·½ (A+B=C)")]
-    public List<FusionRecipeSO> fusionRecipes; // <--- ¡¾ĞŞ¸Ä¡¿Ê¹ÓÃĞÂµÄÅä·½ÁĞ±í
+    [Header("èåˆç³»ç»Ÿ (Fusion)")]
+    [Tooltip("åœ¨è¿™é‡Œé…ç½®æ‰€æœ‰çš„èåˆé…æ–¹ (A+B=C)")]
+    public List<FusionRecipeSO> fusionRecipes; // <--- ã€ä¿®æ”¹ã€‘ä½¿ç”¨æ–°çš„é…æ–¹åˆ—è¡¨
 
     public HashSet<WeaponStatBlock> banList = new HashSet<WeaponStatBlock>();
 
@@ -59,7 +59,7 @@ public class WeaponController : MonoBehaviour
     {
         mainCamera = Camera.main;
 
-        // ³õÊ¼»¯×Ô´øÎäÆ÷
+        // åˆå§‹åŒ–è‡ªå¸¦æ­¦å™¨
         if (builtInBladeWeapon != null)
         {
             if (!ownedWeapons.Any(w => w.weaponPartInstance == builtInBladeWeapon))
@@ -71,63 +71,63 @@ public class WeaponController : MonoBehaviour
                     weaponPartInstance = builtInBladeWeapon
                 };
                 ownedWeapons.Insert(0, initialWeapon);
-                builtInBladeWeapon.Activate(); // È·±£¼¤»î
+                builtInBladeWeapon.Activate(); // ç¡®ä¿æ¿€æ´»
             }
         }
     }
 
-    // --- Éı¼¶Âß¼­ ---
+    // --- å‡çº§é€»è¾‘ ---
     public void TryUpgradeWeapon(string weaponName)
     {
         var targetWeaponData = ownedWeapons.FirstOrDefault(w => w.stats != null && w.stats.weaponName == weaponName);
 
         if (targetWeaponData == null)
         {
-            Debug.LogError($"ÕÒ²»µ½ÃûÎª {weaponName} µÄÎäÆ÷Êı¾İ!");
+            Debug.LogError($"æ‰¾ä¸åˆ°åä¸º {weaponName} çš„æ­¦å™¨æ•°æ®!");
             return;
         }
 
         WeaponPart targetPart = targetWeaponData.weaponPartInstance;
 
-        // ¼òµ¥Éı¼¶Âß¼­ (²»ÔÙÔÚÕâÀï¼ì²é½ø»¯£¬½ø»¯ÒÆ½»¸øÁËÈÚºÏÏµÍ³)
+        // ç®€å•å‡çº§é€»è¾‘ (ä¸å†åœ¨è¿™é‡Œæ£€æŸ¥è¿›åŒ–ï¼Œè¿›åŒ–ç§»äº¤ç»™äº†èåˆç³»ç»Ÿ)
         if (targetPart.currentLevel < targetWeaponData.stats.maxLevel)
         {
             targetPart.currentLevel++;
             targetWeaponData.currentLevel++;
-            Debug.Log($"ÆÕÍ¨Éı¼¶Íê³É: {weaponName} -> Lv.{targetPart.currentLevel}");
+            Debug.Log($"æ™®é€šå‡çº§å®Œæˆ: {weaponName} -> Lv.{targetPart.currentLevel}");
         }
         else
         {
-            // ¿ÉÒÔÔÚÕâÀï¸øÓè½ğ±Ò»ò»ØÑª×÷ÎªÂú¼¶²¹³¥
-            Debug.Log($"{weaponName} ÒÑÂú¼¶!");
+            // å¯ä»¥åœ¨è¿™é‡Œç»™äºˆé‡‘å¸æˆ–å›è¡€ä½œä¸ºæ»¡çº§è¡¥å¿
+            Debug.Log($"{weaponName} å·²æ»¡çº§!");
         }
     }
 
-    // --- ¡¾ºËĞÄĞÂÔö¡¿ÈÚºÏÏµÍ³ API ---
+    // --- ã€æ ¸å¿ƒæ–°å¢ã€‘èåˆç³»ç»Ÿ API ---
 
     /// <summary>
-    /// ¼ì²éµ±Ç°ÊÇ·ñÂú×ãÈÎÒâÒ»¸öÈÚºÏÅä·½¡£
-    /// Í¨³£ÓÉ±¦Ïä (TreasureChest) µ÷ÓÃ¡£
+    /// æ£€æŸ¥å½“å‰æ˜¯å¦æ»¡è¶³ä»»æ„ä¸€ä¸ªèåˆé…æ–¹ã€‚
+    /// é€šå¸¸ç”±å®ç®± (TreasureChest) è°ƒç”¨ã€‚
     /// </summary>
-    /// <returns>·µ»ØÂú×ãÌõ¼şµÄÅä·½£¬Èç¹ûÃ»ÓĞÔò·µ»Ø null</returns>
+    /// <returns>è¿”å›æ»¡è¶³æ¡ä»¶çš„é…æ–¹ï¼Œå¦‚æœæ²¡æœ‰åˆ™è¿”å› null</returns>
     public FusionRecipeSO CheckForAvailableFusion()
     {
         foreach (var recipe in fusionRecipes)
         {
-            // 1. ¼ì²éÊÇ·ñÓµÓĞÅä·½ÖĞµÄÎäÆ÷ A ºÍ B
+            // 1. æ£€æŸ¥æ˜¯å¦æ‹¥æœ‰é…æ–¹ä¸­çš„æ­¦å™¨ A å’Œ B
             OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
             OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
 
             if (weaponA != null && weaponB != null)
             {
-                // 2. ¼ì²éÊÇ·ñ¶¼´ïµ½Âú¼¶ (¼ÙÉèÂú¼¶ÊÇ 8 »ò WeaponStatBlock.maxLevel)
-                // ÎªÁË±£ÏÕ£¬ÎÒÃÇ¼ì²éËüÊÇ·ñ´ïµ½¸ÃÎäÆ÷Éè¶¨µÄ maxLevel
+                // 2. æ£€æŸ¥æ˜¯å¦éƒ½è¾¾åˆ°æ»¡çº§ (å‡è®¾æ»¡çº§æ˜¯ 8 æˆ– WeaponStatBlock.maxLevel)
+                // ä¸ºäº†ä¿é™©ï¼Œæˆ‘ä»¬æ£€æŸ¥å®ƒæ˜¯å¦è¾¾åˆ°è¯¥æ­¦å™¨è®¾å®šçš„ maxLevel
                 bool isAMaxed = weaponA.currentLevel >= weaponA.stats.maxLevel;
                 bool isBMaxed = weaponB.currentLevel >= weaponB.stats.maxLevel;
 
                 if (isAMaxed && isBMaxed)
                 {
-                    Debug.Log($"<color=cyan>·¢ÏÖ¿ÉÈÚºÏÅä·½: {recipe.weaponA.weaponName} + {recipe.weaponB.weaponName} -> {recipe.resultWeapon.weaponName}</color>");
+                    Debug.Log($"<color=cyan>å‘ç°å¯èåˆé…æ–¹: {recipe.weaponA.weaponName} + {recipe.weaponB.weaponName} -> {recipe.resultWeapon.weaponName}</color>");
                     return recipe;
                 }
             }
@@ -136,29 +136,29 @@ public class WeaponController : MonoBehaviour
     }
 
     /// <summary>
-    /// Ö´ĞĞÈÚºÏ£ºÒÆ³ı A ºÍ B£¬Ìí¼Ó C¡£
+    /// æ‰§è¡Œèåˆï¼šç§»é™¤ A å’Œ Bï¼Œæ·»åŠ  Cã€‚
     /// </summary>
     public void PerformFusion(FusionRecipeSO recipe)
     {
         if (recipe == null) return;
 
-        Debug.Log($"<color=yellow>¿ªÊ¼Ö´ĞĞÈÚºÏ: {recipe.resultWeapon.weaponName}</color>");
+        Debug.Log($"<color=yellow>å¼€å§‹æ‰§è¡Œèåˆ: {recipe.resultWeapon.weaponName}</color>");
 
-        // 1. ²éÕÒ²¢ÒÆ³ı¾ÉÎäÆ÷
+        // 1. æŸ¥æ‰¾å¹¶ç§»é™¤æ—§æ­¦å™¨
         OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
         OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
 
-        // ¡¾ĞÂÔö¡¿½«ËüÃÇ¼ÓÈëºÚÃûµ¥
+        // ã€æ–°å¢ã€‘å°†å®ƒä»¬åŠ å…¥é»‘åå•
         if (weaponA != null) banList.Add(weaponA.stats);
         if (weaponB != null) banList.Add(weaponB.stats);
 
         RemoveWeapon(weaponA);
         RemoveWeapon(weaponB);
 
-        // 2. Ìí¼ÓĞÂÎäÆ÷ (³¬Îä)
+        // 2. æ·»åŠ æ–°æ­¦å™¨ (è¶…æ­¦)
         AddNewWeapon(recipe.resultWeapon);
 
-        // 3. Ë¢ĞÂ UI
+        // 3. åˆ·æ–° UI
         if (WeaponUI.Instance != null)
         {
             WeaponUI.Instance.UpdateWeaponIcons();
@@ -167,45 +167,45 @@ public class WeaponController : MonoBehaviour
 
     public void EvolveWeapon(WeaponStatBlock baseStats, WeaponStatBlock targetStats)
     {
-        // 1. ÕÒµ½¾ÉÎäÆ÷
+        // 1. æ‰¾åˆ°æ—§æ­¦å™¨
         var oldWeaponWrapper = ownedWeapons.FirstOrDefault(w => w.stats == baseStats);
 
         if (oldWeaponWrapper != null)
         {
-            Debug.Log($"[WeaponController] Ö´ĞĞ½ø»¯: {baseStats.weaponName} -> {targetStats.weaponName}");
+            Debug.Log($"[WeaponController] æ‰§è¡Œè¿›åŒ–: {baseStats.weaponName} -> {targetStats.weaponName}");
 
-            // 2. ³¹µ×Ïú»Ù¾ÉÎäÆ÷µÄÎïÌå
-            // ÕâÒ»µãÖÁ¹ØÖØÒª£¡ÒòÎªÉÁµçÁ´µÄ Prefab ºÍÀ×»÷µÄ Prefab ½á¹¹ÍêÈ«²»Í¬
+            // 2. å½»åº•é”€æ¯æ—§æ­¦å™¨çš„ç‰©ä½“
+            // è¿™ä¸€ç‚¹è‡³å…³é‡è¦ï¼å› ä¸ºé—ªç”µé“¾çš„ Prefab å’Œé›·å‡»çš„ Prefab ç»“æ„å®Œå…¨ä¸åŒ
             if (oldWeaponWrapper.weaponPartInstance != null)
             {
                 Destroy(oldWeaponWrapper.weaponPartInstance.gameObject);
             }
 
-            // 3. ´ÓÁĞ±íÖĞÒÆ³ı¾ÉÊı¾İ
+            // 3. ä»åˆ—è¡¨ä¸­ç§»é™¤æ—§æ•°æ®
             ownedWeapons.Remove(oldWeaponWrapper);
 
-            // 4. Ìí¼ÓĞÂÎäÆ÷ (»á×Ô¶¯ÊµÀı»¯ĞÂµÄ Prefab)
+            // 4. æ·»åŠ æ–°æ­¦å™¨ (ä¼šè‡ªåŠ¨å®ä¾‹åŒ–æ–°çš„ Prefab)
             AddNewWeapon(targetStats);
 
-            // 5. ¡¾¿ÉÑ¡¡¿¾ÖÍâ½âËøÂß¼­ (±£´æµ½ PlayerProgressManager)
+            // 5. ã€å¯é€‰ã€‘å±€å¤–è§£é”é€»è¾‘ (ä¿å­˜åˆ° PlayerProgressManager)
             if (PlayerProgressManager.Instance != null)
             {
-                // È·±£ĞÂÎäÆ÷µÄ ID ¼ÇÂ¼µ½´æµµ
+                // ç¡®ä¿æ–°æ­¦å™¨çš„ ID è®°å½•åˆ°å­˜æ¡£
                 string newID = targetStats.weaponID;
                 if (!string.IsNullOrEmpty(newID) && !PlayerProgressManager.Instance.unlockedItems.Contains(newID))
                 {
-                    Debug.Log($"[ÏµÍ³] ½ø»¯½âËøĞÂÍ¼¼ø: {targetStats.weaponName}");
+                    Debug.Log($"[ç³»ç»Ÿ] è¿›åŒ–è§£é”æ–°å›¾é‰´: {targetStats.weaponName}");
                     PlayerProgressManager.Instance.UnlockItem(newID);
                 }
 
-                // ¼ÇÂ¼³É¾Í (Èç Evolve_ChainLightning)
+                // è®°å½•æˆå°± (å¦‚ Evolve_ChainLightning)
                 string achievementKey = "Evolve_" + newID;
                 PlayerProgressManager.Instance.IncreaseAchievementStat(achievementKey, 1);
             }
         }
         else
         {
-            Debug.LogError($"[WeaponController] ½ø»¯Ê§°Ü£ºÕÒ²»µ½»ù´¡ÎäÆ÷ {baseStats.weaponName}");
+            Debug.LogError($"[WeaponController] è¿›åŒ–å¤±è´¥ï¼šæ‰¾ä¸åˆ°åŸºç¡€æ­¦å™¨ {baseStats.weaponName}");
         }
     }
 
@@ -217,44 +217,44 @@ public class WeaponController : MonoBehaviour
 
         if (part != null)
         {
-            // --- ¡¾ºËĞÄĞŞ¸´¡¿·À×ÔÉ±¼ì²é ---
-            // ¼ì²éÕâ¸öÎäÆ÷µÄ GameObject ÊÇ·ñ¾ÍÊÇÍæ¼Ò×Ô¼º (WeaponController ËùÔÚµÄÎïÌå)
+            // --- ã€æ ¸å¿ƒä¿®å¤ã€‘é˜²è‡ªæ€æ£€æŸ¥ ---
+            // æ£€æŸ¥è¿™ä¸ªæ­¦å™¨çš„ GameObject æ˜¯å¦å°±æ˜¯ç©å®¶è‡ªå·± (WeaponController æ‰€åœ¨çš„ç‰©ä½“)
             if (part.gameObject == this.gameObject)
             {
-                Debug.LogWarning($"[WeaponController] ÊÔÍ¼ÒÆ³ı¹ÒÔÚÍæ¼ÒÉíÉÏµÄ³õÊ¼ÎäÆ÷: {part.name}¡£Ö»½ûÓÃ×é¼ş£¬²»Ïú»ÙÎïÌå£¡");
+                Debug.LogWarning($"[WeaponController] è¯•å›¾ç§»é™¤æŒ‚åœ¨ç©å®¶èº«ä¸Šçš„åˆå§‹æ­¦å™¨: {part.name}ã€‚åªç¦ç”¨ç»„ä»¶ï¼Œä¸é”€æ¯ç‰©ä½“ï¼");
 
-                // 1. ½ûÓÃ½Å±¾×é¼ş (Í£Ö¹ Update)
+                // 1. ç¦ç”¨è„šæœ¬ç»„ä»¶ (åœæ­¢ Update)
                 part.enabled = false;
 
-                // 2. Èç¹ûÓĞ PlayerBladeAttack (½üÕ½½Å±¾)£¬Ò²½ûÓÃµô
+                // 2. å¦‚æœæœ‰ PlayerBladeAttack (è¿‘æˆ˜è„šæœ¬)ï¼Œä¹Ÿç¦ç”¨æ‰
                 var melee = part.GetComponent<PlayerBladeAttack>();
                 if (melee != null) melee.enabled = false;
 
-                // 3. ³¢ÊÔÒş²ØÊÓ¾õÄ£ĞÍ (Èç¹ûÓĞ¶ÀÁ¢ÒıÓÃµÄ FloatingVisual)
+                // 3. å°è¯•éšè—è§†è§‰æ¨¡å‹ (å¦‚æœæœ‰ç‹¬ç«‹å¼•ç”¨çš„ FloatingVisual)
                 if (part.floatingVisual != null)
                 {
-                    // Ö»Òş²ØÄ£ĞÍ£¬²»¹ØÕû¸öÎïÌå
+                    // åªéšè—æ¨¡å‹ï¼Œä¸å…³æ•´ä¸ªç‰©ä½“
                     part.floatingVisual.HideWeapon();
                     part.floatingVisual.gameObject.SetActive(false);
                 }
             }
-            // Èç¹ûÊÇ×Ô´øÎäÆ÷ÒıÓÃ (×÷Îª×ÓÎïÌå)£¬Í¨³£ÎÒÃÇÖ»Òş²Ø²»Ïú»Ù
+            // å¦‚æœæ˜¯è‡ªå¸¦æ­¦å™¨å¼•ç”¨ (ä½œä¸ºå­ç‰©ä½“)ï¼Œé€šå¸¸æˆ‘ä»¬åªéšè—ä¸é”€æ¯
             else if (part == builtInBladeWeapon)
             {
                 part.gameObject.SetActive(false);
             }
-            // ÆäËûÇé¿ö£ºÊÇºóÀ´Éú³ÉµÄ¶ÀÁ¢×ÓÎïÌå£¬¿ÉÒÔ°²È«Ïú»Ù
+            // å…¶ä»–æƒ…å†µï¼šæ˜¯åæ¥ç”Ÿæˆçš„ç‹¬ç«‹å­ç‰©ä½“ï¼Œå¯ä»¥å®‰å…¨é”€æ¯
             else
             {
                 Destroy(part.gameObject);
             }
         }
 
-        // ´ÓÁĞ±íÖĞÒÆ³ı
+        // ä»åˆ—è¡¨ä¸­ç§»é™¤
         ownedWeapons.Remove(weaponToRemove);
     }
 
-    // --- ÎäÆ÷¹ÜÀí ---
+    // --- æ­¦å™¨ç®¡ç† ---
 
     public void AddNewWeapon(WeaponStatBlock weaponData)
     {
@@ -277,7 +277,7 @@ public class WeaponController : MonoBehaviour
                 weaponPartInstance = part
             });
 
-            Debug.Log($"[WeaponController] ×°±¸ĞÂÎäÆ÷: '{weaponData.weaponName}'¡£µ±Ç°³ÖÓĞÊıÁ¿: {ownedWeapons.Count}");
+            Debug.Log($"[WeaponController] è£…å¤‡æ–°æ­¦å™¨: '{weaponData.weaponName}'ã€‚å½“å‰æŒæœ‰æ•°é‡: {ownedWeapons.Count}");
         }
 
         if (WeaponUI.Instance != null)
@@ -297,7 +297,7 @@ public class WeaponController : MonoBehaviour
         }
     }
 
-    // --- Õ½¶·Ñ­»· ---
+    // --- æˆ˜æ–—å¾ªç¯ ---
 
     void Update()
     {
@@ -339,13 +339,13 @@ public class WeaponController : MonoBehaviour
 
         Vector3 fireDirection = targetDirection;
 
-        // µ¹Ğò±éÀú£¬·ÀÖ¹Èç¹ûÔÚ¿ª»ğ¹ı³ÌÖĞÁĞ±í·¢Éú±ä»¯£¨ËäÈ»²»Ì«¿ÉÄÜ£©
+        // å€’åºéå†ï¼Œé˜²æ­¢å¦‚æœåœ¨å¼€ç«è¿‡ç¨‹ä¸­åˆ—è¡¨å‘ç”Ÿå˜åŒ–ï¼ˆè™½ç„¶ä¸å¤ªå¯èƒ½ï¼‰
         for (int i = 0; i < ownedWeapons.Count; i++)
         {
             var weapon = ownedWeapons[i];
             if (weapon.weaponPartInstance != null && weapon.weaponPartInstance.gameObject.activeInHierarchy && weapon.weaponPartInstance.enabled)
             {
-                // ¼æÈİ¾ÉµÄ PlayerBladeAttack: Èç¹ûËü´æÔÚÇÒÆôÓÃ£¬ÈÃËü×Ô¼º¿ØÖÆ£¬ÎÒÃÇ²»µ÷ÓÃ Fire
+                // å…¼å®¹æ—§çš„ PlayerBladeAttack: å¦‚æœå®ƒå­˜åœ¨ä¸”å¯ç”¨ï¼Œè®©å®ƒè‡ªå·±æ§åˆ¶ï¼Œæˆ‘ä»¬ä¸è°ƒç”¨ Fire
                 var meleeScript = weapon.weaponPartInstance.GetComponent<PlayerBladeAttack>();
                 if (meleeScript != null && meleeScript.enabled)
                 {

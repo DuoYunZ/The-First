@@ -1,19 +1,19 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewShieldData", menuName = "Game/Shield Data")]
 public class ShieldData : ScriptableObject
 {
-    [Header("»¤¶Ü»ù´¡ĞÅÏ¢")]
+    [Header("æŠ¤ç›¾åŸºç¡€ä¿¡æ¯")]
     public string shieldName;
     public Sprite shieldIcon;
 
-    [Header("ºËĞÄÊôĞÔ")]
-    [Tooltip("ÕâÖÖ»¤¶ÜµÄ»ù´¡×î´óÖµ")]
+    [Header("æ ¸å¿ƒå±æ€§")]
+    [Tooltip("è¿™ç§æŠ¤ç›¾çš„åŸºç¡€æœ€å¤§å€¼")]
     public int baseMaxValue;
-    [Tooltip("ÕâÖÖ»¤¶Ü±»»÷ÆÆºóµÄ»ù´¡ÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Tooltip("è¿™ç§æŠ¤ç›¾è¢«å‡»ç ´åçš„åŸºç¡€å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float baseCooldown;
 
-    [Header("ÊÓ¾õĞ§¹û")]
-    [Tooltip("»¤¶Ü¼¤»îÊ±£¬ÒªÊµÀı»¯µÄÊÓ¾õÌØĞ§Ô¤ÖÆ¼ş")]
+    [Header("è§†è§‰æ•ˆæœ")]
+    [Tooltip("æŠ¤ç›¾æ¿€æ´»æ—¶ï¼Œè¦å®ä¾‹åŒ–çš„è§†è§‰ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject shieldVisualPrefab;
 }

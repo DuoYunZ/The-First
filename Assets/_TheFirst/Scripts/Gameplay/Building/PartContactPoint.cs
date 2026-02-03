@@ -1,51 +1,51 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 /// <summary>
-/// ±ê¼ÇÒ»¸öÓÎÏ·¶ÔÏó×÷ÎªÁã¼şÉÏµÄÁ¬½Óµã (½Ó´¥µã)¡£
-/// ÓÃÓÚ MechBuilder µÄÎü¸½ºÍÁ¬½ÓÂß¼­¡£
+/// æ ‡è®°ä¸€ä¸ªæ¸¸æˆå¯¹è±¡ä½œä¸ºé›¶ä»¶ä¸Šçš„è¿æ¥ç‚¹ (æ¥è§¦ç‚¹)ã€‚
+/// ç”¨äº MechBuilder çš„å¸é™„å’Œè¿æ¥é€»è¾‘ã€‚
 /// </summary>
 public class PartContactPoint : MonoBehaviour
 {
-    [Header("Á¬½ÓµãÉèÖÃ")]
-    [Tooltip("Á¬½ÓµãµÄÀàĞÍ£¬¿ÉÓÃÓÚÆ¥Åä¼æÈİµÄÁ¬½Ó¡£ÀıÈç: Structural, Power, Small, Large")]
-    public string pointType = "Structural"; // Ä¬ÈÏÀàĞÍÎª "Structural"
+    [Header("è¿æ¥ç‚¹è®¾ç½®")]
+    [Tooltip("è¿æ¥ç‚¹çš„ç±»å‹ï¼Œå¯ç”¨äºåŒ¹é…å…¼å®¹çš„è¿æ¥ã€‚ä¾‹å¦‚: Structural, Power, Small, Large")]
+    public string pointType = "Structural"; // é»˜è®¤ç±»å‹ä¸º "Structural"
 
-    [Tooltip("Á¬½Ó³É¹¦ºó£¬ÊÇ·ñ½ûÓÃ´Ë½Ó´¥µã×ÔÉí£¿")]
+    [Tooltip("è¿æ¥æˆåŠŸåï¼Œæ˜¯å¦ç¦ç”¨æ­¤æ¥è§¦ç‚¹è‡ªèº«ï¼Ÿ")]
     public bool disableSelfOnConnect = true;
 
-    [Tooltip("Á¬½Ó³É¹¦ºó£¬ÊÇ·ñÒ²³¢ÊÔ½ûÓÃÄ¿±êÁ¬½Óµã£¿(Èç¹ûÄ¿±êµãÒ²ÊÇ PartContactPoint)")]
-    public bool disableTargetOnConnect = true; // Í¨³£³É¶Ô½ûÓÃ
+    [Tooltip("è¿æ¥æˆåŠŸåï¼Œæ˜¯å¦ä¹Ÿå°è¯•ç¦ç”¨ç›®æ ‡è¿æ¥ç‚¹ï¼Ÿ(å¦‚æœç›®æ ‡ç‚¹ä¹Ÿæ˜¯ PartContactPoint)")]
+    public bool disableTargetOnConnect = true; // é€šå¸¸æˆå¯¹ç¦ç”¨
 
-    // --- Î´À´¿ÉÀ©Õ¹µÄÊôĞÔ ---
-    // [Header("¸ß¼¶¶ÔÆë (¿ÉÑ¡)")]
-    // [Tooltip("¶¨Òå´ËÁ¬½ÓµãµÄ¾Ö²¿¡°ÏòÉÏ¡±·½Ïò£¬ÓÃÓÚ¸ü¾«È·µÄĞı×ª¶ÔÆë")]
+    // --- æœªæ¥å¯æ‰©å±•çš„å±æ€§ ---
+    // [Header("é«˜çº§å¯¹é½ (å¯é€‰)")]
+    // [Tooltip("å®šä¹‰æ­¤è¿æ¥ç‚¹çš„å±€éƒ¨â€œå‘ä¸Šâ€æ–¹å‘ï¼Œç”¨äºæ›´ç²¾ç¡®çš„æ—‹è½¬å¯¹é½")]
     // public Vector3 localUp = Vector3.up;
-    // [Tooltip("¶¨Òå´ËÁ¬½ÓµãµÄ¾Ö²¿¡°ÏòÇ°¡±»ò¡°³¯Íâ¡±·½Ïò")]
+    // [Tooltip("å®šä¹‰æ­¤è¿æ¥ç‚¹çš„å±€éƒ¨â€œå‘å‰â€æˆ–â€œæœå¤–â€æ–¹å‘")]
     // public Vector3 localForward = Vector3.forward;
 
-    // ¿ÉÒÔÔÚ Start »ò Awake ÖĞÌí¼ÓÒ»Ğ©ÑéÖ¤Âß¼­ (¿ÉÑ¡)
+    // å¯ä»¥åœ¨ Start æˆ– Awake ä¸­æ·»åŠ ä¸€äº›éªŒè¯é€»è¾‘ (å¯é€‰)
     // void Start()
     // {
-    //     // ¿ÉÒÔÔÚÕâÀï¼ì²éÊÇ·ñ¸½¼ÓÔÚÕıÈ·µÄÓÎÏ·¶ÔÏó²ã¼¶µÈ
+    //     // å¯ä»¥åœ¨è¿™é‡Œæ£€æŸ¥æ˜¯å¦é™„åŠ åœ¨æ­£ç¡®çš„æ¸¸æˆå¯¹è±¡å±‚çº§ç­‰
     // }
 
-    // (¿ÉÑ¡) ÔÚ±à¼­Æ÷ÖĞ»æÖÆ Gizmo ÒÔ±ã¿ÉÊÓ»¯
+    // (å¯é€‰) åœ¨ç¼–è¾‘å™¨ä¸­ç»˜åˆ¶ Gizmo ä»¥ä¾¿å¯è§†åŒ–
     void OnDrawGizmos()
     {
-        // »æÖÆÒ»¸öĞ¡µÄ×ø±êÖáÀ´ÏÔÊ¾Á¬½ÓµãµÄ³¯Ïò
-        float gizmoSize = 0.1f; // Gizmo ´óĞ¡
+        // ç»˜åˆ¶ä¸€ä¸ªå°çš„åæ ‡è½´æ¥æ˜¾ç¤ºè¿æ¥ç‚¹çš„æœå‘
+        float gizmoSize = 0.1f; // Gizmo å¤§å°
         Vector3 pos = transform.position;
         Quaternion rot = transform.rotation;
 
-        // »æÖÆ¾Ö²¿×ø±êÖá: X (ºìÉ«), Y (ÂÌÉ«), Z (À¶É«)
-        Gizmos.color = Color.red;   // X Öá
+        // ç»˜åˆ¶å±€éƒ¨åæ ‡è½´: X (çº¢è‰²), Y (ç»¿è‰²), Z (è“è‰²)
+        Gizmos.color = Color.red;   // X è½´
         Gizmos.DrawRay(pos, rot * Vector3.right * gizmoSize);
-        Gizmos.color = Color.green; // Y Öá (Í¨³£ÊÓÎª¡°ÏòÉÏ¡±)
+        Gizmos.color = Color.green; // Y è½´ (é€šå¸¸è§†ä¸ºâ€œå‘ä¸Šâ€)
         Gizmos.DrawRay(pos, rot * Vector3.up * gizmoSize);
-        Gizmos.color = Color.blue;  // Z Öá (Í¨³£ÊÓÎª¡°ÏòÇ°¡±/¡°³¯Íâ¡±)
+        Gizmos.color = Color.blue;  // Z è½´ (é€šå¸¸è§†ä¸ºâ€œå‘å‰â€/â€œæœå¤–â€)
         Gizmos.DrawRay(pos, rot * Vector3.forward * gizmoSize);
 
-        // ¿ÉÒÔÔÙ»­Ò»¸öĞ¡ÇòÌå±ê¼ÇÎ»ÖÃ
+        // å¯ä»¥å†ç”»ä¸€ä¸ªå°çƒä½“æ ‡è®°ä½ç½®
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(pos, gizmoSize * 0.2f);
     }

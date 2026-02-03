@@ -8,6 +8,9 @@ public class PlayerProgressManager : MonoBehaviour
 {
     public static PlayerProgressManager Instance { get; private set; }
 
+    // 定义物品解锁事件
+    public static event System.Action<string> OnItemUnlocked;
+
     [Header("全局配置引用")]   
     public List<WeaponSkillTree> allSkillTrees;
 
@@ -251,6 +254,9 @@ public class PlayerProgressManager : MonoBehaviour
             unlockedItems.Add(itemName);
             Debug.Log($"<color=yellow>新物品解锁: {itemName}!</color>");
             SaveGame(); // 记得保存！
+
+            // 触发解锁事件
+            OnItemUnlocked?.Invoke(itemName);
         }
     }
     private string GetSaveFilePath()

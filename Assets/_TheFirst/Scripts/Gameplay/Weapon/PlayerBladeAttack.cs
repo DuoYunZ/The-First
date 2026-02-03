@@ -1,4 +1,4 @@
-// --- PlayerBladeAttack.cs (×îÖÕÕï¶ÏÓë½¡×³ĞÔĞŞÕı°æ) ---
+ï»¿// --- PlayerBladeAttack.cs (æœ€ç»ˆè¯Šæ–­ä¸å¥å£®æ€§ä¿®æ­£ç‰ˆ) ---
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
@@ -13,49 +13,49 @@ public class PlayerBladeAttack : MonoBehaviour
         public float angleOffset;
     }
 
-    [Header("ÎäÆ÷Êı¾İ")]
+    [Header("æ­¦å™¨æ•°æ®")]
     public WeaponStatBlock attackData;
 
-    [Header("ÈĞÆøµ¯ (¼¼ÄÜÊ÷½âËø)")]
-    [Tooltip("ÈĞÆøµ¯µÄÔ¤ÖÆ¼ş")]
+    [Header("åˆƒæ°”å¼¹ (æŠ€èƒ½æ ‘è§£é”)")]
+    [Tooltip("åˆƒæ°”å¼¹çš„é¢„åˆ¶ä»¶")]
     public GameObject bladeEnergyProjectilePrefab;
-    [Tooltip("ÈĞÆøµ¯µÄ·¢Éäµã")]
+    [Tooltip("åˆƒæ°”å¼¹çš„å‘å°„ç‚¹")]
     public Transform bladeEnergySpawnPoint;
 
-    [Header("¼¼ÄÜÊ÷½ÚµãÒıÓÃ")]
-    [Tooltip("½«'ÈĞÆøÕ¶'£¨½âËøÈĞÆø£©µÄ¼¼ÄÜ½Úµã×Ê²úÍÏµ½ÕâÀï")]
+    [Header("æŠ€èƒ½æ ‘èŠ‚ç‚¹å¼•ç”¨")]
+    [Tooltip("å°†'åˆƒæ°”æ–©'ï¼ˆè§£é”åˆƒæ°”ï¼‰çš„æŠ€èƒ½èŠ‚ç‚¹èµ„äº§æ‹–åˆ°è¿™é‡Œ")]
     public WeaponUpgradeNode unlockProjectileNode;
-    [Tooltip("½«'ÍòÈĞ¹é×Ú'£¨Ç¿»¯ÆµÂÊ£©µÄ¼¼ÄÜ½Úµã×Ê²úÍÏµ½ÕâÀï")]
+    [Tooltip("å°†'ä¸‡åˆƒå½’å®—'ï¼ˆå¼ºåŒ–é¢‘ç‡ï¼‰çš„æŠ€èƒ½èŠ‚ç‚¹èµ„äº§æ‹–åˆ°è¿™é‡Œ")]
     public WeaponUpgradeNode improveFrequencyNode;
 
     private int attackCounter = 0;
 
 
-    [Header("ÏµÍ³ÒıÓÃ")]
+    [Header("ç³»ç»Ÿå¼•ç”¨")]
     public Transform visualsTransform;
     public Transform slashSpawnPoint;
     public FloatingWeaponController floatingWeapon;
     public WeaponCooldownMaterial weaponCooldownMaterial;
 
-    [Header("ÒôĞ§ÉèÖÃ")]
-    [Tooltip("¹¥»÷Ê±²¥·ÅµÄ»ÓÎèÒôĞ§£¬¿ÉÒÔ·Å¶à¸ö")]
+    [Header("éŸ³æ•ˆè®¾ç½®")]
+    [Tooltip("æ”»å‡»æ—¶æ’­æ”¾çš„æŒ¥èˆéŸ³æ•ˆï¼Œå¯ä»¥æ”¾å¤šä¸ª")]
     public AudioSource attackAudioSource;
     public AudioClip[] slashSounds;
 
-    [Header("ÒôĞ§Ê±ĞòÉèÖÃ")]
-    [Tooltip("»Óµ¶ÒôĞ§Ïà¶ÔÓÚÊÓ¾õÌØĞ§µÄÑÓ³Ù£¨¸ºÊıÎªÌáÇ°£©")]
-    public float soundEffectDelay = -0.1f; // ÉèÖÃÎª¸ºÊı£¬±íÊ¾ÒôĞ§ÌáÇ°
+    [Header("éŸ³æ•ˆæ—¶åºè®¾ç½®")]
+    [Tooltip("æŒ¥åˆ€éŸ³æ•ˆç›¸å¯¹äºè§†è§‰ç‰¹æ•ˆçš„å»¶è¿Ÿï¼ˆè´Ÿæ•°ä¸ºæå‰ï¼‰")]
+    public float soundEffectDelay = -0.1f; // è®¾ç½®ä¸ºè´Ÿæ•°ï¼Œè¡¨ç¤ºéŸ³æ•ˆæå‰
 
 
-    [Header("ÌØĞ§")]
+    [Header("ç‰¹æ•ˆ")]
     public GameObject flashEffectPrefab;
 
-    [Header("µ¶¹âÄ£Ê½ÅäÖÃ (ÔÚ´Ë´¦½øĞĞ¿ÉÊÓ»¯µ÷Õû)")]
+    [Header("åˆ€å…‰æ¨¡å¼é…ç½® (åœ¨æ­¤å¤„è¿›è¡Œå¯è§†åŒ–è°ƒæ•´)")]
     public List<SlashPattern> slashesLevel1;
     public List<SlashPattern> slashesLevel2;
     public List<SlashPattern> slashesLevel3;
     public List<SlashPattern> slashesLevel4;
-    public List<SlashPattern> slashesLevel5; // ¡¾ĞÂÔö¡¿5¼¶Ä£Ê½ÁĞ±í
+    public List<SlashPattern> slashesLevel5; // ã€æ–°å¢ã€‘5çº§æ¨¡å¼åˆ—è¡¨
 
     private float cooldownTimer;
     private bool isAttacking = false;
@@ -82,34 +82,34 @@ public class PlayerBladeAttack : MonoBehaviour
     {
         if (isAttacking) return;
 
-        // --- ¶¯Ì¬Ó¦ÓÃÀäÈ´Ëõ¼õ (Fire Rate) ---
+        // --- åŠ¨æ€åº”ç”¨å†·å´ç¼©å‡ (Fire Rate) ---
         float fireRateMult = 1f;
         if (PlayerStats.Instance != null)
         {
             fireRateMult = PlayerStats.Instance.fireRateMultiplier;
         }
 
-        // ¡¾ĞÂÔö¡¿Ó¦ÓÃ¾Ö²¿¹¥ËÙ/ÀäÈ´¼Ó³É
+        // ã€æ–°å¢ã€‘åº”ç”¨å±€éƒ¨æ”»é€Ÿ/å†·å´åŠ æˆ
         if (myWeaponPart != null)
         {
-            // ¼ÙÉè localFireRateBonus ÊÇÕıÊı (Èç 0.1 ´ú±íÀäÈ´Ëõ¼õ 10%)
-            // ËùÒÔÕâÀïÊÇ¼õ·¨
+            // å‡è®¾ localFireRateBonus æ˜¯æ­£æ•° (å¦‚ 0.1 ä»£è¡¨å†·å´ç¼©å‡ 10%)
+            // æ‰€ä»¥è¿™é‡Œæ˜¯å‡æ³•
             fireRateMult -= myWeaponPart.localFireRateBonus;
 
-            // µş¼ÓÄÜÁ¿Ê¯
+            // å åŠ èƒ½é‡çŸ³
             if (myWeaponPart.currentStone != null)
             {
                 fireRateMult *= (1f + myWeaponPart.currentStone.fireRateModifier);
             }
         }
 
-        // ÏŞÖÆ×î¸ßÉäËÙ (·ÀÖ¹ÀäÈ´±ä³É 0 »ò¸ºÊı)
+        // é™åˆ¶æœ€é«˜å°„é€Ÿ (é˜²æ­¢å†·å´å˜æˆ 0 æˆ–è´Ÿæ•°)
         if (fireRateMult < 0.1f) fireRateMult = 0.1f;
 
-        // ÖØĞÂ¼ÆËãµ±Ç°Ö¡µÄÀäÈ´ËÙ¶È
+        // é‡æ–°è®¡ç®—å½“å‰å¸§çš„å†·å´é€Ÿåº¦
         if (attackData != null && attackData.baseFireRate > 0)
         {
-            // Duration = BaseDuration * Multiplier (ÏµÊıÔ½Ğ¡£¬ÀäÈ´Ô½¿ì)
+            // Duration = BaseDuration * Multiplier (ç³»æ•°è¶Šå°ï¼Œå†·å´è¶Šå¿«)
             cooldownDuration = (1f / attackData.baseFireRate) * fireRateMult;
         }
 
@@ -118,7 +118,7 @@ public class PlayerBladeAttack : MonoBehaviour
         if (cooldownTimer <= 0 && attackData != null && attackData.baseFireRate > 0)
         {
             StartCoroutine(AttackSequence());
-            // ÖØÖÃ¼ÆÊ±Æ÷
+            // é‡ç½®è®¡æ—¶å™¨
             cooldownTimer = cooldownDuration;
         }
     }
@@ -164,43 +164,43 @@ public class PlayerBladeAttack : MonoBehaviour
 
         if (attackData.slashEffectPrefab != null)
         {
-            // --- ¡¾ºËĞÄĞŞ¸´ 3¡¿ ---
+            // --- ã€æ ¸å¿ƒä¿®å¤ 3ã€‘ ---
 
-            // 1. »ù´¡ÊıÁ¿
+            // 1. åŸºç¡€æ•°é‡
             int baseCount = attackData.multiHitCount;
 
-            // 2. È«¾Ö¼Ó³É (PlayerStats)
+            // 2. å…¨å±€åŠ æˆ (PlayerStats)
             int globalBonus = 0;
             if (PlayerStats.Instance != null)
             {
                 globalBonus = PlayerStats.Instance.bonusSlashCount;
             }
 
-            // 3. ¾Ö²¿¼Ó³É (WeaponPart)
+            // 3. å±€éƒ¨åŠ æˆ (WeaponPart)
             int localBonus = 0;
             if (myWeaponPart != null)
             {
-                // ¶ÁÈ¡ÎÒÃÇ¸Õ¸Õ¼ÓµÄ±äÁ¿
+                // è¯»å–æˆ‘ä»¬åˆšåˆšåŠ çš„å˜é‡
                 localBonus = myWeaponPart.localSlashCountBonus;
 
-                // Èç¹ûÓĞÄÜÁ¿Ê¯¼Ó³É£¬Ò²ÔÚÕâÀï¶Á
+                // å¦‚æœæœ‰èƒ½é‡çŸ³åŠ æˆï¼Œä¹Ÿåœ¨è¿™é‡Œè¯»
                 if (myWeaponPart.currentStone != null)
                 {
                     // localBonus += myWeaponPart.currentStone.slashCountModifier; 
                 }
             }
 
-            // 4. ¼ÆËã×ÜÊı
+            // 4. è®¡ç®—æ€»æ•°
             int totalSlashCount = baseCount + globalBonus + localBonus;
 
-            // --- µ÷ÊÔÈÕÖ¾ ---
+            // --- è°ƒè¯•æ—¥å¿— ---
             if (localBonus > 0)
             {
-                Debug.Log($"[BladeAttack] ·¢Æğ¹¥»÷: »ù´¡{baseCount} + È«¾Ö{globalBonus} + ¾Ö²¿{localBonus} = ×Ü¼Æ {totalSlashCount} µÀµ¶¹â");
+                Debug.Log($"[BladeAttack] å‘èµ·æ”»å‡»: åŸºç¡€{baseCount} + å…¨å±€{globalBonus} + å±€éƒ¨{localBonus} = æ€»è®¡ {totalSlashCount} é“åˆ€å…‰");
             }
             // ----------------
 
-            // 5. Éú³Éµ¶¹â
+            // 5. ç”Ÿæˆåˆ€å…‰
             List<SlashPattern> currentPattern = GetCurrentSlashPattern(totalSlashCount);
 
             foreach (var slash in currentPattern)
@@ -228,7 +228,7 @@ public class PlayerBladeAttack : MonoBehaviour
 
         if (projectileScript != null)
         {
-            // 1. ¼ÆËãÉËº¦
+            // 1. è®¡ç®—ä¼¤å®³
             int finalDamage = attackData.bladeEnergyDamage;
             float damageMult = 1f;
 
@@ -237,20 +237,20 @@ public class PlayerBladeAttack : MonoBehaviour
 
             finalDamage = Mathf.RoundToInt(finalDamage * damageMult);
 
-            // 2. ¼ÆËãËÙ¶È
+            // 2. è®¡ç®—é€Ÿåº¦
             float finalSpeed = attackData.bladeEnergySpeed;
-            // (¿ÉÑ¡) speedMult ¼ÆËã...
+            // (å¯é€‰) speedMult è®¡ç®—...
 
             int finalPierce = attackData.bladeEnergyPierceCount;
 
             // =========================================================
-            // ¡¾ºËĞÄµ÷ÊÔÇøÓò¡¿ - ¿´¿´ÊıÖµµ½µ×ÊÇ¶àÉÙ
+            // ã€æ ¸å¿ƒè°ƒè¯•åŒºåŸŸã€‘ - çœ‹çœ‹æ•°å€¼åˆ°åº•æ˜¯å¤šå°‘
             // =========================================================
 
-            // A. »ñÈ¡»ù´¡ÊÙÃü
+            // A. è·å–åŸºç¡€å¯¿å‘½
             float baseLife = attackData.baseProjectileLifetime > 0 ? attackData.baseProjectileLifetime : 0.25f;
 
-            // B. »ñÈ¡±¶ÂÊ
+            // B. è·å–å€ç‡
             float durationMult = 1f;
             float globalMult = (PlayerStats.Instance != null) ? PlayerStats.Instance.durationMultiplier : 1f;
             float localBonus = 0f;
@@ -258,19 +258,19 @@ public class PlayerBladeAttack : MonoBehaviour
             if (myWeaponPart != null)
             {
                 localBonus = myWeaponPart.localDurationBonus;
-                durationMult = globalMult + localBonus; // Âß¼­£ºÈ«¾Ö(1.0) + ¾Ö²¿(0.x)
+                durationMult = globalMult + localBonus; // é€»è¾‘ï¼šå…¨å±€(1.0) + å±€éƒ¨(0.x)
             }
             else
             {
-                Debug.LogError($"[BladeAttackµ÷ÊÔ] ¾¯¸æ£¡myWeaponPart ÊÇ¿ÕµÄ£¡ÎŞ·¨¶ÁÈ¡¾Ö²¿Éı¼¶£¡");
+                Debug.LogError($"[BladeAttackè°ƒè¯•] è­¦å‘Šï¼myWeaponPart æ˜¯ç©ºçš„ï¼æ— æ³•è¯»å–å±€éƒ¨å‡çº§ï¼");
                 durationMult = globalMult;
             }
 
-            // C. ¼ÆËã×îÖÕÊÙÃü
+            // C. è®¡ç®—æœ€ç»ˆå¯¿å‘½
             float finalLifetime = baseLife * durationMult;
 
-            // --- ´òÓ¡ÈÕÖ¾ (ÇëÔÚ¿ØÖÆÌ¨²é¿´Õâ¸ö) ---
-            Debug.Log($"[BladeAttackµ÷ÊÔ] »ù´¡Ê±¼ä:{baseLife} * (È«¾Ö:{globalMult} + ¾Ö²¿:{localBonus}) = ×îÖÕ:{finalLifetime} | WeaponPart´æÔÚ? {myWeaponPart != null}");
+            // --- æ‰“å°æ—¥å¿— (è¯·åœ¨æ§åˆ¶å°æŸ¥çœ‹è¿™ä¸ª) ---
+            Debug.Log($"[BladeAttackè°ƒè¯•] åŸºç¡€æ—¶é—´:{baseLife} * (å…¨å±€:{globalMult} + å±€éƒ¨:{localBonus}) = æœ€ç»ˆ:{finalLifetime} | WeaponPartå­˜åœ¨? {myWeaponPart != null}");
             // =========================================================
 
             projectileScript.InitializeAsStraight(
@@ -279,7 +279,7 @@ public class PlayerBladeAttack : MonoBehaviour
                  finalDamage,
                  false,
                  finalPierce,
-                 finalLifetime, // ´«Èë¼ÆËãºóµÄÊ±¼ä
+                 finalLifetime, // ä¼ å…¥è®¡ç®—åçš„æ—¶é—´
                  attackData.shieldImpactEffectPrefab,
                  attackData.defaultImpactEffectPrefab,
                  0, 0, 0, 0, 0,
@@ -304,13 +304,13 @@ public class PlayerBladeAttack : MonoBehaviour
             case 3: return slashesLevel3;
             case 4: return slashesLevel4;
             case 5:
-            default: // Èç¹ûµÈ¼¶³¬¹ı5£¬»òµÈÓÚ1£¬»ò³öÏÖÒâÍâÇé¿ö£¬¶¼Ê¹ÓÃ¶ÔÓ¦µÄÁĞ±í
+            default: // å¦‚æœç­‰çº§è¶…è¿‡5ï¼Œæˆ–ç­‰äº1ï¼Œæˆ–å‡ºç°æ„å¤–æƒ…å†µï¼Œéƒ½ä½¿ç”¨å¯¹åº”çš„åˆ—è¡¨
                 if (slashLevel >= 5) return slashesLevel5;
                 return slashesLevel1;
         }
     }
 
-    // SpawnSlashVFX ºÍ OnDrawGizmosSelected ·½·¨±£³ÖÎÒÃÇÉÏÒ»¸ö°æ±¾¼´¿É
+    // SpawnSlashVFX å’Œ OnDrawGizmosSelected æ–¹æ³•ä¿æŒæˆ‘ä»¬ä¸Šä¸€ä¸ªç‰ˆæœ¬å³å¯
     void SpawnSlashVFX(Vector3 localPositionOffset, float angleOffset)
     {
         Transform spawnPoint = slashSpawnPoint != null ? slashSpawnPoint : transform;
@@ -321,19 +321,19 @@ public class PlayerBladeAttack : MonoBehaviour
 
         GameObject slashVFX = Instantiate(attackData.slashEffectPrefab, finalPosition, finalRotation);
 
-        // --- Ó¦ÓÃ·¶Î§/´óĞ¡¼Ó³É (Scale) ---
+        // --- åº”ç”¨èŒƒå›´/å¤§å°åŠ æˆ (Scale) ---
         float scaleMultiplier = 1f;
         if (PlayerStats.Instance != null)
         {
             scaleMultiplier = PlayerStats.Instance.aoeRadiusMultiplier;
         }
 
-        // ¡¾ĞÂÔö¡¿Ó¦ÓÃ¾Ö²¿·¶Î§¼Ó³É
+        // ã€æ–°å¢ã€‘åº”ç”¨å±€éƒ¨èŒƒå›´åŠ æˆ
         if (myWeaponPart != null)
         {
             scaleMultiplier += myWeaponPart.localAreaBonus;
 
-            // µş¼ÓÄÜÁ¿Ê¯
+            // å åŠ èƒ½é‡çŸ³
             if (myWeaponPart.currentStone != null)
             {
                 scaleMultiplier += myWeaponPart.currentStone.scaleModifier;
@@ -341,7 +341,7 @@ public class PlayerBladeAttack : MonoBehaviour
         }
         slashVFX.transform.localScale *= scaleMultiplier;
 
-        // --- Ó¦ÓÃÉËº¦¼Ó³É ---
+        // --- åº”ç”¨ä¼¤å®³åŠ æˆ ---
         VFXDamageController damageController = slashVFX.GetComponent<VFXDamageController>();
         if (damageController != null)
         {
@@ -349,7 +349,7 @@ public class PlayerBladeAttack : MonoBehaviour
             int permanentBonus = (PlayerProgressManager.Instance != null) ? PlayerProgressManager.Instance.permanentMeleeAoeFlatDamageBonus : 0;
 
             float damageMult = 1f;
-            float localDmgBonus = 0f; // ¡¾ĞÂÔö¡¿
+            float localDmgBonus = 0f; // ã€æ–°å¢ã€‘
             float stoneDmgMod = 0f;
 
             if (PlayerStats.Instance != null)
@@ -357,7 +357,7 @@ public class PlayerBladeAttack : MonoBehaviour
                 damageMult = PlayerStats.Instance.damageMultiplier;
             }
 
-            // ¡¾ĞÂÔö¡¿¶ÁÈ¡¾Ö²¿±äÁ¿
+            // ã€æ–°å¢ã€‘è¯»å–å±€éƒ¨å˜é‡
             if (myWeaponPart != null)
             {
                 localDmgBonus = myWeaponPart.localDamageBonus;
@@ -367,11 +367,11 @@ public class PlayerBladeAttack : MonoBehaviour
                 }
             }
 
-            // »ù´¡¼ÆËã£º(»ù´¡ + ÓÀ¾Ã) * (Íæ¼Ò¼Ó³É + ¾Ö²¿¼Ó³É + Ê¯Í·¼Ó³É)
+            // åŸºç¡€è®¡ç®—ï¼š(åŸºç¡€ + æ°¸ä¹…) * (ç©å®¶åŠ æˆ + å±€éƒ¨åŠ æˆ + çŸ³å¤´åŠ æˆ)
             float calculatedDamage = (baseDamage + permanentBonus) * (damageMult + localDmgBonus + stoneDmgMod);
             int damageInput = Mathf.RoundToInt(calculatedDamage);
 
-            // ³õÊ¼»¯¿ØÖÆÆ÷
+            // åˆå§‹åŒ–æ§åˆ¶å™¨
             damageController.Initialize(
                 damageInput,
                 attackData.hitEffectPrefab,
@@ -381,30 +381,30 @@ public class PlayerBladeAttack : MonoBehaviour
         }
     }
 
-    // OnDrawGizmosSelected ±£³Ö²»±ä£¬ËüÒ²ĞèÒªÊ¹ÓÃĞÂµÄÕï¶ÏÂß¼­
+    // OnDrawGizmosSelected ä¿æŒä¸å˜ï¼Œå®ƒä¹Ÿéœ€è¦ä½¿ç”¨æ–°çš„è¯Šæ–­é€»è¾‘
     private void OnDrawGizmosSelected()
     {
         if (visualsTransform == null) return;
 
-        // ÔÚ±à¼­Æ÷Ä£Ê½ÏÂ£¬ÎÒÃÇÎŞ·¨·ÃÎÊPlayerStats£¬ËùÒÔÌá¹©Ò»¸öÊÖ¶¯Ô¤ÀÀµÄ·½Ê½
+        // åœ¨ç¼–è¾‘å™¨æ¨¡å¼ä¸‹ï¼Œæˆ‘ä»¬æ— æ³•è®¿é—®PlayerStatsï¼Œæ‰€ä»¥æä¾›ä¸€ä¸ªæ‰‹åŠ¨é¢„è§ˆçš„æ–¹å¼
 #if UNITY_EDITOR
         if (!Application.isPlaying)
         {
-            Debug.Log("Gizmos Ô¤ÀÀ: Level 1");
+            Debug.Log("Gizmos é¢„è§ˆ: Level 1");
             DrawGizmosForPattern(slashesLevel1);
-            Debug.Log("Gizmos Ô¤ÀÀ: Level 2");
+            Debug.Log("Gizmos é¢„è§ˆ: Level 2");
             DrawGizmosForPattern(slashesLevel2);
-            Debug.Log("Gizmos Ô¤ÀÀ: Level 3");
+            Debug.Log("Gizmos é¢„è§ˆ: Level 3");
             DrawGizmosForPattern(slashesLevel3);
-            Debug.Log("Gizmos Ô¤ÀÀ: Level 4");
+            Debug.Log("Gizmos é¢„è§ˆ: Level 4");
             DrawGizmosForPattern(slashesLevel4);
-            Debug.Log("Gizmos Ô¤ÀÀ: Level 6");
+            Debug.Log("Gizmos é¢„è§ˆ: Level 6");
             DrawGizmosForPattern(slashesLevel5);
             return;
         }
 #endif
 
-        int slashCount = 1 + (Application.isPlaying && PlayerStats.Instance != null ? PlayerStats.Instance.bonusSlashCount : 3); // ÔÚ±à¼­Æ÷ÖĞÄ¬ÈÏÔ¤ÀÀ4¼¶(3´ÎÉı¼¶)
+        int slashCount = 1 + (Application.isPlaying && PlayerStats.Instance != null ? PlayerStats.Instance.bonusSlashCount : 3); // åœ¨ç¼–è¾‘å™¨ä¸­é»˜è®¤é¢„è§ˆ4çº§(3æ¬¡å‡çº§)
         List<SlashPattern> currentPattern = slashesLevel1;
         if (slashCount == 2) currentPattern = slashesLevel2;
         else if (slashCount == 3) currentPattern = slashesLevel3;

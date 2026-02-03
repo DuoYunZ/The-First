@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -7,20 +7,20 @@ public class PlayerShield : MonoBehaviour
     public static PlayerShield Instance { get; private set; }
 
     [System.Serializable]
-    public class ShieldChangedEvent : UnityEvent<int, int> { } // (µ±Ç°»¤¶Ü, ×î´ó»¤¶Ü)
-    [Header("ÊÂ¼ş")]
+    public class ShieldChangedEvent : UnityEvent<int, int> { } // (å½“å‰æŠ¤ç›¾, æœ€å¤§æŠ¤ç›¾)
+    [Header("äº‹ä»¶")]
     public ShieldChangedEvent OnShieldChanged;
 
-    [Header("ÊÓ¾õĞ§¹û")]
-    [Tooltip("»¤¶ÜÊÜµ½ÉËº¦Ê±Éú³ÉµÄÌø×ÖÔ¤ÖÆ¼ş")]
+    [Header("è§†è§‰æ•ˆæœ")]
+    [Tooltip("æŠ¤ç›¾å—åˆ°ä¼¤å®³æ—¶ç”Ÿæˆçš„è·³å­—é¢„åˆ¶ä»¶")]
     public GameObject shieldDamagePopupPrefab;
-    [Tooltip("»¤¶ÜÊÜµ½ÉËº¦Ê±ÔÚÃüÖĞµãÉú³ÉµÄÌØĞ§")]
+    [Tooltip("æŠ¤ç›¾å—åˆ°ä¼¤å®³æ—¶åœ¨å‘½ä¸­ç‚¹ç”Ÿæˆçš„ç‰¹æ•ˆ")]
     public GameObject shieldHitEffectPrefab;
 
-    [Tooltip("»¤¶Ü±»Ö±½Ó»÷ÆÆÊ±Éú³ÉµÄÌø×ÖÔ¤ÖÆ¼ş")]
+    [Tooltip("æŠ¤ç›¾è¢«ç›´æ¥å‡»ç ´æ—¶ç”Ÿæˆçš„è·³å­—é¢„åˆ¶ä»¶")]
     public GameObject shieldBrokenPopupPrefab;
 
-    [Header("ÔËĞĞÊ±×´Ì¬")]
+    [Header("è¿è¡Œæ—¶çŠ¶æ€")]
     [SerializeField] private ShieldData equippedShieldData;
     [SerializeField] private int currentShieldValue;
     [SerializeField] private float cooldownTimer; 
@@ -28,15 +28,15 @@ public class PlayerShield : MonoBehaviour
 
     private GameObject currentVisualInstance;
 
-    // »¤¶ÜµÄ×îÖÕÊôĞÔ£¨Õâ²¿·ÖÂß¼­ÊÇÕıÈ·µÄ£©
+    // æŠ¤ç›¾çš„æœ€ç»ˆå±æ€§ï¼ˆè¿™éƒ¨åˆ†é€»è¾‘æ˜¯æ­£ç¡®çš„ï¼‰
     private int MaxShield => (equippedShieldData != null) ? Mathf.RoundToInt(equippedShieldData.baseMaxValue) : 0;
     private float Cooldown => (equippedShieldData != null) ? equippedShieldData.baseCooldown : 5f;
 
-    [Header("·´»÷ÉèÖÃ")]
-    [Tooltip("»¤¶Ü·´µ¯¼¤¹âÊ±£¬Éú³ÉµÄÍæ¼Ò¼¤¹âÔ¤ÖÆ¼ş")]
+    [Header("åå‡»è®¾ç½®")]
+    [Tooltip("æŠ¤ç›¾åå¼¹æ¿€å…‰æ—¶ï¼Œç”Ÿæˆçš„ç©å®¶æ¿€å…‰é¢„åˆ¶ä»¶")]
     public GameObject reflectedBeamPrefab;
-    [Tooltip("¡¾ÖØÒª¡¿Ö¸¶¨Ò»¸ö·¢Éä·´»÷¹âÊøµÄTransformµã")]
-    public Transform reflectionFirePoint; // <-- ĞŞ¸´ weaponMounts ±¨´í
+    [Tooltip("ã€é‡è¦ã€‘æŒ‡å®šä¸€ä¸ªå‘å°„åå‡»å…‰æŸçš„Transformç‚¹")]
+    public Transform reflectionFirePoint; // <-- ä¿®å¤ weaponMounts æŠ¥é”™
 
     void Awake()
     {
@@ -46,7 +46,7 @@ public class PlayerShield : MonoBehaviour
 
     void Update()
     {
-        // Update ·½·¨ÊÇÕıÈ·µÄ£¬ÎŞĞèĞŞ¸Ä
+        // Update æ–¹æ³•æ˜¯æ­£ç¡®çš„ï¼Œæ— éœ€ä¿®æ”¹
         if (equippedShieldData != null && currentShieldValue <= 0 && cooldownTimer > 0)
         {
             cooldownTimer -= Time.deltaTime;
@@ -57,7 +57,7 @@ public class PlayerShield : MonoBehaviour
         }
     }
 
-    // EquipShield, AbsorbDamage, BreakShield, RegenerateShield ·½·¨¶¼ÊÇÕıÈ·µÄ£¬ÎŞĞèĞŞ¸Ä
+    // EquipShield, AbsorbDamage, BreakShield, RegenerateShield æ–¹æ³•éƒ½æ˜¯æ­£ç¡®çš„ï¼Œæ— éœ€ä¿®æ”¹
 
     public void EquipShield(ShieldData data)
     {
@@ -67,11 +67,11 @@ public class PlayerShield : MonoBehaviour
             Destroy(currentVisualInstance);
         }
 
-        // ¡¾ĞÂÔö¡¿ÔÚ×°±¸Ê±£¬½«½âËø×´Ì¬ÉèÎª true
+        // ã€æ–°å¢ã€‘åœ¨è£…å¤‡æ—¶ï¼Œå°†è§£é”çŠ¶æ€è®¾ä¸º true
         isUnlocked = true;
 
         equippedShieldData = data;
-        Debug.Log($"ÒÑ×°±¸»¤¶Ü: {data.shieldName}");
+        Debug.Log($"å·²è£…å¤‡æŠ¤ç›¾: {data.shieldName}");
         RegenerateShield();
     }
 
@@ -81,25 +81,25 @@ public class PlayerShield : MonoBehaviour
         wasReflected = false;
         if (!isUnlocked) return damageAmount;
 
-        // --- 1. ÓÅÏÈ´¦Àí¡°»÷ÆÆ»¤¶Ü¡±µÄÌØÊâ¹¥»÷ ---
+        // --- 1. ä¼˜å…ˆå¤„ç†â€œå‡»ç ´æŠ¤ç›¾â€çš„ç‰¹æ®Šæ”»å‡» ---
         if (type == AttackType.ShieldBreaking)
         {
-            if (currentShieldValue > 0) // Ö»ÓĞÔÚ»¤¶ÜÓĞÖµÊ±²Å´¥·¢ÆÆ¶ÜĞ§¹û
+            if (currentShieldValue > 0) // åªæœ‰åœ¨æŠ¤ç›¾æœ‰å€¼æ—¶æ‰è§¦å‘ç ´ç›¾æ•ˆæœ
             {
                 if (shieldBrokenPopupPrefab != null)
                 {
                     GameObject popupGO = Instantiate(shieldBrokenPopupPrefab, transform.position + Vector3.up * 2f, Quaternion.identity);
-                    popupGO.GetComponent<StaticPopup>()?.Setup("»¤¶Ü»÷ÆÆ!", Color.yellow);
+                    popupGO.GetComponent<StaticPopup>()?.Setup("æŠ¤ç›¾å‡»ç ´!", Color.yellow);
                 }
                 BreakShield();
             }
-            return 0; // ÎŞÂÛ»¤¶ÜÊÇ·ñÓĞÖµ£¬ÆÆ¶Ü¹¥»÷¶¼²»´©Í¸ÉËº¦
+            return 0; // æ— è®ºæŠ¤ç›¾æ˜¯å¦æœ‰å€¼ï¼Œç ´ç›¾æ”»å‡»éƒ½ä¸ç©¿é€ä¼¤å®³
         }
 
-        // Èç¹û»¤¶ÜÒÑ¿Õ£¬Ôò²»Ö´ĞĞÈÎºÎ²Ù×÷£¬Ö±½Ó·µ»ØÈ«²¿ÉËº¦
+        // å¦‚æœæŠ¤ç›¾å·²ç©ºï¼Œåˆ™ä¸æ‰§è¡Œä»»ä½•æ“ä½œï¼Œç›´æ¥è¿”å›å…¨éƒ¨ä¼¤å®³
         if (currentShieldValue <= 0) return damageAmount;
 
-        // --- 2. ¡¾Í³Ò»¡¿Ö´ĞĞÉËº¦ÎüÊÕºÍ·´À¡Âß¼­ ---
+        // --- 2. ã€ç»Ÿä¸€ã€‘æ‰§è¡Œä¼¤å®³å¸æ”¶å’Œåé¦ˆé€»è¾‘ ---
         int absorbedDamage = Mathf.Min(damageAmount, currentShieldValue);
         currentShieldValue -= absorbedDamage;
 
@@ -120,13 +120,13 @@ public class PlayerShield : MonoBehaviour
             BreakShield();
         }
 
-        // --- 3. ÔÚÉËº¦ÎüÊÕºó£¬¼ì²éÊÇ·ñĞèÒªÖ´ĞĞ·´µ¯ ---
+        // --- 3. åœ¨ä¼¤å®³å¸æ”¶åï¼Œæ£€æŸ¥æ˜¯å¦éœ€è¦æ‰§è¡Œåå¼¹ ---
         if (type == AttackType.Reflectable)
         {
-            // --- ×Óµ¯·´µ¯Âß¼­ ---
+            // --- å­å¼¹åå¼¹é€»è¾‘ ---
             if (projectile != null)
             {
-                Debug.Log("»¤¶ÜÔÚ³ĞÊÜÉËº¦ºó£¬¡¾·´µ¯¡¿ÁËÒ»Ã¶×Óµ¯£¡");
+                Debug.Log("æŠ¤ç›¾åœ¨æ‰¿å—ä¼¤å®³åï¼Œã€åå¼¹ã€‘äº†ä¸€æšå­å¼¹ï¼");
 
                 Vector3 incomingDirection = projectile.transform.forward;
                 Vector3 flattenedNormal = (transform.position - projectile.transform.position);
@@ -138,19 +138,19 @@ public class PlayerShield : MonoBehaviour
                 projectile.SetNewDirection(reflectionDirection);
 
                 wasReflected = true;
-                return 0; // ·´µ¯³É¹¦£¬²»Ôì³ÉÈÎºÎ´©Í¸ÉËº¦
+                return 0; // åå¼¹æˆåŠŸï¼Œä¸é€ æˆä»»ä½•ç©¿é€ä¼¤å®³
             }
-            // --- ¹âÊø·´µ¯Âß¼­ ---
-            else if (beamController != null) // ²»ÔÙÊ¹ÓÃ beamAttacker
+            // --- å…‰æŸåå¼¹é€»è¾‘ ---
+            else if (beamController != null) // ä¸å†ä½¿ç”¨ beamAttacker
             {
-                // ½«½ÓÊÕµ½µÄ beamController ÊµÀı´«¸ø·´µ¯·½·¨
+                // å°†æ¥æ”¶åˆ°çš„ beamController å®ä¾‹ä¼ ç»™åå¼¹æ–¹æ³•
                 TriggerReflectionBeam(beamController);
                 wasReflected = true;
                 return 0;
             }
         }
 
-        // --- 4. Èç¹ûÊÇ±ê×¼¹¥»÷£¬·µ»Ø´©Í¸µÄÉËº¦ ---
+        // --- 4. å¦‚æœæ˜¯æ ‡å‡†æ”»å‡»ï¼Œè¿”å›ç©¿é€çš„ä¼¤å®³ ---
         return damageAmount - absorbedDamage;
     }
 
@@ -159,20 +159,20 @@ public class PlayerShield : MonoBehaviour
         if (reflectedBeamPrefab == null || reflectionFirePoint == null || originalBeam.attackData == null) return;
 
         Transform target = FindNearestEnemyTransform(originalBeam.gameObject);
-        if (target == null) target = originalBeam.transform; // Èç¹ûÃ»ÕÒµ½ÆäËûÄ¿±ê£¬¾Í·´µ¯¸ø¹¥»÷Õß      
+        if (target == null) target = originalBeam.transform; // å¦‚æœæ²¡æ‰¾åˆ°å…¶ä»–ç›®æ ‡ï¼Œå°±åå¼¹ç»™æ”»å‡»è€…      
 
         GameObject beamGO = Instantiate(reflectedBeamPrefab, reflectionFirePoint.position, reflectionFirePoint.rotation, reflectionFirePoint);
         ReflectedBeam reflectedBeamController = beamGO.GetComponent<ReflectedBeam>();
 
         if (reflectedBeamController != null)
         {
-            Debug.Log("»¤¶Ü´¥·¢·´»÷¹âÊø£¡");
-            // ¡¾ĞŞ¸Ä¡¿Ê¹ÓÃĞÂ½Å±¾µÄ³õÊ¼»¯·½·¨£¬²¢´«ÈëÔ­Ê¼¹âÊøµÄÊµÀı
+            Debug.Log("æŠ¤ç›¾è§¦å‘åå‡»å…‰æŸï¼");
+            // ã€ä¿®æ”¹ã€‘ä½¿ç”¨æ–°è„šæœ¬çš„åˆå§‹åŒ–æ–¹æ³•ï¼Œå¹¶ä¼ å…¥åŸå§‹å…‰æŸçš„å®ä¾‹
             reflectedBeamController.Initialize(
-                originalBeam.attackData, // <-- ÕâÀïĞèÒªÈÃ EnemyBeamController ±©Â¶ËüµÄ attackData
+                originalBeam.attackData, // <-- è¿™é‡Œéœ€è¦è®© EnemyBeamController æš´éœ²å®ƒçš„ attackData
                 WeaponController.Instance.gameObject,
                 target,               
-                originalBeam // <-- ½»½ÓÔ­Ê¼¹âÊøµÄÊµÀı£¡
+                originalBeam // <-- äº¤æ¥åŸå§‹å…‰æŸçš„å®ä¾‹ï¼
             );
         }
     }
@@ -182,8 +182,8 @@ public class PlayerShield : MonoBehaviour
         float closestDistanceSqr = Mathf.Infinity;
         Transform nearestEnemy = null;
 
-        // ¡¾ĞÂÔöÈÕÖ¾ A¡¿ÏÔÊ¾ËÑË÷·¶Î§ºÍÅÅ³ıÄ¿±ê
-        Debug.Log($"--- ¿ªÊ¼Îª·´µ¯Ë÷µĞ (ÅÅ³ı: {excludeEnemy.name}) ---");
+        // ã€æ–°å¢æ—¥å¿— Aã€‘æ˜¾ç¤ºæœç´¢èŒƒå›´å’Œæ’é™¤ç›®æ ‡
+        Debug.Log($"--- å¼€å§‹ä¸ºåå¼¹ç´¢æ•Œ (æ’é™¤: {excludeEnemy.name}) ---");
 
         Collider[] colliders = Physics.OverlapSphere(transform.position, 50f, LayerMask.GetMask("Enemies"));
 
@@ -196,25 +196,25 @@ public class PlayerShield : MonoBehaviour
             {
                 float dSqrToTarget = (transform.position - hitCollider.transform.position).sqrMagnitude;
 
-                // ¡¾ĞÂÔöÈÕÖ¾ B¡¿´òÓ¡³öÃ¿Ò»¸ö±»¿¼ÂÇµÄÄ¿±êºÍËüµÄ¾àÀë
-                Debug.Log($"ÕıÔÚ¿¼ÂÇÄ¿±ê: {hitCollider.name}, ¾àÀëÆ½·½: {dSqrToTarget.ToString("F2")}");
+                // ã€æ–°å¢æ—¥å¿— Bã€‘æ‰“å°å‡ºæ¯ä¸€ä¸ªè¢«è€ƒè™‘çš„ç›®æ ‡å’Œå®ƒçš„è·ç¦»
+                Debug.Log($"æ­£åœ¨è€ƒè™‘ç›®æ ‡: {hitCollider.name}, è·ç¦»å¹³æ–¹: {dSqrToTarget.ToString("F2")}");
 
                 if (dSqrToTarget < closestDistanceSqr)
                 {
                     closestDistanceSqr = dSqrToTarget;
                     nearestEnemy = enemyHealth.transform;
 
-                    // ¡¾ĞÂÔöÈÕÖ¾ C¡¿´òÓ¡³öºÎÊ±¸üĞÂÁË×î½üÄ¿±ê
-                    Debug.Log($"<color=lime>¸üĞÂ×î½üÄ¿±êÎª: {nearestEnemy.name}</color>");
+                    // ã€æ–°å¢æ—¥å¿— Cã€‘æ‰“å°å‡ºä½•æ—¶æ›´æ–°äº†æœ€è¿‘ç›®æ ‡
+                    Debug.Log($"<color=lime>æ›´æ–°æœ€è¿‘ç›®æ ‡ä¸º: {nearestEnemy.name}</color>");
                 }
             }
         }
 
-        // ¡¾ĞÂÔöÈÕÖ¾ D¡¿±¨¸æ×îÖÕµÄË÷µĞ½á¹û
+        // ã€æ–°å¢æ—¥å¿— Dã€‘æŠ¥å‘Šæœ€ç»ˆçš„ç´¢æ•Œç»“æœ
         if (nearestEnemy != null)
-            Debug.Log($"--- Ë÷µĞ½áÊø, ×îÖÕÑ¡Ôñ: {nearestEnemy.name} ---");
+            Debug.Log($"--- ç´¢æ•Œç»“æŸ, æœ€ç»ˆé€‰æ‹©: {nearestEnemy.name} ---");
         else
-            Debug.LogWarning($"--- Ë÷µĞ½áÊø, Î´ÕÒµ½ÓĞĞ§Ä¿±ê ---");
+            Debug.LogWarning($"--- ç´¢æ•Œç»“æŸ, æœªæ‰¾åˆ°æœ‰æ•ˆç›®æ ‡ ---");
 
         return nearestEnemy;
     }
@@ -227,7 +227,7 @@ public class PlayerShield : MonoBehaviour
         {
             Destroy(currentVisualInstance);
         }
-        Debug.Log("»¤¶ÜÒÑ»÷ÆÆ£¡½øÈëÀäÈ´...");
+        Debug.Log("æŠ¤ç›¾å·²å‡»ç ´ï¼è¿›å…¥å†·å´...");
     }
 
     private void RegenerateShield()
@@ -246,49 +246,49 @@ public class PlayerShield : MonoBehaviour
 
         if (equippedShieldData.shieldVisualPrefab != null)
         {
-            // 1. ½«»¤¶ÜÊµÀı»¯ÎªÍæ¼ÒµÄ×Ó¶ÔÏó
+            // 1. å°†æŠ¤ç›¾å®ä¾‹åŒ–ä¸ºç©å®¶çš„å­å¯¹è±¡
             currentVisualInstance = Instantiate(equippedShieldData.shieldVisualPrefab, transform);
             currentVisualInstance.transform.localPosition = Vector3.zero;
             currentVisualInstance.transform.localRotation = Quaternion.identity;
 
-            // --- ¡¾ºËĞÄĞŞ¸Ä¡¿ ---
-            // 2. »ñÈ¡Íæ¼Ò×ÔÉíµÄ Rigidbody
+            // --- ã€æ ¸å¿ƒä¿®æ”¹ã€‘ ---
+            // 2. è·å–ç©å®¶è‡ªèº«çš„ Rigidbody
             Rigidbody playerRb = GetComponent<Rigidbody>();
 
-            // 3. »ñÈ¡»¤¶ÜÊµÀıÉÏµÄ Fixed Joint
+            // 3. è·å–æŠ¤ç›¾å®ä¾‹ä¸Šçš„ Fixed Joint
             FixedJoint joint = currentVisualInstance.GetComponent<FixedJoint>();
 
-            // 4. Èç¹ûÁ½Õß¶¼´æÔÚ£¬Ôò½«ËüÃÇÁ¬½ÓÆğÀ´
+            // 4. å¦‚æœä¸¤è€…éƒ½å­˜åœ¨ï¼Œåˆ™å°†å®ƒä»¬è¿æ¥èµ·æ¥
             if (joint != null && playerRb != null)
             {
                 joint.connectedBody = playerRb;
-                Debug.Log("³É¹¦½«»¤¶Ü¹Ø½ÚÁ¬½Óµ½Íæ¼Ò¸ÕÌå¡£");
+                Debug.Log("æˆåŠŸå°†æŠ¤ç›¾å…³èŠ‚è¿æ¥åˆ°ç©å®¶åˆšä½“ã€‚");
             }
             else
             {
-                Debug.LogError("»¤¶ÜÁ¬½ÓÊ§°Ü£ºÍæ¼Ò»ò»¤¶ÜÔ¤ÖÆ¼şÉÏÈ±ÉÙ±ØÒªµÄ Rigidbody »ò Fixed Joint ×é¼ş£¡");
+                Debug.LogError("æŠ¤ç›¾è¿æ¥å¤±è´¥ï¼šç©å®¶æˆ–æŠ¤ç›¾é¢„åˆ¶ä»¶ä¸Šç¼ºå°‘å¿…è¦çš„ Rigidbody æˆ– Fixed Joint ç»„ä»¶ï¼");
             }
-            // --- ĞŞ¸Ä½áÊø ---
+            // --- ä¿®æ”¹ç»“æŸ ---
         }
-        Debug.Log("»¤¶ÜÒÑÔÙÉú£¡");
+        Debug.Log("æŠ¤ç›¾å·²å†ç”Ÿï¼");
     }
     public void UnlockShield()
     {
         if (isUnlocked) return;
         isUnlocked = true;
-        RegenerateShield(); // RegenerateShield ÄÚ²¿ÒÑ¾­°üº¬ÁËÊÂ¼şÍ¨Öª
+        RegenerateShield(); // RegenerateShield å†…éƒ¨å·²ç»åŒ…å«äº†äº‹ä»¶é€šçŸ¥
     }
 
-    // --- ¡¾ºËĞÄĞŞÕı2¡¿ĞŞ¸Ä AddMaxShield ·½·¨ ---
+    // --- ã€æ ¸å¿ƒä¿®æ­£2ã€‘ä¿®æ”¹ AddMaxShield æ–¹æ³• ---
     public void AddMaxShield(int amount)
     {
-        // Ê¹ÓÃ isUnlocked ±äÁ¿
+        // ä½¿ç”¨ isUnlocked å˜é‡
         if (isUnlocked)
         {
-            // Ê¹ÓÃÕıÈ·µÄ±äÁ¿Ãû currentShieldValue
+            // ä½¿ç”¨æ­£ç¡®çš„å˜é‡å currentShieldValue
             currentShieldValue += amount;
 
-            // È·±£µ±Ç°»¤¶Ü²»»á³¬¹ıĞÂµÄ×î´óÖµ
+            // ç¡®ä¿å½“å‰æŠ¤ç›¾ä¸ä¼šè¶…è¿‡æ–°çš„æœ€å¤§å€¼
             if (currentShieldValue > MaxShield)
             {
                 currentShieldValue = MaxShield;
@@ -303,11 +303,11 @@ public class PlayerShield : MonoBehaviour
     }
 
     /// <summary>
-    /// ·µ»Ø×î´ó»¤¶ÜÖµ
+    /// è¿”å›æœ€å¤§æŠ¤ç›¾å€¼
     /// </summary>
     public int GetMaxShield()
     {
-        // ÎÒÃÇ´Ó PlayerStats »ñÈ¡×î´óÖµ
+        // æˆ‘ä»¬ä» PlayerStats è·å–æœ€å¤§å€¼
         return PlayerStats.Instance != null ? PlayerStats.Instance.maxShield : 0;
     }
 }

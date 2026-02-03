@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -6,37 +6,37 @@ using UnityEngine.AI;
 [RequireComponent(typeof(EnemyAI))]
 public class EnemyAdvancedAoeAttack : MonoBehaviour
 {
-    // ¡¾ĞÂÔö¡¿¶¨ÒåÄ¿±êÄ£Ê½µÄÃ¶¾Ù
+    // ã€æ–°å¢ã€‘å®šä¹‰ç›®æ ‡æ¨¡å¼çš„æšä¸¾
     public enum AoeTargetingMode { Self, Player }
 
-    [Header("¹¥»÷ÉèÖÃ")]
-    [Tooltip("ÎÒÃÇÖÆ×÷µÄÄÇ¸ö´øÄÚÍâÈ¦µÄÔ¤¾¯ÌØĞ§Ô¤ÖÆ¼ş")]
+    [Header("æ”»å‡»è®¾ç½®")]
+    [Tooltip("æˆ‘ä»¬åˆ¶ä½œçš„é‚£ä¸ªå¸¦å†…å¤–åœˆçš„é¢„è­¦ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
     public GameObject aoeIndicatorPrefab;
-    [Tooltip("¼¼ÄÜÃüÖĞÊ±µÄ±¬Õ¨»ò·¨ÊõÌØĞ§")]
+    [Tooltip("æŠ€èƒ½å‘½ä¸­æ—¶çš„çˆ†ç‚¸æˆ–æ³•æœ¯ç‰¹æ•ˆ")]
     public GameObject explosionVfxPrefab;
-    [Tooltip("½øÈë´Ë·¶Î§ºó£¬¹ÖÎï»á¿ªÊ¼×¼±¸¹¥»÷")]
+    [Tooltip("è¿›å…¥æ­¤èŒƒå›´åï¼Œæ€ªç‰©ä¼šå¼€å§‹å‡†å¤‡æ”»å‡»")]
     public float attackRange = 20f;
-    [Tooltip("¹¥»÷ÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Tooltip("æ”»å‡»å†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float cooldown = 5f;
 
-    [Header("¼¼ÄÜĞ§¹û")]
-    [Tooltip("Ô¤¾¯µÄ³ÖĞøÊ±¼ä£¬Ò²ÊÇÄÚÈ¦À©ÕÅµÄÊ±¼ä")]
+    [Header("æŠ€èƒ½æ•ˆæœ")]
+    [Tooltip("é¢„è­¦çš„æŒç»­æ—¶é—´ï¼Œä¹Ÿæ˜¯å†…åœˆæ‰©å¼ çš„æ—¶é—´")]
     public float warningDuration = 1.5f;
-    [Tooltip("¼¼ÄÜµÄÉËº¦°ë¾¶")]
+    [Tooltip("æŠ€èƒ½çš„ä¼¤å®³åŠå¾„")]
     public float aoeRadius = 3f;
-    [Tooltip("¼¼ÄÜÔì³ÉµÄÉËº¦Öµ")]
+    [Tooltip("æŠ€èƒ½é€ æˆçš„ä¼¤å®³å€¼")]
     public int aoeDamage = 25;
 
-    [Header("Ô¤¾¯Î»ÖÃÄ£Ê½")]
-    [Tooltip("¡¾ĞÂÔö¡¿Ñ¡ÔñÔ¤¾¯È¦µÄÖĞĞÄµãÊÇ¹ÖÎï×ÔÉí»¹ÊÇÍæ¼Ò")]
+    [Header("é¢„è­¦ä½ç½®æ¨¡å¼")]
+    [Tooltip("ã€æ–°å¢ã€‘é€‰æ‹©é¢„è­¦åœˆçš„ä¸­å¿ƒç‚¹æ˜¯æ€ªç‰©è‡ªèº«è¿˜æ˜¯ç©å®¶")]
     public AoeTargetingMode targetingMode = AoeTargetingMode.Self;
-    [Tooltip("Ô¤¾¯È¦Éú³ÉµÄÆ«ÒÆÎ»ÖÃÁĞ±í¡£×ø±ê»á»ùÓÚÉÏÃæÑ¡ÔñµÄÄ¿±êÄ£Ê½À´¼ÆËã¡£")]
+    [Tooltip("é¢„è­¦åœˆç”Ÿæˆçš„åç§»ä½ç½®åˆ—è¡¨ã€‚åæ ‡ä¼šåŸºäºä¸Šé¢é€‰æ‹©çš„ç›®æ ‡æ¨¡å¼æ¥è®¡ç®—ã€‚")]
     public List<Vector3> aoePatternOffsets;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float attackCooldownTimer;
-    private NavMeshAgent agent; // ¡¾ĞŞ¸Ä¡¿
+    private NavMeshAgent agent; // ã€ä¿®æ”¹ã€‘
     private Animator animator;
     private bool isCasting = false;
 
@@ -44,7 +44,7 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
     {
         if (GameManager.Instance != null)
         {
-            // ×¢Òâ£ºÎÒÃÇÏÖÔÚÖ»ĞèÒªÍæ¼ÒµÄ¸ùTransform¼´¿É£¬²»ÔÙĞèÒªAimTarget
+            // æ³¨æ„ï¼šæˆ‘ä»¬ç°åœ¨åªéœ€è¦ç©å®¶çš„æ ¹Transformå³å¯ï¼Œä¸å†éœ€è¦AimTarget
             playerTarget = GameManager.Instance.playerTransform;
         }
         agent = GetComponent<NavMeshAgent>();
@@ -69,46 +69,46 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
         isCasting = true;
 
         agent.isStopped = true;
-        agent.velocity = Vector3.zero; // È·±£Á¢¼´Í£Ö¹
+        agent.velocity = Vector3.zero; // ç¡®ä¿ç«‹å³åœæ­¢
 
         if (animator != null) animator.SetBool("isMoving", false);
 
-        // Ãæ³¯Íæ¼Ò
+        // é¢æœç©å®¶
         transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
 
-        // ¡¾¶¯»­ĞŞ¸´µÚ¶ş²½¡¿´¥·¢¡°Ê©·¨¡±¶¯»­
+        // ã€åŠ¨ç”»ä¿®å¤ç¬¬äºŒæ­¥ã€‘è§¦å‘â€œæ–½æ³•â€åŠ¨ç”»
         if (animator != null)
         {
-            animator.SetTrigger("Attack"); // ¼ÙÉèÄúµÄÊ©·¨´¥·¢Æ÷ÃûÎª "Attack"
+            animator.SetTrigger("Attack"); // å‡è®¾æ‚¨çš„æ–½æ³•è§¦å‘å™¨åä¸º "Attack"
         }
 
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿¸ù¾İÄ¿±êÄ£Ê½£¬È·¶¨¹¥»÷Ä£Ê½µÄÖĞĞÄµã
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æ ¹æ®ç›®æ ‡æ¨¡å¼ï¼Œç¡®å®šæ”»å‡»æ¨¡å¼çš„ä¸­å¿ƒç‚¹
         Vector3 patternCenter;
         if (targetingMode == AoeTargetingMode.Player)
         {
-            patternCenter = playerTarget.position; // ÒÔÍæ¼ÒÎªÖĞĞÄ
+            patternCenter = playerTarget.position; // ä»¥ç©å®¶ä¸ºä¸­å¿ƒ
         }
         else // AoeTargetingMode.Self
         {
-            patternCenter = transform.position; // ÒÔ¹ÖÎï×ÔÉíÎªÖĞĞÄ
+            patternCenter = transform.position; // ä»¥æ€ªç‰©è‡ªèº«ä¸ºä¸­å¿ƒ
         }
 
-        // ÅúÁ¿Éú³ÉÔ¤¾¯È¦
+        // æ‰¹é‡ç”Ÿæˆé¢„è­¦åœˆ
         List<Vector3> explosionPositions = new List<Vector3>();
         foreach (Vector3 offset in aoePatternOffsets)
         {
             Vector3 worldPosition;
-            // Èç¹ûÊÇÒÔ×ÔÉíÎªÖĞĞÄ£¬ÎÒÃÇÏ£ÍûÆ«ÒÆÁ¿ÄÜ¸úËæ¹ÖÎï×ÔÉíµÄ³¯ÏòĞı×ª
+            // å¦‚æœæ˜¯ä»¥è‡ªèº«ä¸ºä¸­å¿ƒï¼Œæˆ‘ä»¬å¸Œæœ›åç§»é‡èƒ½è·Ÿéšæ€ªç‰©è‡ªèº«çš„æœå‘æ—‹è½¬
             if (targetingMode == AoeTargetingMode.Self)
             {
                 worldPosition = patternCenter + transform.rotation * offset;
             }
-            else // Èç¹ûÒÔÍæ¼ÒÎªÖĞĞÄ£¬Æ«ÒÆÁ¿Í¨³£Ê¹ÓÃÊÀ½ç×ø±ê£¬²»ÊÜ¹ÖÎï³¯ÏòÓ°Ïì
+            else // å¦‚æœä»¥ç©å®¶ä¸ºä¸­å¿ƒï¼Œåç§»é‡é€šå¸¸ä½¿ç”¨ä¸–ç•Œåæ ‡ï¼Œä¸å—æ€ªç‰©æœå‘å½±å“
             {
                 worldPosition = patternCenter + offset;
             }
 
-            // ¶ÔÆëµ½µØÃæ
+            // å¯¹é½åˆ°åœ°é¢
             RaycastHit hit;
             if (Physics.Raycast(worldPosition + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground")))
             {
@@ -124,10 +124,10 @@ public class EnemyAdvancedAoeAttack : MonoBehaviour
             }
         }
 
-        // µÈ´ıÔ¤¾¯Ê±¼ä½áÊø
+        // ç­‰å¾…é¢„è­¦æ—¶é—´ç»“æŸ
         yield return new WaitForSeconds(warningDuration);
 
-        // ÔÚ¼ÇÂ¼µÄËùÓĞÎ»ÖÃ²úÉú±¬Õ¨ºÍÉËº¦
+        // åœ¨è®°å½•çš„æ‰€æœ‰ä½ç½®äº§ç”Ÿçˆ†ç‚¸å’Œä¼¤å®³
         foreach (Vector3 pos in explosionPositions)
         {
             if (explosionVfxPrefab != null) Instantiate(explosionVfxPrefab, pos, Quaternion.identity);

@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "New Passive Item", menuName = "Inventory/Passive Item")]
 public class PassiveItemSO : ScriptableObject
@@ -7,8 +7,8 @@ public class PassiveItemSO : ScriptableObject
     public Sprite icon;
     [TextArea] public string description;
 
-    [Header("ÊôĞÔ¼Ó³É (Ê¾Àı)")]
+    [Header("å±æ€§åŠ æˆ (ç¤ºä¾‹)")]
     public float bonusDamageMultiplier = 0f;
     public float bonusMoveSpeed = 0f;
-    // Äã¿ÉÒÔÔÚÕâÀï¼ÌĞøÀ©Õ¹±»¶¯µÀ¾ßµÄ¾ßÌåĞ§¹û
+    // ä½ å¯ä»¥åœ¨è¿™é‡Œç»§ç»­æ‰©å±•è¢«åŠ¨é“å…·çš„å…·ä½“æ•ˆæœ
 }

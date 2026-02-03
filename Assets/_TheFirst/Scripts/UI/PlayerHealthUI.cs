@@ -1,23 +1,23 @@
-// PlayerHealthUI.cs (◊Ó÷’–ﬁ’˝∞Ê - –ﬁ∏¥“˛≤ÿ∏∏∂‘œÛµƒŒ Ã‚)
+Ôªø// PlayerHealthUI.cs (ÊúÄÁªà‰øÆÊ≠£Áâà - ‰øÆÂ§çÈöêËóèÁà∂ÂØπË±°ÁöÑÈóÆÈ¢ò)
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 
 public class PlayerHealthUI : MonoBehaviour
 {
-    [Header("UI◊Èº˛“˝”√")]
-    public Image healthFillImage;       // ∂•≤„£¨≥»…´
-    public Image shieldFillImage;       // ÷–≤„£¨¿∂…´
-    public Image pendingDamageFillImage;  // µ◊≤„£¨∞µ∫Ï…´
+    [Header("UIÁªÑ‰ª∂ÂºïÁî®")]
+    public Image healthFillImage;       // È°∂Â±ÇÔºåÊ©ôËâ≤
+    public Image shieldFillImage;       // ‰∏≠Â±ÇÔºåËìùËâ≤
+    public Image pendingDamageFillImage;  // Â∫ïÂ±ÇÔºåÊöóÁ∫¢Ëâ≤
 
-    [Header("øÌ∂»…Ë÷√")]
-    [Tooltip("¥˙±Ì100µ„…˙√¸/ª§∂‹÷µµƒUIª˘¥°øÌ∂»")]
+    [Header("ÂÆΩÂ∫¶ËÆæÁΩÆ")]
+    [Tooltip("‰ª£Ë°®100ÁÇπÁîüÂëΩ/Êä§ÁõæÂÄºÁöÑUIÂü∫Á°ÄÂÆΩÂ∫¶")]
     public float baseWidthPer100Points = 300f;
 
-    [Header("∂Øª≠…Ë÷√")]
-    [Tooltip("◊∑∏œ∂Øª≠ø™ º«∞µƒ—”≥Ÿ")]
+    [Header("Âä®ÁîªËÆæÁΩÆ")]
+    [Tooltip("ËøΩËµ∂Âä®ÁîªÂºÄÂßãÂâçÁöÑÂª∂Ëøü")]
     public float pendingDamageDelay = 0.5f;
-    [Tooltip("◊∑∏œ∂Øª≠µƒ≥÷–¯ ±º‰")]
+    [Tooltip("ËøΩËµ∂Âä®ÁîªÁöÑÊåÅÁª≠Êó∂Èó¥")]
     public float pendingDamageDuration = 0.4f;
 
     private Health playerHealth;
@@ -69,8 +69,8 @@ public class PlayerHealthUI : MonoBehaviour
         int maxHealth = playerHealth.GetMaxHealth();
         int currentShield = playerShield.GetCurrentShield();
 
-        // --- °æ∫À–ƒ–ﬁ’˝°ø---
-        // ÷ªøÿ÷∆ shieldFillImage ◊‘…Ìµƒœ‘“˛£¨≤ª‘Ÿ”∞œÏ∏∏∂‘œÛ
+        // --- „ÄêÊ†∏ÂøÉ‰øÆÊ≠£„Äë---
+        // Âè™ÊéßÂà∂ shieldFillImage Ëá™Ë∫´ÁöÑÊòæÈöêÔºå‰∏çÂÜçÂΩ±ÂìçÁà∂ÂØπË±°
         shieldFillImage.gameObject.SetActive(currentShield > 0);
 
         float displayMaxWidth = Mathf.Max(maxHealth, currentHealth + currentShield);
@@ -90,14 +90,14 @@ public class PlayerHealthUI : MonoBehaviour
         {
             healthFillImage.fillAmount = healthTargetRatio;
             shieldFillImage.fillAmount = shieldTargetRatio;
-            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, 0f)); // ¡¢º¥◊∑∏œ
+            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, 0f)); // Á´ãÂç≥ËøΩËµ∂
         }
         else
         {
             healthFillImage.fillAmount = healthTargetRatio;
             shieldFillImage.fillAmount = shieldTargetRatio;
 
-            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, pendingDamageDelay)); // —”≥Ÿ◊∑∏œ
+            pendingDamageCoroutine = StartCoroutine(AnimatePendingDamage(shieldTargetRatio, pendingDamageDelay)); // Âª∂ËøüËøΩËµ∂
         }
     }
 

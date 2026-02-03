@@ -1,22 +1,22 @@
-// --- ChaseAction.cs ---
+ï»¿// --- ChaseAction.cs ---
 using UnityEngine;
 
 public class ChaseAction : Node
 {
-    [Header("×·»÷ÉèÖÃ")]
-    [Tooltip("×·»÷×´Ì¬³ÖĞøµÄÊ±¼ä£¨Ãë£©")]
+    [Header("è¿½å‡»è®¾ç½®")]
+    [Tooltip("è¿½å‡»çŠ¶æ€æŒç»­çš„æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float chaseDuration = 3f;
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private EnemyAI regularAI;
-    private Animator animator; // ¡¾ĞÂÔö¡¿¶¯»­¿ØÖÆÆ÷ÒıÓÃ
+    private Animator animator; // ã€æ–°å¢ã€‘åŠ¨ç”»æ§åˆ¶å™¨å¼•ç”¨
     private float chaseTimer;
     private bool isChasing = false;
 
     void Awake()
     {
         regularAI = GetComponentInParent<EnemyAI>();
-        animator = GetComponentInParent<Animator>(); // ¡¾ĞÂÔö¡¿»ñÈ¡Animator×é¼ş
+        animator = GetComponentInParent<Animator>(); // ã€æ–°å¢ã€‘è·å–Animatorç»„ä»¶
     }
 
     public override NodeState Evaluate()
@@ -28,7 +28,7 @@ public class ChaseAction : Node
             isChasing = true;
             chaseTimer = 0f;
             regularAI.enabled = true;
-            animator.SetBool("isMoving", true); // ¡¾ĞÂÔö¡¿¿ªÊ¼×·»÷Ê±£¬ÉèÖÃisMovingÎªtrue
+            animator.SetBool("isMoving", true); // ã€æ–°å¢ã€‘å¼€å§‹è¿½å‡»æ—¶ï¼Œè®¾ç½®isMovingä¸ºtrue
             return NodeState.RUNNING;
         }
         else
@@ -38,7 +38,7 @@ public class ChaseAction : Node
             {
                 isChasing = false;
                 regularAI.enabled = false;
-                animator.SetBool("isMoving", false); // ¡¾ĞÂÔö¡¿×·»÷½áÊøÊ±£¬ÉèÖÃisMovingÎªfalse
+                animator.SetBool("isMoving", false); // ã€æ–°å¢ã€‘è¿½å‡»ç»“æŸæ—¶ï¼Œè®¾ç½®isMovingä¸ºfalse
                 return NodeState.SUCCESS;
             }
             else

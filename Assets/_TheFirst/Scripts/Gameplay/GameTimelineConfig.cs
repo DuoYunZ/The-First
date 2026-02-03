@@ -1,26 +1,26 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
-// Õâ¸ö [System.Serializable] Àà²»ĞèÒªÊÇµ¥¶ÀµÄÎÄ¼ş£¬Ëü»áÄÚÇ¶ÔÚ Config ÖĞ
+// è¿™ä¸ª [System.Serializable] ç±»ä¸éœ€è¦æ˜¯å•ç‹¬çš„æ–‡ä»¶ï¼Œå®ƒä¼šå†…åµŒåœ¨ Config ä¸­
 [System.Serializable]
 public class TimelineEvent
 {
-    [Tooltip("½öÓÃÓÚµ÷ÊÔ£¬·½±ãÊ¶±ğ")]
+    [Tooltip("ä»…ç”¨äºè°ƒè¯•ï¼Œæ–¹ä¾¿è¯†åˆ«")]
     public string eventName;
 
-    [Tooltip("ÒªÉú³ÉµÄ²¨´ÎÅäÖÃ (WaveConfig)")]
+    [Tooltip("è¦ç”Ÿæˆçš„æ³¢æ¬¡é…ç½® (WaveConfig)")]
     public WaveConfig waveToSpawn;
 
-    [Header("´¥·¢Ê±¼äÉèÖÃ")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬½«ÔÚÏÂÃæµÄ×îĞ¡/×î´óÊ±¼äÖ®¼äËæ»ú´¥·¢")]
+    [Header("è§¦å‘æ—¶é—´è®¾ç½®")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œå°†åœ¨ä¸‹é¢çš„æœ€å°/æœ€å¤§æ—¶é—´ä¹‹é—´éšæœºè§¦å‘")]
     public bool useRandomTimeRange;
 
-    [Tooltip("¹Ì¶¨µÄ´¥·¢Ê±¼ä (Ãë)")]
+    [Tooltip("å›ºå®šçš„è§¦å‘æ—¶é—´ (ç§’)")]
     public float fixedTriggerTime;
 
-    [Tooltip("Ëæ»ú´¥·¢µÄ×îĞ¡Ê±¼ä (Ãë)")]
+    [Tooltip("éšæœºè§¦å‘çš„æœ€å°æ—¶é—´ (ç§’)")]
     public float minTriggerTime;
-    [Tooltip("Ëæ»ú´¥·¢µÄ×î´óÊ±¼ä (Ãë)")]
+    [Tooltip("éšæœºè§¦å‘çš„æœ€å¤§æ—¶é—´ (ç§’)")]
     public float maxTriggerTime;
 }
 
@@ -28,9 +28,9 @@ public class TimelineEvent
 [CreateAssetMenu(fileName = "GameTimeline_Main", menuName = "Game/Game Timeline Config")]
 public class GameTimelineConfig : ScriptableObject
 {
-    [Tooltip("´Ë¹Ø¿¨µÄ×ÜÊ±³¤ (Ãë)£¬ÀıÈç 20 * 60 = 1200")]
+    [Tooltip("æ­¤å…³å¡çš„æ€»æ—¶é•¿ (ç§’)ï¼Œä¾‹å¦‚ 20 * 60 = 1200")]
     public float totalGameDuration = 1200f;
 
-    [Tooltip("¹Ø¿¨µÄÊ±¼äÖáÊÂ¼şÁĞ±í")]
+    [Tooltip("å…³å¡çš„æ—¶é—´è½´äº‹ä»¶åˆ—è¡¨")]
     public List<TimelineEvent> timelineEvents;
 }

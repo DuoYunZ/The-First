@@ -1,18 +1,18 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class WheelPart : MonoBehaviour
 {
-    [Tooltip("ÂÖ×ÓÎ§ÈÆÄÄ¸ö¾Ö²¿×ø±êÖáĞı×ª (ÀıÈç Vector3.right »ò Vector3.up)")]
-    public Vector3 hingeAxis = Vector3.right; // *** ĞèÒª¸ù¾İÄãµÄÂÖ×ÓÄ£ĞÍ³¯ÏòÀ´ÉèÖÃ ***
+    [Tooltip("è½®å­å›´ç»•å“ªä¸ªå±€éƒ¨åæ ‡è½´æ—‹è½¬ (ä¾‹å¦‚ Vector3.right æˆ– Vector3.up)")]
+    public Vector3 hingeAxis = Vector3.right; // *** éœ€è¦æ ¹æ®ä½ çš„è½®å­æ¨¡å‹æœå‘æ¥è®¾ç½® ***
 
-    [Tooltip("ÊÇ·ñÄ¬ÈÏÆôÓÃÂí´ïÇı¶¯£¿")]
-    public bool useMotorByDefault = true; // Èç¹ûÄãÏëÍ¨¹ıÂí´ïÇı¶¯ÂÖ×Ó
+    [Tooltip("æ˜¯å¦é»˜è®¤å¯ç”¨é©¬è¾¾é©±åŠ¨ï¼Ÿ")]
+    public bool useMotorByDefault = true; // å¦‚æœä½ æƒ³é€šè¿‡é©¬è¾¾é©±åŠ¨è½®å­
 
-    [Tooltip("Ä¬ÈÏÂí´ïÇı¶¯Á¦")]
-    public float motorForce = 100f; // Ê¾ÀıÖµ
+    [Tooltip("é»˜è®¤é©¬è¾¾é©±åŠ¨åŠ›")]
+    public float motorForce = 100f; // ç¤ºä¾‹å€¼
 
-    [Tooltip("Ä¬ÈÏÂí´ïÄ¿±êËÙ¶È")]
-    public float motorTargetVelocity = 1000f; // Ê¾ÀıÖµ
+    [Tooltip("é»˜è®¤é©¬è¾¾ç›®æ ‡é€Ÿåº¦")]
+    public float motorTargetVelocity = 1000f; // ç¤ºä¾‹å€¼
 
-    // ¿ÉÒÔÔÚÕâÀïÌí¼ÓÆäËûÂÖ×ÓÌØÓĞµÄÊôĞÔ£¬Èç°ë¾¶¡¢Ä¦²ÁÏµÊıµÈ
+    // å¯ä»¥åœ¨è¿™é‡Œæ·»åŠ å…¶ä»–è½®å­ç‰¹æœ‰çš„å±æ€§ï¼Œå¦‚åŠå¾„ã€æ‘©æ“¦ç³»æ•°ç­‰
 }

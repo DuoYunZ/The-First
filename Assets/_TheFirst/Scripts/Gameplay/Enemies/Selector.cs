@@ -1,11 +1,11 @@
-// --- Selector.cs (´ø¼ÇÒä¹¦ÄÜµÄ×îÖÕ°æ) ---
+ï»¿// --- Selector.cs (å¸¦è®°å¿†åŠŸèƒ½çš„æœ€ç»ˆç‰ˆ) ---
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Selector : Node
 {
     protected List<Node> children = new List<Node>();
-    private int currentChildIndex = 0; // ¡¾ºËĞÄ¡¿ÓÃÓÚ¡°¼ÇÒä¡±µ±Ç°ÕıÔÚ³¢ÊÔµÄ×Ó½ÚµãË÷Òı
+    private int currentChildIndex = 0; // ã€æ ¸å¿ƒã€‘ç”¨äºâ€œè®°å¿†â€å½“å‰æ­£åœ¨å°è¯•çš„å­èŠ‚ç‚¹ç´¢å¼•
 
     void Awake()
     {
@@ -26,37 +26,37 @@ public class Selector : Node
             switch (currentNode.Evaluate())
             {
                 case NodeState.RUNNING:
-                    // Èç¹û×Ó½ÚµãÕıÔÚÔËĞĞ£¬ÔòÕû¸öSelectorÒ²´¦ÓÚÔËĞĞ×´Ì¬£¬²¢¡°¼Ç×¡¡±ÊÇÄÄ¸ö×Ó½Úµã
+                    // å¦‚æœå­èŠ‚ç‚¹æ­£åœ¨è¿è¡Œï¼Œåˆ™æ•´ä¸ªSelectorä¹Ÿå¤„äºè¿è¡ŒçŠ¶æ€ï¼Œå¹¶â€œè®°ä½â€æ˜¯å“ªä¸ªå­èŠ‚ç‚¹
                     return NodeState.RUNNING;
 
                 case NodeState.SUCCESS:
-                    // ÈÎºÎÒ»¸ö×Ó½Úµã³É¹¦£¬ÔòÕû¸öSelectorÁ¢¼´³É¹¦
-                    Reset(); // ÖØÖÃË÷Òı£¬ÒÔ±ãÏÂ´Î¾ö²ß¿ÉÒÔ´ÓÍ·¿ªÊ¼
+                    // ä»»ä½•ä¸€ä¸ªå­èŠ‚ç‚¹æˆåŠŸï¼Œåˆ™æ•´ä¸ªSelectorç«‹å³æˆåŠŸ
+                    Reset(); // é‡ç½®ç´¢å¼•ï¼Œä»¥ä¾¿ä¸‹æ¬¡å†³ç­–å¯ä»¥ä»å¤´å¼€å§‹
                     return NodeState.SUCCESS;
 
                 case NodeState.FAILURE:
-                    // ¡¾ºËĞÄĞŞÕı¡¿Èç¹û×Ó½ÚµãÊ§°ÜÁË£¬Ôò³¢ÊÔÏÂÒ»¸ö
+                    // ã€æ ¸å¿ƒä¿®æ­£ã€‘å¦‚æœå­èŠ‚ç‚¹å¤±è´¥äº†ï¼Œåˆ™å°è¯•ä¸‹ä¸€ä¸ª
                     currentChildIndex++;
-                    // Èç¹û»¹ÓĞ¸ü¶à×Ó½Úµã£¬ÔòÁ¢¼´ÔÚ±¾Ö¡³¢ÊÔÏÂÒ»¸ö
+                    // å¦‚æœè¿˜æœ‰æ›´å¤šå­èŠ‚ç‚¹ï¼Œåˆ™ç«‹å³åœ¨æœ¬å¸§å°è¯•ä¸‹ä¸€ä¸ª
                     if (currentChildIndex < children.Count)
                     {
-                        return Evaluate(); // Í¨¹ıµİ¹éµ÷ÓÃ×Ô¼ºÀ´ÊµÏÖ
+                        return Evaluate(); // é€šè¿‡é€’å½’è°ƒç”¨è‡ªå·±æ¥å®ç°
                     }
                     else
                     {
-                        // ËùÓĞ×Ó½Úµã¶¼Ê§°ÜÁË£¬ÔòÕû¸öSelector²ÅËãÊ§°Ü
+                        // æ‰€æœ‰å­èŠ‚ç‚¹éƒ½å¤±è´¥äº†ï¼Œåˆ™æ•´ä¸ªSelectoræ‰ç®—å¤±è´¥
                         Reset();
                         return NodeState.FAILURE;
                     }
             }
         }
 
-        // Èç¹ûÃ»ÓĞ×Ó½Úµã£¬ÔòÄ¬ÈÏÊ§°Ü
+        // å¦‚æœæ²¡æœ‰å­èŠ‚ç‚¹ï¼Œåˆ™é»˜è®¤å¤±è´¥
         Reset();
         return NodeState.FAILURE;
     }
 
-    // ÖØÖÃ×´Ì¬
+    // é‡ç½®çŠ¶æ€
     private void Reset()
     {
         currentChildIndex = 0;

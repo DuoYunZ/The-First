@@ -1,9 +1,9 @@
-// AttackType.cs
+ï»¿// AttackType.cs
 public enum AttackType
 {
-    Standard,       // ±ê×¼¹¥»÷£¬Ôì³ÉÆÕÍ¨ÉËº¦
-    Reflectable,    // ¿É·´µ¯µÄ¹¥»÷£¬Èç¼¤¹â
+    Standard,       // æ ‡å‡†æ”»å‡»ï¼Œé€ æˆæ™®é€šä¼¤å®³
+    Reflectable,    // å¯åå¼¹çš„æ”»å‡»ï¼Œå¦‚æ¿€å…‰
     Ignition,
-    ShieldBreaking, // ¿ÉÖ±½Ó»÷ÆÆ»¤¶ÜµÄ¹¥»÷£¬Èç³å×²
-    Unblockable     // (Î´À´À©Õ¹) ²»¿É±»»¤¶Ü¸ñµ²µÄ¹¥»÷
+    ShieldBreaking, // å¯ç›´æ¥å‡»ç ´æŠ¤ç›¾çš„æ”»å‡»ï¼Œå¦‚å†²æ’
+    Unblockable     // (æœªæ¥æ‰©å±•) ä¸å¯è¢«æŠ¤ç›¾æ ¼æŒ¡çš„æ”»å‡»
 }

@@ -1,27 +1,27 @@
-// --- WeaponCooldownMaterial.cs ---
+ï»¿// --- WeaponCooldownMaterial.cs ---
 using UnityEngine;
 using System.Collections;
 
 public class WeaponCooldownMaterial : MonoBehaviour
 {
-    [Header("×é¼şÒıÓÃ")]
-    [Tooltip("ĞèÒª¿ØÖÆ²ÄÖÊµÄäÖÈ¾Æ÷£¬Í¨³£ÊÇÎäÆ÷Ä£ĞÍÉÏµÄ MeshRenderer")]
+    [Header("ç»„ä»¶å¼•ç”¨")]
+    [Tooltip("éœ€è¦æ§åˆ¶æè´¨çš„æ¸²æŸ“å™¨ï¼Œé€šå¸¸æ˜¯æ­¦å™¨æ¨¡å‹ä¸Šçš„ MeshRenderer")]
     public Renderer targetRenderer;
 
-    [Header("·¢¹âÉèÖÃ")]
-    [Tooltip("×Ô·¢¹âµÄ»ù´¡ÑÕÉ«")]
-    [ColorUsage(true, true)] // ÔÊĞíÔÚÑÕÉ«Ê°È¡Æ÷ÖĞÊ¹ÓÃHDR
-    public Color defaultEmissionColor = new Color(1.0f, 0.5f, 0.0f); // Ä¬ÈÏÑÕÉ«
+    [Header("å‘å…‰è®¾ç½®")]
+    [Tooltip("è‡ªå‘å…‰çš„åŸºç¡€é¢œè‰²")]
+    [ColorUsage(true, true)] // å…è®¸åœ¨é¢œè‰²æ‹¾å–å™¨ä¸­ä½¿ç”¨HDR
+    public Color defaultEmissionColor = new Color(1.0f, 0.5f, 0.0f); // é»˜è®¤é¢œè‰²
 
     private Color currentEmissionColor;
 
-    [Tooltip("ÀäÈ´¿ªÊ¼Ê±µÄ×îµÍ·¢¹âÇ¿¶È")]
+    [Tooltip("å†·å´å¼€å§‹æ—¶çš„æœ€ä½å‘å…‰å¼ºåº¦")]
     public float minIntensity = -10f;
 
-    [Tooltip("ÀäÈ´Íê³ÉÊ±µÄ×î¸ß·¢¹âÇ¿¶È")]
+    [Tooltip("å†·å´å®Œæˆæ—¶çš„æœ€é«˜å‘å…‰å¼ºåº¦")]
     public float maxIntensity = 5f;
 
-    // --- Ë½ÓĞ±äÁ¿ ---
+    // --- ç§æœ‰å˜é‡ ---
     private MaterialPropertyBlock propBlock;
     private static readonly int EmissionColorID = Shader.PropertyToID("_EmissionColor");
     private Coroutine activeCooldownCoroutine;
@@ -48,19 +48,19 @@ public class WeaponCooldownMaterial : MonoBehaviour
     }
 
     /// <summary>
-    /// ¿ªÊ¼ÀäÈ´ÊÓ¾õĞ§¹û
+    /// å¼€å§‹å†·å´è§†è§‰æ•ˆæœ
     /// </summary>
-    /// <param name="duration">ÀäÈ´³ÖĞøÊ±¼ä (Ãë)</param>
+    /// <param name="duration">å†·å´æŒç»­æ—¶é—´ (ç§’)</param>
     public void StartCooldown(float duration)
     {
         if (activeCooldownCoroutine != null) StopCoroutine(activeCooldownCoroutine);
 
         if (duration <= 0) { SetChargedEffect(); return; }
 
-        // ¡¾ĞÂÔö¡¿Ë«ÖØ±£ÏÕ£ºÈç¹ûÔÚ·Ç¼¤»îÎïÌåÉÏÆô¶¯£¬Ö±½ÓÌø¹ı²¢ÉèÖÃÂú×´Ì¬
+        // ã€æ–°å¢ã€‘åŒé‡ä¿é™©ï¼šå¦‚æœåœ¨éæ¿€æ´»ç‰©ä½“ä¸Šå¯åŠ¨ï¼Œç›´æ¥è·³è¿‡å¹¶è®¾ç½®æ»¡çŠ¶æ€
         if (!this.gameObject.activeInHierarchy)
         {
-            // Debug.LogWarning($"[Cooldown] ÊÔÍ¼ÔÚ·Ç¼¤»îÎïÌå {name} ÉÏÆô¶¯Ğ­³Ì£¬ÒÑºöÂÔ¡£");
+            // Debug.LogWarning($"[Cooldown] è¯•å›¾åœ¨éæ¿€æ´»ç‰©ä½“ {name} ä¸Šå¯åŠ¨åç¨‹ï¼Œå·²å¿½ç•¥ã€‚");
             SetChargedEffect();
             return;
         }
@@ -84,7 +84,7 @@ public class WeaponCooldownMaterial : MonoBehaviour
     }
 
     /// <summary>
-    /// Ö±½Ó½«ÎäÆ÷ÉèÖÃÎªÂúÄÜÁ¿·¢¹â×´Ì¬
+    /// ç›´æ¥å°†æ­¦å™¨è®¾ç½®ä¸ºæ»¡èƒ½é‡å‘å…‰çŠ¶æ€
     /// </summary>
     public void SetChargedEffect()
     {
@@ -92,7 +92,7 @@ public class WeaponCooldownMaterial : MonoBehaviour
     }
 
     /// <summary>
-    /// ÉèÖÃ·¢¹âÇ¿¶È
+    /// è®¾ç½®å‘å…‰å¼ºåº¦
     /// </summary>
     private void SetIntensity(float intensity)
     {

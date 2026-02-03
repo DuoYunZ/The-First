@@ -1,24 +1,24 @@
-using System;
+ï»¿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
-// ¹ÒÔØÔÚ MechRoot ÉÏ
+// æŒ‚è½½åœ¨ MechRoot ä¸Š
 public class PlayerLevelManager : MonoBehaviour
 {
     #region Singleton Pattern
-    // 1. ´´½¨Ò»¸ö¹«¹²µÄ¡¢¾²Ì¬µÄ¡¢Ö»¶ÁµÄÊµÀıÊôĞÔ
+    // 1. åˆ›å»ºä¸€ä¸ªå…¬å…±çš„ã€é™æ€çš„ã€åªè¯»çš„å®ä¾‹å±æ€§
     public static PlayerLevelManager Instance { get; private set; }
 
-    // 2. ÔÚ Awake ·½·¨ÖĞÉèÖÃÕâ¸öÊµÀı
+    // 2. åœ¨ Awake æ–¹æ³•ä¸­è®¾ç½®è¿™ä¸ªå®ä¾‹
     private void Awake()
     {
-        // Èç¹û»¹Ã»ÓĞÊµÀı£¬ÄÇÃ´½«Õâ¸ö¶ÔÏóÉèÎªÊµÀı
+        // å¦‚æœè¿˜æ²¡æœ‰å®ä¾‹ï¼Œé‚£ä¹ˆå°†è¿™ä¸ªå¯¹è±¡è®¾ä¸ºå®ä¾‹
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // Èç¹ûÄãĞèÒªÕâ¸ö¹ÜÀíÆ÷¿ç³¡¾°´æÔÚ£¬¿ÉÒÔÈ¡ÏûÕâĞĞ×¢ÊÍ
+            // DontDestroyOnLoad(gameObject); // å¦‚æœä½ éœ€è¦è¿™ä¸ªç®¡ç†å™¨è·¨åœºæ™¯å­˜åœ¨ï¼Œå¯ä»¥å–æ¶ˆè¿™è¡Œæ³¨é‡Š
         }
-        // Èç¹ûÊµÀıÒÑ´æÔÚ£¬²¢ÇÒ²»ÊÇµ±Ç°Õâ¸ö¶ÔÏó£¬ÔòÏú»Ùµ±Ç°Õâ¸ö¶àÓàµÄ¶ÔÏó
+        // å¦‚æœå®ä¾‹å·²å­˜åœ¨ï¼Œå¹¶ä¸”ä¸æ˜¯å½“å‰è¿™ä¸ªå¯¹è±¡ï¼Œåˆ™é”€æ¯å½“å‰è¿™ä¸ªå¤šä½™çš„å¯¹è±¡
         else if (Instance != this)
         {
             Destroy(gameObject);
@@ -28,86 +28,86 @@ public class PlayerLevelManager : MonoBehaviour
 
     public enum LevelingScheme
     {
-        Quadratic,      // ¶ş´Î·½Ôö³¤ (ÍÆ¼ö£ºÊÊºÏ´ó¶àÊıÈâ¸ë£¬ºóÆÚÆ½»¬±äÄÑ)
-        Exponential,    // Ö¸ÊıÔö³¤ (¼«ÄÑ£ººóÆÚ¼¸ºõÉı²»¶¯)
-        Linear,         // ÏßĞÔ (¼òµ¥£ººóÆÚÉı¼¶Ì«¿ì£¬²»ÍÆ¼ö)
-        CustomCurve     // ×Ô¶¨ÒåÇúÏß (×îÁé»î£ºÔÚ Inspector Ãæ°å»­Ïß)
+        Quadratic,      // äºŒæ¬¡æ–¹å¢é•¿ (æ¨èï¼šé€‚åˆå¤§å¤šæ•°è‚‰é¸½ï¼ŒåæœŸå¹³æ»‘å˜éš¾)
+        Exponential,    // æŒ‡æ•°å¢é•¿ (æéš¾ï¼šåæœŸå‡ ä¹å‡ä¸åŠ¨)
+        Linear,         // çº¿æ€§ (ç®€å•ï¼šåæœŸå‡çº§å¤ªå¿«ï¼Œä¸æ¨è)
+        CustomCurve     // è‡ªå®šä¹‰æ›²çº¿ (æœ€çµæ´»ï¼šåœ¨ Inspector é¢æ¿ç”»çº¿)
     }
 
-    [Header("µÈ¼¶Óë¾­Ñé")]
+    [Header("ç­‰çº§ä¸ç»éªŒ")]
     public int currentLevel = 1;
     public int currentExperience = 0;
-    public int experienceToNextLevel = 10; // Éıµ½ÏÂÒ»¼¶ËùĞèµÄ¾­Ñé
+    public int experienceToNextLevel = 10; // å‡åˆ°ä¸‹ä¸€çº§æ‰€éœ€çš„ç»éªŒ
 
     public event Action<int> OnLevelUp;
 
-    [Header("¾­ÑéÇúÏßÅäÖÃ")]
-    [Tooltip("Ñ¡Ôñ¾­ÑéÔö³¤µÄ¼ÆËã¹«Ê½")]
+    [Header("ç»éªŒæ›²çº¿é…ç½®")]
+    [Tooltip("é€‰æ‹©ç»éªŒå¢é•¿çš„è®¡ç®—å…¬å¼")]
     public LevelingScheme levelingScheme = LevelingScheme.Quadratic;
 
-    [Header("²ÎÊıÉèÖÃ (½ö¶Ô·ÇÇúÏßÄ£Ê½ÓĞĞ§)")]
-    [Tooltip("»ù´¡¾­ÑéÖµ (1¼¶Éı2¼¶´ó¸ÅĞèÒª¶àÉÙ)")]
+    [Header("å‚æ•°è®¾ç½® (ä»…å¯¹éæ›²çº¿æ¨¡å¼æœ‰æ•ˆ)")]
+    [Tooltip("åŸºç¡€ç»éªŒå€¼ (1çº§å‡2çº§å¤§æ¦‚éœ€è¦å¤šå°‘)")]
     public int baseXp = 10;
 
-    [Tooltip("ÏßĞÔÔö³¤ÏµÊı (Ó°ÏìÇ°ÆÚ½Ú×à)")]
+    [Tooltip("çº¿æ€§å¢é•¿ç³»æ•° (å½±å“å‰æœŸèŠ‚å¥)")]
     public float linearFactor = 10f;
 
-    [Tooltip("¶ş´Î·½/Ö¸ÊıÔö³¤ÏµÊı (Ó°ÏìºóÆÚ½Ú×à£¬ÊıÖµÔ½´óÔ¼ÄÑ)")]
+    [Tooltip("äºŒæ¬¡æ–¹/æŒ‡æ•°å¢é•¿ç³»æ•° (å½±å“åæœŸèŠ‚å¥ï¼Œæ•°å€¼è¶Šå¤§çº¦éš¾)")]
     public float powerFactor = 1.5f;
 
-    [Header("×Ô¶¨ÒåÇúÏß (½ö CustomCurve Ä£Ê½ÓĞĞ§)")]
-    [Tooltip("XÖá=µÈ¼¶, YÖá=ËùĞè¾­Ñé¡£Çë½«XÖá·¶Î§ÉèÎª 1~100 (»òÄãµÄ×î´óµÈ¼¶)")]
+    [Header("è‡ªå®šä¹‰æ›²çº¿ (ä»… CustomCurve æ¨¡å¼æœ‰æ•ˆ)")]
+    [Tooltip("Xè½´=ç­‰çº§, Yè½´=æ‰€éœ€ç»éªŒã€‚è¯·å°†Xè½´èŒƒå›´è®¾ä¸º 1~100 (æˆ–ä½ çš„æœ€å¤§ç­‰çº§)")]
     public AnimationCurve xpCurve = new AnimationCurve(new Keyframe(1, 10), new Keyframe(100, 10000));
 
     private void Start()
     {
-        // ³õÊ¼»¯µÚÒ»¼¶ËùĞèµÄ¾­Ñé
+        // åˆå§‹åŒ–ç¬¬ä¸€çº§æ‰€éœ€çš„ç»éªŒ
         experienceToNextLevel = CalculateNextLevelXP(currentLevel);
     }
 
     /// <summary>
-    /// Ôö¼Ó¾­ÑéÖµ¡£
+    /// å¢åŠ ç»éªŒå€¼ã€‚
     /// </summary>
-    /// <param name="amount">Ôö¼ÓµÄ¾­ÑéÊıÁ¿</param>
+    /// <param name="amount">å¢åŠ çš„ç»éªŒæ•°é‡</param>
     public void AddExperience(int amount)
     {
         currentExperience += amount;
-        Debug.Log($"»ñµÃ {amount} XP. µ±Ç°: {currentExperience} / {experienceToNextLevel}");
+        Debug.Log($"è·å¾— {amount} XP. å½“å‰: {currentExperience} / {experienceToNextLevel}");
 
-        // ¼ì²éÊÇ·ñÉı¼¶
-        while (currentExperience >= experienceToNextLevel) // Ê¹ÓÃ while ÒÔ´¦ÀíÒ»´Î»ñµÃºÜ¶à¾­ÑéÁ¬Éı¶à¼¶µÄÇé¿ö
+        // æ£€æŸ¥æ˜¯å¦å‡çº§
+        while (currentExperience >= experienceToNextLevel) // ä½¿ç”¨ while ä»¥å¤„ç†ä¸€æ¬¡è·å¾—å¾ˆå¤šç»éªŒè¿å‡å¤šçº§çš„æƒ…å†µ
         {
             LevelUp();
         }
 
-        // (¿ÉÑ¡) ÔÚÕâÀï¸üĞÂ¾­ÑéÌõ UI
+        // (å¯é€‰) åœ¨è¿™é‡Œæ›´æ–°ç»éªŒæ¡ UI
         // UpdateXpUI();
     }
 
     /// <summary>
-    /// ´¦ÀíÉı¼¶Âß¼­¡£
+    /// å¤„ç†å‡çº§é€»è¾‘ã€‚
     /// </summary>
     private void LevelUp()
     {
-        // --- ÈÕÖ¾ 1 ---
+        // --- æ—¥å¿— 1 ---
         Debug.Log("<color=lime>-- CHECKPOINT 1: LevelUp() method in PlayerLevelManager was called! --</color>");
 
         currentLevel++;
-        currentExperience -= experienceToNextLevel; // ¼õÈ¥µ±Ç°µÈ¼¶ËùĞèµÄ¾­Ñé
+        currentExperience -= experienceToNextLevel; // å‡å»å½“å‰ç­‰çº§æ‰€éœ€çš„ç»éªŒ
 
-        // ¼ÆËãÉıµ½ÔÙÏÂÒ»¼¶ËùĞèµÄ¾­Ñé (ÕâÀïÓÃÒ»¸ö¼òµ¥µÄÊ¾Àı¹«Ê½)
+        // è®¡ç®—å‡åˆ°å†ä¸‹ä¸€çº§æ‰€éœ€çš„ç»éªŒ (è¿™é‡Œç”¨ä¸€ä¸ªç®€å•çš„ç¤ºä¾‹å…¬å¼)
         experienceToNextLevel = CalculateNextLevelXP(currentLevel);
 
-        Debug.Log($"--- LEVEL UP! --- ´ïµ½µÈ¼¶ {currentLevel}. ÏÂÒ»¼¶ĞèÒª {experienceToNextLevel} XP.");
+        Debug.Log($"--- LEVEL UP! --- è¾¾åˆ°ç­‰çº§ {currentLevel}. ä¸‹ä¸€çº§éœ€è¦ {experienceToNextLevel} XP.");
 
-        // ´¥·¢Éı¼¶ÊÂ¼ş
-        OnLevelUp?.Invoke(currentLevel); // ´¥·¢Éı¼¶ÊÂ¼ş£¬Í¨Öª UpgradeManager
+        // è§¦å‘å‡çº§äº‹ä»¶
+        OnLevelUp?.Invoke(currentLevel); // è§¦å‘å‡çº§äº‹ä»¶ï¼Œé€šçŸ¥ UpgradeManager
 
-        // (¿ÉÑ¡) ¿ÉÒÔÔÚÕâÀïÌí¼ÓÉı¼¶ÌØĞ§¡¢ÒôĞ§µÈ
+        // (å¯é€‰) å¯ä»¥åœ¨è¿™é‡Œæ·»åŠ å‡çº§ç‰¹æ•ˆã€éŸ³æ•ˆç­‰
     }
 
     /// <summary>
-    /// ¼ÆËãÉıµ½Ö¸¶¨µÈ¼¶ËùĞèµÄ¾­ÑéÖµ (Ê¾Àı)
+    /// è®¡ç®—å‡åˆ°æŒ‡å®šç­‰çº§æ‰€éœ€çš„ç»éªŒå€¼ (ç¤ºä¾‹)
     /// </summary>
     private int CalculateNextLevelXP(int level)
     {
@@ -116,34 +116,34 @@ public class PlayerLevelManager : MonoBehaviour
         switch (levelingScheme)
         {
             case LevelingScheme.Linear:
-                // ¹«Ê½: Base + Level * Linear
-                // È±µã: ºóÆÚÌ«ÈİÒ×Éı¼¶
+                // å…¬å¼: Base + Level * Linear
+                // ç¼ºç‚¹: åæœŸå¤ªå®¹æ˜“å‡çº§
                 nextReq = baseXp + (level * linearFactor);
                 break;
 
             case LevelingScheme.Quadratic:
-                // ¹«Ê½: Base + Level * Linear + Level^2 * Power
-                // ÓÅµã: ÍêÃÀÆõºÏ¸î²İÓÎÏ·¡£Ç°ÆÚÏßĞÔ£¬ºóÆÚËæ×ÅÉ±¹ÖÊıÆ½·½¼¶Ôö³¤£¬ÄÑ¶ÈÊÊÖĞ¡£
-                // Ê¾Àı: Lvl 10=160xp, Lvl 50=4260xp (¼ÙÉè param=1.5)
+                // å…¬å¼: Base + Level * Linear + Level^2 * Power
+                // ä¼˜ç‚¹: å®Œç¾å¥‘åˆå‰²è‰æ¸¸æˆã€‚å‰æœŸçº¿æ€§ï¼ŒåæœŸéšç€æ€æ€ªæ•°å¹³æ–¹çº§å¢é•¿ï¼Œéš¾åº¦é€‚ä¸­ã€‚
+                // ç¤ºä¾‹: Lvl 10=160xp, Lvl 50=4260xp (å‡è®¾ param=1.5)
                 nextReq = baseXp + (level * linearFactor) + (Mathf.Pow(level, 2) * powerFactor);
                 break;
 
             case LevelingScheme.Exponential:
-                // ¹«Ê½: Base * Power^(Level-1)
-                // È±µã: ¼«ÈİÒ×µ¼ÖÂÊıÖµÒç³ö»òºóÆÚÍêÈ«Éı²»¶¯
+                // å…¬å¼: Base * Power^(Level-1)
+                // ç¼ºç‚¹: æå®¹æ˜“å¯¼è‡´æ•°å€¼æº¢å‡ºæˆ–åæœŸå®Œå…¨å‡ä¸åŠ¨
                 nextReq = baseXp * Mathf.Pow(powerFactor, level - 1);
                 break;
 
             case LevelingScheme.CustomCurve:
-                // Ö±½Ó´ÓÍ¼±íÖĞ¶ÁÈ¡
+                // ç›´æ¥ä»å›¾è¡¨ä¸­è¯»å–
                 nextReq = xpCurve.Evaluate(level);
                 break;
         }
 
-        return Mathf.Max(10, Mathf.FloorToInt(nextReq)); // È·±£ÖÁÉÙĞèÒª10µã£¬·ÀÖ¹¸ºÊı»ò0
+        return Mathf.Max(10, Mathf.FloorToInt(nextReq)); // ç¡®ä¿è‡³å°‘éœ€è¦10ç‚¹ï¼Œé˜²æ­¢è´Ÿæ•°æˆ–0
     }
 
-    // (¿ÉÑ¡) »ñÈ¡µ±Ç°µÈ¼¶µÈĞÅÏ¢µÄ·½·¨
+    // (å¯é€‰) è·å–å½“å‰ç­‰çº§ç­‰ä¿¡æ¯çš„æ–¹æ³•
     public float GetXPProgressNormalized()
     {
         if (experienceToNextLevel == 0) return 1f;

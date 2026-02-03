@@ -1,19 +1,19 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(Collider))]
 public class BlackHoleField : MonoBehaviour
 {
-    private float pullSpeed; // ÕâÀïÎÒÃÇ°Ñ Force Àí½âÎª Speed (Ã¿ÃëÒÆ¶¯¶àÉÙÃ×)
+    private float pullSpeed; // è¿™é‡Œæˆ‘ä»¬æŠŠ Force ç†è§£ä¸º Speed (æ¯ç§’ç§»åŠ¨å¤šå°‘ç±³)
     private float duration;
 
-    // ¼ÇÂ¼ÔÚ·¶Î§ÄÚµÄµĞÈË
+    // è®°å½•åœ¨èŒƒå›´å†…çš„æ•Œäºº
     private HashSet<Transform> victims = new HashSet<Transform>();
 
     public void Initialize(float force, float lifeTime)
     {
-        // ÕâÀïµÄ force ½¨ÒéÌî 5-10 ×óÓÒ
+        // è¿™é‡Œçš„ force å»ºè®®å¡« 5-10 å·¦å³
         this.pullSpeed = force;
         this.duration = lifeTime;
         Destroy(gameObject, duration);
@@ -31,45 +31,45 @@ public class BlackHoleField : MonoBehaviour
     {
         if (other.CompareTag("Enemy"))
         {
-            // Àë¿ªºÚ¶´Ê±£¬»Ö¸´µĞÈËµÄ¿ØÖÆÈ¨ (¿ÉÑ¡)
+            // ç¦»å¼€é»‘æ´æ—¶ï¼Œæ¢å¤æ•Œäººçš„æ§åˆ¶æƒ (å¯é€‰)
             // RestoreEnemyControl(other.transform);
             victims.Remove(other.transform);
         }
     }
 
-    // Ê¹ÓÃ LateUpdate È·±£ÔÚµĞÈËAI¼ÆËãÍêÒÆ¶¯ºó£¬ÎÒÃÇÇ¿ĞĞ¸²¸ÇËüµÄÎ»ÖÃ
+    // ä½¿ç”¨ LateUpdate ç¡®ä¿åœ¨æ•ŒäººAIè®¡ç®—å®Œç§»åŠ¨åï¼Œæˆ‘ä»¬å¼ºè¡Œè¦†ç›–å®ƒçš„ä½ç½®
     void LateUpdate()
     {
-        // 1. ÇåÀíÒÑËÀÍöµÄµĞÈË
+        // 1. æ¸…ç†å·²æ­»äº¡çš„æ•Œäºº
         victims.RemoveWhere(t => t == null);
 
         foreach (var enemyTransform in victims)
         {
-            // 2. Ñ¹ÖÆµĞÈËµÄ AI ÒÆ¶¯ (·ÀÖ¹ËüÕõÔú)
+            // 2. å‹åˆ¶æ•Œäººçš„ AI ç§»åŠ¨ (é˜²æ­¢å®ƒæŒ£æ‰)
             NavMeshAgent agent = enemyTransform.GetComponent<NavMeshAgent>();
             if (agent != null && agent.enabled)
             {
-                // ½« AI µÄËÙ¶È¹éÁã£¬Í¨¹ı¡°¶³½á¡±AI À´·ÀÖ¹ËüÂÒÅÜ
-                // (±È agent.enabled = false ¸ü°²È«£¬²»»áµ¼ÖÂ Agent ´©Ç½»òÖØÖÃÂ·¾¶)
+                // å°† AI çš„é€Ÿåº¦å½’é›¶ï¼Œé€šè¿‡â€œå†»ç»“â€AI æ¥é˜²æ­¢å®ƒä¹±è·‘
+                // (æ¯” agent.enabled = false æ›´å®‰å…¨ï¼Œä¸ä¼šå¯¼è‡´ Agent ç©¿å¢™æˆ–é‡ç½®è·¯å¾„)
                 agent.velocity = Vector3.zero;
 
-                // Èç¹ûÄã·¢ÏÖ¹Ö»¹ÊÇÔÚ¶¶¶¯£¬¿ÉÒÔ³¢ÊÔ¶ÌÔİ½ûÓÃ updatePosition
+                // å¦‚æœä½ å‘ç°æ€ªè¿˜æ˜¯åœ¨æŠ–åŠ¨ï¼Œå¯ä»¥å°è¯•çŸ­æš‚ç¦ç”¨ updatePosition
                 // agent.updatePosition = false; 
             }
 
-            // 3. ¼ÆËãÎü¸½Î»ÒÆ
-            // Vector3.MoveTowards µÄÄ§Á¦£ºËü»á°ÑÎïÌåÒÆÏòÄ¿±ê£¬
-            // µ«Èç¹û¾àÀëĞ¡ÓÚÕâÒ»Ö¡µÄÒÆ¶¯Á¿£¬Ëü»áÖ±½ÓÈÃÎïÌåÍ£ÔÚÄ¿±êµã£¬¾ø²»¹ı³å£¡
+            // 3. è®¡ç®—å¸é™„ä½ç§»
+            // Vector3.MoveTowards çš„é­”åŠ›ï¼šå®ƒä¼šæŠŠç‰©ä½“ç§»å‘ç›®æ ‡ï¼Œ
+            // ä½†å¦‚æœè·ç¦»å°äºè¿™ä¸€å¸§çš„ç§»åŠ¨é‡ï¼Œå®ƒä¼šç›´æ¥è®©ç‰©ä½“åœåœ¨ç›®æ ‡ç‚¹ï¼Œç»ä¸è¿‡å†²ï¼
             float step = pullSpeed * Time.deltaTime;
 
-            // Ä¿±ê¸ß¶È£º±£³Ö¹ÖÎïµ±Ç°µÄ Y Öá£¬»òÕßÉÔÎ¢À­ÏòºÚ¶´ÖĞĞÄµÄ Y
-            // ÕâÀïÎÒÃÇÖ»ÔÚË®Æ½ÃæÉÏÎü£¬·ÀÖ¹°Ñ¹ÖÀ­½øµØÀï
+            // ç›®æ ‡é«˜åº¦ï¼šä¿æŒæ€ªç‰©å½“å‰çš„ Y è½´ï¼Œæˆ–è€…ç¨å¾®æ‹‰å‘é»‘æ´ä¸­å¿ƒçš„ Y
+            // è¿™é‡Œæˆ‘ä»¬åªåœ¨æ°´å¹³é¢ä¸Šå¸ï¼Œé˜²æ­¢æŠŠæ€ªæ‹‰è¿›åœ°é‡Œ
             Vector3 targetPos = transform.position;
             targetPos.y = enemyTransform.position.y;
 
             enemyTransform.position = Vector3.MoveTowards(enemyTransform.position, targetPos, step);
 
-            // 4. (¿ÉÑ¡) Èç¹ûÄãÏëÍ¬²½ Agent µÄÂß¼­Î»ÖÃ£¬·ÀÖ¹Ë²ÒÆºó AI ´íÂÒ
+            // 4. (å¯é€‰) å¦‚æœä½ æƒ³åŒæ­¥ Agent çš„é€»è¾‘ä½ç½®ï¼Œé˜²æ­¢ç¬ç§»å AI é”™ä¹±
             if (agent != null && agent.enabled)
             {
                 agent.nextPosition = enemyTransform.position;
@@ -77,7 +77,7 @@ public class BlackHoleField : MonoBehaviour
         }
     }
 
-    // Ïú»ÙÊ±ÇåÀíÁĞ±í£¨Ëä·Ç±ØĞë£¬µ«ºÃÏ°¹ß£©
+    // é”€æ¯æ—¶æ¸…ç†åˆ—è¡¨ï¼ˆè™½éå¿…é¡»ï¼Œä½†å¥½ä¹ æƒ¯ï¼‰
     void OnDestroy()
     {
         victims.Clear();

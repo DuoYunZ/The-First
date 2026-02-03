@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -16,28 +16,28 @@ public class SettlementUI : MonoBehaviour
         public TextMeshProUGUI title;
         public TextMeshProUGUI value;
 
-        // [ĞÂÔö] ÔËĞĞÊ±ÄÚ²¿»º´æ£¬²»ĞèÒªÔÚInspectorÉèÖÃ
+        // [æ–°å¢] è¿è¡Œæ—¶å†…éƒ¨ç¼“å­˜ï¼Œä¸éœ€è¦åœ¨Inspectorè®¾ç½®
         [HideInInspector] public RectTransform rect;
         [HideInInspector] public Vector2 originPos;
     }
 
-    [Header("¶¥²¿Êı¾İ×é")]
+    [Header("é¡¶éƒ¨æ•°æ®ç»„")]
     public StatUI timeStat;
     public StatUI killStat;
     public StatUI goldStat;
 
-    [Header("¶¯»­ÉèÖÃ")]
-    [Tooltip("Èë³¡¶¯»­µÄÎ»ÒÆÆ«ÒÆÁ¿ (ÀıÈç x=-100 ´ú±í´Ó×ó±ß·ÉÈë)")]
+    [Header("åŠ¨ç”»è®¾ç½®")]
+    [Tooltip("å…¥åœºåŠ¨ç”»çš„ä½ç§»åç§»é‡ (ä¾‹å¦‚ x=-100 ä»£è¡¨ä»å·¦è¾¹é£å…¥)")]
     public Vector2 moveOffset = new Vector2(-100f, 0f);
-    [Tooltip("µ¥¸öÍ³¼ÆÏîµÄ¶¯»­×ÜÊ±³¤")]
+    [Tooltip("å•ä¸ªç»Ÿè®¡é¡¹çš„åŠ¨ç”»æ€»æ—¶é•¿")]
     public float statAnimDuration = 0.5f;
 
-    [Header("Í¨ÓÃUI")]
+    [Header("é€šç”¨UI")]
     public GameObject panelRoot;
     public TextMeshProUGUI mainTitleText;
     public GameObject buttonsPanel;
 
-    [Header("ÎäÆ÷ÁĞ±í")]
+    [Header("æ­¦å™¨åˆ—è¡¨")]
     public Transform weaponStatContainer;
     public GameObject weaponStatItemPrefab;
 
@@ -45,10 +45,10 @@ public class SettlementUI : MonoBehaviour
     private int finalKills;
     private int finalGold;
 
-    // [ĞÂÔö] Awake ÓÃÓÚ»º´æÎ»ÖÃ
+    // [æ–°å¢] Awake ç”¨äºç¼“å­˜ä½ç½®
     void Awake()
     {
-        // ÌáÇ°»º´æ RectTransform ºÍ Ô­Ê¼Î»ÖÃ
+        // æå‰ç¼“å­˜ RectTransform å’Œ åŸå§‹ä½ç½®
         CacheStatPos(timeStat);
         CacheStatPos(killStat);
         CacheStatPos(goldStat);
@@ -71,12 +71,12 @@ public class SettlementUI : MonoBehaviour
         panelRoot.SetActive(true);
         Time.timeScale = 0f;
 
-        mainTitleText.text = isVictory ? "ÈÎÎñÍê³É" : "ÈÎÎñÊ§°Ü";
+        mainTitleText.text = isVictory ? "ä»»åŠ¡å®Œæˆ" : "ä»»åŠ¡å¤±è´¥";
         mainTitleText.color = isVictory ? Color.yellow : Color.white;
 
         if (buttonsPanel) buttonsPanel.SetActive(false);
 
-        // 1. ÖØÖÃ×´Ì¬ (Î»ÖÃÅ²µ½Æ«ÒÆµã£¬Í¸Ã÷¶È¹éÁã)
+        // 1. é‡ç½®çŠ¶æ€ (ä½ç½®æŒªåˆ°åç§»ç‚¹ï¼Œé€æ˜åº¦å½’é›¶)
         ResetStatUI(timeStat);
         ResetStatUI(killStat);
         ResetStatUI(goldStat);
@@ -96,7 +96,7 @@ public class SettlementUI : MonoBehaviour
         if (stat.root)
         {
             stat.root.SetActive(false);
-            // [ºËĞÄ] ÉèÖÃµ½Æ«ÒÆÎ»ÖÃ
+            // [æ ¸å¿ƒ] è®¾ç½®åˆ°åç§»ä½ç½®
             if (stat.rect != null)
             {
                 stat.rect.anchoredPosition = stat.originPos + moveOffset;
@@ -109,14 +109,14 @@ public class SettlementUI : MonoBehaviour
 
     private IEnumerator FullSequence(Dictionary<string, int> damageStats)
     {
-        // --- ½×¶Î A: ÒÀ´Î²¥·Å¶¥²¿Èı¸öÊı¾İ ---
+        // --- é˜¶æ®µ A: ä¾æ¬¡æ’­æ”¾é¡¶éƒ¨ä¸‰ä¸ªæ•°æ® ---
         yield return StartCoroutine(AnimateSingleStat(timeStat, finalTime, true));
         yield return StartCoroutine(AnimateSingleStat(killStat, finalKills, false));
         yield return StartCoroutine(AnimateSingleStat(goldStat, finalGold, false));
 
         yield return new WaitForSecondsRealtime(0.2f);
 
-        // --- ½×¶Î B: ÎäÆ÷ÁĞ±í (±£³ÖÖ®Ç°µÄÂß¼­) ---
+        // --- é˜¶æ®µ B: æ­¦å™¨åˆ—è¡¨ (ä¿æŒä¹‹å‰çš„é€»è¾‘) ---
         foreach (Transform child in weaponStatContainer) Destroy(child.gameObject);
 
         int totalDamage = 0;
@@ -168,19 +168,19 @@ public class SettlementUI : MonoBehaviour
         if (buttonsPanel) buttonsPanel.SetActive(true);
     }
 
-    // --- ºËĞÄ£º°üº¬Î»ÒÆµÄµ¥¸ö¶¯»­ ---
+    // --- æ ¸å¿ƒï¼šåŒ…å«ä½ç§»çš„å•ä¸ªåŠ¨ç”» ---
     private IEnumerator AnimateSingleStat(StatUI stat, float targetValue, bool isTimeFormat)
     {
         if (stat.root == null) yield break;
 
         stat.root.SetActive(true);
 
-        // ¼ÆËãÆäÊµÎ»ÖÃ
+        // è®¡ç®—å…¶å®ä½ç½®
         Vector2 startPos = stat.originPos + moveOffset;
         Vector2 endPos = stat.originPos;
 
         float timer = 0f;
-        // ÎÒÃÇÓÃ statAnimDuration À´¿ØÖÆÕûÌåÒÆ¶¯ºÍ¹ö¶¯µÄÊ±³¤
+        // æˆ‘ä»¬ç”¨ statAnimDuration æ¥æ§åˆ¶æ•´ä½“ç§»åŠ¨å’Œæ»šåŠ¨çš„æ—¶é•¿
         float duration = statAnimDuration;
 
         while (timer < duration)
@@ -188,34 +188,34 @@ public class SettlementUI : MonoBehaviour
             timer += Time.unscaledDeltaTime;
             float progress = Mathf.Clamp01(timer / duration);
 
-            // [ºËĞÄ] Ê¹ÓÃ SmoothStep ÊµÏÖ ÂıÈë-¿ì-Âı³ö (SigmoidÇúÏß)
-            // Èç¹ûÏëÒª¸üÓĞµ¯ĞÔµÄĞ§¹û£¬Ò²¿ÉÒÔ¼ÌĞøÓÃÖ®Ç°µÄ BackOut »ò ElasticOut
+            // [æ ¸å¿ƒ] ä½¿ç”¨ SmoothStep å®ç° æ…¢å…¥-å¿«-æ…¢å‡º (Sigmoidæ›²çº¿)
+            // å¦‚æœæƒ³è¦æ›´æœ‰å¼¹æ€§çš„æ•ˆæœï¼Œä¹Ÿå¯ä»¥ç»§ç»­ç”¨ä¹‹å‰çš„ BackOut æˆ– ElasticOut
             float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
 
-            // 1. Î»ÒÆ¶¯»­
+            // 1. ä½ç§»åŠ¨ç”»
             if (stat.rect != null)
             {
                 stat.rect.anchoredPosition = Vector2.Lerp(startPos, endPos, smoothProgress);
             }
 
-            // 2. Í¼±êËõ·Å (Ç°50%µÄÊ±¼äÍê³É)
+            // 2. å›¾æ ‡ç¼©æ”¾ (å‰50%çš„æ—¶é—´å®Œæˆ)
             if (stat.icon)
             {
                 float iconProgress = Mathf.Clamp01(progress / 0.5f);
-                // ¼òµ¥µÄ·Å´óÔÙ»Øµ¯
+                // ç®€å•çš„æ”¾å¤§å†å›å¼¹
                 float scale = Mathf.Sin(iconProgress * Mathf.PI) * 0.2f + 1f;
                 if (iconProgress >= 1) scale = 1f;
                 stat.icon.transform.localScale = Vector3.one * Mathf.Lerp(0f, scale, iconProgress);
             }
 
-            // 3. ±êÌâµ­Èë (Ç°30%µÄÊ±¼äÍê³É)
+            // 3. æ ‡é¢˜æ·¡å…¥ (å‰30%çš„æ—¶é—´å®Œæˆ)
             if (stat.title)
             {
                 float titleProgress = Mathf.Clamp01(progress / 0.3f);
                 stat.title.alpha = Mathf.Lerp(0f, 1f, titleProgress);
             }
 
-            // 4. Êı×Ö¹ö¶¯ (È«³Ì¸úËæ smoothProgress)
+            // 4. æ•°å­—æ»šåŠ¨ (å…¨ç¨‹è·Ÿéš smoothProgress)
             if (stat.value)
             {
                 float currentVal = Mathf.Lerp(0, targetValue, smoothProgress);
@@ -229,7 +229,7 @@ public class SettlementUI : MonoBehaviour
             yield return null;
         }
 
-        // Ç¿ÖÆ¹éÎ»£¬·ÀÖ¹¸¡µãÊıÎó²î
+        // å¼ºåˆ¶å½’ä½ï¼Œé˜²æ­¢æµ®ç‚¹æ•°è¯¯å·®
         if (stat.rect != null) stat.rect.anchoredPosition = endPos;
         if (stat.icon) stat.icon.transform.localScale = Vector3.one;
         if (stat.title) stat.title.alpha = 1f;
@@ -242,11 +242,11 @@ public class SettlementUI : MonoBehaviour
                 stat.value.text = Mathf.RoundToInt(targetValue).ToString();
         }
 
-        // ÉÔÎ¢Í£¶ÙÒ»ÏÂÔÙ¿ªÊ¼ÏÂÒ»¸ö×é£¬ÔöÇ¿½Ú×à¸Ğ
+        // ç¨å¾®åœé¡¿ä¸€ä¸‹å†å¼€å§‹ä¸‹ä¸€ä¸ªç»„ï¼Œå¢å¼ºèŠ‚å¥æ„Ÿ
         yield return new WaitForSecondsRealtime(0.05f);
     }
 
-    // °´Å¥ÊÂ¼ş±£³Ö²»±ä...
+    // æŒ‰é’®äº‹ä»¶ä¿æŒä¸å˜...
     public void OnRestartClicked()
     {
         Time.timeScale = 1f;

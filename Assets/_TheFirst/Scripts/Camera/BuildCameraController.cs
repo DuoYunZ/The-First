@@ -1,38 +1,38 @@
-using UnityEngine;
-using UnityEngine.InputSystem; // ¡¾ĞÂÔö¡¿
+ï»¿using UnityEngine;
+using UnityEngine.InputSystem; // ã€æ–°å¢ã€‘
 
 public class BuildCameraController : MonoBehaviour
 {
-    [Header("Ä¿±êÓë¿ØÖÆ")]
-    [Tooltip("ÉãÏñ»úÎ§ÈÆĞı×ªµÄÄ¿±ê (ÄãµÄ ChassisCore)")]
-    public Transform target; // ½« ChassisCore ÍÏµ½ÕâÀï
-    [Tooltip("Êó±êÓÒ¼ü°´ÏÂÊ±²ÅÔÊĞíĞı×ªÊÓ½Ç")]
+    [Header("ç›®æ ‡ä¸æ§åˆ¶")]
+    [Tooltip("æ‘„åƒæœºå›´ç»•æ—‹è½¬çš„ç›®æ ‡ (ä½ çš„ ChassisCore)")]
+    public Transform target; // å°† ChassisCore æ‹–åˆ°è¿™é‡Œ
+    [Tooltip("é¼ æ ‡å³é”®æŒ‰ä¸‹æ—¶æ‰å…è®¸æ—‹è½¬è§†è§’")]
     public bool requireMouseButton = true;
-    //public int mouseButtonIndex = 1; // 0=×ó¼ü, 1=ÓÒ¼ü, 2=ÖĞ¼ü
+    //public int mouseButtonIndex = 1; // 0=å·¦é”®, 1=å³é”®, 2=ä¸­é”®
 
-    [Header("¾àÀëÓëËõ·Å")]
-    [Tooltip("³õÊ¼ÒÔ¼°µ±Ç°µÄÉãÏñ»úÓëÄ¿±êµÄ¾àÀë")]
+    [Header("è·ç¦»ä¸ç¼©æ”¾")]
+    [Tooltip("åˆå§‹ä»¥åŠå½“å‰çš„æ‘„åƒæœºä¸ç›®æ ‡çš„è·ç¦»")]
     public float distance = 5.0f;
-    [Tooltip("Ëõ·ÅËÙ¶È")]
+    [Tooltip("ç¼©æ”¾é€Ÿåº¦")]
     public float zoomSpeed = 4f;
-    [Tooltip("×îĞ¡¾àÀë")]
+    [Tooltip("æœ€å°è·ç¦»")]
     public float minDistance = 1f;
-    [Tooltip("×î´ó¾àÀë")]
+    [Tooltip("æœ€å¤§è·ç¦»")]
     public float maxDistance = 15f;
 
-    [Header("Ğı×ªËÙ¶ÈÓëÏŞÖÆ")]
-    [Tooltip("Ë®Æ½Ğı×ªËÙ¶È (XÖá)")]
+    [Header("æ—‹è½¬é€Ÿåº¦ä¸é™åˆ¶")]
+    [Tooltip("æ°´å¹³æ—‹è½¬é€Ÿåº¦ (Xè½´)")]
     public float xSpeed = 120.0f;
-    [Tooltip("´¹Ö±Ğı×ªËÙ¶È (YÖá)")]
+    [Tooltip("å‚ç›´æ—‹è½¬é€Ÿåº¦ (Yè½´)")]
     public float ySpeed = 120.0f;
-    [Tooltip("´¹Ö±½Ç¶ÈµÄ×îĞ¡ÏŞÖÆ (ÏòÏÂ¿´)")]
+    [Tooltip("å‚ç›´è§’åº¦çš„æœ€å°é™åˆ¶ (å‘ä¸‹çœ‹)")]
     public float yMinLimit = -20f;
-    [Tooltip("´¹Ö±½Ç¶ÈµÄ×î´óÏŞÖÆ (ÏòÉÏ¿´)")]
+    [Tooltip("å‚ç›´è§’åº¦çš„æœ€å¤§é™åˆ¶ (å‘ä¸Šçœ‹)")]
     public float yMaxLimit = 80f;
-    [Tooltip("Ğı×ª×èÄá (ÊıÖµÔ½´ó£¬Í£Ö¹Ô½Âı)")]
-    public float rotationDamping = 3.0f; // ÇáÎ¢×èÄáÈÃĞı×ª¸üÆ½»¬
+    [Tooltip("æ—‹è½¬é˜»å°¼ (æ•°å€¼è¶Šå¤§ï¼Œåœæ­¢è¶Šæ…¢)")]
+    public float rotationDamping = 3.0f; // è½»å¾®é˜»å°¼è®©æ—‹è½¬æ›´å¹³æ»‘
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private float x = 0.0f;
     private float y = 0.0f;
     private Vector3 targetPosition;
@@ -55,34 +55,34 @@ public class BuildCameraController : MonoBehaviour
 
     void Start()
     {
-        // ³õÊ¼»¯½Ç¶È
+        // åˆå§‹åŒ–è§’åº¦
         Vector3 angles = transform.eulerAngles;
         x = angles.y;
         y = angles.x;
 
-        // È·±£ÓĞÄ¿±ê
+        // ç¡®ä¿æœ‰ç›®æ ‡
         if (target == null)
         {
-            Debug.LogError("BuildCameraController: Target Î´ÉèÖÃ!", this);
+            Debug.LogError("BuildCameraController: Target æœªè®¾ç½®!", this);
             enabled = false;
             return;
         }
-        targetPosition = target.position; // ³õÊ¼Ä¿±êÎ»ÖÃ
+        targetPosition = target.position; // åˆå§‹ç›®æ ‡ä½ç½®
     }
 
-    // Ê¹ÓÃ LateUpdate ¿ÉÒÔÈ·±£Ä¿±êÎïÌåÒÑ¾­Íê³ÉËüËùÓĞµÄÒÆ¶¯ºÍĞı×ª
+    // ä½¿ç”¨ LateUpdate å¯ä»¥ç¡®ä¿ç›®æ ‡ç‰©ä½“å·²ç»å®Œæˆå®ƒæ‰€æœ‰çš„ç§»åŠ¨å’Œæ—‹è½¬
     void LateUpdate()
     {
         if (target == null) return;
 
         targetPosition = target.position;
 
-        // ¡¾ĞŞ¸Ä¡¿¼ì²éÊó±êÓÒ¼üÊÇ·ñ°´ÏÂ (ÎÒÃÇ¸´ÓÃÖ®Ç°´´½¨µÄ SecondaryAction)
+        // ã€ä¿®æ”¹ã€‘æ£€æŸ¥é¼ æ ‡å³é”®æ˜¯å¦æŒ‰ä¸‹ (æˆ‘ä»¬å¤ç”¨ä¹‹å‰åˆ›å»ºçš„ SecondaryAction)
         bool mouseButtonPressed = !requireMouseButton || playerControls.Builder.SecondaryAction.IsPressed();
 
         if (mouseButtonPressed)
         {
-            // ¡¾ĞŞ¸Ä¡¿¶ÁÈ¡Êó±êÒÆ¶¯ÔöÁ¿
+            // ã€ä¿®æ”¹ã€‘è¯»å–é¼ æ ‡ç§»åŠ¨å¢é‡
             Vector2 lookDelta = playerControls.Builder.CameraLook.ReadValue<Vector2>();
             x += lookDelta.x * xSpeed * 0.02f;
             y -= lookDelta.y * ySpeed * 0.02f;
@@ -92,10 +92,10 @@ public class BuildCameraController : MonoBehaviour
 
         Quaternion targetRotation = Quaternion.Euler(y, x, 0);
 
-        // ¡¾ĞŞ¸Ä¡¿¶ÁÈ¡Êó±ê¹öÂÖÊäÈë
+        // ã€ä¿®æ”¹ã€‘è¯»å–é¼ æ ‡æ»šè½®è¾“å…¥
         float scrollValue = playerControls.Builder.CameraZoom.ReadValue<Vector2>().y;
-        // ¹öÂÖÏòÉÏÊÇÕıÖµ£¬ÏòÏÂÊÇ¸ºÖµ¡£ÎÒÃÇĞèÒª·´×ªËüÒÔ·ûºÏÖ±¾õ£¨ÏòÉÏ¹öÊÇÀ­½ü£¬¾àÀë±äĞ¡£©
-        distance -= scrollValue * zoomSpeed * 0.01f; // ³ËÒÔÒ»¸öĞ¡ÊıÈÃËÙ¶È¸ü¿É¿Ø
+        // æ»šè½®å‘ä¸Šæ˜¯æ­£å€¼ï¼Œå‘ä¸‹æ˜¯è´Ÿå€¼ã€‚æˆ‘ä»¬éœ€è¦åè½¬å®ƒä»¥ç¬¦åˆç›´è§‰ï¼ˆå‘ä¸Šæ»šæ˜¯æ‹‰è¿‘ï¼Œè·ç¦»å˜å°ï¼‰
+        distance -= scrollValue * zoomSpeed * 0.01f; // ä¹˜ä»¥ä¸€ä¸ªå°æ•°è®©é€Ÿåº¦æ›´å¯æ§
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
@@ -105,7 +105,7 @@ public class BuildCameraController : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, targetCamPosition, Time.deltaTime * rotationDamping * 10f);
     }
 
-    // ¹¤¾ßº¯Êı£º½«½Ç¶ÈÏŞÖÆÔÚ min ºÍ max Ö®¼ä
+    // å·¥å…·å‡½æ•°ï¼šå°†è§’åº¦é™åˆ¶åœ¨ min å’Œ max ä¹‹é—´
     public static float ClampAngle(float angle, float min, float max)
     {
         if (angle < -360F)

@@ -1,18 +1,18 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [System.Serializable]
 public class UpgradeOption
 {
-    [Header("Ñ¡ÏîĞÅÏ¢")]
-    [Tooltip("Õâ¸öÉı¼¶Ñ¡ÏîÔÚ¿¨Æ¬ÉÏÏÔÊ¾µÄÃèÊö¡£ÀıÈç£º'µØÓü»ğ£ºÉËº¦+10%£¬·¶Î§+15%'")]
+    [Header("é€‰é¡¹ä¿¡æ¯")]
+    [Tooltip("è¿™ä¸ªå‡çº§é€‰é¡¹åœ¨å¡ç‰‡ä¸Šæ˜¾ç¤ºçš„æè¿°ã€‚ä¾‹å¦‚ï¼š'åœ°ç‹±ç«ï¼šä¼¤å®³+10%ï¼ŒèŒƒå›´+15%'")]
     [TextArea]
     public string description;
 
-    [Tooltip("Õâ¸öÑ¡ÏîµÄÆ·ÖÊ£¬½«¾ö¶¨¿¨Æ¬µÄ±³¾°ÑùÊ½ºÍ³öÏÖ¸ÅÂÊ")]
+    [Tooltip("è¿™ä¸ªé€‰é¡¹çš„å“è´¨ï¼Œå°†å†³å®šå¡ç‰‡çš„èƒŒæ™¯æ ·å¼å’Œå‡ºç°æ¦‚ç‡")]
     public Rarity rarity;
 
-    [Header("¾ßÌåĞ§¹ûÁĞ±í")]
-    [Tooltip("µ±Ñ¡Ôñ´ËÏîÊ±£¬Ó¦ÓÃµÄËùÓĞ¾ßÌåĞ§¹û")]
+    [Header("å…·ä½“æ•ˆæœåˆ—è¡¨")]
+    [Tooltip("å½“é€‰æ‹©æ­¤é¡¹æ—¶ï¼Œåº”ç”¨çš„æ‰€æœ‰å…·ä½“æ•ˆæœ")]
     public List<UpgradeEffect> effects;
 }

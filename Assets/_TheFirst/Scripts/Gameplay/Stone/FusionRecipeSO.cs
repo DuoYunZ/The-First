@@ -1,22 +1,22 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewFusionRecipe", menuName = "Weapons/Fusion Recipe")]
 public class FusionRecipeSO : ScriptableObject
 {
-    [Header("ÈÚºÏÅä·½")]
-    [Tooltip("ĞèÒªµÄµÚÒ»¸öÂú¼¶ÎäÆ÷")]
+    [Header("èåˆé…æ–¹")]
+    [Tooltip("éœ€è¦çš„ç¬¬ä¸€ä¸ªæ»¡çº§æ­¦å™¨")]
     public WeaponStatBlock weaponA;
 
-    [Tooltip("ĞèÒªµÄµÚ¶ş¸öÂú¼¶ÎäÆ÷")]
+    [Tooltip("éœ€è¦çš„ç¬¬äºŒä¸ªæ»¡çº§æ­¦å™¨")]
     public WeaponStatBlock weaponB;
 
-    [Header("ÈÚºÏ½á¹û")]
-    [Tooltip("ÈÚºÏºóµ®ÉúµÄ³¬ÎäÊı¾İ")]
+    [Header("èåˆç»“æœ")]
+    [Tooltip("èåˆåè¯ç”Ÿçš„è¶…æ­¦æ•°æ®")]
     public WeaponStatBlock resultWeapon;
 
-    [Tooltip("ÈÚºÏÊ±ÏÔÊ¾µÄÃèÊöÎÄ±¾")]
+    [Tooltip("èåˆæ—¶æ˜¾ç¤ºçš„æè¿°æ–‡æœ¬")]
     [TextArea] public string description;
 
-    [Tooltip("ÈÚºÏ³É¹¦Ê±µÄUIÍ¼±ê")]
+    [Tooltip("èåˆæˆåŠŸæ—¶çš„UIå›¾æ ‡")]
     public Sprite fusionIcon;
 }

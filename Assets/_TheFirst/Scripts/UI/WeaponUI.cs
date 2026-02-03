@@ -1,4 +1,4 @@
-// WeaponUI.cs
+ï»¿// WeaponUI.cs
 using System.Collections.Generic;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
@@ -8,29 +8,29 @@ public class WeaponUI : MonoBehaviour
 {
     public static WeaponUI Instance { get; private set; }
 
-    [Header("UI ÒıÓÃ")]
-    [Tooltip("·ÅÖÃÍ¼±êµÄ¸¸ÈİÆ÷ (Horizontal Layout Group)")]
+    [Header("UI å¼•ç”¨")]
+    [Tooltip("æ”¾ç½®å›¾æ ‡çš„çˆ¶å®¹å™¨ (Horizontal Layout Group)")]
     public Transform iconContainer;
-    [Tooltip("Í¼±êÔ¤ÖÆ¼ş (°üº¬ Image ×é¼ş)")]
+    [Tooltip("å›¾æ ‡é¢„åˆ¶ä»¶ (åŒ…å« Image ç»„ä»¶)")]
     public GameObject iconPrefab;
 
-    [Header("ÑÕÉ«ÉèÖÃ")]
-    [Tooltip("Ã»ÓĞÎäÆ÷Ê±µÄµ×¿òÑÕÉ« (ÀıÈç£º°ëÍ¸Ã÷ºÚ)")]
+    [Header("é¢œè‰²è®¾ç½®")]
+    [Tooltip("æ²¡æœ‰æ­¦å™¨æ—¶çš„åº•æ¡†é¢œè‰² (ä¾‹å¦‚ï¼šåŠé€æ˜é»‘)")]
     public Color emptySlotColor = new Color(0, 0, 0, 0.5f);
 
-    [Tooltip("»ñµÃÎäÆ÷ºóµÄµ×¿òÑÕÉ« (ÀıÈç£º³ÈÉ«/×ØÉ«)")]
-    public Color equippedSlotColor = new Color(0.6f, 0.3f, 0.1f, 1f); // ²Î¿¼Äã½ØÍ¼µÄÑÕÉ«
+    [Tooltip("è·å¾—æ­¦å™¨åçš„åº•æ¡†é¢œè‰² (ä¾‹å¦‚ï¼šæ©™è‰²/æ£•è‰²)")]
+    public Color equippedSlotColor = new Color(0.6f, 0.3f, 0.1f, 1f); // å‚è€ƒä½ æˆªå›¾çš„é¢œè‰²
 
-    [Header("ÉèÖÃ")]
-    public int maxIcons = 6; // ×î´óÏÔÊ¾ÊıÁ¿
+    [Header("è®¾ç½®")]
+    public int maxIcons = 6; // æœ€å¤§æ˜¾ç¤ºæ•°é‡
 
     private class WeaponSlot
     {
-        public Image backgroundImage; // µ×¿ò
-        public Image iconImage;       // ÎäÆ÷Í¼±ê
+        public Image backgroundImage; // åº•æ¡†
+        public Image iconImage;       // æ­¦å™¨å›¾æ ‡
     }
 
-    // »º´æÉú³ÉµÄÍ¼±ê¶ÔÏó
+    // ç¼“å­˜ç”Ÿæˆçš„å›¾æ ‡å¯¹è±¡
     private List<WeaponSlot> slots = new List<WeaponSlot>();
 
     void Awake()
@@ -41,9 +41,9 @@ public class WeaponUI : MonoBehaviour
 
     void Start()
     {
-        // ³õÊ¼»¯Éú³É¿ÕµÄ²ÛÎ»
+        // åˆå§‹åŒ–ç”Ÿæˆç©ºçš„æ§½ä½
         InitializeSlots();
-        // ¿ª¾ÖË¢ĞÂÒ»´Î (ÏÔÊ¾³õÊ¼µ¶¹â)
+        // å¼€å±€åˆ·æ–°ä¸€æ¬¡ (æ˜¾ç¤ºåˆå§‹åˆ€å…‰)
         UpdateWeaponIcons();
     }
 
@@ -56,11 +56,11 @@ public class WeaponUI : MonoBehaviour
         {
             GameObject go = Instantiate(iconPrefab, iconContainer);
 
-            // 1. »ñÈ¡µ×¿ò (Prefab ¸ù½ÚµãÉÏµÄ Image)
+            // 1. è·å–åº•æ¡† (Prefab æ ¹èŠ‚ç‚¹ä¸Šçš„ Image)
             Image bg = go.GetComponent<Image>();
 
-            // 2. »ñÈ¡Í¼±ê (Prefab µÚÒ»¸ö×Ó½ÚµãÉÏµÄ Image)
-            // ×¢Òâ£ºÎÒÃÇ¼ÙÉè Prefab ½á¹¹ÊÇ Root(±³¾°) -> Child(Í¼±ê)
+            // 2. è·å–å›¾æ ‡ (Prefab ç¬¬ä¸€ä¸ªå­èŠ‚ç‚¹ä¸Šçš„ Image)
+            // æ³¨æ„ï¼šæˆ‘ä»¬å‡è®¾ Prefab ç»“æ„æ˜¯ Root(èƒŒæ™¯) -> Child(å›¾æ ‡)
             Image icon = null;
             if (go.transform.childCount > 0)
             {
@@ -69,23 +69,23 @@ public class WeaponUI : MonoBehaviour
 
             if (bg != null && icon != null)
             {
-                // ³õÊ¼»¯×´Ì¬
+                // åˆå§‹åŒ–çŠ¶æ€
                 bg.color = emptySlotColor;
                 icon.sprite = null;
-                icon.enabled = false; // Òş²ØÍ¼±ê£¬Ö»Áôµ×¿ò
+                icon.enabled = false; // éšè—å›¾æ ‡ï¼Œåªç•™åº•æ¡†
 
-                // ±£´æÒıÓÃ
+                // ä¿å­˜å¼•ç”¨
                 slots.Add(new WeaponSlot { backgroundImage = bg, iconImage = icon });
             }
             else
             {
-                Debug.LogError("WeaponIconPrefab ½á¹¹²»¶Ô£¡ÇëÈ·±£¸ù½ÚµãÓĞImage£¬ÇÒÓĞÒ»¸ö´øImageµÄ×Ó½Úµã¡£");
+                Debug.LogError("WeaponIconPrefab ç»“æ„ä¸å¯¹ï¼è¯·ç¡®ä¿æ ¹èŠ‚ç‚¹æœ‰Imageï¼Œä¸”æœ‰ä¸€ä¸ªå¸¦Imageçš„å­èŠ‚ç‚¹ã€‚");
             }
         }
     }
 
     /// <summary>
-    /// Ë¢ĞÂËùÓĞÎäÆ÷Í¼±ê (Âß¼­²Î¿¼ FusionUIManager)
+    /// åˆ·æ–°æ‰€æœ‰æ­¦å™¨å›¾æ ‡ (é€»è¾‘å‚è€ƒ FusionUIManager)
     /// </summary>
     public void UpdateWeaponIcons()
     {
@@ -94,7 +94,7 @@ public class WeaponUI : MonoBehaviour
 
         List<Sprite> iconsToShow = new List<Sprite>();
 
-        // A. ×Ô´øµ¶¹â
+        // A. è‡ªå¸¦åˆ€å…‰
         if (controller.builtInBladeWeapon != null &&
              controller.builtInBladeWeapon.StatBlock != null &&
              controller.builtInBladeWeapon.isActiveAndEnabled)
@@ -102,12 +102,12 @@ public class WeaponUI : MonoBehaviour
             iconsToShow.Add(controller.builtInBladeWeapon.StatBlock.weaponIcon);
         }
 
-        // B. ¶¯Ì¬ÎäÆ÷ (´øÈ¥ÖØ)
+        // B. åŠ¨æ€æ­¦å™¨ (å¸¦å»é‡)
         foreach (var owned in controller.ownedWeapons)
         {
             if (owned.weaponPartInstance != null && owned.weaponPartInstance.StatBlock != null)
             {
-                // È¥ÖØÂß¼­
+                // å»é‡é€»è¾‘
                 if (controller.builtInBladeWeapon != null &&
                     controller.builtInBladeWeapon.StatBlock != null &&
                     owned.weaponPartInstance.StatBlock == controller.builtInBladeWeapon.StatBlock)
@@ -118,29 +118,29 @@ public class WeaponUI : MonoBehaviour
             }
         }
 
-        // C. ¸üĞÂ UI
+        // C. æ›´æ–° UI
         for (int i = 0; i < slots.Count; i++)
         {
             WeaponSlot slot = slots[i];
 
             if (i < iconsToShow.Count)
             {
-                // --- ÓĞÎäÆ÷×´Ì¬ ---
-                // 1. µ×¿ò±äÉ« (±ä³É¡°ÒÑ×°±¸¡±ÑÕÉ«)
+                // --- æœ‰æ­¦å™¨çŠ¶æ€ ---
+                // 1. åº•æ¡†å˜è‰² (å˜æˆâ€œå·²è£…å¤‡â€é¢œè‰²)
                 slot.backgroundImage.color = equippedSlotColor;
 
-                // 2. ÏÔÊ¾Í¼±ê
+                // 2. æ˜¾ç¤ºå›¾æ ‡
                 slot.iconImage.sprite = iconsToShow[i];
                 slot.iconImage.enabled = true;
-                slot.iconImage.color = Color.white; // È·±£Í¼±ê±¾Éí²»Í¸Ã÷
+                slot.iconImage.color = Color.white; // ç¡®ä¿å›¾æ ‡æœ¬èº«ä¸é€æ˜
             }
             else
             {
-                // --- ¿Õ²Û×´Ì¬ ---
-                // 1. µ×¿ò±ä»ØÄ¬ÈÏÉ«
+                // --- ç©ºæ§½çŠ¶æ€ ---
+                // 1. åº•æ¡†å˜å›é»˜è®¤è‰²
                 slot.backgroundImage.color = emptySlotColor;
 
-                // 2. Òş²ØÍ¼±ê
+                // 2. éšè—å›¾æ ‡
                 slot.iconImage.sprite = null;
                 slot.iconImage.enabled = false;
             }

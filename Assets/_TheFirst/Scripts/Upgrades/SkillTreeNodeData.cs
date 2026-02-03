@@ -1,22 +1,22 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "NewSkillNode", menuName = "Game/Skill Tree Node")]
 public class SkillTreeNodeData : ScriptableObject
 {
-    [Header("½Úµã»ù´¡ĞÅÏ¢")]
+    [Header("èŠ‚ç‚¹åŸºç¡€ä¿¡æ¯")]
     public string skillName;
     public Sprite skillIcon;
 
-    [Header("¹ØÁªÎäÆ÷")]
-    [Tooltip("Èç¹ûÕâÊÇÒ»¸öÌØ¶¨ÎäÆ÷µÄÉı¼¶£¬ÇëÔÚÕâÀïÖ¸¶¨¶ÔÓ¦µÄÎäÆ÷Êı¾İ¡£Èç¹ûÕâÊÇÒ»¸öÍ¨ÓÃÉı¼¶£¨ÈçÒÆËÙ£©£¬Çë½«´ËÏîÁô¿Õ(None)¡£")]
+    [Header("å…³è”æ­¦å™¨")]
+    [Tooltip("å¦‚æœè¿™æ˜¯ä¸€ä¸ªç‰¹å®šæ­¦å™¨çš„å‡çº§ï¼Œè¯·åœ¨è¿™é‡ŒæŒ‡å®šå¯¹åº”çš„æ­¦å™¨æ•°æ®ã€‚å¦‚æœè¿™æ˜¯ä¸€ä¸ªé€šç”¨å‡çº§ï¼ˆå¦‚ç§»é€Ÿï¼‰ï¼Œè¯·å°†æ­¤é¡¹ç•™ç©º(None)ã€‚")]
     public WeaponStatBlock associatedWeapon;
 
-    [Header("¼¼ÄÜÊ÷¹æÔò")]
+    [Header("æŠ€èƒ½æ ‘è§„åˆ™")]
     public List<SkillTreeNodeData> prerequisites;
     public int maxLevel = 1;
 
-    [Header("¡¾ºËĞÄĞŞ¸Ä¡¿Éı¼¶Ñ¡Ïî³Ø")]
-    [Tooltip("µ±Íæ¼ÒÉı¼¶´Ë¼¼ÄÜÊ±£¬»á´ÓÕâ¸öÑ¡Ïî³ØÖĞËæ»ú³éÈ¡Ò»Ïî£¬ÏÔÊ¾ÔÚ¿¨Æ¬ÉÏ")]
+    [Header("ã€æ ¸å¿ƒä¿®æ”¹ã€‘å‡çº§é€‰é¡¹æ± ")]
+    [Tooltip("å½“ç©å®¶å‡çº§æ­¤æŠ€èƒ½æ—¶ï¼Œä¼šä»è¿™ä¸ªé€‰é¡¹æ± ä¸­éšæœºæŠ½å–ä¸€é¡¹ï¼Œæ˜¾ç¤ºåœ¨å¡ç‰‡ä¸Š")]
     public List<UpgradeOption> possibleOptions;
 }

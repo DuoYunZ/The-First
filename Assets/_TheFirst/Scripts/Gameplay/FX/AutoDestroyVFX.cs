@@ -1,14 +1,14 @@
-// --- AutoDestroyVFX.cs ---
+ï»¿// --- AutoDestroyVFX.cs ---
 using UnityEngine;
 
 public class AutoDestroyVFX : MonoBehaviour
 {
-    [Tooltip("ÌØĞ§µÄÉúÃüÖÜÆÚ£¨Ãë£©£¬½áÊøºó»á×Ô¶¯Ïú»Ù")]
+    [Tooltip("ç‰¹æ•ˆçš„ç”Ÿå‘½å‘¨æœŸï¼ˆç§’ï¼‰ï¼Œç»“æŸåä¼šè‡ªåŠ¨é”€æ¯")]
     public float lifetime = 2f;
 
     void Start()
     {
-        // ÔÚ lifetime Ãëºó£¬Ïú»Ù¹ÒÔØ´Ë½Å±¾µÄÓÎÏ·¶ÔÏó
+        // åœ¨ lifetime ç§’åï¼Œé”€æ¯æŒ‚è½½æ­¤è„šæœ¬çš„æ¸¸æˆå¯¹è±¡
         Destroy(gameObject, lifetime);
     }
 }

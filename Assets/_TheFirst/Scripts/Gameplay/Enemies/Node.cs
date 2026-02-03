@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 public abstract class Node : MonoBehaviour
 {
-    // ½ÚµãµÄÈıÖÖ×´Ì¬
+    // èŠ‚ç‚¹çš„ä¸‰ç§çŠ¶æ€
     public enum NodeState
     {
-        RUNNING, // ÔËĞĞÖĞ
-        SUCCESS, // ³É¹¦
-        FAILURE  // Ê§°Ü
+        RUNNING, // è¿è¡Œä¸­
+        SUCCESS, // æˆåŠŸ
+        FAILURE  // å¤±è´¥
     }
 
     protected NodeState state;
 
-    // ºËĞÄÆÀ¹À·½·¨£¬ËùÓĞ×ÓÀà¶¼±ØĞëÊµÏÖÕâ¸ö·½·¨£¬Ëü°üº¬ÁË½ÚµãµÄÂß¼­
+    // æ ¸å¿ƒè¯„ä¼°æ–¹æ³•ï¼Œæ‰€æœ‰å­ç±»éƒ½å¿…é¡»å®ç°è¿™ä¸ªæ–¹æ³•ï¼Œå®ƒåŒ…å«äº†èŠ‚ç‚¹çš„é€»è¾‘
     public abstract NodeState Evaluate();
 }

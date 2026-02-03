@@ -1,11 +1,11 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 
 public class WeaponStatItemUI : MonoBehaviour
 {
-    [Header("UI ×é¼şÒıÓÃ")]
+    [Header("UI ç»„ä»¶å¼•ç”¨")]
     public Image iconImage;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI damageText;
@@ -25,24 +25,24 @@ public class WeaponStatItemUI : MonoBehaviour
         {
             iconImage.sprite = icon;
             iconImage.enabled = (icon != null);
-            iconImage.transform.localScale = Vector3.zero; // ³õÊ¼ËõĞ¡£¬×¼±¸×öµ¯³ö¶¯»­
+            iconImage.transform.localScale = Vector3.zero; // åˆå§‹ç¼©å°ï¼Œå‡†å¤‡åšå¼¹å‡ºåŠ¨ç”»
         }
 
         nameText.text = $"{name} <size=80%>Lv.{level}</size>";
-        nameText.alpha = 0f; // ³õÊ¼ÒşĞÎ
+        nameText.alpha = 0f; // åˆå§‹éšå½¢
 
         damageBarFill.fillAmount = 0f;
-        damageText.text = ""; // ³õÊ¼Îª¿Õ
-        canvasGroup.alpha = 1f; // ÕûÌå¿É¼û£¬µ«ÄÚ²¿×é¼şÒş²Ø
+        damageText.text = ""; // åˆå§‹ä¸ºç©º
+        canvasGroup.alpha = 1f; // æ•´ä½“å¯è§ï¼Œä½†å†…éƒ¨ç»„ä»¶éšè—
     }
 
     /// <summary>
-    /// ²¥·ÅÍêÕûµÄµ¥Ìõ¶¯»­
+    /// æ’­æ”¾å®Œæ•´çš„å•æ¡åŠ¨ç”»
     /// </summary>
-    /// <returns>·µ»Ø¶¯»­³ÖĞøÊ±¼ä£¬¹©Íâ²¿µÈ´ı</returns>
+    /// <returns>è¿”å›åŠ¨ç”»æŒç»­æ—¶é—´ï¼Œä¾›å¤–éƒ¨ç­‰å¾…</returns>
     public float GetAnimationDuration()
     {
-        // Í¼±ê(0.2s) + Ãû×Ö(0.1s) + ½ø¶ÈÌõ(0.5s)
+        // å›¾æ ‡(0.2s) + åå­—(0.1s) + è¿›åº¦æ¡(0.5s)
         return 0.2f + 0.1f + 0.5f;
     }
 
@@ -53,7 +53,7 @@ public class WeaponStatItemUI : MonoBehaviour
 
     private IEnumerator SequenceRoutine(int targetDamage, float targetPercent)
     {
-        // 1. Í¼±êµ¯³ö (Scale 0 -> 1.2 -> 1.0)
+        // 1. å›¾æ ‡å¼¹å‡º (Scale 0 -> 1.2 -> 1.0)
         if (iconImage != null)
         {
             float timer = 0f;
@@ -61,7 +61,7 @@ public class WeaponStatItemUI : MonoBehaviour
             {
                 timer += Time.unscaledDeltaTime;
                 float t = timer / 0.2f;
-                // ¼òµ¥µÄµ¯ĞÔÇúÏß
+                // ç®€å•çš„å¼¹æ€§æ›²çº¿
                 float scale = Mathf.Sin(t * Mathf.PI) * 0.2f + 1f;
                 if (t < 1) iconImage.transform.localScale = Vector3.one * Mathf.Lerp(0f, 1.2f, t);
                 else iconImage.transform.localScale = Vector3.one;
@@ -70,7 +70,7 @@ public class WeaponStatItemUI : MonoBehaviour
             iconImage.transform.localScale = Vector3.one;
         }
 
-        // 2. Ãû×Öµ­Èë
+        // 2. åå­—æ·¡å…¥
         float nameTimer = 0f;
         while (nameTimer < 0.15f)
         {
@@ -80,8 +80,8 @@ public class WeaponStatItemUI : MonoBehaviour
         }
         nameText.alpha = 1f;
 
-        // 3. ½ø¶ÈÌõÔö³¤ + Êı×Ö¹ö¶¯
-        float barDuration = 0.5f; // ½ø¶ÈÌõÊ±¼ä
+        // 3. è¿›åº¦æ¡å¢é•¿ + æ•°å­—æ»šåŠ¨
+        float barDuration = 0.5f; // è¿›åº¦æ¡æ—¶é—´
         float barTimer = 0f;
         while (barTimer < barDuration)
         {
@@ -91,13 +91,13 @@ public class WeaponStatItemUI : MonoBehaviour
 
             damageBarFill.fillAmount = Mathf.Lerp(0f, targetPercent, ease);
             int currentDmg = Mathf.RoundToInt(Mathf.Lerp(0, targetDamage, ease));
-            damageText.text = $"ÉËº¦: {currentDmg:N0}";
+            damageText.text = $"ä¼¤å®³: {currentDmg:N0}";
 
             yield return null;
         }
 
-        // ×îÖÕ¶¨¸ñ
+        // æœ€ç»ˆå®šæ ¼
         damageBarFill.fillAmount = targetPercent;
-        damageText.text = $"ÉËº¦: {targetDamage:N0}";
+        damageText.text = $"ä¼¤å®³: {targetDamage:N0}";
     }
 }

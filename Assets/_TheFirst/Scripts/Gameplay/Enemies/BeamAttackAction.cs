@@ -1,26 +1,26 @@
-// --- BeamAttackAction.cs ---
+ï»¿// --- BeamAttackAction.cs ---
 using UnityEngine;
 
 public class BeamAttackAction : Node
 {
-    [Header("ÎäÆ÷ÉèÖÃ")]
+    [Header("æ­¦å™¨è®¾ç½®")]
     public WeaponStatBlock weaponToFire;
-    [Tooltip("Ö¸¶¨¹âÊøµÄ·¢Éä¹Òµã")]
+    [Tooltip("æŒ‡å®šå…‰æŸçš„å‘å°„æŒ‚ç‚¹")]
     public Transform beamFirePoint;
 
-    [Header("¶¯×÷±íÏÖ")]
+    [Header("åŠ¨ä½œè¡¨ç°")]
     public string windupAnimationTrigger;
     public float windupDuration = 1.5f;
     public string firingAnimationBool = "isFiringBeam";
     public string recoveryAnimationTrigger;
     public float recoveryDuration = 1f;
 
-    [Header("¡¾ĞÂÔö¡¿ÅäºÏÌØĞ§µÄÔ¤ÖÆ¼ş")]
+    [Header("ã€æ–°å¢ã€‘é…åˆç‰¹æ•ˆçš„é¢„åˆ¶ä»¶")]
     public GameObject windupEffectPrefab;
-    [Tooltip("¡¾ĞÂÔö¡¿Ç°Ò¡ÌØĞ§µÄÉú³ÉÎ»ÖÃ¹Òµã")] // ¡¾ĞÂÔö¡¿
-    public Transform windupEffectSpawnPoint;    // ¡¾ĞÂÔö¡¿
+    [Tooltip("ã€æ–°å¢ã€‘å‰æ‘‡ç‰¹æ•ˆçš„ç”Ÿæˆä½ç½®æŒ‚ç‚¹")] // ã€æ–°å¢ã€‘
+    public Transform windupEffectSpawnPoint;    // ã€æ–°å¢ã€‘
 
-    [Header("ÀäÈ´ÉèÖÃ")]
+    [Header("å†·å´è®¾ç½®")]
     public string attackName = "BeamAttack";
 
     private enum ActionState { Ready, WindingUp, Firing, Recovering, Completed }
@@ -34,7 +34,7 @@ public class BeamAttackAction : Node
 
     void Awake()
     {
-        // ... (ºÍÎÒÃÇÆäËûAction½Å±¾Ò»ÑùµÄAwakeÄÚÈİ)
+        // ... (å’Œæˆ‘ä»¬å…¶ä»–Actionè„šæœ¬ä¸€æ ·çš„Awakeå†…å®¹)
         Rigidbody bossRb = GetComponentInParent<Rigidbody>();
         if (bossRb != null) selfTransform = bossRb.transform;
         animator = GetComponentInParent<Animator>();
@@ -50,7 +50,7 @@ public class BeamAttackAction : Node
         BossBeamController beamController = activeBeamInstance.GetComponent<BossBeamController>();
         if (beamController != null)
         {
-            // ¡¾ÎÊÌâ¶şĞŞÕı¡¿½«Íæ¼ÒµÄ AimTargetPoint ×÷ÎªÄ¿±ê´«Èë
+            // ã€é—®é¢˜äºŒä¿®æ­£ã€‘å°†ç©å®¶çš„ AimTargetPoint ä½œä¸ºç›®æ ‡ä¼ å…¥
             beamController.Initialize(weaponToFire, selfTransform.gameObject, GameManager.Instance.playerAimTarget);
         }
     }
@@ -119,7 +119,7 @@ public class BeamAttackAction : Node
     {
         if (windupEffectPrefab != null)
         {
-            // ¡¾ºËĞÄĞŞ¸Ä¡¿Ê¹ÓÃ×¨ÓÃµÄ¹Òµã£¬Èç¹ûÃ»Ö¸¶¨£¬ÔÙÓÃ¹âÊø·¢Éäµã×÷Îª±¸ÓÃ
+            // ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä½¿ç”¨ä¸“ç”¨çš„æŒ‚ç‚¹ï¼Œå¦‚æœæ²¡æŒ‡å®šï¼Œå†ç”¨å…‰æŸå‘å°„ç‚¹ä½œä¸ºå¤‡ç”¨
             Transform spawnPoint = (windupEffectSpawnPoint != null) ? windupEffectSpawnPoint :
                                    (beamFirePoint != null) ? beamFirePoint : selfTransform;
 

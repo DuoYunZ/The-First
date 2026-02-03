@@ -1,4 +1,4 @@
-// MaterialTimeUpdater.cs (×îÖÕĞ­³Ì°æ)
+ï»¿// MaterialTimeUpdater.cs (æœ€ç»ˆåç¨‹ç‰ˆ)
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
@@ -6,7 +6,7 @@ using System.Collections;
 [RequireComponent(typeof(Image))]
 public class MaterialTimeUpdater : MonoBehaviour
 {
-    // ¡¾ĞŞ¸Ä¡¿Ö±½ÓÒıÓÃ Image ×é¼ş£¬²»ÔÙĞèÒªÊÖ¶¯´´½¨²ÄÖÊÊµÀı
+    // ã€ä¿®æ”¹ã€‘ç›´æ¥å¼•ç”¨ Image ç»„ä»¶ï¼Œä¸å†éœ€è¦æ‰‹åŠ¨åˆ›å»ºæè´¨å®ä¾‹
     private Image controlledImage;
     private Coroutine timeUpdateCoroutine;
 
@@ -15,14 +15,14 @@ public class MaterialTimeUpdater : MonoBehaviour
         controlledImage = GetComponent<Image>();
         if (controlledImage.material == null)
         {
-            Debug.LogError("MaterialTimeUpdater: Image×é¼şÉÏÃ»ÓĞ²ÄÖÊ£¡", this);
+            Debug.LogError("MaterialTimeUpdater: Imageç»„ä»¶ä¸Šæ²¡æœ‰æè´¨ï¼", this);
             enabled = false;
         }
     }
 
     void OnEnable()
     {
-        // Æô¶¯Ğ­³Ì
+        // å¯åŠ¨åç¨‹
         if (timeUpdateCoroutine == null)
         {
             timeUpdateCoroutine = StartCoroutine(UpdateMaterialTime());
@@ -31,7 +31,7 @@ public class MaterialTimeUpdater : MonoBehaviour
 
     void OnDisable()
     {
-        // Í£Ö¹Ğ­³Ì£¬·ÀÖ¹ÔÚ¶ÔÏó½ûÓÃºó¼ÌĞøÔËĞĞ
+        // åœæ­¢åç¨‹ï¼Œé˜²æ­¢åœ¨å¯¹è±¡ç¦ç”¨åç»§ç»­è¿è¡Œ
         if (timeUpdateCoroutine != null)
         {
             StopCoroutine(timeUpdateCoroutine);
@@ -40,22 +40,22 @@ public class MaterialTimeUpdater : MonoBehaviour
     }
 
     /// <summary>
-    /// ¡¾ºËĞÄĞŞ¸Ä¡¿Ê¹ÓÃĞ­³ÌºÍÕæÊµÊ±¼äÀ´¸üĞÂ
+    /// ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä½¿ç”¨åç¨‹å’ŒçœŸå®æ—¶é—´æ¥æ›´æ–°
     /// </summary>
     IEnumerator UpdateMaterialTime()
     {
-        // ÕâÊÇÒ»¸öÓÀ²»Í£Ö¹µÄÑ­»·£¬Ö»Òª½Å±¾ÊÇ¼¤»îµÄ
+        // è¿™æ˜¯ä¸€ä¸ªæ°¸ä¸åœæ­¢çš„å¾ªç¯ï¼Œåªè¦è„šæœ¬æ˜¯æ¿€æ´»çš„
         while (true)
         {
             if (controlledImage.material != null)
             {
-                // Ê¹ÓÃ Time.realtimeSinceStartup »ñÈ¡²»ÊÜËõ·ÅÓ°ÏìµÄÕæÊµÓÎÏ·ÔËĞĞÊ±¼ä
+                // ä½¿ç”¨ Time.realtimeSinceStartup è·å–ä¸å—ç¼©æ”¾å½±å“çš„çœŸå®æ¸¸æˆè¿è¡Œæ—¶é—´
                 controlledImage.material.SetFloat("_UnscaledTime", Time.realtimeSinceStartup);
             }
 
-            // µÈ´ıÒ»Ğ¡¶ÎÊ±¼ä£¨ÕæÊµÊ±¼ä£©£¬È»ºó¼ÌĞøÏÂÒ»´Î¸üĞÂ
-            // ÕâÄÜÈ·±£¼´Ê¹ Time.timeScale = 0£¬Ñ­»·Ò²ÄÜ¼ÌĞø
-            yield return new WaitForSecondsRealtime(0.02f); // Ã¿Ãë´óÔ¼¸üĞÂ50´Î
+            // ç­‰å¾…ä¸€å°æ®µæ—¶é—´ï¼ˆçœŸå®æ—¶é—´ï¼‰ï¼Œç„¶åç»§ç»­ä¸‹ä¸€æ¬¡æ›´æ–°
+            // è¿™èƒ½ç¡®ä¿å³ä½¿ Time.timeScale = 0ï¼Œå¾ªç¯ä¹Ÿèƒ½ç»§ç»­
+            yield return new WaitForSecondsRealtime(0.02f); // æ¯ç§’å¤§çº¦æ›´æ–°50æ¬¡
         }
     }
 }

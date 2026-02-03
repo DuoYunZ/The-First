@@ -1,35 +1,35 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 public class WeaponHUDManager : MonoBehaviour
 {
-    [Header("ÅäÖÃ")]
-    public Transform uiContainer;      // ÍÏÈë Canvas ÀïÓÃÀ´·ÅÍ¼±êµÄ¸¸½Úµã (ÀıÈçÒ»¸ö HorizontalLayoutGroup)
-    public GameObject weaponSlotPrefab; // ÍÏÈëÄã×öºÃµÄ WeaponSlot UI Ô¤ÖÆÌå (¹ÒÁË WeaponStatusSlot ½Å±¾µÄÄÇ¸ö)
+    [Header("é…ç½®")]
+    public Transform uiContainer;      // æ‹–å…¥ Canvas é‡Œç”¨æ¥æ”¾å›¾æ ‡çš„çˆ¶èŠ‚ç‚¹ (ä¾‹å¦‚ä¸€ä¸ª HorizontalLayoutGroup)
+    public GameObject weaponSlotPrefab; // æ‹–å…¥ä½ åšå¥½çš„ WeaponSlot UI é¢„åˆ¶ä½“ (æŒ‚äº† WeaponStatusSlot è„šæœ¬çš„é‚£ä¸ª)
 
     private List<WeaponStatusSlot> activeSlots = new List<WeaponStatusSlot>();
 
     void Start()
     {
-        // ÑÓ³ÙÒ»Ö¡³õÊ¼»¯£¬È·±£Íæ¼ÒºÍÎäÆ÷¶¼ÒÑ¾­Éú³ÉºÃÁË
+        // å»¶è¿Ÿä¸€å¸§åˆå§‹åŒ–ï¼Œç¡®ä¿ç©å®¶å’Œæ­¦å™¨éƒ½å·²ç»ç”Ÿæˆå¥½äº†
         Invoke(nameof(InitWeaponUI), 0.1f);
     }
 
     void InitWeaponUI()
     {
-        // 1. ÕÒµ½Íæ¼Ò (¼ÙÉèÓĞ GameManager »òÕßÖ±½ÓÕÒ Tag)
+        // 1. æ‰¾åˆ°ç©å®¶ (å‡è®¾æœ‰ GameManager æˆ–è€…ç›´æ¥æ‰¾ Tag)
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
 
-        // 2. ÕÒµ½Íæ¼ÒÉíÉÏËùÓĞµÄÎäÆ÷
+        // 2. æ‰¾åˆ°ç©å®¶èº«ä¸Šæ‰€æœ‰çš„æ­¦å™¨
         WeaponPart[] weapons = player.GetComponentsInChildren<WeaponPart>();
 
         foreach (var weapon in weapons)
         {
-            // ¹ıÂËµôÃ»¼¤»îµÄ£¬»òÕßÕÙ»½Îï×Ô´øµÄÎäÆ÷
+            // è¿‡æ»¤æ‰æ²¡æ¿€æ´»çš„ï¼Œæˆ–è€…å¬å”¤ç‰©è‡ªå¸¦çš„æ­¦å™¨
             if (!weapon.gameObject.activeInHierarchy) continue;
             if (weapon.StatBlock == null) continue;
-            // Èç¹û²»ÏëÏÔÊ¾¡°ÎŞÈË»ú¡±ÕâÖÖ×ÓÎäÆ÷£¬¿ÉÒÔÔÚÕâÀï¼Ó¹ıÂËÌõ¼ş
+            // å¦‚æœä¸æƒ³æ˜¾ç¤ºâ€œæ— äººæœºâ€è¿™ç§å­æ­¦å™¨ï¼Œå¯ä»¥åœ¨è¿™é‡ŒåŠ è¿‡æ»¤æ¡ä»¶
 
             CreateSlotForWeapon(weapon);
         }
@@ -39,15 +39,15 @@ public class WeaponHUDManager : MonoBehaviour
     {
         if (weaponSlotPrefab == null || uiContainer == null) return;
 
-        // 1. Éú³É UI
+        // 1. ç”Ÿæˆ UI
         GameObject slotObj = Instantiate(weaponSlotPrefab, uiContainer);
 
-        // 2. »ñÈ¡½Å±¾
+        // 2. è·å–è„šæœ¬
         WeaponStatusSlot slotScript = slotObj.GetComponent<WeaponStatusSlot>();
         if (slotScript != null)
         {
-            // 3. ¡¾ºËĞÄ²½Öè¡¿°ó¶¨Êı¾İ£¡
-            // Õâ»áÈÃ UI ¿ªÊ¼¼àÌıÕâ°ÑÎäÆ÷µÄ¾­Ñé±ä»¯
+            // 3. ã€æ ¸å¿ƒæ­¥éª¤ã€‘ç»‘å®šæ•°æ®ï¼
+            // è¿™ä¼šè®© UI å¼€å§‹ç›‘å¬è¿™æŠŠæ­¦å™¨çš„ç»éªŒå˜åŒ–
             slotScript.BindWeapon(weapon);
             activeSlots.Add(slotScript);
         }

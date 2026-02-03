@@ -1,39 +1,39 @@
-using UnityEngine;
-using System.Collections; // ±ØĞëÒıÓÃ£¬ÓÃÓÚĞ­³Ì
+ï»¿using UnityEngine;
+using System.Collections; // å¿…é¡»å¼•ç”¨ï¼Œç”¨äºåç¨‹
 using System.Collections.Generic;
 using System.Linq;
 
 public class MagneticStormAura : MonoBehaviour
 {
-    [Header("ÁìÓòÅäÖÃ")]
+    [Header("é¢†åŸŸé…ç½®")]
     public float radius = 5f;
     public float pullSpeed = 0f;
 
-    [Header("³ÖĞø¸Ğµç (DOT)")]
-    [Tooltip("¹â»·Ôì³ÉÉËº¦µÄÏµÊı")]
+    [Header("æŒç»­æ„Ÿç”µ (DOT)")]
+    [Tooltip("å…‰ç¯é€ æˆä¼¤å®³çš„ç³»æ•°")]
     public float dotDamageMultiplier = 0f;
     public float dotInterval = 0.5f;
 
-    [Header("¼äĞªĞÔÂäÀ× (Strike)")]
-    [Tooltip("ÂäÀ×Ôì³ÉÉËº¦µÄÏµÊı")]
+    [Header("é—´æ­‡æ€§è½é›· (Strike)")]
+    [Tooltip("è½é›·é€ æˆä¼¤å®³çš„ç³»æ•°")]
     public float lightningDamageMultiplier = 2.0f;
     public float lightningInterval = 2.0f;
     public float lightningSplashRadius = 2.0f;
 
-    [Header("ÊÓ¾õÌØĞ§")]
-    [Tooltip("Ã¿µÀÀ×µçÖ®¼äµÄ·¢Éä¼ä¸ô (Ãë)")]
-    public float lightningStrikeDelay = 0.2f; // ¡¾ĞÂÔö¡¿À×µç¼ä¸ô
+    [Header("è§†è§‰ç‰¹æ•ˆ")]
+    [Tooltip("æ¯é“é›·ç”µä¹‹é—´çš„å‘å°„é—´éš” (ç§’)")]
+    public float lightningStrikeDelay = 0.2f; // ã€æ–°å¢ã€‘é›·ç”µé—´éš”
     public GameObject thunderStrikeVfxPrefab;
     public GameObject electricSparkVfxPrefab;
 
-    private float critRate = 0f; // ¡¾ĞŞ¸Ä¡¿ÒÔÇ°ÊÇ stunChance£¬ÏÖÔÚ´æ±©»÷ÂÊ
-    private float critMultiplier = 1.5f; // ±©»÷ÉËº¦±¶ÂÊ (¿ÉÅäÖÃ)
-    private float stunDuration = 1.0f;   // Ñ£ÔÎÊ±¼ä
+    private float critRate = 0f; // ã€ä¿®æ”¹ã€‘ä»¥å‰æ˜¯ stunChanceï¼Œç°åœ¨å­˜æš´å‡»ç‡
+    private float critMultiplier = 1.5f; // æš´å‡»ä¼¤å®³å€ç‡ (å¯é…ç½®)
+    private float stunDuration = 1.0f;   // çœ©æ™•æ—¶é—´
 
-    [Header("Ä¿±ê²ã¼¶")]
+    [Header("ç›®æ ‡å±‚çº§")]
     public LayerMask enemyLayer;
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private int finalDotDamage;
     private int finalLightningDamage;
     private int lightningCount = 1;
@@ -46,14 +46,14 @@ public class MagneticStormAura : MonoBehaviour
     {
         this.ownerWeapon = weapon;
         this.lightningCount = count;
-        this.critRate = critRateParam; // ¡¾ĞŞ¸Ä¡¿±£´æ±©»÷ÂÊ
+        this.critRate = critRateParam; // ã€ä¿®æ”¹ã€‘ä¿å­˜æš´å‡»ç‡
 
         this.finalDotDamage = Mathf.RoundToInt(baseWeaponDamage * dotDamageMultiplier);
         this.finalLightningDamage = Mathf.RoundToInt(baseWeaponDamage * lightningDamageMultiplier);
 
         this.radius *= rangeMult;
         transform.localScale = Vector3.one * (this.radius * 0.7f);
-        Debug.Log($"[¹â»·³õÊ¼»¯] ±©»÷ÂÊ: {this.critRate:P0}");
+        Debug.Log($"[å…‰ç¯åˆå§‹åŒ–] æš´å‡»ç‡: {this.critRate:P0}");
     }
 
     void Update()
@@ -71,25 +71,25 @@ public class MagneticStormAura : MonoBehaviour
         if (strikeTimer >= lightningInterval)
         {
             strikeTimer = 0f;
-            // ¡¾ºËĞÄĞŞ¸Ä¡¿Æô¶¯Ğ­³Ì£¬¶ø²»ÊÇÖ±½Óµ÷ÓÃº¯Êı
+            // ã€æ ¸å¿ƒä¿®æ”¹ã€‘å¯åŠ¨åç¨‹ï¼Œè€Œä¸æ˜¯ç›´æ¥è°ƒç”¨å‡½æ•°
             StartCoroutine(TriggerLightningStrikeRoutine());
         }
     }
 
-    // --- Ğ­³Ì£º´ø¼ä¸ôµÄÁ¬»·ÂäÀ× ---
+    // --- åç¨‹ï¼šå¸¦é—´éš”çš„è¿ç¯è½é›· ---
     IEnumerator TriggerLightningStrikeRoutine()
     {
-        // 1. »ñÈ¡·¶Î§ÄÚËùÓĞµĞÈËÅö×²Ìå
+        // 1. è·å–èŒƒå›´å†…æ‰€æœ‰æ•Œäººç¢°æ’ä½“
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, enemyLayer);
 
         if (hits.Length == 0) yield break;
 
-        // 2. ÕûÀíÎªÎ¨Ò»µÄ Health ÁĞ±í (·ÀÖ¹Ò»¸öµĞÈËÓĞ¶à¸öÅö×²Ìå±»Ëã×÷¶àÈË)
+        // 2. æ•´ç†ä¸ºå”¯ä¸€çš„ Health åˆ—è¡¨ (é˜²æ­¢ä¸€ä¸ªæ•Œäººæœ‰å¤šä¸ªç¢°æ’ä½“è¢«ç®—ä½œå¤šäºº)
         List<Health> validEnemies = new List<Health>();
         foreach (var col in hits)
         {
             Health h = col.GetComponentInParent<Health>();
-            // È·±£»î×Å£¬ÇÒÈ¥ÖØ
+            // ç¡®ä¿æ´»ç€ï¼Œä¸”å»é‡
             if (h != null && !h.IsDead && !validEnemies.Contains(h))
             {
                 validEnemies.Add(h);
@@ -98,35 +98,35 @@ public class MagneticStormAura : MonoBehaviour
 
         if (validEnemies.Count == 0) yield break;
 
-        // 3. ¡¾ºËĞÄĞŞ¸Ä¡¿¹¹½¨¹¥»÷Ä¿±ê¶ÓÁĞ
-        // Âß¼­£ºÈç¹ûÂäÀ×ÊıÊÇ 5£¬µĞÈËÊÇ 2 -> [A, B] + [B, A] + [A] (Ëæ»úË³Ğò)
+        // 3. ã€æ ¸å¿ƒä¿®æ”¹ã€‘æ„å»ºæ”»å‡»ç›®æ ‡é˜Ÿåˆ—
+        // é€»è¾‘ï¼šå¦‚æœè½é›·æ•°æ˜¯ 5ï¼Œæ•Œäººæ˜¯ 2 -> [A, B] + [B, A] + [A] (éšæœºé¡ºåº)
         List<Health> strikeQueue = new List<Health>();
         int strikesLeft = lightningCount;
 
         while (strikesLeft > 0)
         {
-            // ´òÂÒµ±Ç°»î×ÅµÄµĞÈËÁĞ±í
+            // æ‰“ä¹±å½“å‰æ´»ç€çš„æ•Œäººåˆ—è¡¨
             var shuffledBatch = validEnemies.OrderBy(x => Random.value).ToList();
 
-            // ÕâÒ»ÂÖÄÜÈ¡¶àÉÙ¸ö£¿(È¡ "Ê£Óà´ÎÊı" ºÍ "µĞÈË×ÜÊı" µÄ½ÏĞ¡Öµ)
-            // ÕâÑù±£Ö¤ÁËÃ¿Ò»ÂÖÑ­»·¶¼»áÓÅÏÈ´òÒ»È¦²»Í¬µÄµĞÈË
+            // è¿™ä¸€è½®èƒ½å–å¤šå°‘ä¸ªï¼Ÿ(å– "å‰©ä½™æ¬¡æ•°" å’Œ "æ•Œäººæ€»æ•°" çš„è¾ƒå°å€¼)
+            // è¿™æ ·ä¿è¯äº†æ¯ä¸€è½®å¾ªç¯éƒ½ä¼šä¼˜å…ˆæ‰“ä¸€åœˆä¸åŒçš„æ•Œäºº
             int countToTake = Mathf.Min(strikesLeft, shuffledBatch.Count);
 
             strikeQueue.AddRange(shuffledBatch.Take(countToTake));
             strikesLeft -= countToTake;
         }
 
-        // 4. Ö´ĞĞÁ¬»·ÂäÀ×
+        // 4. æ‰§è¡Œè¿ç¯è½é›·
         foreach (var target in strikeQueue)
         {
             if (target == null || target.IsDead) continue;
 
             Vector3 strikePos = target.transform.position;
 
-            // A. ÌØĞ§ (²»±ä)
+            // A. ç‰¹æ•ˆ (ä¸å˜)
             if (thunderStrikeVfxPrefab != null) Instantiate(thunderStrikeVfxPrefab, strikePos, Quaternion.identity);
 
-            // B. Ôì³É½¦ÉäÉËº¦ (AOE)
+            // B. é€ æˆæº…å°„ä¼¤å®³ (AOE)
             Collider[] nearby = Physics.OverlapSphere(strikePos, lightningSplashRadius, enemyLayer);
             foreach (var hit in nearby)
             {
@@ -137,12 +137,12 @@ public class MagneticStormAura : MonoBehaviour
                 if (h != null && !h.IsDead)
                 {
                     // ==========================================
-                    // ¡¾ºËĞÄĞŞ¸Ä¡¿±©»÷ÅĞ¶¨Âß¼­
+                    // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æš´å‡»åˆ¤å®šé€»è¾‘
                     // ==========================================
 
-                    // 1. »ñÈ¡µ±Ç°µÄÄ¿±êµÄÊµ¼Ê±©»÷ÂÊ
-                    // (Èç¹ûÄãµÄ¸Ğµç Debuff »áÔö¼Ó¹ÖÎï±»±©»÷µÄ¸ÅÂÊ£¬ÔÚÕâÀï¼ÓÉÏÂß¼­)
-                    // ±ÈÈç: float effectiveCrit = this.critRate + (receiver.HasShock ? 0.1f : 0f);
+                    // 1. è·å–å½“å‰çš„ç›®æ ‡çš„å®é™…æš´å‡»ç‡
+                    // (å¦‚æœä½ çš„æ„Ÿç”µ Debuff ä¼šå¢åŠ æ€ªç‰©è¢«æš´å‡»çš„æ¦‚ç‡ï¼Œåœ¨è¿™é‡ŒåŠ ä¸Šé€»è¾‘)
+                    // æ¯”å¦‚: float effectiveCrit = this.critRate + (receiver.HasShock ? 0.1f : 0f);
                     float effectiveCrit = this.critRate;
 
                     bool isCrit = Random.value <= this.critRate;
@@ -150,28 +150,28 @@ public class MagneticStormAura : MonoBehaviour
 
                     if (isCrit)
                     {
-                        // ±©»÷£ºÉËº¦Ôö¼Ó + ±Ø¶¨Ñ£ÔÎ
+                        // æš´å‡»ï¼šä¼¤å®³å¢åŠ  + å¿…å®šçœ©æ™•
                         actualDamage = Mathf.RoundToInt(finalLightningDamage * critMultiplier);
 
-                        // ´¥·¢Ñ£ÔÎ
+                        // è§¦å‘çœ©æ™•
                         if (receiver != null)
                         {
-                            // ¼ÙÉèÄãÓĞ ApplyStun£¬Èç¹ûÃ»ÓĞ¾ÍÓÃ ApplySlow Ìæ´ú
+                            // å‡è®¾ä½ æœ‰ ApplyStunï¼Œå¦‚æœæ²¡æœ‰å°±ç”¨ ApplySlow æ›¿ä»£
                             receiver.ApplyStun(stunDuration, electricSparkVfxPrefab);
-                            // Debug.Log("À×»÷±©»÷£¡´¥·¢Ñ£ÔÎ£¡");
+                            // Debug.Log("é›·å‡»æš´å‡»ï¼è§¦å‘çœ©æ™•ï¼");
                         }
                     }
 
-                    // Ôì³ÉÉËº¦
-                    // ×¢Òâ£ºÈç¹ûÄãµÄ TakeDamage Ö§³Ö´«Èë isCrit ²ÎÊıÀ´Æ®»Æ×Ö£¬¼ÇµÃ´«½øÈ¥
-                    h.TakeDamage(actualDamage,                       // 1. ÉËº¦
-        strikePos,                          // 2. Î»ÖÃ
-        ownerWeapon.gameObject,             // 3. ¹¥»÷Õß
-        AttackType.Standard,                // 4. ÀàĞÍ
-        projectile: null,                   // 5. Projectile (¹â»·Ã»ÓĞ×Óµ¯½Å±¾)
-        beamController: null,               // 6. BeamController (¹â»·Ã»ÓĞÉäÏß½Å±¾)
-        sourceWeaponName: ownerWeapon.StatBlock.weaponName, // 7. ÎäÆ÷Ãû
-        isCritical: isCrit                  // 8. ±©»÷×´Ì¬ (´«½øÈ¥!)
+                    // é€ æˆä¼¤å®³
+                    // æ³¨æ„ï¼šå¦‚æœä½ çš„ TakeDamage æ”¯æŒä¼ å…¥ isCrit å‚æ•°æ¥é£˜é»„å­—ï¼Œè®°å¾—ä¼ è¿›å»
+                    h.TakeDamage(actualDamage,                       // 1. ä¼¤å®³
+        strikePos,                          // 2. ä½ç½®
+        ownerWeapon.gameObject,             // 3. æ”»å‡»è€…
+        AttackType.Standard,                // 4. ç±»å‹
+        projectile: null,                   // 5. Projectile (å…‰ç¯æ²¡æœ‰å­å¼¹è„šæœ¬)
+        beamController: null,               // 6. BeamController (å…‰ç¯æ²¡æœ‰å°„çº¿è„šæœ¬)
+        sourceWeaponName: ownerWeapon.StatBlock.weaponName, // 7. æ­¦å™¨å
+        isCritical: isCrit                  // 8. æš´å‡»çŠ¶æ€ (ä¼ è¿›å»!)
     );
                 }
             }
@@ -209,12 +209,12 @@ public class MagneticStormAura : MonoBehaviour
 
             if (h != null && !h.IsDead)
             {
-                // ¡¾ĞŞ¸´¡¿Ö»ÓĞµ±ÉËº¦´óÓÚ 0 (¼´¿ªÆôÁË DOT Ä£Ê½) Ê±£¬²ÅÔì³ÉÉËº¦²¢Ê©¼Ó¸Ğµç
+                // ã€ä¿®å¤ã€‘åªæœ‰å½“ä¼¤å®³å¤§äº 0 (å³å¼€å¯äº† DOT æ¨¡å¼) æ—¶ï¼Œæ‰é€ æˆä¼¤å®³å¹¶æ–½åŠ æ„Ÿç”µ
                 if (finalDotDamage > 0)
                 {
                     h.TakeDamage(finalDotDamage, col.transform.position, ownerWeapon.gameObject, AttackType.Standard);
 
-                    // ½« ApplyShock ÒÆµ½ÕâÀïÃæ
+                    // å°† ApplyShock ç§»åˆ°è¿™é‡Œé¢
                     if (status != null)
                     {
                         status.ApplyShock(1.0f, electricSparkVfxPrefab);

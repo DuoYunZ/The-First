@@ -1,6 +1,6 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
-using UnityEngine.AI; // ¡¾ĞÂÔö¡¿
+using UnityEngine.AI; // ã€æ–°å¢ã€‘
 
 
 [RequireComponent(typeof(EnemyAI))]
@@ -8,40 +8,40 @@ using UnityEngine.AI; // ¡¾ĞÂÔö¡¿
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyDashAttack : MonoBehaviour
 {
-    [Header("³å´ÌÉèÖÃ")]
-    [Tooltip("µØÃæ³å´ÌÂ·¾¶µÄÔ¤¾¯ÌØĞ§")]
+    [Header("å†²åˆºè®¾ç½®")]
+    [Tooltip("åœ°é¢å†²åˆºè·¯å¾„çš„é¢„è­¦ç‰¹æ•ˆ")]
     public GameObject dashWarningPrefab;
-    [Tooltip("½øÈë´Ë·¶Î§ºó£¬¹ÖÎï»á¿ªÊ¼×¼±¸³å´Ì")]
+    [Tooltip("è¿›å…¥æ­¤èŒƒå›´åï¼Œæ€ªç‰©ä¼šå¼€å§‹å‡†å¤‡å†²åˆº")]
     public float attackRange = 12f;
-    [Tooltip("³å´ÌÀäÈ´Ê±¼ä£¨Ãë£©")]
+    [Tooltip("å†²åˆºå†·å´æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float cooldown = 6f;
-    [Tooltip("Ô¤¾¯ÌØĞ§ÏÔÊ¾Ê±³¤£¨Ãë£©")]
+    [Tooltip("é¢„è­¦ç‰¹æ•ˆæ˜¾ç¤ºæ—¶é•¿ï¼ˆç§’ï¼‰")]
     public float warningDuration = 1.2f;
-    [Tooltip("³å´ÌÊ±µÄÒÆ¶¯ËÙ¶È")]
+    [Tooltip("å†²åˆºæ—¶çš„ç§»åŠ¨é€Ÿåº¦")]
     public float dashSpeed = 30f;
-    [Tooltip("³å´ÌµÄ×î´ó¾àÀë")]
+    [Tooltip("å†²åˆºçš„æœ€å¤§è·ç¦»")]
     public float dashDistance = 15f;
-    [Tooltip("³å´ÌÊ±Ôì³ÉµÄÉËº¦")]
+    [Tooltip("å†²åˆºæ—¶é€ æˆçš„ä¼¤å®³")]
     public int dashDamage = 20;
-    [Tooltip("³å´ÌÂ·¾¶µÄ¿í¶È")]
+    [Tooltip("å†²åˆºè·¯å¾„çš„å®½åº¦")]
     public float dashWidth = 2f;
 
-    [Header("¡¾ĞÂÔö¡¿ÌØĞ§Ô¤ÖÆ¼ş")]
-    [Tooltip("³å´ÌÆô¶¯Ê±ÔÚ½ÅÏÂÉú³ÉµÄÑÌ³¾ÌØĞ§")]
+    [Header("ã€æ–°å¢ã€‘ç‰¹æ•ˆé¢„åˆ¶ä»¶")]
+    [Tooltip("å†²åˆºå¯åŠ¨æ—¶åœ¨è„šä¸‹ç”Ÿæˆçš„çƒŸå°˜ç‰¹æ•ˆ")]
     public GameObject dashDustEffectPrefab;
-    [Tooltip("³å´Ì¹ı³ÌÖĞ¸úËæÉíÌåµÄ³ÖĞøËÙ¶ÈÏß/ÍÏÎ²ÌØĞ§")]
+    [Tooltip("å†²åˆºè¿‡ç¨‹ä¸­è·Ÿéšèº«ä½“çš„æŒç»­é€Ÿåº¦çº¿/æ‹–å°¾ç‰¹æ•ˆ")]
     public GameObject dashSpeedEffectPrefab;
 
 
-    // Ë½ÓĞ±äÁ¿
+    // ç§æœ‰å˜é‡
     private Transform playerTarget;
     private float attackCooldownTimer;
     private NavMeshAgent agent;
     private Rigidbody rb;
     private bool isAttacking = false;
-    private Collider damageCollider; // ÓÃÓÚÔÚ³å´ÌÊ±¼¤»îµÄÉËº¦Åö×²Ìå
+    private Collider damageCollider; // ç”¨äºåœ¨å†²åˆºæ—¶æ¿€æ´»çš„ä¼¤å®³ç¢°æ’ä½“
     private Animator animator;
-    private GameObject currentDashSpeedEffectInstance; // ¡¾ĞÂÔö¡¿ÓÃÓÚ´æ´¢³ÖĞøÌØĞ§µÄÊµÀı
+    private GameObject currentDashSpeedEffectInstance; // ã€æ–°å¢ã€‘ç”¨äºå­˜å‚¨æŒç»­ç‰¹æ•ˆçš„å®ä¾‹
 
     void Start()
     {
@@ -51,16 +51,16 @@ public class EnemyDashAttack : MonoBehaviour
         }
         else
         {
-            Debug.LogError("EnemyDashAttack: Î´ÄÜÕÒµ½ GameManager »òÍæ¼ÒÒıÓÃ£¡", this);
+            Debug.LogError("EnemyDashAttack: æœªèƒ½æ‰¾åˆ° GameManager æˆ–ç©å®¶å¼•ç”¨ï¼", this);
             enabled = false;
         }
 
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>();
-        animator = GetComponent<Animator>(); // ¡¾ĞÂÔö¡¿ÔÚStartÖĞ»ñÈ¡Animator
+        animator = GetComponent<Animator>(); // ã€æ–°å¢ã€‘åœ¨Startä¸­è·å–Animator
 
-        // ×îºÃÓĞÒ»¸ö×¨ÃÅµÄÅö×²ÌåÓÃÓÚ³å´ÌÉËº¦£¬±ÜÃâÓëÖ÷Åö×²Ìå³åÍ»
-        // Äã¿ÉÒÔÎª¹ÖÎï´´½¨Ò»¸ö×Ó¶ÔÏó£¬¹ÒÔØÒ»¸öBoxCollider(ÉèÎªIsTrigger)£¬²¢ÔÚÕâÀï»ñÈ¡Ëü
+        // æœ€å¥½æœ‰ä¸€ä¸ªä¸“é—¨çš„ç¢°æ’ä½“ç”¨äºå†²åˆºä¼¤å®³ï¼Œé¿å…ä¸ä¸»ç¢°æ’ä½“å†²çª
+        // ä½ å¯ä»¥ä¸ºæ€ªç‰©åˆ›å»ºä¸€ä¸ªå­å¯¹è±¡ï¼ŒæŒ‚è½½ä¸€ä¸ªBoxCollider(è®¾ä¸ºIsTrigger)ï¼Œå¹¶åœ¨è¿™é‡Œè·å–å®ƒ
         damageCollider = transform.Find("DashDamageTrigger")?.GetComponent<Collider>();
         if(damageCollider != null) damageCollider.enabled = false;
     }
@@ -84,7 +84,7 @@ public class EnemyDashAttack : MonoBehaviour
     {
         isAttacking = true;
 
-        // 1. ¹¥»÷Ç°ÖÃ¶¯×÷£ºÍ£Ö¹AI£¬Ãæ³¯Íæ¼Ò
+        // 1. æ”»å‡»å‰ç½®åŠ¨ä½œï¼šåœæ­¢AIï¼Œé¢æœç©å®¶
         agent.isStopped = true;
         agent.velocity = Vector3.zero;
         if (animator != null) animator.SetBool("isMoving", false);
@@ -93,38 +93,38 @@ public class EnemyDashAttack : MonoBehaviour
         Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
         transform.rotation = targetRotation;
 
-        // ¡¾ºËĞÄĞŞ¸Ä A¡¿´¥·¢¡°Ç°Ò¡¡±¶¯»­
+        // ã€æ ¸å¿ƒä¿®æ”¹ Aã€‘è§¦å‘â€œå‰æ‘‡â€åŠ¨ç”»
         if (animator != null)
         {
             animator.SetTrigger("doWarning");
         }
 
 
-        // 2. ¡¾ºËĞÄĞŞ¸Ä¡¿Éú³É¶¯Ì¬Ô¤¾¯²¢µ÷ÓÃÆä¶¯»­
+        // 2. ã€æ ¸å¿ƒä¿®æ”¹ã€‘ç”ŸæˆåŠ¨æ€é¢„è­¦å¹¶è°ƒç”¨å…¶åŠ¨ç”»
         if (dashWarningPrefab != null)
         {
-            // ÒÀÈ»ÔÚ¹ÖÎïÇ°·½Éú³ÉÔ¤¾¯
-            Vector3 warningPosition = transform.position + transform.forward * (dashDistance / 2f); // ÖĞĞÄµãÔÚ³å´ÌÂ·¾¶µÄÖĞ¼ä
-                                                                                                    // ... (ÌùµØÂß¼­¿ÉÒÔ±£Áô) ...
+            // ä¾ç„¶åœ¨æ€ªç‰©å‰æ–¹ç”Ÿæˆé¢„è­¦
+            Vector3 warningPosition = transform.position + transform.forward * (dashDistance / 2f); // ä¸­å¿ƒç‚¹åœ¨å†²åˆºè·¯å¾„çš„ä¸­é—´
+                                                                                                    // ... (è´´åœ°é€»è¾‘å¯ä»¥ä¿ç•™) ...
 
             GameObject warningIndicator = Instantiate(dashWarningPrefab, warningPosition, transform.rotation);
 
-            // »ñÈ¡¿ØÖÆÆ÷²¢µ÷ÓÃ¶¯»­
+            // è·å–æ§åˆ¶å™¨å¹¶è°ƒç”¨åŠ¨ç”»
             DashIndicatorController indicatorController = warningIndicator.GetComponent<DashIndicatorController>();
             if (indicatorController != null)
             {
-                // ´«ÈëÔ¤¾¯Ê±³¤ºÍ³å´ÌµÄ¿í¶È/³¤¶È
+                // ä¼ å…¥é¢„è­¦æ—¶é•¿å’Œå†²åˆºçš„å®½åº¦/é•¿åº¦
                 indicatorController.Animate(warningDuration, this.dashWidth, this.dashDistance);
             }
         }
 
-        // 3. µÈ´ıÔ¤¾¯£¨Ìî³ä¶¯»­£©²¥·ÅÍê±Ï
+        // 3. ç­‰å¾…é¢„è­¦ï¼ˆå¡«å……åŠ¨ç”»ï¼‰æ’­æ”¾å®Œæ¯•
         yield return new WaitForSeconds(warningDuration);
 
         agent.enabled = false;
         rb.isKinematic = false;
-        // 4. ³å·æ£¡
-        // (¿ÉÑ¡) ´¥·¢¡°³å´Ì¡±¶¯»­: animator.SetTrigger("Dash");
+        // 4. å†²é”‹ï¼
+        // (å¯é€‰) è§¦å‘â€œå†²åˆºâ€åŠ¨ç”»: animator.SetTrigger("Dash");
         if (animator != null)
         {
             animator.SetTrigger("doAttack");
@@ -145,7 +145,7 @@ public class EnemyDashAttack : MonoBehaviour
         float dashDuration = dashDistance / dashSpeed;
         rb.velocity = transform.forward * dashSpeed;
 
-        // 5. ³å·æ½áÊøºóÍ£Ö¹
+        // 5. å†²é”‹ç»“æŸååœæ­¢
         yield return new WaitForSeconds(dashDuration);
         rb.velocity = Vector3.zero;
         agent.enabled = true;
@@ -155,23 +155,23 @@ public class EnemyDashAttack : MonoBehaviour
         {
             Destroy(currentDashSpeedEffectInstance);
         }
-        // 6. ¹¥»÷½áÊø£¬»Ö¸´AI
+        // 6. æ”»å‡»ç»“æŸï¼Œæ¢å¤AI
         agent.isStopped = false;
         isAttacking = false;
     }
 
-    // (ÍÆ¼ö) Èç¹ûÄãÊ¹ÓÃÁË¶ÀÁ¢µÄÉËº¦´¥·¢Æ÷£¬ĞèÒªÔÚÕâÀï´¦ÀíÉËº¦Âß¼­
+    // (æ¨è) å¦‚æœä½ ä½¿ç”¨äº†ç‹¬ç«‹çš„ä¼¤å®³è§¦å‘å™¨ï¼Œéœ€è¦åœ¨è¿™é‡Œå¤„ç†ä¼¤å®³é€»è¾‘
 
     void OnTriggerEnter(Collider other)
     {
-        // ÄúµÄ½Å±¾¿ÉÄÜÊ¹ÓÃ isAttacking »ò damageCollider.enabled À´ÅĞ¶ÏÊÇ·ñÔÚ¹¥»÷ÖĞ
-        // ÎÒÃÇ±£ÁôÔ­ÓĞÂß¼­£¬Ö»ĞŞ¸ÄTakeDamageµÄµ÷ÓÃ
+        // æ‚¨çš„è„šæœ¬å¯èƒ½ä½¿ç”¨ isAttacking æˆ– damageCollider.enabled æ¥åˆ¤æ–­æ˜¯å¦åœ¨æ”»å‡»ä¸­
+        // æˆ‘ä»¬ä¿ç•™åŸæœ‰é€»è¾‘ï¼Œåªä¿®æ”¹TakeDamageçš„è°ƒç”¨
         if (isAttacking && other.CompareTag("Player"))
         {
             Health playerHealth = other.GetComponent<Health>();
             if (playerHealth != null)
             {
-                // ¡¾ºËĞÄĞŞ¸Ä¡¿¹¥»÷ÀàĞÍÉèÖÃÎª ShieldBreaking£¡
+                // ã€æ ¸å¿ƒä¿®æ”¹ã€‘æ”»å‡»ç±»å‹è®¾ç½®ä¸º ShieldBreakingï¼
                 playerHealth.TakeDamage(dashDamage, transform.position, this.gameObject, AttackType.ShieldBreaking);
 
                 

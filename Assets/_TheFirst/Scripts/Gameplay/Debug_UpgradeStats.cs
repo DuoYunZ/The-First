@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 
@@ -6,18 +6,18 @@ public class Debug_UpgradeStats : MonoBehaviour
 {
     public static Debug_UpgradeStats Instance { get; private set; }
 
-    public TextMeshProUGUI statsDisplayText; // ÓÃÓÚÏÔÊ¾Í³¼Æ½á¹ûµÄUIÎÄ±¾
+    public TextMeshProUGUI statsDisplayText; // ç”¨äºæ˜¾ç¤ºç»Ÿè®¡ç»“æœçš„UIæ–‡æœ¬
 
     private Dictionary<Rarity, int> rarityCounts = new Dictionary<Rarity, int>();
     private int totalCount = 0;
-    private string lastUpgradeLogged = ""; // ¡¾ĞÂÔö¡¿ÓÃÓÚ´æ´¢ÉÏÒ»ÌõÉı¼¶ĞÅÏ¢
+    private string lastUpgradeLogged = ""; // ã€æ–°å¢ã€‘ç”¨äºå­˜å‚¨ä¸Šä¸€æ¡å‡çº§ä¿¡æ¯
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // ³õÊ¼»¯¼ÆÊıÆ÷
+        // åˆå§‹åŒ–è®¡æ•°å™¨
         rarityCounts[Rarity.Common] = 0;
         rarityCounts[Rarity.Uncommon] = 0;
         rarityCounts[Rarity.Rare] = 0;
@@ -25,7 +25,7 @@ public class Debug_UpgradeStats : MonoBehaviour
     }
 
     /// <summary>
-    /// ¼ÇÂ¼Ò»´Î³é¿¨½á¹ûµÄÆ·ÖÊ
+    /// è®°å½•ä¸€æ¬¡æŠ½å¡ç»“æœçš„å“è´¨
     /// </summary>
     public void LogRarity(Rarity rarity)
     {
@@ -35,7 +35,7 @@ public class Debug_UpgradeStats : MonoBehaviour
     }
 
     /// <summary>
-    /// ¡¾ĞÂÔö¡¿¼ÇÂ¼²¢ÁÙÊ±ÏÔÊ¾ÉÏÒ»´Î»ñµÃµÄ¾ßÌåÉı¼¶ÃèÊö
+    /// ã€æ–°å¢ã€‘è®°å½•å¹¶ä¸´æ—¶æ˜¾ç¤ºä¸Šä¸€æ¬¡è·å¾—çš„å…·ä½“å‡çº§æè¿°
     /// </summary>
     public void SetLastUpgradeMessage(string message)
     {
@@ -52,13 +52,13 @@ public class Debug_UpgradeStats : MonoBehaviour
         float rarePct = (totalCount > 0) ? (float)rarityCounts[Rarity.Rare] / totalCount * 100 : 0;
         float epicPct = (totalCount > 0) ? (float)rarityCounts[Rarity.Epic] / totalCount * 100 : 0;
 
-        // ¡¾ĞŞ¸Ä¡¿ÔÚÏÔÊ¾ÄÚÈİÖĞ¼ÓÈë¡°×î½ü»ñµÃ¡±
-        statsDisplayText.text = "<b>--- ×î½ü»ñµÃ ---</b>\n" +
+        // ã€ä¿®æ”¹ã€‘åœ¨æ˜¾ç¤ºå†…å®¹ä¸­åŠ å…¥â€œæœ€è¿‘è·å¾—â€
+        statsDisplayText.text = "<b>--- æœ€è¿‘è·å¾— ---</b>\n" +
                                 $"{lastUpgradeLogged}\n\n" +
-                                "<b>--- Éı¼¶Æ·ÖÊ¸ÅÂÊÍ³¼Æ (×Ü¼Æ: " + totalCount + ") ---</b>\n" +
-                                $"<color=white>ÆÕÍ¨ (°×): {rarityCounts[Rarity.Common]}´Î ({commonPct:F1}%)</color>\n" +
-                                $"<color=blue>Ï¡ÓĞ (À¶): {rarityCounts[Rarity.Uncommon]}´Î ({uncommonPct:F1}%)</color>\n" +
-                                $"<color=purple>Ê·Ê« (×Ï): {rarityCounts[Rarity.Rare]}´Î ({rarePct:F1}%)</color>\n" +
-                                $"<color=orange>´«Ëµ (³È): {rarityCounts[Rarity.Epic]}´Î ({epicPct:F1}%)</color>";
+                                "<b>--- å‡çº§å“è´¨æ¦‚ç‡ç»Ÿè®¡ (æ€»è®¡: " + totalCount + ") ---</b>\n" +
+                                $"<color=white>æ™®é€š (ç™½): {rarityCounts[Rarity.Common]}æ¬¡ ({commonPct:F1}%)</color>\n" +
+                                $"<color=blue>ç¨€æœ‰ (è“): {rarityCounts[Rarity.Uncommon]}æ¬¡ ({uncommonPct:F1}%)</color>\n" +
+                                $"<color=purple>å²è¯— (ç´«): {rarityCounts[Rarity.Rare]}æ¬¡ ({rarePct:F1}%)</color>\n" +
+                                $"<color=orange>ä¼ è¯´ (æ©™): {rarityCounts[Rarity.Epic]}æ¬¡ ({epicPct:F1}%)</color>";
     }
 }

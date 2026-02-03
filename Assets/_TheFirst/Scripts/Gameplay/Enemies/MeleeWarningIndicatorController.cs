@@ -1,4 +1,4 @@
-// MeleeWarningIndicatorController.cs (×îÖÕ°æ±¾)
+ï»¿// MeleeWarningIndicatorController.cs (æœ€ç»ˆç‰ˆæœ¬)
 using UnityEngine;
 using DG.Tweening;
 
@@ -8,16 +8,16 @@ public class MeleeWarningIndicatorController : MonoBehaviour
 
     void Awake()
     {
-        // Ê¹ÓÃGetComponentInChildrenÈ·±£ÄÜÕÒµ½Sprite Renderer£¬¼´Ê¹ËüÔÚ×Ó¶ÔÏóÉÏ
+        // ä½¿ç”¨GetComponentInChildrenç¡®ä¿èƒ½æ‰¾åˆ°Sprite Rendererï¼Œå³ä½¿å®ƒåœ¨å­å¯¹è±¡ä¸Š
         SpriteRenderer renderer = GetComponentInChildren<SpriteRenderer>();
         if (renderer != null)
         {
-            // »ñÈ¡²ÄÖÊÊµÀı£¬±ÜÃâĞŞ¸ÄÏîÄ¿ÖĞµÄÔ­Ê¼²ÄÖÊ
+            // è·å–æè´¨å®ä¾‹ï¼Œé¿å…ä¿®æ”¹é¡¹ç›®ä¸­çš„åŸå§‹æè´¨
             mat = renderer.material;
         }
         else
         {
-            Debug.LogError("MeleeWarningIndicatorController: ÔÚ¶ÔÏó»òÆä×Ó¶ÔÏóÖĞÕÒ²»µ½Sprite Renderer×é¼ş£¡", this.gameObject);
+            Debug.LogError("MeleeWarningIndicatorController: åœ¨å¯¹è±¡æˆ–å…¶å­å¯¹è±¡ä¸­æ‰¾ä¸åˆ°Sprite Rendererç»„ä»¶ï¼", this.gameObject);
         }
     }
 
@@ -25,21 +25,21 @@ public class MeleeWarningIndicatorController : MonoBehaviour
     {
         if (mat == null)
         {
-            // Èç¹û²ÄÖÊÎª¿Õ£¬ÔÚÖ¸¶¨Ê±¼äºóÏú»Ù×Ô¼º²¢ÍË³ö£¬·ÀÖ¹±¨´í
+            // å¦‚æœæè´¨ä¸ºç©ºï¼Œåœ¨æŒ‡å®šæ—¶é—´åé”€æ¯è‡ªå·±å¹¶é€€å‡ºï¼Œé˜²æ­¢æŠ¥é”™
             Destroy(gameObject, duration);
             return;
         }
 
-        // ÎÒÃÇ²»ÔÙÍ¨¹ı´úÂë¿ØÖÆÊÓ¾õ´óĞ¡£¬ÍêÈ«ÒÀÀµÓÚÄúÔÚPrefabÖĞÉèÖÃµÄScale
+        // æˆ‘ä»¬ä¸å†é€šè¿‡ä»£ç æ§åˆ¶è§†è§‰å¤§å°ï¼Œå®Œå…¨ä¾èµ–äºæ‚¨åœ¨Prefabä¸­è®¾ç½®çš„Scale
 
-        // 1. ÉèÖÃShaderµÄ½Ç¶È
+        // 1. è®¾ç½®Shaderçš„è§’åº¦
         mat.SetFloat("_SectorAngle", attackAngle);
 
         mat.SetFloat("_TargetFillAmount", attackRadius / visualRadius);
 
-        // 2. ¼ÆËã²¢¶¯»­Ìî³äÁ¿
+        // 2. è®¡ç®—å¹¶åŠ¨ç”»å¡«å……é‡
         float targetFillAmount = 0f;
-        if (visualRadius > 0.001f) // Ôö¼ÓÒ»¸ö°²È«¼ì²é£¬·ÀÖ¹³ıÒÔÁã
+        if (visualRadius > 0.001f) // å¢åŠ ä¸€ä¸ªå®‰å…¨æ£€æŸ¥ï¼Œé˜²æ­¢é™¤ä»¥é›¶
         {
             targetFillAmount = attackRadius / visualRadius;
         }
@@ -47,7 +47,7 @@ public class MeleeWarningIndicatorController : MonoBehaviour
         mat.SetFloat("_FillAmount", 0f);
         mat.DOFloat(targetFillAmount, "_FillAmount", duration).SetEase(Ease.Linear);
 
-        // ÔÚ¶¯»­½áÊøºóÉÔ×÷ÑÓ³ÙÔÙÏú»Ù£¬È·±£¶¯»­ÄÜÍêÕû²¥·Å
+        // åœ¨åŠ¨ç”»ç»“æŸåç¨ä½œå»¶è¿Ÿå†é”€æ¯ï¼Œç¡®ä¿åŠ¨ç”»èƒ½å®Œæ•´æ’­æ”¾
         Destroy(gameObject, duration + 0.1f);
     }
 }

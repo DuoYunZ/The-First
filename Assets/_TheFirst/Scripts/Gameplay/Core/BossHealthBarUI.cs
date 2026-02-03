@@ -1,32 +1,32 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // Èç¹ûÄãÓÃµÄÊÇ TextMeshPro
+using TMPro; // å¦‚æœä½ ç”¨çš„æ˜¯ TextMeshPro
 
 public class BossHealthBarUI : MonoBehaviour
 {
     public static BossHealthBarUI Instance { get; private set; }
 
-    [Header("UI ×é¼şÒıÓÃ")]
-    public GameObject panelRoot;      // Õû¸öÃæ°åµÄ¸¸ÎïÌå (ÓÃÓÚ¿ª¹Ø)
-    public Slider healthSlider;       // Ö÷ÑªÌõ Slider
-    public Image easeFillImage;       // »º³å²ã Image (Èç¹ûÊÇ Slider µÄ»°¾ÍÒıÓÃ Slider)
-    public Slider easeSlider;         // ¡¾ÍÆ¼ö¡¿»º³å²ãÒ²ÓÃÒ»¸ö Slider ×é¼ş£¬ºÍÖ÷ÑªÌõÖØµş
-    public TextMeshProUGUI nameText;  // Boss Ãû×Ö
-    public CanvasGroup canvasGroup;   // ÓÃÓÚµ­Èëµ­³ö
+    [Header("UI ç»„ä»¶å¼•ç”¨")]
+    public GameObject panelRoot;      // æ•´ä¸ªé¢æ¿çš„çˆ¶ç‰©ä½“ (ç”¨äºå¼€å…³)
+    public Slider healthSlider;       // ä¸»è¡€æ¡ Slider
+    public Image easeFillImage;       // ç¼“å†²å±‚ Image (å¦‚æœæ˜¯ Slider çš„è¯å°±å¼•ç”¨ Slider)
+    public Slider easeSlider;         // ã€æ¨èã€‘ç¼“å†²å±‚ä¹Ÿç”¨ä¸€ä¸ª Slider ç»„ä»¶ï¼Œå’Œä¸»è¡€æ¡é‡å 
+    public TextMeshProUGUI nameText;  // Boss åå­—
+    public CanvasGroup canvasGroup;   // ç”¨äºæ·¡å…¥æ·¡å‡º
 
-    [Header("ÉèÖÃ")]
-    public float easeSpeed = 2f;      // »º³åÌõ×·¸ÏËÙ¶È
+    [Header("è®¾ç½®")]
+    public float easeSpeed = 2f;      // ç¼“å†²æ¡è¿½èµ¶é€Ÿåº¦
 
-    private Health targetBossHealth;  // µ±Ç°°ó¶¨µÄ Boss ÑªÁ¿×é¼ş
+    private Health targetBossHealth;  // å½“å‰ç»‘å®šçš„ Boss è¡€é‡ç»„ä»¶
 
     private void Awake()
     {
-        // µ¥ÀıÄ£Ê½£¬·½±ã Boss Éú³ÉÊ±Ö±½Óµ÷ÓÃ
+        // å•ä¾‹æ¨¡å¼ï¼Œæ–¹ä¾¿ Boss ç”Ÿæˆæ—¶ç›´æ¥è°ƒç”¨
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // ³õÊ¼Òş²Ø
+        // åˆå§‹éšè—
         if (panelRoot != null) panelRoot.SetActive(false);
         if (canvasGroup != null) canvasGroup.alpha = 0;
     }
@@ -35,8 +35,8 @@ public class BossHealthBarUI : MonoBehaviour
     {
         if (targetBossHealth == null) return;
 
-        // 1. ¸üĞÂÖ÷ÑªÌõ (Ë²¼ä±ä»¯)
-        // ¼ÙÉè Health ×é¼şÓĞ currentHealth ºÍ maxHealth ×Ö¶Î
+        // 1. æ›´æ–°ä¸»è¡€æ¡ (ç¬é—´å˜åŒ–)
+        // å‡è®¾ Health ç»„ä»¶æœ‰ currentHealth å’Œ maxHealth å­—æ®µ
         float targetFill = (float)targetBossHealth.currentHealth / targetBossHealth.maxHealth;
 
         if (healthSlider.value != targetFill)
@@ -44,8 +44,8 @@ public class BossHealthBarUI : MonoBehaviour
             healthSlider.value = targetFill;
         }
 
-        // 2. ¸üĞÂ»º³åÌõ (Æ½»¬×·¸Ï)
-        // Èç¹û easeSlider µÄÖµ±ÈÖ÷ÑªÌõ´ó£¬¾ÍÂıÂı¼õĞ¡
+        // 2. æ›´æ–°ç¼“å†²æ¡ (å¹³æ»‘è¿½èµ¶)
+        // å¦‚æœ easeSlider çš„å€¼æ¯”ä¸»è¡€æ¡å¤§ï¼Œå°±æ…¢æ…¢å‡å°
         if (easeSlider != null)
         {
             if (easeSlider.value > healthSlider.value)
@@ -54,12 +54,12 @@ public class BossHealthBarUI : MonoBehaviour
             }
             else
             {
-                // Èç¹û»ØÑªÁË£¬»òÕß»º³åÌõ×·ÉÏÁË£¬¾ÍÍ¬²½
+                // å¦‚æœå›è¡€äº†ï¼Œæˆ–è€…ç¼“å†²æ¡è¿½ä¸Šäº†ï¼Œå°±åŒæ­¥
                 easeSlider.value = healthSlider.value;
             }
         }
 
-        // 3. ¼ì²â Boss ËÀÍö
+        // 3. æ£€æµ‹ Boss æ­»äº¡
         if (targetBossHealth.IsDead)
         {
             HideBossBar();
@@ -67,23 +67,23 @@ public class BossHealthBarUI : MonoBehaviour
     }
 
     /// <summary>
-    /// µ± Boss Éú³ÉÊ±µ÷ÓÃ´Ë·½·¨
+    /// å½“ Boss ç”Ÿæˆæ—¶è°ƒç”¨æ­¤æ–¹æ³•
     /// </summary>
     public void InitializeBossBar(Health bossHealth, string bossName)
     {
         targetBossHealth = bossHealth;
 
-        // ÉèÖÃ UI
+        // è®¾ç½® UI
         if (nameText != null) nameText.text = bossName;
 
-        // ÖØÖÃÑªÌõ×´Ì¬
+        // é‡ç½®è¡€æ¡çŠ¶æ€
         healthSlider.value = 1f;
         if (easeSlider != null) easeSlider.value = 1f;
 
-        // ÏÔÊ¾Ãæ°å
+        // æ˜¾ç¤ºé¢æ¿
         if (panelRoot != null) panelRoot.SetActive(true);
 
-        // ²¥·Åµ­Èë¶¯»­
+        // æ’­æ”¾æ·¡å…¥åŠ¨ç”»
         StartCoroutine(FadeInRoutine());
     }
 
@@ -113,6 +113,6 @@ public class BossHealthBarUI : MonoBehaviour
             yield return null;
         }
         if (panelRoot != null) panelRoot.SetActive(false);
-        targetBossHealth = null; // ½â°ó
+        targetBossHealth = null; // è§£ç»‘
     }
 }

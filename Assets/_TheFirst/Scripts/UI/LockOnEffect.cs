@@ -1,24 +1,24 @@
-using UnityEngine;
-using UnityEngine.UI; // ±ØĞëÒıÓÃ UI
+ï»¿using UnityEngine;
+using UnityEngine.UI; // å¿…é¡»å¼•ç”¨ UI
 
 public class LockOnEffect : MonoBehaviour
 {
-    [Header("¸úËæÉèÖÃ")]
-    public Transform target; // ÓÉÅÚËş½Å±¾¸³Öµ
-    public Vector3 offset = new Vector3(0, 1.0f, 0); // »ù´¡¸ß¶ÈÆ«ÒÆ(ĞØ¿Ú)
-    public float cameraOffset = 0.5f; // ÏòÉãÏñ»úÀ­½ü¶àÉÙÃ× (·ÀÖ¹²å½øÉíÌå)
+    [Header("è·Ÿéšè®¾ç½®")]
+    public Transform target; // ç”±ç‚®å¡”è„šæœ¬èµ‹å€¼
+    public Vector3 offset = new Vector3(0, 1.0f, 0); // åŸºç¡€é«˜åº¦åç§»(èƒ¸å£)
+    public float cameraOffset = 0.5f; // å‘æ‘„åƒæœºæ‹‰è¿‘å¤šå°‘ç±³ (é˜²æ­¢æ’è¿›èº«ä½“)
 
-    [Header("¶¯»­ÉèÖÃ")]
-    public float driftDuration = 0.5f; // Æ¯ÒÆËø¶¨Ê±¼ä
-    public float driftAmount = 50f;    // ×óÓÒÆ¯ÒÆµÄ³õÊ¼¾àÀë (ÏñËØ»òµ¥Î»)
-    public float blinkSpeed = 15f;     // ÉÁË¸ËÙ¶È
+    [Header("åŠ¨ç”»è®¾ç½®")]
+    public float driftDuration = 0.5f; // æ¼‚ç§»é”å®šæ—¶é—´
+    public float driftAmount = 50f;    // å·¦å³æ¼‚ç§»çš„åˆå§‹è·ç¦» (åƒç´ æˆ–å•ä½)
+    public float blinkSpeed = 15f;     // é—ªçƒé€Ÿåº¦
 
-    [Header("×é¼şÒıÓÃ")]
-    public RectTransform leftBracket;  // ×ó°ë±ßÀ¨ºÅ (¿ÉÑ¡)
-    public RectTransform rightBracket; // ÓÒ°ë±ßÀ¨ºÅ (¿ÉÑ¡)
-    public Image mainImage;            // Èç¹ûÖ»ÓĞÒ»ÕÅÕûÍ¼£¬ÍÏÕâ¸ö
+    [Header("ç»„ä»¶å¼•ç”¨")]
+    public RectTransform leftBracket;  // å·¦åŠè¾¹æ‹¬å· (å¯é€‰)
+    public RectTransform rightBracket; // å³åŠè¾¹æ‹¬å· (å¯é€‰)
+    public Image mainImage;            // å¦‚æœåªæœ‰ä¸€å¼ æ•´å›¾ï¼Œæ‹–è¿™ä¸ª
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private float timer;
     private CanvasGroup canvasGroup;
     private Camera mainCam;
@@ -26,7 +26,7 @@ public class LockOnEffect : MonoBehaviour
     void Awake()
     {
         mainCam = Camera.main;
-        // ×Ô¶¯Ìí¼Ó CanvasGroup ÓÃÓÚ¿ØÖÆÍ¸Ã÷¶ÈÉÁË¸
+        // è‡ªåŠ¨æ·»åŠ  CanvasGroup ç”¨äºæ§åˆ¶é€æ˜åº¦é—ªçƒ
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
@@ -34,88 +34,88 @@ public class LockOnEffect : MonoBehaviour
     void OnEnable()
     {
         timer = 0f;
-        // ³õÊ¼×´Ì¬£ºÍêÈ«Í¸Ã÷£¬Î»ÖÃÉ¢¿ª
+        // åˆå§‹çŠ¶æ€ï¼šå®Œå…¨é€æ˜ï¼Œä½ç½®æ•£å¼€
         if (canvasGroup) canvasGroup.alpha = 0f;
         UpdateAnimation(0f);
     }
 
-    void LateUpdate() // Ê¹ÓÃ LateUpdate ·ÀÖ¹¶¶¶¯
+    void LateUpdate() // ä½¿ç”¨ LateUpdate é˜²æ­¢æŠ–åŠ¨
     {
         if (target == null)
         {
-            Destroy(gameObject); // Ä¿±êÃ»ÁË£¬×Ô¼ºÏú»Ù
+            Destroy(gameObject); // ç›®æ ‡æ²¡äº†ï¼Œè‡ªå·±é”€æ¯
             return;
         }
 
-        // --- 1. Î»ÖÃ¸úËæÓë·À´©Ä£ ---
-        // »ù´¡Ä¿±êÎ»ÖÃ
+        // --- 1. ä½ç½®è·Ÿéšä¸é˜²ç©¿æ¨¡ ---
+        // åŸºç¡€ç›®æ ‡ä½ç½®
         Vector3 finalPos = target.position + offset;
 
-        // ¡¾ºËĞÄ·À´©Ä£Âß¼­¡¿
-        // ¼ÆËã´Ó Ä¿±ê -> ÉãÏñ»ú µÄ·½Ïò
+        // ã€æ ¸å¿ƒé˜²ç©¿æ¨¡é€»è¾‘ã€‘
+        // è®¡ç®—ä» ç›®æ ‡ -> æ‘„åƒæœº çš„æ–¹å‘
         if (mainCam != null)
         {
             Vector3 dirToCam = (mainCam.transform.position - finalPos).normalized;
-            // ÑØ×ÅÉãÏñ»ú·½Ïò°Ñ UI À­³öÀ´Ò»µãµã£¬ÕâÑù¾ø¶Ô²»»á²å½øÉíÌåÀï£¬ÓÀÔ¶ÔÚ×îÉÏ²ã
+            // æ²¿ç€æ‘„åƒæœºæ–¹å‘æŠŠ UI æ‹‰å‡ºæ¥ä¸€ç‚¹ç‚¹ï¼Œè¿™æ ·ç»å¯¹ä¸ä¼šæ’è¿›èº«ä½“é‡Œï¼Œæ°¸è¿œåœ¨æœ€ä¸Šå±‚
             finalPos += dirToCam * cameraOffset;
 
-            // --- 2. Ê¼ÖÕÃæ³¯ÉãÏñ»ú (Billboard) ---
+            // --- 2. å§‹ç»ˆé¢æœæ‘„åƒæœº (Billboard) ---
             transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
                              mainCam.transform.rotation * Vector3.up);
         }
 
         transform.position = finalPos;
 
-        // --- 3. ²¥·ÅËø¶¨¶¯»­ ---
+        // --- 3. æ’­æ”¾é”å®šåŠ¨ç”» ---
         if (timer < driftDuration)
         {
             timer += Time.deltaTime;
             float progress = Mathf.Clamp01(timer / driftDuration);
-            // Ê¹ÓÃ EaseOut ÇúÏßÈÃ¶¯×÷¸üÓĞÁ¦
+            // ä½¿ç”¨ EaseOut æ›²çº¿è®©åŠ¨ä½œæ›´æœ‰åŠ›
             float easeCurve = 1f - Mathf.Pow(1f - progress, 3);
             UpdateAnimation(easeCurve);
         }
         else
         {
-            // Ëø¶¨Íê³ÉºóµÄ×´Ì¬£º±£³Ö³£ÁÁ»òµÍÆµºôÎü
+            // é”å®šå®Œæˆåçš„çŠ¶æ€ï¼šä¿æŒå¸¸äº®æˆ–ä½é¢‘å‘¼å¸
             if (canvasGroup) canvasGroup.alpha = 1f;
-            // ÕâÀï¿ÉÒÔ¼ÓÒ»¸öÎ¢Ğ¡µÄºôÎüĞ§¹û
+            // è¿™é‡Œå¯ä»¥åŠ ä¸€ä¸ªå¾®å°çš„å‘¼å¸æ•ˆæœ
             transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 5f) * 0.05f);
         }
     }
 
     void UpdateAnimation(float progress)
     {
-        // A. ×óÓÒÆ¯ÒÆ / Ëõ·ÅÊÕÊø
-        // Èç¹ûÄãÖ»ÓĞÒ»ÕÅÍ¼£¬ÎÒÃÇÓÃ Scale Ä£Äâ¡°´Ó´óµ½Ğ¡¾Û½¹¡±
+        // A. å·¦å³æ¼‚ç§» / ç¼©æ”¾æ”¶æŸ
+        // å¦‚æœä½ åªæœ‰ä¸€å¼ å›¾ï¼Œæˆ‘ä»¬ç”¨ Scale æ¨¡æ‹Ÿâ€œä»å¤§åˆ°å°èšç„¦â€
         float scale = Mathf.Lerp(2.0f, 1.0f, progress);
         transform.localScale = Vector3.one * scale;
 
-        // B. ×óÓÒÎ»ÒÆ (Èç¹ûÄã²ğ·ÖÁË×óÓÒÀ¨ºÅ)
+        // B. å·¦å³ä½ç§» (å¦‚æœä½ æ‹†åˆ†äº†å·¦å³æ‹¬å·)
         if (leftBracket != null && rightBracket != null)
         {
-            // ×ó±ß´Ó¸ü×ó±ßÒÆ»ØÀ´
+            // å·¦è¾¹ä»æ›´å·¦è¾¹ç§»å›æ¥
             leftBracket.anchoredPosition = new Vector2(Mathf.Lerp(-driftAmount, 0, progress), 0);
-            // ÓÒ±ß´Ó¸üÓÒ±ßÒÆ»ØÀ´
+            // å³è¾¹ä»æ›´å³è¾¹ç§»å›æ¥
             rightBracket.anchoredPosition = new Vector2(Mathf.Lerp(driftAmount, 0, progress), 0);
         }
         else if (mainImage != null)
         {
-            // Ö»ÓĞÒ»ÕÅÍ¼£º¼ÓÒ»µãËæ»ú¶¶¶¯Ä£Äâ¡°Ğ£×¼ÖĞ¡±
+            // åªæœ‰ä¸€å¼ å›¾ï¼šåŠ ä¸€ç‚¹éšæœºæŠ–åŠ¨æ¨¡æ‹Ÿâ€œæ ¡å‡†ä¸­â€
             float jitter = Mathf.Lerp(0.5f, 0f, progress);
             Vector3 randomOffset = new Vector3(Random.Range(-jitter, jitter), Random.Range(-jitter, jitter), 0);
             mainImage.transform.localPosition = randomOffset;
         }
 
-        // C. ¸ßÆµÉÁË¸ (Alpha Blink)
+        // C. é«˜é¢‘é—ªçƒ (Alpha Blink)
         if (canvasGroup != null)
         {
-            // ÔÚÆ¯ÒÆ¹ı³ÌÖĞ¿ìËÙÉÁË¸
+            // åœ¨æ¼‚ç§»è¿‡ç¨‹ä¸­å¿«é€Ÿé—ªçƒ
             float blink = Mathf.Abs(Mathf.Sin(Time.time * blinkSpeed));
-            // Ëæ×ÅËø¶¨Íê³É£¬Í¸Ã÷¶ÈÇ÷ÏòÓÚ 1 (ÍêÈ«ÏÔÊ¾)
+            // éšç€é”å®šå®Œæˆï¼Œé€æ˜åº¦è¶‹å‘äº 1 (å®Œå…¨æ˜¾ç¤º)
             canvasGroup.alpha = Mathf.Lerp(blink, 1f, progress);
 
-            // ÑÕÉ«±ä»¯ (¿ÉÑ¡)£º´Ó»ÆÉ«±äºìÉ«
+            // é¢œè‰²å˜åŒ– (å¯é€‰)ï¼šä»é»„è‰²å˜çº¢è‰²
             if (mainImage != null)
             {
                 mainImage.color = Color.Lerp(Color.yellow, Color.red, progress);
@@ -123,15 +123,15 @@ public class LockOnEffect : MonoBehaviour
         }
     }
 
-    // ¹©Íâ²¿µ÷ÓÃÉèÖÃÄ¿±ê
+    // ä¾›å¤–éƒ¨è°ƒç”¨è®¾ç½®ç›®æ ‡
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
-        // ³¢ÊÔ×Ô¶¯Ğ£×¼¸ß¶È
+        // å°è¯•è‡ªåŠ¨æ ¡å‡†é«˜åº¦
         Transform aimPoint = target.Find("AimTargetPoint");
         if (aimPoint != null)
         {
-            // ¼ÆËã AimPoint Ïà¶ÔÓÚ Root µÄ¾Ö²¿¸ß¶È²î
+            // è®¡ç®— AimPoint ç›¸å¯¹äº Root çš„å±€éƒ¨é«˜åº¦å·®
             offset = aimPoint.position - target.position;
         }
     }

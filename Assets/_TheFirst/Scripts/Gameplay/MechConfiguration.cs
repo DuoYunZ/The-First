@@ -1,23 +1,23 @@
-// ÔÚ MechSaveData.cs (»òÀàËÆµÄ½Å±¾) ÖĞ
+ï»¿// åœ¨ MechSaveData.cs (æˆ–ç±»ä¼¼çš„è„šæœ¬) ä¸­
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
-[System.Serializable] // Ê¹Æä¿ÉÒÔÔÚ¼ìÊÓÃæ°åÖĞ²é¿´£¬²¢ÇÒÈç¹ûĞèÒª£¬¿ÉÒÔ±»ĞòÁĞ»¯Æ÷Ê¹ÓÃ
-public class PartData // Áã¼şÊı¾İ
+[System.Serializable] // ä½¿å…¶å¯ä»¥åœ¨æ£€è§†é¢æ¿ä¸­æŸ¥çœ‹ï¼Œå¹¶ä¸”å¦‚æœéœ€è¦ï¼Œå¯ä»¥è¢«åºåˆ—åŒ–å™¨ä½¿ç”¨
+public class PartData // é›¶ä»¶æ•°æ®
 {
-    public string partPrefabName; // Áã¼şÔ¤ÖÆ¼şµÄÃû³Æ£¨»òÕßÒ»¸öID£¬»òÕß¸ü¸´ÔÓÇé¿öÏÂÖ±½ÓÒıÓÃÔ¤ÖÆ¼ş£©
-    public Vector3 localPosition; // ¾Ö²¿Î»ÖÃ
-    public Quaternion localRotation; // ¾Ö²¿Ğı×ª
-    public Vector3 localScale; // <--- ĞÂÔö
-    // Î´À´Èç¹ûĞèÒª£¬¿ÉÒÔÔÚÕâÀïÌí¼ÓÆäËûÁã¼şÌØÓĞµÄÊı¾İ
+    public string partPrefabName; // é›¶ä»¶é¢„åˆ¶ä»¶çš„åç§°ï¼ˆæˆ–è€…ä¸€ä¸ªIDï¼Œæˆ–è€…æ›´å¤æ‚æƒ…å†µä¸‹ç›´æ¥å¼•ç”¨é¢„åˆ¶ä»¶ï¼‰
+    public Vector3 localPosition; // å±€éƒ¨ä½ç½®
+    public Quaternion localRotation; // å±€éƒ¨æ—‹è½¬
+    public Vector3 localScale; // <--- æ–°å¢
+    // æœªæ¥å¦‚æœéœ€è¦ï¼Œå¯ä»¥åœ¨è¿™é‡Œæ·»åŠ å…¶ä»–é›¶ä»¶ç‰¹æœ‰çš„æ•°æ®
 
-    public PartData(string name, Vector3 pos, Quaternion rot, Vector3 scale) // <--- ĞŞ¸Ä¹¹Ôìº¯Êı
+    public PartData(string name, Vector3 pos, Quaternion rot, Vector3 scale) // <--- ä¿®æ”¹æ„é€ å‡½æ•°
     {
         partPrefabName = name;
         localPosition = pos;
         localRotation = rot;
-        localScale = scale; // <--- ĞÂÔö
+        localScale = scale; // <--- æ–°å¢
     }
 }
 
@@ -27,6 +27,6 @@ public class MechConfiguration
     public string chassisCorePrefabName;
     public List<PartData> attachedParts = new List<PartData>();
 
-    // --- ĞÂÔö£ºÓÃÓÚ´æ´¢ÒÑ×°±¸ÎäÆ÷µÄÊı¾İÀ¶Í¼ ---
+    // --- æ–°å¢ï¼šç”¨äºå­˜å‚¨å·²è£…å¤‡æ­¦å™¨çš„æ•°æ®è“å›¾ ---
     public List<WeaponStatBlock> equippedWeaponStatBlocks = new List<WeaponStatBlock>();
 }

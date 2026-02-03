@@ -1,21 +1,21 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 
 public class MetaUpgradeNodeButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [Header("Êı¾İ°ó¶¨")]
-    public MetaUpgradeSO upgradeData; // ¡¾ÍÏÈë¡¿¶ÔÓ¦µÄ SO ÎÄ¼ş (±ÈÈç HP_Upgrade)
+    [Header("æ•°æ®ç»‘å®š")]
+    public MetaUpgradeSO upgradeData; // ã€æ‹–å…¥ã€‘å¯¹åº”çš„ SO æ–‡ä»¶ (æ¯”å¦‚ HP_Upgrade)
 
-    [Header("UI ×é¼şÒıÓÃ")]
+    [Header("UI ç»„ä»¶å¼•ç”¨")]
     public Button myButton;
     public Image iconImage;
 
-    // Èç¹ûÄãÓĞµÈ¼¶ÎÄ±¾ÏÔÊ¾ÔÚÍ¼±êÅÔ (±ÈÈç "Lv.3")
+    // å¦‚æœä½ æœ‰ç­‰çº§æ–‡æœ¬æ˜¾ç¤ºåœ¨å›¾æ ‡æ— (æ¯”å¦‚ "Lv.3")
     public TextMeshProUGUI levelText;
 
-    // ÒıÓÃÖ÷ UI (ÓÃÓÚË¢ĞÂÌáÊ¾¿ò)
+    // å¼•ç”¨ä¸» UI (ç”¨äºåˆ·æ–°æç¤ºæ¡†)
     private MetaUpgradeUI mainUI;
 
     void Start()
@@ -24,10 +24,10 @@ public class MetaUpgradeNodeButton : MonoBehaviour, IPointerEnterHandler, IPoint
 
         if (myButton == null) myButton = GetComponent<Button>();
 
-        // °ó¶¨µã»÷ÊÂ¼ş
+        // ç»‘å®šç‚¹å‡»äº‹ä»¶
         myButton.onClick.AddListener(OnClick);
 
-        // ³õÊ¼»¯ÏÔÊ¾
+        // åˆå§‹åŒ–æ˜¾ç¤º
         RefreshState();
     }
 
@@ -40,26 +40,26 @@ public class MetaUpgradeNodeButton : MonoBehaviour, IPointerEnterHandler, IPoint
         int currentLevel = MetaUpgradeManager.Instance.GetLevel(upgradeData);
         bool isMax = currentLevel >= upgradeData.maxLevel;
 
-        // ¸üĞÂµÈ¼¶ÎÄ±¾
+        // æ›´æ–°ç­‰çº§æ–‡æœ¬
         if (levelText != null) levelText.text = $"{currentLevel}/{upgradeData.maxLevel}";
 
-        // Èç¹ûÏë¸ù¾İ½âËø×´Ì¬¸Ä±äÑÕÉ« (±ÈÈçÎ´½âËø±ä»Ò)
-        // myButton.interactable = ... (Èç¹ûÓĞÇ°ÖÃÌõ¼ş)
+        // å¦‚æœæƒ³æ ¹æ®è§£é”çŠ¶æ€æ”¹å˜é¢œè‰² (æ¯”å¦‚æœªè§£é”å˜ç°)
+        // myButton.interactable = ... (å¦‚æœæœ‰å‰ç½®æ¡ä»¶)
     }
 
     void OnClick()
     {
-        // ³¢ÊÔ¹ºÂò
+        // å°è¯•è´­ä¹°
         if (MetaUpgradeManager.Instance.TryPurchaseUpgrade(upgradeData))
         {
-            // ¹ºÂò³É¹¦£¬Ë¢ĞÂ×Ô¼ººÍÕû¸ö½çÃæ
+            // è´­ä¹°æˆåŠŸï¼Œåˆ·æ–°è‡ªå·±å’Œæ•´ä¸ªç•Œé¢
             RefreshState();
-            mainUI.RefreshGoldDisplay(); // Ë¢ĞÂ½ğ±ÒÎÄ×Ö
-            mainUI.ShowTooltip(upgradeData); // Ë¢ĞÂÌáÊ¾¿òÄÚÈİ
+            mainUI.RefreshGoldDisplay(); // åˆ·æ–°é‡‘å¸æ–‡å­—
+            mainUI.ShowTooltip(upgradeData); // åˆ·æ–°æç¤ºæ¡†å†…å®¹
         }
     }
 
-    // --- Êó±êĞüÍ£ÏÔÊ¾ĞÅÏ¢ ---
+    // --- é¼ æ ‡æ‚¬åœæ˜¾ç¤ºä¿¡æ¯ ---
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (mainUI != null) mainUI.ShowTooltip(upgradeData);
@@ -67,7 +67,7 @@ public class MetaUpgradeNodeButton : MonoBehaviour, IPointerEnterHandler, IPoint
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        // ¿ÉÑ¡£ºÊó±êÒÆ¿ªÊ±Òş²ØÌáÊ¾£¬»òÕß±£³ÖÏÔÊ¾×îºóÑ¡ÖĞµÄ
+        // å¯é€‰ï¼šé¼ æ ‡ç§»å¼€æ—¶éšè—æç¤ºï¼Œæˆ–è€…ä¿æŒæ˜¾ç¤ºæœ€åé€‰ä¸­çš„
         // if (mainUI != null) mainUI.HideTooltip();
     }
 }

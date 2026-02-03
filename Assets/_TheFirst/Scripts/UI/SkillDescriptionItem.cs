@@ -1,34 +1,34 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
 
 public class SkillDescriptionItem : MonoBehaviour
 {
-    [Header("UI ×é¼şÒıÓÃ")]
-    public Button myButton;                 // ×ÔÉíµÄ°´Å¥×é¼ş
-    public Image bgImage;                   // ±³¾°Í¼
+    [Header("UI ç»„ä»¶å¼•ç”¨")]
+    public Button myButton;                 // è‡ªèº«çš„æŒ‰é’®ç»„ä»¶
+    public Image bgImage;                   // èƒŒæ™¯å›¾
 
-    [Header("ÎÄ±¾ĞÅÏ¢")]
-    public TextMeshProUGUI descriptionText; // ÏÔÊ¾¼¼ÄÜÃèÊö
-    public TextMeshProUGUI costText;        // ÏÔÊ¾¼Û¸ñÊı×Ö
+    [Header("æ–‡æœ¬ä¿¡æ¯")]
+    public TextMeshProUGUI descriptionText; // æ˜¾ç¤ºæŠ€èƒ½æè¿°
+    public TextMeshProUGUI costText;        // æ˜¾ç¤ºä»·æ ¼æ•°å­—
 
-    [Header("¶¯»­¶ÔÏó")]
-    public GameObject costRoot;             // ½ğ±ÒÍ¼±êºÍ¼Û¸ñµÄ¸¸ÎïÌå
-    public GameObject checkmarkObject;      // ¡¾ĞÂÔö¡¿¶Ô¹³Í¼Æ¬µÄÎïÌå
-    public CanvasGroup costCanvasGroup;     // ¡¾ĞÂÔö¡¿ÓÃÓÚ¿ØÖÆ Cost µÄÍ¸Ã÷¶È
+    [Header("åŠ¨ç”»å¯¹è±¡")]
+    public GameObject costRoot;             // é‡‘å¸å›¾æ ‡å’Œä»·æ ¼çš„çˆ¶ç‰©ä½“
+    public GameObject checkmarkObject;      // ã€æ–°å¢ã€‘å¯¹é’©å›¾ç‰‡çš„ç‰©ä½“
+    public CanvasGroup costCanvasGroup;     // ã€æ–°å¢ã€‘ç”¨äºæ§åˆ¶ Cost çš„é€æ˜åº¦
 
-    [Header("ÑÕÉ«ÅäÖÃ")]
+    [Header("é¢œè‰²é…ç½®")]
     public Color normalColor = new Color(0.2f, 0.2f, 0.2f, 1f);
     public Color unlockedColor = new Color(0.2f, 0.6f, 0.2f, 1f);
     public Color cannotAffordColor = new Color(0.5f, 0.2f, 0.2f, 1f);
 
-    [Header("¶¯»­²ÎÊı (Juice)")]
+    [Header("åŠ¨ç”»å‚æ•° (Juice)")]
     public float animDuration = 0.5f;
-    public AnimationCurve scaleCurve = new AnimationCurve( // Ä¬ÈÏµÄµ¯ÌøÇúÏß
+    public AnimationCurve scaleCurve = new AnimationCurve( // é»˜è®¤çš„å¼¹è·³æ›²çº¿
         new Keyframe(0f, 0f),
-        new Keyframe(0.5f, 1.2f), // µ¯µÃ±È 1.0 ´óÒ»µã
-        new Keyframe(1f, 1f)      // »Øµ½ 1.0
+        new Keyframe(0.5f, 1.2f), // å¼¹å¾—æ¯” 1.0 å¤§ä¸€ç‚¹
+        new Keyframe(1f, 1f)      // å›åˆ° 1.0
     );
 
     public WeaponUpgradeNode NodeData { get; private set; }
@@ -39,15 +39,15 @@ public class SkillDescriptionItem : MonoBehaviour
         this.NodeData = nodeData;
         this.onPurchaseCallback = onPurchase;
 
-        // 1. ÉèÖÃÎÄ±¾
+        // 1. è®¾ç½®æ–‡æœ¬
         if (descriptionText != null) descriptionText.text = nodeData.description;
         if (costText != null) costText.text = nodeData.cost.ToString();
 
-        // 2. ³õÊ¼»¯×´Ì¬ (ÎŞ¶¯»­)
+        // 2. åˆå§‹åŒ–çŠ¶æ€ (æ— åŠ¨ç”»)
         bool isUnlocked = PlayerProgressManager.Instance.IsNodeUnlocked(nodeData);
         InitializeVisuals(isUnlocked);
 
-        // 3. °ó¶¨µã»÷
+        // 3. ç»‘å®šç‚¹å‡»
         if (myButton != null)
         {
             myButton.onClick.RemoveAllListeners();
@@ -55,12 +55,12 @@ public class SkillDescriptionItem : MonoBehaviour
         }
     }
 
-    // ³õÊ¼»¯¾²Ì¬ÏÔÊ¾ (²»²¥·Å¶¯»­)
+    // åˆå§‹åŒ–é™æ€æ˜¾ç¤º (ä¸æ’­æ”¾åŠ¨ç”»)
     private void InitializeVisuals(bool isUnlocked)
     {
         if (isUnlocked)
         {
-            // ÒÑ½âËø£ºÏÔÊ¾ÂÌÉ«£¬Òş²Ø¼Û¸ñ£¬ÏÔÊ¾¶Ô¹³
+            // å·²è§£é”ï¼šæ˜¾ç¤ºç»¿è‰²ï¼Œéšè—ä»·æ ¼ï¼Œæ˜¾ç¤ºå¯¹é’©
             if (bgImage != null) bgImage.color = unlockedColor;
             if (descriptionText != null) descriptionText.color = Color.white;
 
@@ -68,19 +68,19 @@ public class SkillDescriptionItem : MonoBehaviour
             if (checkmarkObject != null)
             {
                 checkmarkObject.SetActive(true);
-                checkmarkObject.transform.localScale = Vector3.one; // Õı³£´óĞ¡
+                checkmarkObject.transform.localScale = Vector3.one; // æ­£å¸¸å¤§å°
             }
             if (myButton != null) myButton.interactable = false;
         }
         else
         {
-            // Î´½âËø£ºÏÔÊ¾¼Û¸ñ£¬Òş²Ø¶Ô¹³
+            // æœªè§£é”ï¼šæ˜¾ç¤ºä»·æ ¼ï¼Œéšè—å¯¹é’©
             if (costRoot != null)
             {
                 costRoot.SetActive(true);
-                // ÖØÖÃÍ¸Ã÷¶ÈºÍÎ»ÖÃ
+                // é‡ç½®é€æ˜åº¦å’Œä½ç½®
                 if (costCanvasGroup != null) costCanvasGroup.alpha = 1f;
-                costRoot.transform.localPosition = Vector3.zero; // ¼ÙÉè³õÊ¼Î»ÖÃÊÇ0 (»òÕßÊÇ²¼¾Ö×Ô¶¯¿ØÖÆ)
+                costRoot.transform.localPosition = Vector3.zero; // å‡è®¾åˆå§‹ä½ç½®æ˜¯0 (æˆ–è€…æ˜¯å¸ƒå±€è‡ªåŠ¨æ§åˆ¶)
             }
             if (checkmarkObject != null) checkmarkObject.SetActive(false);
 
@@ -96,55 +96,55 @@ public class SkillDescriptionItem : MonoBehaviour
         if (PlayerProgressManager.Instance.IsNodeUnlocked(NodeData)) return;
         if (!PlayerProgressManager.Instance.CanAfford(NodeData.cost)) return;
 
-        // 1. Âß¼­´¦Àí
+        // 1. é€»è¾‘å¤„ç†
         PlayerProgressManager.Instance.SpendGold(NodeData.cost);
         PlayerProgressManager.Instance.UnlockNode(NodeData);
 
-        // 2. ²¥·Å Juice ¶¯»­£¡
+        // 2. æ’­æ”¾ Juice åŠ¨ç”»ï¼
         StartCoroutine(PlayUnlockJuice());
 
-        // 3. Í¨ÖªÍâ²¿ (Ö»Ë¢ĞÂÁù±ßĞÎ£¬²»ÒªË¢ĞÂÎÒ£¡)
+        // 3. é€šçŸ¥å¤–éƒ¨ (åªåˆ·æ–°å…­è¾¹å½¢ï¼Œä¸è¦åˆ·æ–°æˆ‘ï¼)
         onPurchaseCallback?.Invoke();
     }
 
     private IEnumerator PlayUnlockJuice()
     {
-        // ½ûÓÃ°´Å¥·ÀÖ¹Á¬µã
+        // ç¦ç”¨æŒ‰é’®é˜²æ­¢è¿ç‚¹
         if (myButton != null) myButton.interactable = false;
 
-        // --- ½×¶Î 1: ±³¾°±äÂÌ ---
+        // --- é˜¶æ®µ 1: èƒŒæ™¯å˜ç»¿ ---
         if (bgImage != null) bgImage.color = unlockedColor;
         if (descriptionText != null) descriptionText.color = Color.white;
 
-        // --- ½×¶Î 2: Cost ÏòÓÒ»¬¶¯²¢µ­³ö ---
+        // --- é˜¶æ®µ 2: Cost å‘å³æ»‘åŠ¨å¹¶æ·¡å‡º ---
         if (costRoot != null)
         {
             RectTransform costRect = costRoot.GetComponent<RectTransform>();
             Vector3 startPos = costRect.anchoredPosition;
-            Vector3 endPos = startPos + new Vector3(100f, 0f, 0f); // ÏòÓÒÒÆ¶¯ 100 ÏñËØ
+            Vector3 endPos = startPos + new Vector3(100f, 0f, 0f); // å‘å³ç§»åŠ¨ 100 åƒç´ 
 
             float timer = 0f;
-            while (timer < 0.3f) // 0.3Ãëµ­³ö
+            while (timer < 0.3f) // 0.3ç§’æ·¡å‡º
             {
-                timer += Time.unscaledDeltaTime; // Ê¹ÓÃ unscaled ÒÔ·ÀÊ±¼äÔİÍ£
+                timer += Time.unscaledDeltaTime; // ä½¿ç”¨ unscaled ä»¥é˜²æ—¶é—´æš‚åœ
                 float t = timer / 0.3f;
 
-                // ÒÆ¶¯
+                // ç§»åŠ¨
                 costRect.anchoredPosition = Vector3.Lerp(startPos, endPos, t);
 
-                // µ­³ö
+                // æ·¡å‡º
                 if (costCanvasGroup != null) costCanvasGroup.alpha = Mathf.Lerp(1f, 0f, t);
 
                 yield return null;
             }
-            costRoot.SetActive(false); // ³¹µ×Òş²Ø
+            costRoot.SetActive(false); // å½»åº•éšè—
         }
 
-        // --- ½×¶Î 3: ¶Ô¹³µ¯³öÀ´ (Scale Bounce) ---
+        // --- é˜¶æ®µ 3: å¯¹é’©å¼¹å‡ºæ¥ (Scale Bounce) ---
         if (checkmarkObject != null)
         {
             checkmarkObject.SetActive(true);
-            checkmarkObject.transform.localScale = Vector3.zero; // ´Ó0¿ªÊ¼
+            checkmarkObject.transform.localScale = Vector3.zero; // ä»0å¼€å§‹
 
             float timer = 0f;
             while (timer < animDuration)
@@ -152,13 +152,13 @@ public class SkillDescriptionItem : MonoBehaviour
                 timer += Time.unscaledDeltaTime;
                 float t = timer / animDuration;
 
-                // Ê¹ÓÃÇúÏß¼ÆËãËõ·ÅÖµ (0 -> 1.2 -> 1.0)
+                // ä½¿ç”¨æ›²çº¿è®¡ç®—ç¼©æ”¾å€¼ (0 -> 1.2 -> 1.0)
                 float scaleVal = scaleCurve.Evaluate(t);
                 checkmarkObject.transform.localScale = new Vector3(scaleVal, scaleVal, 1f);
 
                 yield return null;
             }
-            checkmarkObject.transform.localScale = Vector3.one; // È·±£×îºóÊÇ 1
+            checkmarkObject.transform.localScale = Vector3.one; // ç¡®ä¿æœ€åæ˜¯ 1
         }
     }
 }

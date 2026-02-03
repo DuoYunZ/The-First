@@ -1,16 +1,16 @@
-// --- ArenaWall.cs (´ø×Ô»Ù¹¦ÄÜ°æ) ---
+ï»¿// --- ArenaWall.cs (å¸¦è‡ªæ¯åŠŸèƒ½ç‰ˆ) ---
 using UnityEngine;
 using System.Collections;
 
 public class ArenaWall : MonoBehaviour
 {
-    [Tooltip("Ç½±ÚÔÚ³¡ÉÏ´æÔÚµÄ×ÜÊ±¼ä")]
+    [Tooltip("å¢™å£åœ¨åœºä¸Šå­˜åœ¨çš„æ€»æ—¶é—´")]
     public float lifetime = 10f;
-    [Tooltip("³öÏÖ¶¯»­Ê±³¤")]
+    [Tooltip("å‡ºç°åŠ¨ç”»æ—¶é•¿")]
     public float appearDuration = 0.5f;
-    [Tooltip("ÏûÊ§¶¯»­Ê±³¤")]
+    [Tooltip("æ¶ˆå¤±åŠ¨ç”»æ—¶é•¿")]
     public float disappearDuration = 1.0f;
-    [Tooltip("Ç½±ÚµÄÊÓ¾õÄ£ĞÍ£¬ÎÒÃÇ½«Ëõ·ÅËü")]
+    [Tooltip("å¢™å£çš„è§†è§‰æ¨¡å‹ï¼Œæˆ‘ä»¬å°†ç¼©æ”¾å®ƒ")]
     public Transform visualElement;
 
     void Awake()
@@ -19,15 +19,15 @@ public class ArenaWall : MonoBehaviour
         visualElement.localScale = Vector3.zero;
     }
 
-    // "³öÏÖ"
+    // "å‡ºç°"
     public void Activate()
     {
         StartCoroutine(ScaleOverTime(Vector3.one, appearDuration));
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿ÔÚ¼¤»îÊ±£¬¾ÍÆô¶¯Ò»¸öÑÓÊ±×Ô»Ù/ÏûÊ§µÄĞ­³Ì
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘åœ¨æ¿€æ´»æ—¶ï¼Œå°±å¯åŠ¨ä¸€ä¸ªå»¶æ—¶è‡ªæ¯/æ¶ˆå¤±çš„åç¨‹
         StartCoroutine(DeactivateAfterDelay(lifetime));
     }
 
-    // "ÏûÊ§"
+    // "æ¶ˆå¤±"
     public void Deactivate()
     {
         Collider col = GetComponent<Collider>();
@@ -36,7 +36,7 @@ public class ArenaWall : MonoBehaviour
         StartCoroutine(ScaleOverTime(Vector3.zero, disappearDuration, true));
     }
 
-    // ¡¾ĞÂÔö¡¿ÑÓÊ±µ÷ÓÃDeactivateµÄ·½·¨
+    // ã€æ–°å¢ã€‘å»¶æ—¶è°ƒç”¨Deactivateçš„æ–¹æ³•
     private IEnumerator DeactivateAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);

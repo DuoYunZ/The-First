@@ -1,10 +1,10 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 public class WeaponStatusSlot : MonoBehaviour
 {
-    [Header("UI ×é¼ş")]
+    [Header("UI ç»„ä»¶")]
     public Image iconImage;
     public TextMeshProUGUI levelText;
     public Slider expSlider;
@@ -12,25 +12,25 @@ public class WeaponStatusSlot : MonoBehaviour
 
     private WeaponPart boundWeapon;
 
-    // ³õÊ¼»¯£º°Ñ UI ºÍ¾ßÌåµÄÎäÆ÷°ó¶¨
+    // åˆå§‹åŒ–ï¼šæŠŠ UI å’Œå…·ä½“çš„æ­¦å™¨ç»‘å®š
     public void BindWeapon(WeaponPart weapon)
     {
         boundWeapon = weapon;
 
-        // 1. ³õÊ¼»¯»ù´¡ĞÅÏ¢
+        // 1. åˆå§‹åŒ–åŸºç¡€ä¿¡æ¯
         if (boundWeapon.StatBlock != null)
         {
             if (iconImage != null) iconImage.sprite = boundWeapon.StatBlock.weaponIcon;
             if (nameText != null) nameText.text = boundWeapon.StatBlock.weaponName;
         }
 
-        // 2. ¶©ÔÄÊÂ¼ş (ºËĞÄ£¡)
-        // µ±ÎäÆ÷¾­Ñé±ä»¯Ê±£¬¸üĞÂ»¬¶¯Ìõ
+        // 2. è®¢é˜…äº‹ä»¶ (æ ¸å¿ƒï¼)
+        // å½“æ­¦å™¨ç»éªŒå˜åŒ–æ—¶ï¼Œæ›´æ–°æ»‘åŠ¨æ¡
         boundWeapon.OnWeaponXpChanged += UpdateExpBar;
-        // µ±ÎäÆ÷Éı¼¶Ê±£¬¸üĞÂµÈ¼¶ÎÄ×Ö
+        // å½“æ­¦å™¨å‡çº§æ—¶ï¼Œæ›´æ–°ç­‰çº§æ–‡å­—
         boundWeapon.OnWeaponLevelUp += UpdateLevelText;
 
-        // 3. ³õÊ¼Ë¢ĞÂÒ»´Î
+        // 3. åˆå§‹åˆ·æ–°ä¸€æ¬¡
         UpdateExpBar(boundWeapon.currentProficiencyXP, boundWeapon.xpToNextLevel);
         UpdateLevelText(boundWeapon.currentLevel);
     }
@@ -39,7 +39,7 @@ public class WeaponStatusSlot : MonoBehaviour
     {
         if (expSlider != null)
         {
-            // ·ÀÖ¹³ıÒÔ0
+            // é˜²æ­¢é™¤ä»¥0
             float value = (max > 0) ? current / max : 1;
             expSlider.value = value;
         }
@@ -51,12 +51,12 @@ public class WeaponStatusSlot : MonoBehaviour
         {
             levelText.text = $"Lv.{newLevel}";
         }
-        // Éı¼¶Ê±¿ÉÒÔ¼Ó¸ö¼òµ¥µÄ DoTween ¶¯»­»òÕßÌØĞ§
+        // å‡çº§æ—¶å¯ä»¥åŠ ä¸ªç®€å•çš„ DoTween åŠ¨ç”»æˆ–è€…ç‰¹æ•ˆ
     }
 
     private void OnDestroy()
     {
-        // ¼ÇµÃ½â°óÊÂ¼ş£¬·ÀÖ¹±¨´í
+        // è®°å¾—è§£ç»‘äº‹ä»¶ï¼Œé˜²æ­¢æŠ¥é”™
         if (boundWeapon != null)
         {
             boundWeapon.OnWeaponXpChanged -= UpdateExpBar;

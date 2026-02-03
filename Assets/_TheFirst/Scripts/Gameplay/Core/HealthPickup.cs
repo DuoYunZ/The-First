@@ -1,45 +1,45 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class HealthPickup : MonoBehaviour
 {
-    [Header("ÉèÖÃ")]
-    public int healAmount = 20; // »Ö¸´¶àÉÙÑª
+    [Header("è®¾ç½®")]
+    public int healAmount = 20; // æ¢å¤å¤šå°‘è¡€
 
-    [Header("ÌØĞ§")]
-    [Tooltip("Ê°È¡Ê±ÔÚÍæ¼ÒÉíÉÏ²¥·ÅµÄÖÎÁÆÌØĞ§")]
+    [Header("ç‰¹æ•ˆ")]
+    [Tooltip("æ‹¾å–æ—¶åœ¨ç©å®¶èº«ä¸Šæ’­æ”¾çš„æ²»ç–—ç‰¹æ•ˆ")]
     public GameObject pickupVfxPrefab;
-    [Tooltip("Ê°È¡Ê±µÄÒôĞ§ (¿ÉÑ¡)")]
+    [Tooltip("æ‹¾å–æ—¶çš„éŸ³æ•ˆ (å¯é€‰)")]
     public AudioClip pickupSound;
 
     private void OnTriggerEnter(Collider other)
     {
-        // Ö»¼ì²âÍæ¼Ò
+        // åªæ£€æµ‹ç©å®¶
         if (other.CompareTag("Player"))
         {
-            // ³¢ÊÔ»ñÈ¡Íæ¼ÒµÄ Health ×é¼ş
+            // å°è¯•è·å–ç©å®¶çš„ Health ç»„ä»¶
             Health playerHealth = other.GetComponent<Health>();
             if (playerHealth == null) playerHealth = other.GetComponentInParent<Health>();
 
             if (playerHealth != null)
             {
-                // µ÷ÓÃÎÒÃÇÔÚ Health.cs ÀïĞÂĞ´µÄ Heal ·½·¨
-                // Ö»ÓĞµ±Íæ¼ÒÕæµÄ»ØÑªÁË(Ã»ÂúÑª)£¬²ÅÏûºÄÑª°ü
+                // è°ƒç”¨æˆ‘ä»¬åœ¨ Health.cs é‡Œæ–°å†™çš„ Heal æ–¹æ³•
+                // åªæœ‰å½“ç©å®¶çœŸçš„å›è¡€äº†(æ²¡æ»¡è¡€)ï¼Œæ‰æ¶ˆè€—è¡€åŒ…
                 if (playerHealth.Heal(healAmount))
                 {
-                    // 1. ²¥·ÅÌØĞ§ (¹ÒÔÚÍæ¼ÒÉíÉÏ£¬¸úËæÍæ¼Ò)
+                    // 1. æ’­æ”¾ç‰¹æ•ˆ (æŒ‚åœ¨ç©å®¶èº«ä¸Šï¼Œè·Ÿéšç©å®¶)
                     if (pickupVfxPrefab != null)
                     {
                         GameObject vfx = Instantiate(pickupVfxPrefab, other.transform.position, Quaternion.identity, other.transform);
-                        Destroy(vfx, 2.0f); // 2ÃëºóÏú»ÙÌØĞ§£¬·ÀÖ¹²ĞÁô
+                        Destroy(vfx, 2.0f); // 2ç§’åé”€æ¯ç‰¹æ•ˆï¼Œé˜²æ­¢æ®‹ç•™
                     }
 
-                    // 2. ²¥·ÅÒôĞ§ (ÔÚÔ­Î»ÖÃ²¥·Å)
+                    // 2. æ’­æ”¾éŸ³æ•ˆ (åœ¨åŸä½ç½®æ’­æ”¾)
                     if (pickupSound != null)
                     {
                         AudioSource.PlayClipAtPoint(pickupSound, transform.position);
                     }
 
-                    // 3. Ïú»ÙÑª°ü
+                    // 3. é”€æ¯è¡€åŒ…
                     Destroy(gameObject);
                 }
             }

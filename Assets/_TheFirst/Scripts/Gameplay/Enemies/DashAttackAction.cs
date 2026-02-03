@@ -1,36 +1,36 @@
-// --- DashAttackAction.cs (×îÖÕ°æ£¬Ö§³Ö¶¯»­ÊÂ¼ş) ---
+ï»¿// --- DashAttackAction.cs (æœ€ç»ˆç‰ˆï¼Œæ”¯æŒåŠ¨ç”»äº‹ä»¶) ---
 using UnityEngine;
 using UnityEngine.AI;
 
 public class DashAttackAction : Node
 {
-    [Header("¹¥»÷½×¶ÎÉèÖÃ")]
+    [Header("æ”»å‡»é˜¶æ®µè®¾ç½®")]
     public float windupDuration = 1.2f;
     public float dashSpeed = 30f;
     public float dashDistance = 15f;
     public float recoveryDuration = 1.5f;
 
-    [Header("¶¯×÷±íÏÖ")]
+    [Header("åŠ¨ä½œè¡¨ç°")]
     public string windupAnimationTrigger = "doDashWarning";
     public string dashAnimationTrigger = "doDash";
-    public string recoveryAnimationTrigger; // (¿ÉÑ¡) ºóÒ¡¶¯»­´¥·¢Æ÷
+    public string recoveryAnimationTrigger; // (å¯é€‰) åæ‘‡åŠ¨ç”»è§¦å‘å™¨
 
-    [Header("ÅäºÏÌØĞ§µÄÔ¤ÖÆ¼ş")]
+    [Header("é…åˆç‰¹æ•ˆçš„é¢„åˆ¶ä»¶")]
     public GameObject windupEffectPrefab;
     public GameObject recoveryEffectPrefab;
-    public GameObject dashEffectPrefab; // ¡¾ĞÂÔö¡¿Dash¹ı³ÌÌØĞ§
-    private GameObject currentDashEffectInstance; // ÓÃÓÚ´æ´¢µ±Ç°ÌØĞ§ÊµÀı
+    public GameObject dashEffectPrefab; // ã€æ–°å¢ã€‘Dashè¿‡ç¨‹ç‰¹æ•ˆ
+    private GameObject currentDashEffectInstance; // ç”¨äºå­˜å‚¨å½“å‰ç‰¹æ•ˆå®ä¾‹
 
-    [Header("²à±ß×Óµ¯ÉèÖÃ")]
+    [Header("ä¾§è¾¹å­å¼¹è®¾ç½®")]
     public Transform[] sideFirePoints;
     public WeaponStatBlock sideWeaponToFire;
     public float sideFireInterval = 0.1f;
 
-    [Header("ÀäÈ´ÉèÖÃ")]
+    [Header("å†·å´è®¾ç½®")]
     public string attackName = "DashAttack";
     public float cooldownDuration = 8f;
 
-    // ÄÚ²¿×´Ì¬
+    // å†…éƒ¨çŠ¶æ€
     private enum ActionState { Ready, WindingUp, Dashing, Recovering, Completed }
     private ActionState currentState;
     private float timer;
@@ -39,13 +39,13 @@ public class DashAttackAction : Node
     private Rigidbody rb;
     private Animator animator;
     private EnemyAI regularAI;
-    private NavMeshAgent agent; // ¡¾ĞŞ¸Ä¡¿
-    private Transform selfTransform; // ¡¾ĞŞÕı¡¿Ôö¼ÓÁËselfTransformµÄÒıÓÃ
+    private NavMeshAgent agent; // ã€ä¿®æ”¹ã€‘
+    private Transform selfTransform; // ã€ä¿®æ­£ã€‘å¢åŠ äº†selfTransformçš„å¼•ç”¨
 
     void Awake()
     {
         rb = GetComponentInParent<Rigidbody>();
-        if (rb != null) selfTransform = rb.transform; // ¡¾ĞŞÕı¡¿ÔÚAwakeÖĞ»ñÈ¡selfTransform
+        if (rb != null) selfTransform = rb.transform; // ã€ä¿®æ­£ã€‘åœ¨Awakeä¸­è·å–selfTransform
         animator = GetComponentInParent<Animator>();
         agent = GetComponentInParent<NavMeshAgent>();
     }
@@ -76,7 +76,7 @@ public class DashAttackAction : Node
                 animator.SetTrigger(windupAnimationTrigger);
             }
 
-            // ¡¾ĞŞÕı¡¿½«StartCooldownÒÆ¶¯µ½ÕâÀï£¬È·±£Ö»Ö´ĞĞÒ»´Î
+            // ã€ä¿®æ­£ã€‘å°†StartCooldownç§»åŠ¨åˆ°è¿™é‡Œï¼Œç¡®ä¿åªæ‰§è¡Œä¸€æ¬¡
             GetComponentInParent<BehaviorTree>().StartCooldown(attackName, cooldownDuration);
             return NodeState.RUNNING;
         }
@@ -95,7 +95,7 @@ public class DashAttackAction : Node
                         animator.SetTrigger(dashAnimationTrigger);
                     }
                     if (agent != null) agent.enabled = false;
-                    rb.isKinematic = false; // È·±£Rigidbody¿ÉÒÔ±»ËÙ¶ÈÇı¶¯
+                    rb.isKinematic = false; // ç¡®ä¿Rigidbodyå¯ä»¥è¢«é€Ÿåº¦é©±åŠ¨
                     rb.velocity = rb.transform.forward * dashSpeed;
 
                     sideFireTimer = 0f;
@@ -104,7 +104,7 @@ public class DashAttackAction : Node
 
             case ActionState.Dashing:
                 timer += Time.deltaTime;
-                // ... (²à±ß·¢Éä×Óµ¯µÄÂß¼­±£³Ö²»±ä)
+                // ... (ä¾§è¾¹å‘å°„å­å¼¹çš„é€»è¾‘ä¿æŒä¸å˜)
                 if (sideWeaponToFire != null && sideFirePoints != null && sideFirePoints.Length > 0)
                 {
                     sideFireTimer += Time.deltaTime;
@@ -139,9 +139,9 @@ public class DashAttackAction : Node
                     if (agent != null)
                     {
                         agent.enabled = true;
-                        // ¡¾¹Ø¼ü¡¿½« agent µÄÎ»ÖÃÍ¬²½µ½³å´Ì½áÊøºóµÄĞÂÎ»ÖÃ
+                        // ã€å…³é”®ã€‘å°† agent çš„ä½ç½®åŒæ­¥åˆ°å†²åˆºç»“æŸåçš„æ–°ä½ç½®
                         agent.Warp(selfTransform.position);
-                        // ±£³ÖÔİÍ£×´Ì¬£¬Ö±µ½ºóÒ¡½áÊø
+                        // ä¿æŒæš‚åœçŠ¶æ€ï¼Œç›´åˆ°åæ‘‡ç»“æŸ
                         agent.isStopped = true;
                     }
                     if (animator != null && !string.IsNullOrEmpty(recoveryAnimationTrigger))
@@ -149,7 +149,7 @@ public class DashAttackAction : Node
                         animator.SetTrigger(recoveryAnimationTrigger);
                     }
 
-                    // ¡¾ĞÂÔö¡¿ÔÚ Dash ½áÊøÊ±Ïú»ÙÌØĞ§
+                    // ã€æ–°å¢ã€‘åœ¨ Dash ç»“æŸæ—¶é”€æ¯ç‰¹æ•ˆ
                     if (currentDashEffectInstance != null)
                     {
                         Destroy(currentDashEffectInstance);
@@ -171,7 +171,7 @@ public class DashAttackAction : Node
         return NodeState.RUNNING;
     }
 
-    // --- ÓÃÓÚ±»¶¯»­ÊÂ¼şµ÷ÓÃµÄ¹«¿ª·½·¨ ---
+    // --- ç”¨äºè¢«åŠ¨ç”»äº‹ä»¶è°ƒç”¨çš„å…¬å¼€æ–¹æ³• ---
     public void TriggerWindupEffect()
     {
         if (windupEffectPrefab != null && selfTransform != null)

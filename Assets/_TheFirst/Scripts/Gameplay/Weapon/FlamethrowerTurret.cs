@@ -1,33 +1,33 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class FlamethrowerTurret : MonoBehaviour
 {
-    [Header("ÊÓ¾õ×é¼ş")]
-    public Transform turretHead;       // ÅÚËşÍ·²¿£¨ÓÃÓÚĞı×ªÃé×¼£©
-    public ParticleSystem flameVfx;    // »ğÑæÁ£×ÓÌØĞ§
-    public GameObject spawnVfx;        // Éú³ÉÊ±µÄÌØĞ§£¨¿ÉÑ¡£©
-    public GameObject despawnVfx;      // ÏûÊ§Ê±µÄÌØĞ§£¨¿ÉÑ¡£©
-    public Animator animator;          // ¶¯»­¿ØÖÆÆ÷£¨ÈçÓĞ£ºPlay("Spawn"), Play("Despawn")£©
+    [Header("è§†è§‰ç»„ä»¶")]
+    public Transform turretHead;       // ç‚®å¡”å¤´éƒ¨ï¼ˆç”¨äºæ—‹è½¬ç„å‡†ï¼‰
+    public ParticleSystem flameVfx;    // ç«ç„°ç²’å­ç‰¹æ•ˆ
+    public GameObject spawnVfx;        // ç”Ÿæˆæ—¶çš„ç‰¹æ•ˆï¼ˆå¯é€‰ï¼‰
+    public GameObject despawnVfx;      // æ¶ˆå¤±æ—¶çš„ç‰¹æ•ˆï¼ˆå¯é€‰ï¼‰
+    public Animator animator;          // åŠ¨ç”»æ§åˆ¶å™¨ï¼ˆå¦‚æœ‰ï¼šPlay("Spawn"), Play("Despawn")ï¼‰
 
-    [Header("ÅäÖÃ²ÎÊı")]
-    public float rotateSpeed = 5f;     // ÅÚËş×ªËÙ
-    public float flameAngle = 45f;     // Åç»ğ½Ç¶È£¨ÉÈĞÎÒ»°ë£©
-    public float flameRange = 6f;      // Åç»ğ¾àÀë
+    [Header("é…ç½®å‚æ•°")]
+    public float rotateSpeed = 5f;     // ç‚®å¡”è½¬é€Ÿ
+    public float flameAngle = 45f;     // å–·ç«è§’åº¦ï¼ˆæ‰‡å½¢ä¸€åŠï¼‰
+    public float flameRange = 6f;      // å–·ç«è·ç¦»
 
-    // --- ÔËĞĞÊ±Êı¾İ ---
+    // --- è¿è¡Œæ—¶æ•°æ® ---
     private int damagePerTick;
     private float duration;
-    private float tickInterval = 0.2f; // Åç»ğÉËº¦ÆµÂÊ
-    private GameObject owner;          // ÉËº¦À´Ô´£¨Íæ¼Ò£©
-    private string weaponName;         // ÓÃÓÚÍ³¼ÆÉËº¦
+    private float tickInterval = 0.2f; // å–·ç«ä¼¤å®³é¢‘ç‡
+    private GameObject owner;          // ä¼¤å®³æ¥æºï¼ˆç©å®¶ï¼‰
+    private string weaponName;         // ç”¨äºç»Ÿè®¡ä¼¤å®³
 
     private bool isFiring = false;
     private float tickTimer = 0f;
     private Transform currentTarget;
 
-    // ³õÊ¼»¯·½·¨£¨ÓÉ WeaponPart µ÷ÓÃ£©
+    // åˆå§‹åŒ–æ–¹æ³•ï¼ˆç”± WeaponPart è°ƒç”¨ï¼‰
     public void Initialize(int damage, float lifetime, GameObject ownerObj, float range, float interval, string name)
     {
         this.damagePerTick = damage;
@@ -36,7 +36,7 @@ public class FlamethrowerTurret : MonoBehaviour
         this.tickInterval = interval;
         this.weaponName = name;
 
-        // 1. ½ÓÊÕÀ´×Ô ScriptableObject µÄÉä³Ì
+        // 1. æ¥æ”¶æ¥è‡ª ScriptableObject çš„å°„ç¨‹
         this.flameRange = range;       
         
 
@@ -46,10 +46,10 @@ public class FlamethrowerTurret : MonoBehaviour
     private IEnumerator LifeCycleRoutine()
     {
         // =================================================
-        // ½×¶Î 1: ³öÉú (Spawn)
+        // é˜¶æ®µ 1: å‡ºç”Ÿ (Spawn)
         // =================================================
 
-        // Ç¿ÖÆÇå³ıËùÓĞ²ĞÁôÁ£×Ó£¬·ÀÖ¹¸´ÓÃ¶ÔÏó³ØÊ±´ø³öÀ´µÄÔàÊı¾İ
+        // å¼ºåˆ¶æ¸…é™¤æ‰€æœ‰æ®‹ç•™ç²’å­ï¼Œé˜²æ­¢å¤ç”¨å¯¹è±¡æ± æ—¶å¸¦å‡ºæ¥çš„è„æ•°æ®
         if (flameVfx != null)
         {
             flameVfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -60,12 +60,12 @@ public class FlamethrowerTurret : MonoBehaviour
         if (animator != null)
         {
             animator.Play("Spawn");
-            // µÈ´ı¶¯»­²¥Íê£¨ÕâÀï¼ÙÉèÊÇ1Ãë£¬Äã¿ÉÒÔ¸ù¾İÊµ¼ÊÇé¿öµ÷Õû£©
+            // ç­‰å¾…åŠ¨ç”»æ’­å®Œï¼ˆè¿™é‡Œå‡è®¾æ˜¯1ç§’ï¼Œä½ å¯ä»¥æ ¹æ®å®é™…æƒ…å†µè°ƒæ•´ï¼‰
             yield return new WaitForSeconds(1.0f);
         }
 
         // =================================================
-        // ½×¶Î 2: ¹¥»÷ (Attack)
+        // é˜¶æ®µ 2: æ”»å‡» (Attack)
         // =================================================
         isFiring = true;
 
@@ -78,20 +78,20 @@ public class FlamethrowerTurret : MonoBehaviour
         while (activeTimer > 0)
         {
             activeTimer -= Time.deltaTime;
-            HandleTargetingAndDamage(); // ÕâÀïÃæÓĞĞı×ªÂß¼­
+            HandleTargetingAndDamage(); // è¿™é‡Œé¢æœ‰æ—‹è½¬é€»è¾‘
             yield return null;
         }
 
         // =================================================
-        // ½×¶Î 3: ÏûÊ§ (Despawn)
+        // é˜¶æ®µ 3: æ¶ˆå¤± (Despawn)
         // =================================================
         isFiring = false;
 
-        // ¡¾ºËĞÄĞŞ¸Ä¡¿Despawn Ê±£¬²»½öÍ£Ö¹·¢Éä£¬»¹ÒªÇå³ı²ĞÁôÁ£×Ó
-        // ÕâÑùËşËõ»ØÈ¥µÄÊ±ºò£¬»ğ»áË²¼äÏûÊ§£¬²»»áÆ®ÔÚ¿ÕÖĞ´©°ï
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘Despawn æ—¶ï¼Œä¸ä»…åœæ­¢å‘å°„ï¼Œè¿˜è¦æ¸…é™¤æ®‹ç•™ç²’å­
+        // è¿™æ ·å¡”ç¼©å›å»çš„æ—¶å€™ï¼Œç«ä¼šç¬é—´æ¶ˆå¤±ï¼Œä¸ä¼šé£˜åœ¨ç©ºä¸­ç©¿å¸®
         if (flameVfx != null)
         {
-            // StopEmittingAndClear = Í£Ö¹·¢Éä²¢Çå³ıËùÓĞµ±Ç°Á£×Ó
+            // StopEmittingAndClear = åœæ­¢å‘å°„å¹¶æ¸…é™¤æ‰€æœ‰å½“å‰ç²’å­
             flameVfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
@@ -107,17 +107,17 @@ public class FlamethrowerTurret : MonoBehaviour
 
     private void HandleTargetingAndDamage()
     {
-        // --- A. Ñ°ÕÒÄ¿±ê ---
+        // --- A. å¯»æ‰¾ç›®æ ‡ ---
         if (currentTarget == null || IsTargetInvalid(currentTarget))
         {
             currentTarget = FindNearestEnemy();
         }
 
-        // --- B. Ğı×ªÅÚËş ---
+        // --- B. æ—‹è½¬ç‚®å¡” ---
         if (currentTarget != null && turretHead != null)
         {
             Vector3 dir = currentTarget.position - turretHead.position;
-            dir.y = 0; // ½öË®Æ½Ğı×ª
+            dir.y = 0; // ä»…æ°´å¹³æ—‹è½¬
             if (dir != Vector3.zero)
             {
                 Quaternion targetRot = Quaternion.LookRotation(dir);
@@ -125,7 +125,7 @@ public class FlamethrowerTurret : MonoBehaviour
             }
         }
 
-        // --- C. Ôì³ÉÉËº¦ (ÉÈĞÎ¼ì²â) ---
+        // --- C. é€ æˆä¼¤å®³ (æ‰‡å½¢æ£€æµ‹) ---
         tickTimer -= Time.deltaTime;
         if (tickTimer <= 0)
         {
@@ -136,8 +136,8 @@ public class FlamethrowerTurret : MonoBehaviour
 
     private void ApplyFlameDamage()
     {
-        // Ê¹ÓÃ OverlapSphere »ñÈ¡·¶Î§ÄÚËùÓĞµĞÈË
-        Collider[] hits = Physics.OverlapSphere(transform.position, flameRange, LayerMask.GetMask("Enemies")); // ĞèÈ·±£²ã¼¶ÕıÈ·
+        // ä½¿ç”¨ OverlapSphere è·å–èŒƒå›´å†…æ‰€æœ‰æ•Œäºº
+        Collider[] hits = Physics.OverlapSphere(transform.position, flameRange, LayerMask.GetMask("Enemies")); // éœ€ç¡®ä¿å±‚çº§æ­£ç¡®
 
         Vector3 forward = turretHead != null ? turretHead.forward : transform.forward;
 
@@ -146,13 +146,13 @@ public class FlamethrowerTurret : MonoBehaviour
             if (!hit.CompareTag("Enemy")) continue;
 
             Vector3 dirToTarget = (hit.transform.position - transform.position).normalized;
-            // ¼ÆËã½Ç¶È£ºÈç¹û Ä¿±êÔÚÇ°·½ +/- (flameAngle/2) ¶ÈÄÚ
+            // è®¡ç®—è§’åº¦ï¼šå¦‚æœ ç›®æ ‡åœ¨å‰æ–¹ +/- (flameAngle/2) åº¦å†…
             if (Vector3.Angle(forward, dirToTarget) < flameAngle / 2)
             {
                 Health h = hit.GetComponentInParent<Health>();
                 if (h != null && !h.IsDead)
                 {
-                    // Ôì³ÉÉËº¦
+                    // é€ æˆä¼¤å®³
                     h.TakeDamage(damagePerTick, hit.transform.position, owner, AttackType.Standard, null, null, weaponName);
                 }
             }
@@ -180,12 +180,12 @@ public class FlamethrowerTurret : MonoBehaviour
     {
         if (t == null) return true;
         if (!t.gameObject.activeInHierarchy) return true;
-        // Èç¹ûÄãµÄµĞÈËÓĞ Health ÇÒ»áËÀÍö£¬×îºÃ¼ì²é IsDead
+        // å¦‚æœä½ çš„æ•Œäººæœ‰ Health ä¸”ä¼šæ­»äº¡ï¼Œæœ€å¥½æ£€æŸ¥ IsDead
         var h = t.GetComponentInParent<Health>();
         return h != null && h.IsDead;
     }
 
-    // ¸¨ÖúÏÔÊ¾·¶Î§
+    // è¾…åŠ©æ˜¾ç¤ºèŒƒå›´
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;

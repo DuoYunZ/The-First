@@ -1,18 +1,18 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 using System.Text;
 
 public class Debug_PlayerStatsDisplay : MonoBehaviour
 {
-    [Header("UIÒıÓÃ")]
-    public TextMeshProUGUI statsDisplayText; // ÓÃÓÚÏÔÊ¾ÊôĞÔµÄUIÎÄ±¾
+    [Header("UIå¼•ç”¨")]
+    public TextMeshProUGUI statsDisplayText; // ç”¨äºæ˜¾ç¤ºå±æ€§çš„UIæ–‡æœ¬
 
     private PlayerStats playerStats;
     private StringBuilder sb = new StringBuilder();
 
     void Start()
     {
-        // ÑÓ³Ù»ñÈ¡£¬È·±£PlayerStatsÒÑ³õÊ¼»¯
+        // å»¶è¿Ÿè·å–ï¼Œç¡®ä¿PlayerStatså·²åˆå§‹åŒ–
         Invoke("GetPlayerStatsReference", 0.3f);
     }
 
@@ -21,26 +21,26 @@ public class Debug_PlayerStatsDisplay : MonoBehaviour
         playerStats = PlayerStats.Instance;
         if (playerStats == null)
         {
-            statsDisplayText.text = "PlayerStats.Instance Î´ÕÒµ½£¡";
+            statsDisplayText.text = "PlayerStats.Instance æœªæ‰¾åˆ°ï¼";
             enabled = false;
         }
     }
 
-    // Ã¿Ö¡¶¼¸üĞÂÏÔÊ¾µÄÊıÖµ
+    // æ¯å¸§éƒ½æ›´æ–°æ˜¾ç¤ºçš„æ•°å€¼
     void Update()
     {
         if (playerStats == null) return;
 
-        // Ê¹ÓÃ StringBuilder Ìá¸ßĞ§ÂÊ
+        // ä½¿ç”¨ StringBuilder æé«˜æ•ˆç‡
         sb.Clear();
-        sb.AppendLine("<b>--- Íæ¼ÒÊµÊ±ÊôĞÔ ---</b>");
-        sb.AppendLine($"ÉËº¦ (Dmg): <color=yellow>{playerStats.damageMultiplier * 100:F0}%</color> (+{playerStats.flatDamageBonus})");
-        sb.AppendLine($"·¶Î§ÉËº¦ (AoE Dmg): <color=yellow>{playerStats.aoeDamageMultiplier * 100:F0}%</color> (+{playerStats.flatAoeDamageBonus})");
-        sb.AppendLine($"·¶Î§°ë¾¶ (AoE Rad): <color=yellow>{playerStats.aoeRadiusMultiplier * 100:F0}%</color>");
-        sb.AppendLine($"ÉäËÙ (Fire Rate): <color=yellow>{playerStats.fireRateMultiplier:F2}x</color>");
-        sb.AppendLine($"´©Í¸ (Pierce): <color=yellow>+{playerStats.bonusPierceCount}</color>");
-        sb.AppendLine($"ĞÒÔË (Luck): <color=yellow>{playerStats.luck * 100:F0}%</color>");
-        // ... Äú¿ÉÒÔ°´ĞèÌí¼Ó¸ü¶àÊôĞÔµÄÏÔÊ¾ ...
+        sb.AppendLine("<b>--- ç©å®¶å®æ—¶å±æ€§ ---</b>");
+        sb.AppendLine($"ä¼¤å®³ (Dmg): <color=yellow>{playerStats.damageMultiplier * 100:F0}%</color> (+{playerStats.flatDamageBonus})");
+        sb.AppendLine($"èŒƒå›´ä¼¤å®³ (AoE Dmg): <color=yellow>{playerStats.aoeDamageMultiplier * 100:F0}%</color> (+{playerStats.flatAoeDamageBonus})");
+        sb.AppendLine($"èŒƒå›´åŠå¾„ (AoE Rad): <color=yellow>{playerStats.aoeRadiusMultiplier * 100:F0}%</color>");
+        sb.AppendLine($"å°„é€Ÿ (Fire Rate): <color=yellow>{playerStats.fireRateMultiplier:F2}x</color>");
+        sb.AppendLine($"ç©¿é€ (Pierce): <color=yellow>+{playerStats.bonusPierceCount}</color>");
+        sb.AppendLine($"å¹¸è¿ (Luck): <color=yellow>{playerStats.luck * 100:F0}%</color>");
+        // ... æ‚¨å¯ä»¥æŒ‰éœ€æ·»åŠ æ›´å¤šå±æ€§çš„æ˜¾ç¤º ...
 
         statsDisplayText.text = sb.ToString();
     }

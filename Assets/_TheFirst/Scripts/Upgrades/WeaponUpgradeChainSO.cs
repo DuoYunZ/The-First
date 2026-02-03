@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "NewWeaponChain", menuName = "Game/Weapon Upgrade Chain")]
@@ -8,14 +8,14 @@ public class WeaponUpgradeChainSO : ScriptableObject
     public Sprite icon;
     public WeaponStatBlock targetWeapon;
 
-    [Header("½âËøÉèÖÃ")]
-    [Tooltip("¹´Ñ¡´ËÏî£¬ÔòĞÂÕËºÅÒ»¿ªÊ¼¾ÍÄÜ³éµ½Õâ°ÑÎäÆ÷£¨Èç»ğÇòÊõ£©¡£²»¹´Ñ¡ÔòĞèÒª´ï³ÉÌõ¼ş½âËø£¨ÈçÈ¼ÉÕÆ¿£©¡£")]
-    public bool isDefaultUnlocked = false; // <--- ¡¾ĞÂÔö¡¿Ä¬ÈÏÎª false
+    [Header("è§£é”è®¾ç½®")]
+    [Tooltip("å‹¾é€‰æ­¤é¡¹ï¼Œåˆ™æ–°è´¦å·ä¸€å¼€å§‹å°±èƒ½æŠ½åˆ°è¿™æŠŠæ­¦å™¨ï¼ˆå¦‚ç«çƒæœ¯ï¼‰ã€‚ä¸å‹¾é€‰åˆ™éœ€è¦è¾¾æˆæ¡ä»¶è§£é”ï¼ˆå¦‚ç‡ƒçƒ§ç“¶ï¼‰ã€‚")]
+    public bool isDefaultUnlocked = false; // <--- ã€æ–°å¢ã€‘é»˜è®¤ä¸º false
 
-    [Header("½âËø (Lv.1)")]
+    [Header("è§£é” (Lv.1)")]
     public UpgradeOption unlockOption;
 
-    [Header("Éı¼¶ (Lv.2 -> Max)")]
+    [Header("å‡çº§ (Lv.2 -> Max)")]
     public List<LevelUpgradeData> levels;
 }
 

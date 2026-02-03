@@ -1,38 +1,38 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-// Æ·ÖÊÃ¶¾Ù±£³Ö²»±ä
+// å“è´¨æšä¸¾ä¿æŒä¸å˜
 public enum Rarity { Common, Uncommon, Rare, Epic }
 
-// Ğ§¹ûĞĞÎªÀàĞÍÃ¶¾Ù±£³Ö²»±ä
+// æ•ˆæœè¡Œä¸ºç±»å‹æšä¸¾ä¿æŒä¸å˜
 public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield, EvolveWeapon }
 
-// ¡¾ĞÂÔö¡¿ĞŞ¸ÄÀàĞÍÃ¶¾Ù£¬ÓÃÓÚÇø·ÖÊÇÔö¼Ó¹Ì¶¨Öµ»¹ÊÇ°Ù·Ö±È
+// ã€æ–°å¢ã€‘ä¿®æ”¹ç±»å‹æšä¸¾ï¼Œç”¨äºåŒºåˆ†æ˜¯å¢åŠ å›ºå®šå€¼è¿˜æ˜¯ç™¾åˆ†æ¯”
 public enum ModifierType { Flat, Percentage }
 
 [System.Serializable]
 public class UpgradeEffect
 {
-    [Tooltip("Éı¼¶Ğ§¹ûµÄĞĞÎªÀàĞÍ")]
+    [Tooltip("å‡çº§æ•ˆæœçš„è¡Œä¸ºç±»å‹")]
     public EffectActionType actionType = EffectActionType.ModifyStat;
 
-    // --- ºËĞÄĞÂÔö£º¹ØÁª±»¶¯µÀ¾ß ---
-    [Header("¡¾Èç¹ûÕâÊÇÒ»¸ö±»¶¯µÀ¾ß¿¨Æ¬¡¿")]
+    // --- æ ¸å¿ƒæ–°å¢ï¼šå…³è”è¢«åŠ¨é“å…· ---
+    [Header("ã€å¦‚æœè¿™æ˜¯ä¸€ä¸ªè¢«åŠ¨é“å…·å¡ç‰‡ã€‘")]
     public PassiveItemData passiveItemData;
     // ---------------------------
 
-    [Header("¡¾Èç¹û Action Type ÊÇ ModifyStat¡¿")]
-    [Tooltip("Õâ¸öĞ§¹ûÊôÓÚÄÄ¸öÊôĞÔ")]
+    [Header("ã€å¦‚æœ Action Type æ˜¯ ModifyStatã€‘")]
+    [Tooltip("è¿™ä¸ªæ•ˆæœå±äºå“ªä¸ªå±æ€§")]
     public UpgradeType statToModify;
-    [Tooltip("Õâ¸öĞ§¹ûÌá¹©µÄÊıÖµ")]
+    [Tooltip("è¿™ä¸ªæ•ˆæœæä¾›çš„æ•°å€¼")]
     public float value;
-    [Tooltip("ÊıÖµµÄÀàĞÍÊÇ¹Ì¶¨Öµ(Flat)»¹ÊÇ°Ù·Ö±È(Percentage)")]
+    [Tooltip("æ•°å€¼çš„ç±»å‹æ˜¯å›ºå®šå€¼(Flat)è¿˜æ˜¯ç™¾åˆ†æ¯”(Percentage)")]
     public ModifierType modType = ModifierType.Percentage;
 
-    [Header("¡¾Èç¹û Action Type ÊÇ UnlockWeapon/Evolve¡¿")]
-    [Tooltip("Òª½âËøµÄÎäÆ÷Êı¾İ")]
+    [Header("ã€å¦‚æœ Action Type æ˜¯ UnlockWeapon/Evolveã€‘")]
+    [Tooltip("è¦è§£é”çš„æ­¦å™¨æ•°æ®")]
     public WeaponStatBlock weaponToUnlock;
 
-    [Header("¡¾Èç¹û Action Type ÊÇ UnlockShield¡¿")]
-    [Tooltip("Òª½âËøµÄ»¤¶ÜÊı¾İ")]
+    [Header("ã€å¦‚æœ Action Type æ˜¯ UnlockShieldã€‘")]
+    [Tooltip("è¦è§£é”çš„æŠ¤ç›¾æ•°æ®")]
     public ShieldData shieldToUnlock;
 }

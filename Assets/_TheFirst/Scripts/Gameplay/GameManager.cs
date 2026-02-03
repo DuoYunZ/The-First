@@ -1,32 +1,32 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
-// Œ¢ß[‘ò î‘BÃ¶Åe·ÅÔÚîÍâ²¿£¬·½±ãÆäËûÄ_±¾ÒıÓÃ
-public enum GameState { Building, Combat, GameOver, Victory } // [ĞÂÔö] Victory ×´Ì¬
+// å°‡éŠæˆ²ç‹€æ…‹æšèˆ‰æ”¾åœ¨é¡å¤–éƒ¨ï¼Œæ–¹ä¾¿å…¶ä»–è…³æœ¬å¼•ç”¨
+public enum GameState { Building, Combat, GameOver, Victory } // [æ–°å¢] Victory çŠ¶æ€
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("ˆö¾°Ãû·Q")]
+    [Header("å ´æ™¯åç¨±")]
     public string characterSelectSceneName = "CharacterSelectScene";
 
-    [Tooltip("ĞÂµÄ½áËã½çÃæ½Å±¾ÒıÓÃ")]
+    [Tooltip("æ–°çš„ç»“ç®—ç•Œé¢è„šæœ¬å¼•ç”¨")]
     public SettlementUI settlementUI;
 
-    [Tooltip("‘ğôY UI µÄÈİÆ÷")]
+    [Tooltip("æˆ°é¬¥ UI çš„å®¹å™¨")]
     public GameObject combatUIContainer;
 
-    [Header("ˆÌĞĞ•r î‘B (Runtime State)")]
+    [Header("åŸ·è¡Œæ™‚ç‹€æ…‹ (Runtime State)")]
     [SerializeField] private GameState currentState = GameState.Building;
     public Transform playerTransform { get; private set; }
     private Health playerHealthComponent = null;
     public Transform playerAimTarget { get; private set; }
 
-    [Header("ÄÜÁ¿Ê¯µôÂä³Ø")]
-    [Tooltip("ËùÓĞ¿ÉÄÜµôÂäµÄÄÜÁ¿Ê¯ (EnergyStoneSO) ×Ê²úÎÄ¼ş")]
+    [Header("èƒ½é‡çŸ³æ‰è½æ± ")]
+    [Tooltip("æ‰€æœ‰å¯èƒ½æ‰è½çš„èƒ½é‡çŸ³ (EnergyStoneSO) èµ„äº§æ–‡ä»¶")]
     public List<EnergyStoneSO> energyStoneLootTable;
 
     private void Awake()
@@ -37,7 +37,7 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
-        // ´_±£ GameManager ÔÚÇĞ“Qˆö¾°•r²»±»äNš§
+        // ç¢ºä¿ GameManager åœ¨åˆ‡æ›å ´æ™¯æ™‚ä¸è¢«éŠ·æ¯€
         DontDestroyOnLoad(gameObject);
     }
 
@@ -47,7 +47,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ÓÉ CombatSceneInitializer ÔÚÍê³É™C¼×ÖØ½¨ºÍˆö¾°ÔO¶¨ááºô½Ğ
+    /// ç”± CombatSceneInitializer åœ¨å®Œæˆæ©Ÿç”²é‡å»ºå’Œå ´æ™¯è¨­å®šå¾Œå‘¼å«
     /// </summary>
     public void PlayerMechReadyInCombatScene(GameObject playerInstance)
     {
@@ -57,39 +57,39 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[GameManager] Íæ¼Ò™C¼× '{playerInstance.name}' ÒÑœÊ‚ä¾Í¾w¡£ß[‘òßMÈë‘ğôY î‘B¡£");
+        Debug.Log($"[GameManager] ç©å®¶æ©Ÿç”² '{playerInstance.name}' å·²æº–å‚™å°±ç·’ã€‚éŠæˆ²é€²å…¥æˆ°é¬¥ç‹€æ…‹ã€‚");
         currentState = GameState.Combat;
-        Time.timeScale = 1f; // ´_±£ß[‘ò•régÕı³£Á÷„Ó
+        Time.timeScale = 1f; // ç¢ºä¿éŠæˆ²æ™‚é–“æ­£å¸¸æµå‹•
 
-        // ±£´æŒ¦Íæ¼ÒºËĞÄ½M¼şµÄÒıÓÃ
+        // ä¿å­˜å°ç©å®¶æ ¸å¿ƒçµ„ä»¶çš„å¼•ç”¨
         playerTransform = playerInstance.transform;
         playerHealthComponent = playerInstance.GetComponent<Health>();
 
-        // --- ¡¾ĞÂÔö¡¿²éÕÒ²¢±£´æÃé×¼µã ---
+        // --- ã€æ–°å¢ã€‘æŸ¥æ‰¾å¹¶ä¿å­˜ç„å‡†ç‚¹ ---
         if (playerTransform != null)
         {
             playerAimTarget = playerTransform.Find("AimTargetPoint");
             if (playerAimTarget == null)
             {
-                Debug.LogWarning($"[GameManager] ÔÚÍæ¼ÒÔ¤ÖÆ¼ş '{playerInstance.name}' ÉÏÃ»ÓĞÕÒµ½ÃûÎª 'AimTargetPoint' µÄ×Ó¶ÔÏó£¡µĞÈË½«¼ÌĞøÃé×¼½Åµ×¡£");
-                // Èç¹ûÕÒ²»µ½£¬¾ÍÓÃ¸ù¶ÔÏó×÷Îªºó±¸£¬±ÜÃâ±¨´í
+                Debug.LogWarning($"[GameManager] åœ¨ç©å®¶é¢„åˆ¶ä»¶ '{playerInstance.name}' ä¸Šæ²¡æœ‰æ‰¾åˆ°åä¸º 'AimTargetPoint' çš„å­å¯¹è±¡ï¼æ•Œäººå°†ç»§ç»­ç„å‡†è„šåº•ã€‚");
+                // å¦‚æœæ‰¾ä¸åˆ°ï¼Œå°±ç”¨æ ¹å¯¹è±¡ä½œä¸ºåå¤‡ï¼Œé¿å…æŠ¥é”™
                 playerAimTarget = playerTransform;
             }
         }
 
-        // Ó†é†Íæ¼ÒµÄËÀÍöÊÂ¼ş£¬ß@ÊÇÓ|°lß[‘ò½YÊøµÄêPæI
+        // è¨‚é–±ç©å®¶çš„æ­»äº¡äº‹ä»¶ï¼Œé€™æ˜¯è§¸ç™¼éŠæˆ²çµæŸçš„é—œéµ
         if (playerHealthComponent != null)
         {
-            playerHealthComponent.OnDeath.RemoveListener(HandleGameOver); // ÏÈÒÆ³ı£¬·ÀÖ¹ÖØÑ}Ó†é†
+            playerHealthComponent.OnDeath.RemoveListener(HandleGameOver); // å…ˆç§»é™¤ï¼Œé˜²æ­¢é‡è¤‡è¨‚é–±
             playerHealthComponent.OnDeath.AddListener(HandleGameOver);
-            Debug.Log("[GameManager] ÒÑ³É¹¦Ó†é†Íæ¼ÒµÄ OnDeath ÊÂ¼ş¡£");
+            Debug.Log("[GameManager] å·²æˆåŠŸè¨‚é–±ç©å®¶çš„ OnDeath äº‹ä»¶ã€‚");
         }
         else
         {
-            Debug.LogError($"[GameManager] Íæ¼ÒîAÖÆ¼ş '{playerInstance.name}' ÉÏÈ±ÉÙ Health ½M¼ş£¡");
+            Debug.LogError($"[GameManager] ç©å®¶é åˆ¶ä»¶ '{playerInstance.name}' ä¸Šç¼ºå°‘ Health çµ„ä»¶ï¼");
         }
 
-        // ²»ÔÙÓÉ GameManager Ö±½Ó¿ØÖÆ£¬¶øÊÇºô½Ğ UIManager
+        // ä¸å†ç”± GameManager ç›´æ¥æ§åˆ¶ï¼Œè€Œæ˜¯å‘¼å« UIManager
         if (UIManager.Instance != null)
         {
             UIManager.Instance.ShowCombatUI();
@@ -97,28 +97,28 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ÌÀíÍæ¼ÒËÀÍö£¬ÓÉÍæ¼Ò Health Ä_±¾µÄ OnDeath ÊÂ¼şÓ|°l
+    /// è™•ç†ç©å®¶æ­»äº¡ï¼Œç”±ç©å®¶ Health è…³æœ¬çš„ OnDeath äº‹ä»¶è§¸ç™¼
     /// </summary>
     private void HandleGameOver()
     {
-        if (currentState == GameState.GameOver) return; // ·ÀÖ¹ÖØÑ}ˆÌĞĞ
+        if (currentState == GameState.GameOver) return; // é˜²æ­¢é‡è¤‡åŸ·è¡Œ
 
         currentState = GameState.GameOver;
-        Time.timeScale = 0f; // ƒö½Yß[‘ò•rég
-        Debug.Log("[GameManager] ß[‘ò½YÊø£¡•régÒÑ•ºÍ£¡£");
+        Time.timeScale = 0f; // å‡çµéŠæˆ²æ™‚é–“
+        Debug.Log("[GameManager] éŠæˆ²çµæŸï¼æ™‚é–“å·²æš«åœã€‚");
 
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideCombatUI();
-            // [ÒÑÉ¾³ı] UIManager.Instance.ShowGameOverPanel(); <-- ²»ÔÙÊ¹ÓÃ¾ÉµÄ
+            // [å·²åˆ é™¤] UIManager.Instance.ShowGameOverPanel(); <-- ä¸å†ä½¿ç”¨æ—§çš„
         }
         if (settlementUI != null)
         {
-            settlementUI.Show(false); // false = Ê§”¡/ËÀÍö
+            settlementUI.Show(false); // false = å¤±æ•—/æ­»äº¡
         }
         else
         {
-            Debug.LogError("[GameManager] SettlementUI Î´¸³Öµ£¡ÇëÔÚ Inspector ÖĞÉèÖÃ¡£");
+            Debug.LogError("[GameManager] SettlementUI æœªèµ‹å€¼ï¼è¯·åœ¨ Inspector ä¸­è®¾ç½®ã€‚");
         }
 
         if (WaveManager.Instance != null)
@@ -136,46 +136,46 @@ public class GameManager : MonoBehaviour
 
         currentState = GameState.Victory;
         Time.timeScale = 0f;
-        Debug.Log("[GameManager] ÈÎ„ÕÍê³É£¡„ÙÀû£¡");
+        Debug.Log("[GameManager] ä»»å‹™å®Œæˆï¼å‹åˆ©ï¼");
 
-        // 1. ë[²Ø‘ğôYUI
+        // 1. éš±è—æˆ°é¬¥UI
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideCombatUI();
         }
 
-        // 2. ï@Ê¾ĞÂµÄ½YËã½çÃæ („ÙÀû)
+        // 2. é¡¯ç¤ºæ–°çš„çµç®—ç•Œé¢ (å‹åˆ©)
         if (settlementUI != null)
         {
-            settlementUI.Show(true); // true = „ÙÀû
+            settlementUI.Show(true); // true = å‹åˆ©
         }
     }
     /// <summary>
-    /// ¹©¡°ÖØĞÂé_Ê¼‘ğôY¡±°´âoºô½Ğ
+    /// ä¾›â€œé‡æ–°é–‹å§‹æˆ°é¬¥â€æŒ‰éˆ•å‘¼å«
     /// </summary>
     public void RestartCombat()
     {
-        Debug.Log("[GameManager] ÕıÔÚÖØĞÂé_Ê¼‘ğôY...");
+        Debug.Log("[GameManager] æ­£åœ¨é‡æ–°é–‹å§‹æˆ°é¬¥...");
         Time.timeScale = 1f;
-        // ÖØĞÂİdÈë®”Ç°ˆö¾°¡£DataManager ÖĞµÄ™C¼×ÅäÖÃÈÔÈ»´æÔÚ£¬
-        // ËùÒÔ CombatSceneInitializer •şÓÃÍ¬˜ÓµÄÅäÖÃÖØ½¨™C¼×¡£
+        // é‡æ–°è¼‰å…¥ç•¶å‰å ´æ™¯ã€‚DataManager ä¸­çš„æ©Ÿç”²é…ç½®ä»ç„¶å­˜åœ¨ï¼Œ
+        // æ‰€ä»¥ CombatSceneInitializer æœƒç”¨åŒæ¨£çš„é…ç½®é‡å»ºæ©Ÿç”²ã€‚
         if (settlementUI != null) settlementUI.gameObject.SetActive(false);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     /// <summary>
-    /// ¹©¡°·µ»Ø™Cì/³õÊ¼ˆö¾°¡±°´âoºô½Ğ
+    /// ä¾›â€œè¿”å›æ©Ÿåº«/åˆå§‹å ´æ™¯â€æŒ‰éˆ•å‘¼å«
     /// </summary>
     public void ReturnToCharacterSelect()
     {
-        Debug.Log($"[GameManager] ÕıÔÚ·µ»Ø½ÇÉ«Ñ¡Ôñ³¡¾°: {characterSelectSceneName}");
+        Debug.Log($"[GameManager] æ­£åœ¨è¿”å›è§’è‰²é€‰æ‹©åœºæ™¯: {characterSelectSceneName}");
         Time.timeScale = 1f;
         if (settlementUI != null) settlementUI.gameObject.SetActive(false);
 
-        // ÇåÀíµ±Ç°Ñ¡ÔñµÄ½ÇÉ«Êı¾İ£¬ÒÔ±ãÖØĞÂ¿ªÊ¼
+        // æ¸…ç†å½“å‰é€‰æ‹©çš„è§’è‰²æ•°æ®ï¼Œä»¥ä¾¿é‡æ–°å¼€å§‹
         if (DataManager.Instance != null)
         {
-            // ¡¾ºËĞÄĞŞ¸Ä¡¿Ê¹ÓÃĞÂµÄ selectedCharacter ±äÁ¿
+            // ã€æ ¸å¿ƒä¿®æ”¹ã€‘ä½¿ç”¨æ–°çš„ selectedCharacter å˜é‡
             DataManager.Instance.selectedCharacter = null;
         }
 

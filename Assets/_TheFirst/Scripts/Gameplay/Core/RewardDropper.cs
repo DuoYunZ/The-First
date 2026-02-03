@@ -1,15 +1,15 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class RewardDropper : MonoBehaviour
 {
-    public GameObject experienceGemPrefab; // ÒıÓÃ¾­Ñé±¦Ê¯Ô¤ÖÆ¼ş
-    public int gemsToDrop = 10; // µôÂäÊıÁ¿
-    public float dropRadius = 1.0f; // ÔÚ¶à´ó°ë¾¶ÄÚËæ»úµôÂä
+    public GameObject experienceGemPrefab; // å¼•ç”¨ç»éªŒå®çŸ³é¢„åˆ¶ä»¶
+    public int gemsToDrop = 10; // æ‰è½æ•°é‡
+    public float dropRadius = 1.0f; // åœ¨å¤šå¤§åŠå¾„å†…éšæœºæ‰è½
 
-    // ÄãĞèÒªÔÚ Health ×é¼şµÄ OnDeath ÊÂ¼şÖĞ£¬½«Õâ¸ö·½·¨¹ØÁªÉÏ
+    // ä½ éœ€è¦åœ¨ Health ç»„ä»¶çš„ OnDeath äº‹ä»¶ä¸­ï¼Œå°†è¿™ä¸ªæ–¹æ³•å…³è”ä¸Š
     public void DropRewards()
     {
-        Debug.Log("±¦Ïä±»´ò¿ª£¬µôÂä½±Àø£¡");
+        Debug.Log("å®ç®±è¢«æ‰“å¼€ï¼Œæ‰è½å¥–åŠ±ï¼");
         if (experienceGemPrefab == null) return;
 
         for (int i = 0; i < gemsToDrop; i++)

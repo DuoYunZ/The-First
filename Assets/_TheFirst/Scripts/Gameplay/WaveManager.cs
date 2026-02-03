@@ -1,4 +1,4 @@
-// --- WaveManager.cs (×îÖÕÍêÕûĞŞÕı°æ) ---
+ï»¿// --- WaveManager.cs (æœ€ç»ˆå®Œæ•´ä¿®æ­£ç‰ˆ) ---
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,20 +7,20 @@ public class WaveManager : MonoBehaviour
 {
     public static WaveManager Instance { get; private set; }
 
-    [Header("ËùÓĞ²¨´ÎÅäÖÃ")]
+    [Header("æ‰€æœ‰æ³¢æ¬¡é…ç½®")]
     public List<WaveConfig> allWaveConfigurations;
 
-    [Header("Í¨ÓÃ²¨´Î¿ØÖÆ")]
+    [Header("é€šç”¨æ³¢æ¬¡æ§åˆ¶")]
     public int currentWaveIndex = -1;
     public float defaultTimeBetweenWaves = 10f;
     private float currentWaveActiveTimer;
 
-    [Header("µĞÈËÊôĞÔ³É³¤Òò×Ó (È«¾Ö)")]
+    [Header("æ•Œäººå±æ€§æˆé•¿å› å­ (å…¨å±€)")]
     public float healthGrowthFactor = 0.1f;
     public float damageGrowthFactor = 0.05f;
     public float speedGrowthFactor = 0.02f;
 
-    [Header("ÒıÓÃ")]
+    [Header("å¼•ç”¨")]
     public EnemySpawner enemySpawner;
 
     private Health bossInstanceHealth = null;
@@ -44,7 +44,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    [Header("ÎŞ¾¡Ä£Ê½ÅäÖÃ")]
+    [Header("æ— å°½æ¨¡å¼é…ç½®")]
     public bool enableEndlessMode = true;
     public float endlessModeTimeBetweenWaves = 15f;
     public int endlessBaseEnemyCount = 10;
@@ -62,16 +62,16 @@ public class WaveManager : MonoBehaviour
 
     void Start()
     {
-        if (enemySpawner == null) { Debug.LogError("EnemySpawner Î´ÔÚ WaveManager ÖĞÉèÖÃ!", this); enabled = false; return; }
-        if (allWaveConfigurations == null || allWaveConfigurations.Count == 0) { Debug.LogError("allWaveConfigurations ÁĞ±íÎª¿Õ!", this); enabled = false; return; }
+        if (enemySpawner == null) { Debug.LogError("EnemySpawner æœªåœ¨ WaveManager ä¸­è®¾ç½®!", this); enabled = false; return; }
+        if (allWaveConfigurations == null || allWaveConfigurations.Count == 0) { Debug.LogError("allWaveConfigurations åˆ—è¡¨ä¸ºç©º!", this); enabled = false; return; }
 
         nextWaveCountdownTimer = 3f;
         currentState = WaveState.StartingGame;
-        Debug.Log("WaveManager ³õÊ¼»¯£¬µÈ´ıÓÎÏ·¿ªÊ¼²¨´ÎĞòÁĞ¡£");
+        Debug.Log("WaveManager åˆå§‹åŒ–ï¼Œç­‰å¾…æ¸¸æˆå¼€å§‹æ³¢æ¬¡åºåˆ—ã€‚");
     }
 
-    // vvv --- ¡¾ºËĞÄĞŞÕıÇøÓò¡¿ --- vvv
-    // ÎÒÃÇ½« Update ºÍ CheckForWaveCompletion ·½·¨¸üĞÂÎª×îÖÕµÄÕıÈ·Âß¼­
+    // vvv --- ã€æ ¸å¿ƒä¿®æ­£åŒºåŸŸã€‘ --- vvv
+    // æˆ‘ä»¬å°† Update å’Œ CheckForWaveCompletion æ–¹æ³•æ›´æ–°ä¸ºæœ€ç»ˆçš„æ­£ç¡®é€»è¾‘
     void Update()
     {
         switch (currentState)
@@ -88,8 +88,8 @@ public class WaveManager : MonoBehaviour
                 }
                 break;
 
-            // ÔÚ¡°ÕıÔÚÉú³É¡±ºÍ¡°µÈ´ıÇå¿Õ¡±Á½¸ö×´Ì¬ÏÂ£¬ÎÒÃÇ¶¼µ÷ÓÃÍ¬Ò»¸ö¼ì²é·½·¨
-            // ÕâÑùÄÜÈ·±£¼ÆÊ±Æ÷´Ó²¨´ÎÒ»¿ªÊ¼¾Í¼ÆÊ±
+            // åœ¨â€œæ­£åœ¨ç”Ÿæˆâ€å’Œâ€œç­‰å¾…æ¸…ç©ºâ€ä¸¤ä¸ªçŠ¶æ€ä¸‹ï¼Œæˆ‘ä»¬éƒ½è°ƒç”¨åŒä¸€ä¸ªæ£€æŸ¥æ–¹æ³•
+            // è¿™æ ·èƒ½ç¡®ä¿è®¡æ—¶å™¨ä»æ³¢æ¬¡ä¸€å¼€å§‹å°±è®¡æ—¶
             case WaveState.SpawningEnemies:
             case WaveState.WaitingForAllEnemiesCleared:
                 CheckForWaveCompletion();
@@ -115,10 +115,10 @@ public class WaveManager : MonoBehaviour
 
         bool waveCleared = false;
 
-        // vvv --- ¡¾ºËĞÄĞŞÕıÇøÓò¡¿ --- vvv
+        // vvv --- ã€æ ¸å¿ƒä¿®æ­£åŒºåŸŸã€‘ --- vvv
         if (isInEndlessMode)
         {
-            // Èç¹ûÊÇÎŞ¾¡Ä£Ê½£¬Ö»¼ì²éµĞÈËÊÇ·ñÇå¿Õ
+            // å¦‚æœæ˜¯æ— å°½æ¨¡å¼ï¼Œåªæ£€æŸ¥æ•Œäººæ˜¯å¦æ¸…ç©º
             if (enemiesRemainingInWave <= 0 && !waveIsCurrentlySpawning)
             {
                 waveCleared = true;
@@ -126,13 +126,13 @@ public class WaveManager : MonoBehaviour
         }
         else
         {
-            // Èç¹ûÊÇÔ¤Éè²¨´Î£¬Ö´ĞĞÎÒÃÇÖ®Ç°µÄË«ÖØ¼ì²é£¨Ê±¼äºÍµĞÈËÊıÁ¿£©
-            // Ôö¼ÓÒ»¸ö°²È«¼ì²é£¬È·±£ currentWaveIndex ÈÔÔÚÓĞĞ§·¶Î§ÄÚ
+            // å¦‚æœæ˜¯é¢„è®¾æ³¢æ¬¡ï¼Œæ‰§è¡Œæˆ‘ä»¬ä¹‹å‰çš„åŒé‡æ£€æŸ¥ï¼ˆæ—¶é—´å’Œæ•Œäººæ•°é‡ï¼‰
+            // å¢åŠ ä¸€ä¸ªå®‰å…¨æ£€æŸ¥ï¼Œç¡®ä¿ currentWaveIndex ä»åœ¨æœ‰æ•ˆèŒƒå›´å†…
             if (currentWaveIndex < 0 || currentWaveIndex >= allWaveConfigurations.Count)
             {
-                // Èç¹ûË÷ÒıÎŞĞ§£¬Îª·ÀÖ¹¿¨ËÀ£¬Ö±½Ó½áÊø²¨´Î (ÕâÊÇÒ»ÖÖ±£»¤»úÖÆ)
+                // å¦‚æœç´¢å¼•æ— æ•ˆï¼Œä¸ºé˜²æ­¢å¡æ­»ï¼Œç›´æ¥ç»“æŸæ³¢æ¬¡ (è¿™æ˜¯ä¸€ç§ä¿æŠ¤æœºåˆ¶)
                 waveCleared = true;
-                Debug.LogError($"¼ì²âµ½ÎŞĞ§µÄ currentWaveIndex ({currentWaveIndex})£¬Ç¿ÖÆ½áÊø²¨´Î£¡");
+                Debug.LogError($"æ£€æµ‹åˆ°æ— æ•ˆçš„ currentWaveIndex ({currentWaveIndex})ï¼Œå¼ºåˆ¶ç»“æŸæ³¢æ¬¡ï¼");
                 return;
             }
 
@@ -145,7 +145,7 @@ public class WaveManager : MonoBehaviour
 
             if (currentConfig.maxWaveDuration > 0 && currentWaveActiveTimer <= 0)
             {
-                Debug.Log($"<color=orange>²¨´Î {currentWaveIndex + 1} Ê±¼äºÄ¾¡£¡Ç¿ÖÆ½øÈëÏÂÒ»²¨¡£</color>");
+                Debug.Log($"<color=orange>æ³¢æ¬¡ {currentWaveIndex + 1} æ—¶é—´è€—å°½ï¼å¼ºåˆ¶è¿›å…¥ä¸‹ä¸€æ³¢ã€‚</color>");
                 waveCleared = true;
             }
 
@@ -161,7 +161,7 @@ public class WaveManager : MonoBehaviour
                 }
             }
         }
-        // ^^^ --- ĞŞÕı½áÊø --- ^^^
+        // ^^^ --- ä¿®æ­£ç»“æŸ --- ^^^
 
         if (waveCleared)
         {
@@ -184,20 +184,20 @@ public class WaveManager : MonoBehaviour
         {
             if (enableEndlessMode)
             {
-                Debug.Log("<color=magenta>ËùÓĞÅäÖÃ²¨´ÎÒÑÍê³É£¡ÕıÔÚÆô¶¯ÎŞ¾¡Ä£Ê½...</color>");
+                Debug.Log("<color=magenta>æ‰€æœ‰é…ç½®æ³¢æ¬¡å·²å®Œæˆï¼æ­£åœ¨å¯åŠ¨æ— å°½æ¨¡å¼...</color>");
                 isInEndlessMode = true;
                 StartEndlessWave();
             }
             else
             {
-                Debug.Log("ËùÓĞÅäÖÃµÄ²¨´ÎÒÑÍê³É! ÓÎÏ·Ê¤Àû£¡");
+                Debug.Log("æ‰€æœ‰é…ç½®çš„æ³¢æ¬¡å·²å®Œæˆ! æ¸¸æˆèƒœåˆ©ï¼");
                 enabled = false;
             }
             return;
         }
 
         WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
-        Debug.Log($"¿ªÊ¼²¨´Î: {currentWaveIndex + 1} ({currentConfig.waveName}) - ÀàĞÍ: {currentConfig.waveType}");
+        Debug.Log($"å¼€å§‹æ³¢æ¬¡: {currentWaveIndex + 1} ({currentConfig.waveName}) - ç±»å‹: {currentConfig.waveType}");
         bossInstanceHealth = null;
 
         currentState = WaveState.SpawningEnemies;
@@ -212,7 +212,7 @@ public class WaveManager : MonoBehaviour
         }
         else
         {
-            // Ê¹ÓÃÒ»¸öºÜ´óµÄÖµÀ´´ú±íÎŞÏŞÊ±¼ä
+            // ä½¿ç”¨ä¸€ä¸ªå¾ˆå¤§çš„å€¼æ¥ä»£è¡¨æ— é™æ—¶é—´
             currentWaveActiveTimer = 9999f;
         }
         UIManager.Instance.UpdateEnemiesRemaining(enemiesRemainingInWave);
@@ -227,17 +227,17 @@ public class WaveManager : MonoBehaviour
 
         if (currentConfig.waveType == WaveType.Boss)
         {
-            Debug.Log("ÕâÊÇÒ»¸öBoss²¨´Î£¡×¼±¸Õ½¶·£¡");
+            Debug.Log("è¿™æ˜¯ä¸€ä¸ªBossæ³¢æ¬¡ï¼å‡†å¤‡æˆ˜æ–—ï¼");
         }
         else if (currentConfig.waveType == WaveType.Reward)
         {
-            Debug.Log("½±Àø²¨´Î£¡¿ì´òÆÆ±¦Ïä£¡");
+            Debug.Log("å¥–åŠ±æ³¢æ¬¡ï¼å¿«æ‰“ç ´å®ç®±ï¼");
         }
     }
 
     public void NotifySpawnerFinishedCurrentWave()
     {
-        Debug.Log("½ÓÊÕµ½ EnemySpawner µÄÉú³ÉÍê±ÏÍ¨Öª¡£");
+        Debug.Log("æ¥æ”¶åˆ° EnemySpawner çš„ç”Ÿæˆå®Œæ¯•é€šçŸ¥ã€‚");
         waveIsCurrentlySpawning = false;
     }
 
@@ -247,26 +247,26 @@ public class WaveManager : MonoBehaviour
         {
             enemiesRemainingInWave--;
             if (enemiesRemainingInWave < 0) enemiesRemainingInWave = 0;
-            Debug.LogWarning($"[WaveManager] Ò»¸öµĞÈËÎ´ÄÜÉú³É¡£Ê£ÓàµĞÈË¼ÆÊıÒÑµ÷ÕûÎª: {enemiesRemainingInWave}");
+            Debug.LogWarning($"[WaveManager] ä¸€ä¸ªæ•Œäººæœªèƒ½ç”Ÿæˆã€‚å‰©ä½™æ•Œäººè®¡æ•°å·²è°ƒæ•´ä¸º: {enemiesRemainingInWave}");
             UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
         }
     }
 
     void EndCurrentWave()
     {
-        // Í£Ö¹ËùÓĞµĞÈËµÄÉú³É£¬ÒÔ·ÀÓĞÑÓ³ÙÉú³ÉµÄµĞÈË×éÔÚ²¨´Î½áÊøºó»¹Éú³É
+        // åœæ­¢æ‰€æœ‰æ•Œäººçš„ç”Ÿæˆï¼Œä»¥é˜²æœ‰å»¶è¿Ÿç”Ÿæˆçš„æ•Œäººç»„åœ¨æ³¢æ¬¡ç»“æŸåè¿˜ç”Ÿæˆ
         enemySpawner.StopAndClearSpawning();
 
         if (isInEndlessMode)
         {
-            Debug.Log($"ÎŞ¾¡²¨´Î {endlessWaveCount} ÒÑÇå³ı!");
+            Debug.Log($"æ— å°½æ³¢æ¬¡ {endlessWaveCount} å·²æ¸…é™¤!");
             currentState = WaveState.WaveCooldown;
             nextWaveCountdownTimer = endlessModeTimeBetweenWaves;
         }
         else
         {
             WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
-            Debug.Log($"²¨´Î {currentWaveIndex + 1} ({currentConfig.waveName}) ÒÑÇå³ı!");
+            Debug.Log($"æ³¢æ¬¡ {currentWaveIndex + 1} ({currentConfig.waveName}) å·²æ¸…é™¤!");
             currentState = WaveState.WaveCooldown;
             nextWaveCountdownTimer = currentConfig.customTimeUntilNextWave > 0 ? currentConfig.customTimeUntilNextWave : defaultTimeBetweenWaves;
         }
@@ -281,12 +281,12 @@ public class WaveManager : MonoBehaviour
             {
                 enemiesRemainingInWave = 0;
             }
-            Debug.Log($"[WaveManager] Ò»¸öµĞÈË±»»÷°Ü¡£²¨´Î {currentWaveIndex + 1} Ê£ÓàµĞÈË: {enemiesRemainingInWave}");
+            Debug.Log($"[WaveManager] ä¸€ä¸ªæ•Œäººè¢«å‡»è´¥ã€‚æ³¢æ¬¡ {currentWaveIndex + 1} å‰©ä½™æ•Œäºº: {enemiesRemainingInWave}");
             UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
         }
         else
         {
-            Debug.LogWarning($"[WaveManager] EnemyDefeated ÔÚÒ»¸öÒâÍâµÄ×´Ì¬({currentState})ÏÂ±»µ÷ÓÃ£¬´Ë´Î»÷É±Î´±»¼ÆÈë²¨´Î×ÜÊı¡£");
+            Debug.LogWarning($"[WaveManager] EnemyDefeated åœ¨ä¸€ä¸ªæ„å¤–çš„çŠ¶æ€({currentState})ä¸‹è¢«è°ƒç”¨ï¼Œæ­¤æ¬¡å‡»æ€æœªè¢«è®¡å…¥æ³¢æ¬¡æ€»æ•°ã€‚");
         }
     }
 
@@ -301,7 +301,7 @@ public class WaveManager : MonoBehaviour
         currentState = WaveState.StartingGame;
         StopAllCoroutines();
         if (enemySpawner != null) enemySpawner.StopAndClearSpawning();
-        Debug.Log("WaveManager ÒÑÖØÖÃ¡£");
+        Debug.Log("WaveManager å·²é‡ç½®ã€‚");
     }
 
     public void RegisterBossInstance(Health bossHealth)
@@ -309,17 +309,17 @@ public class WaveManager : MonoBehaviour
         bossInstanceHealth = bossHealth;
         if (bossHealth != null)
         {
-            Debug.Log($"WaveManager ÒÑ×¢²áBoss: {bossHealth.gameObject.name}");
+            Debug.Log($"WaveManager å·²æ³¨å†ŒBoss: {bossHealth.gameObject.name}");
         }
     }
 
     void StartEndlessWave()
     {
         endlessWaveCount++;
-        Debug.Log($"<color=yellow>¿ªÊ¼ÎŞ¾¡²¨´Î: {endlessWaveCount}</color>");
+        Debug.Log($"<color=yellow>å¼€å§‹æ— å°½æ³¢æ¬¡: {endlessWaveCount}</color>");
 
         WaveConfig endlessConfig = ScriptableObject.CreateInstance<WaveConfig>();
-        endlessConfig.waveName = $"ÎŞ¾¡²¨´Î {endlessWaveCount}";
+        endlessConfig.waveName = $"æ— å°½æ³¢æ¬¡ {endlessWaveCount}";
         endlessConfig.waveType = WaveType.Normal;
 
         List<EnemySpawnGroup> groupsForThisWave = new List<EnemySpawnGroup>();
@@ -359,6 +359,6 @@ public class WaveManager : MonoBehaviour
     {
         enemiesRemainingInWave++;
         UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
-        Debug.Log($"[µ÷ÊÔ] Ò»¸öĞÂµÄµĞÈËÒÑ±»×¢²áµ½WaveManager£¬µ±Ç°Ê£ÓàµĞÈË: {enemiesRemainingInWave}");
+        Debug.Log($"[è°ƒè¯•] ä¸€ä¸ªæ–°çš„æ•Œäººå·²è¢«æ³¨å†Œåˆ°WaveManagerï¼Œå½“å‰å‰©ä½™æ•Œäºº: {enemiesRemainingInWave}");
     }
 }

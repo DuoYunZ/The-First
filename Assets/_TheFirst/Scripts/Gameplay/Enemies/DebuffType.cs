@@ -1,10 +1,10 @@
-public enum DebuffType
+ï»¿public enum DebuffType
 {
-    Burn,       // È¼ÉÕ
-    Slow,       // ¼õËÙ
-    Stun,       // Ñ£ÔÎ
-    Weaken,     // Èõ»¯ (´óµØÊ¯)
-    Electrified,//¸Ğµç 
+    Burn,       // ç‡ƒçƒ§
+    Slow,       // å‡é€Ÿ
+    Stun,       // çœ©æ™•
+    Weaken,     // å¼±åŒ– (å¤§åœ°çŸ³)
+    Electrified,//æ„Ÿç”µ 
     Freeze,
-    Corrode     // ¸¯Ê´ (¾ç¶¾Ê¯)
+    Corrode     // è…èš€ (å‰§æ¯’çŸ³)
 }

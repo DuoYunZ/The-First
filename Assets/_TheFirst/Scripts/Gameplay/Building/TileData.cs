@@ -1,37 +1,37 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
-public enum ConnectorType { Grass, Road, Water, Forest, Empty } // Ê¾ÀıÁ¬½ÓÆ÷ÀàĞÍ
+public enum ConnectorType { Grass, Road, Water, Forest, Empty } // ç¤ºä¾‹è¿æ¥å™¨ç±»å‹
 
 public class TileData : MonoBehaviour
 {
-    public string tileName; // ÍßÆ¬Ãû³Æ£¬·½±ãµ÷ÊÔ
-    public GameObject prefab; // ¶ÔÔ¤ÖÆ¼ş×ÔÉíµÄÒıÓÃ (¿ÉÑ¡£¬Èç¹û½Å±¾Ö±½Ó¹ÒÔÚÔ¤ÖÆ¼şÉÏ)
+    public string tileName; // ç“¦ç‰‡åç§°ï¼Œæ–¹ä¾¿è°ƒè¯•
+    public GameObject prefab; // å¯¹é¢„åˆ¶ä»¶è‡ªèº«çš„å¼•ç”¨ (å¯é€‰ï¼Œå¦‚æœè„šæœ¬ç›´æ¥æŒ‚åœ¨é¢„åˆ¶ä»¶ä¸Š)
 
-    // ¶¨ÒåÍßÆ¬ËÄÌõ±ßµÄÁ¬½ÓÆ÷ÀàĞÍ
-    // Ë³Ğò¿ÉÒÔÊÇ£º±± (Z+), ¶« (X+), ÄÏ (Z-), Î÷ (X-)
+    // å®šä¹‰ç“¦ç‰‡å››æ¡è¾¹çš„è¿æ¥å™¨ç±»å‹
+    // é¡ºåºå¯ä»¥æ˜¯ï¼šåŒ— (Z+), ä¸œ (X+), å— (Z-), è¥¿ (X-)
     public ConnectorType northConnector;
     public ConnectorType eastConnector;
     public ConnectorType southConnector;
     public ConnectorType westConnector;
 
-    // (¿ÉÑ¡) ÍßÆ¬Ğı×ªºóµÄÁ¬½ÓÆ÷
-    // Èç¹ûÔÊĞíÍßÆ¬Ğı×ª£¬ÄãĞèÒªÒ»¸ö·½·¨À´»ñÈ¡Ğı×ªºó¸÷±ßµÄÁ¬½ÓÆ÷ÀàĞÍ
-    public ConnectorType GetConnector(Direction direction, int rotationSteps) // rotationSteps = 0, 1, 2, 3 (´ú±í0, 90, 180, 270¶ÈYÖáĞı×ª)
+    // (å¯é€‰) ç“¦ç‰‡æ—‹è½¬åçš„è¿æ¥å™¨
+    // å¦‚æœå…è®¸ç“¦ç‰‡æ—‹è½¬ï¼Œä½ éœ€è¦ä¸€ä¸ªæ–¹æ³•æ¥è·å–æ—‹è½¬åå„è¾¹çš„è¿æ¥å™¨ç±»å‹
+    public ConnectorType GetConnector(Direction direction, int rotationSteps) // rotationSteps = 0, 1, 2, 3 (ä»£è¡¨0, 90, 180, 270åº¦Yè½´æ—‹è½¬)
     {
-        Direction rotatedDirection = direction.Rotate(rotationSteps); // ÄãĞèÒªÊµÏÖ Direction Ã¶¾ÙºÍ Rotate ·½·¨
+        Direction rotatedDirection = direction.Rotate(rotationSteps); // ä½ éœ€è¦å®ç° Direction æšä¸¾å’Œ Rotate æ–¹æ³•
         switch (rotatedDirection)
         {
             case Direction.North: return northConnector;
             case Direction.East: return eastConnector;
             case Direction.South: return southConnector;
             case Direction.West: return westConnector;
-            default: return ConnectorType.Empty; // »òÅ×³öÒì³£
+            default: return ConnectorType.Empty; // æˆ–æŠ›å‡ºå¼‚å¸¸
         }
     }
 }
 
-// ¸¨ÖúÃ¶¾Ù (Ê¾Àı)
+// è¾…åŠ©æšä¸¾ (ç¤ºä¾‹)
 public enum Direction { North, East, South, West }
 
 public static class DirectionExtensions

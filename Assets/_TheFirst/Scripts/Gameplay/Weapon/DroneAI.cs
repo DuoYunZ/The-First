@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(WeaponPart))]
@@ -7,37 +7,37 @@ public class DroneAI : MonoBehaviour
     private enum DroneState { Orbiting, Attacking, Reloading }
     private DroneState currentState = DroneState.Orbiting;
 
-    [Header("AI »ù´¡ÉèÖÃ")]
+    [Header("AI åŸºç¡€è®¾ç½®")]
     public float detectionRange = 25f;
-    public float idealDistance = 10f; // ÀíÏë½»Õ½¾àÀë
-    public float moveSpeed = 15f;     // »Ö¸´¾É°æËÙ¶È
+    public float idealDistance = 10f; // ç†æƒ³äº¤æˆ˜è·ç¦»
+    public float moveSpeed = 15f;     // æ¢å¤æ—§ç‰ˆé€Ÿåº¦
     public float turnSpeed = 10f;
     public LayerMask enemyLayer;
 
-    [Header("µ¯Ä»¹¥»÷ÉèÖÃ")]
-    public int maxAmmo = 6;             // µ¯Ï»
-    public float burstInterval = 0.1f;  // Á¬·¢¼ä¸ô (Ô½Ğ¡Ô½¿ì)
-    public float reloadTime = 2.0f;     // »»µ¯Ê±¼ä
+    [Header("å¼¹å¹•æ”»å‡»è®¾ç½®")]
+    public int maxAmmo = 6;             // å¼¹åŒ£
+    public float burstInterval = 0.1f;  // è¿å‘é—´éš” (è¶Šå°è¶Šå¿«)
+    public float reloadTime = 2.0f;     // æ¢å¼¹æ—¶é—´
     [Range(0, 180)]
-    public float spreadAngle = 60f;     // É¢Éä½Ç¶È (Éè´óÒ»µã£¬ÅäºÏÑÓ³Ù×·×ÙÊµÏÖ»¡Ïß)
+    public float spreadAngle = 60f;     // æ•£å°„è§’åº¦ (è®¾å¤§ä¸€ç‚¹ï¼Œé…åˆå»¶è¿Ÿè¿½è¸ªå®ç°å¼§çº¿)
 
-    [Header("¾É°æÑ²º½ÉèÖÃ (±£ÁôÔ­Ö­Ô­Î¶)")]
+    [Header("æ—§ç‰ˆå·¡èˆªè®¾ç½® (ä¿ç•™åŸæ±åŸå‘³)")]
     public float orbitSpeed = 50f;
-    public float orbitNoiseStrength = 0.5f; // ÔëÉùÇ¿¶È
-    public float orbitNoiseSpeed = 0.2f;    // ÔëÉùËÙ¶È
-    public float followDistance = 5f;       // ¸úËæÍæ¼ÒµÄ¾àÀë
+    public float orbitNoiseStrength = 0.5f; // å™ªå£°å¼ºåº¦
+    public float orbitNoiseSpeed = 0.2f;    // å™ªå£°é€Ÿåº¦
+    public float followDistance = 5f;       // è·Ÿéšç©å®¶çš„è·ç¦»
 
-    // ÄÚ²¿±äÁ¿
+    // å†…éƒ¨å˜é‡
     private Transform currentTarget;
     private WeaponPart myWeaponPart;
     private float flightAltitude;
     private Transform ownerTransform;
 
-    // Ñ²º½×¨ÓÃ±äÁ¿
+    // å·¡èˆªä¸“ç”¨å˜é‡
     private float orbitAngle = 0f;
     private float noiseSeed;
 
-    // Õ½¶·×¨ÓÃ±äÁ¿
+    // æˆ˜æ–—ä¸“ç”¨å˜é‡
     private int currentAmmo;
     private bool isFiringBarrage = false;
 
@@ -49,22 +49,22 @@ public class DroneAI : MonoBehaviour
         this.ownerTransform = owner;
         this.flightAltitude = transform.position.y;
 
-        // »Ö¸´Ëæ»úÖÖ×Ó£¬±£Ö¤Ã¿¼Ü·É»ú·ÉĞĞ¹ì¼£²»Í¬
+        // æ¢å¤éšæœºç§å­ï¼Œä¿è¯æ¯æ¶é£æœºé£è¡Œè½¨è¿¹ä¸åŒ
         this.orbitAngle = Random.Range(0f, 360f);
         this.noiseSeed = Random.Range(0f, 100f);
 
-        currentAmmo = maxAmmo; // ³õÊ¼Âúµ¯
+        currentAmmo = maxAmmo; // åˆå§‹æ»¡å¼¹
 
         if (duration > 0) Destroy(gameObject, duration);
     }
 
     void Update()
     {
-        // ×´Ì¬»ú·ÖÁ÷
+        // çŠ¶æ€æœºåˆ†æµ
         switch (currentState)
         {
             case DroneState.Reloading:
-                // »»µ¯Ê±¼ÌĞøÑ²º½
+                // æ¢å¼¹æ—¶ç»§ç»­å·¡èˆª
                 OrbitOwner();
                 break;
 
@@ -88,7 +88,7 @@ public class DroneAI : MonoBehaviour
             Transform best = null;
             foreach (var e in enemies)
             {
-                // ¼òµ¥µÄÕÒ×î½ü
+                // ç®€å•çš„æ‰¾æœ€è¿‘
                 float d = Vector3.Distance(transform.position, e.transform.position);
                 if (d < minDist) { minDist = d; best = e.transform; }
             }
@@ -97,31 +97,31 @@ public class DroneAI : MonoBehaviour
         }
     }
 
-    // --- ¡¾»Ö¸´¡¿¾É°æÑ²º½Âß¼­ ---
+    // --- ã€æ¢å¤ã€‘æ—§ç‰ˆå·¡èˆªé€»è¾‘ ---
     void OrbitOwner()
     {
         if (ownerTransform == null) return;
 
-        // 1. ¸üĞÂ½Ç¶È
+        // 1. æ›´æ–°è§’åº¦
         orbitAngle += orbitSpeed * Time.deltaTime;
 
-        // 2. °ØÁÖÔëÉù¼ÆËãÆ«ÒÆ (Ë¿»¬µÄ¹Ø¼ü)
+        // 2. æŸæ—å™ªå£°è®¡ç®—åç§» (ä¸æ»‘çš„å…³é”®)
         float noise = (Mathf.PerlinNoise(noiseSeed, Time.time * orbitNoiseSpeed) - 0.5f) * 2f;
         float currentFollowDist = followDistance + noise * orbitNoiseStrength;
 
-        // 3. ¼ÆËãÄ¿±êÎ»ÖÃ
+        // 3. è®¡ç®—ç›®æ ‡ä½ç½®
         float offsetX = Mathf.Cos(orbitAngle * Mathf.Deg2Rad) * currentFollowDist;
         float offsetZ = Mathf.Sin(orbitAngle * Mathf.Deg2Rad) * currentFollowDist;
 
         Vector3 orbitPos = ownerTransform.position + new Vector3(offsetX, 0, offsetZ);
-        orbitPos.y = this.flightAltitude; // ±£³ÖÔ­±¾µÄÉú³É¸ß¶È
+        orbitPos.y = this.flightAltitude; // ä¿æŒåŸæœ¬çš„ç”Ÿæˆé«˜åº¦
 
-        // 4. ÒÆ¶¯
-        // Ê¹ÓÃ Slerp Ê¹µÃ×ªÉíÆ½»¬£¬²»»áºá×Å·É
+        // 4. ç§»åŠ¨
+        // ä½¿ç”¨ Slerp ä½¿å¾—è½¬èº«å¹³æ»‘ï¼Œä¸ä¼šæ¨ªç€é£
         Vector3 moveDir = (orbitPos - transform.position).normalized;
         transform.position = Vector3.Lerp(transform.position, orbitPos, moveSpeed * Time.deltaTime);
 
-        // 5. ³¯ÏòÒÆ¶¯·½Ïò
+        // 5. æœå‘ç§»åŠ¨æ–¹å‘
         if (moveDir.sqrMagnitude > 0.01f)
         {
             Quaternion lookRot = Quaternion.LookRotation(moveDir);
@@ -137,25 +137,25 @@ public class DroneAI : MonoBehaviour
             return;
         }
 
-        // --- ÒÆ¶¯Âß¼­£º¼ÈÒª¹¥»÷£¬ÓÖÒª±£³Ö¾É°æµÄÊÖ¸Ğ ---
-        // ÎÒÃÇ²»ÍêÈ«¸²¸Ç¾É°æÂß¼­£¬¶øÊÇÈÃËü³¢ÊÔÏòÄ¿±êÍâÎ§ÒÆ¶¯
+        // --- ç§»åŠ¨é€»è¾‘ï¼šæ—¢è¦æ”»å‡»ï¼Œåˆè¦ä¿æŒæ—§ç‰ˆçš„æ‰‹æ„Ÿ ---
+        // æˆ‘ä»¬ä¸å®Œå…¨è¦†ç›–æ—§ç‰ˆé€»è¾‘ï¼Œè€Œæ˜¯è®©å®ƒå°è¯•å‘ç›®æ ‡å¤–å›´ç§»åŠ¨
 
         Vector3 enemyPos = currentTarget.position;
         Vector3 dirToEnemy = (enemyPos - transform.position).normalized;
 
-        // Ä¿±êĞüÍ£µã£ºµĞÈË·´·½Ïò idealDistance ´¦
+        // ç›®æ ‡æ‚¬åœç‚¹ï¼šæ•Œäººåæ–¹å‘ idealDistance å¤„
         Vector3 hoverPos = enemyPos - (dirToEnemy * idealDistance);
-        // ¸ß¶ÈÎ¬³Ö
+        // é«˜åº¦ç»´æŒ
         hoverPos.y = this.flightAltitude;
 
-        // ÒÆ¶¯
-        transform.position = Vector3.Lerp(transform.position, hoverPos, moveSpeed * 0.5f * Time.deltaTime); // ÉÔÎ¢ÂıÒ»µã£¬ÎÈÒ»µã
+        // ç§»åŠ¨
+        transform.position = Vector3.Lerp(transform.position, hoverPos, moveSpeed * 0.5f * Time.deltaTime); // ç¨å¾®æ…¢ä¸€ç‚¹ï¼Œç¨³ä¸€ç‚¹
 
-        // ×ªÏò£ºÊ¼ÖÕ¶¢×ÅµĞÈË
+        // è½¬å‘ï¼šå§‹ç»ˆç›¯ç€æ•Œäºº
         Quaternion lookRot = Quaternion.LookRotation(dirToEnemy);
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, turnSpeed * Time.deltaTime);
 
-        // --- ¿ª»ğÂß¼­ ---
+        // --- å¼€ç«é€»è¾‘ ---
         if (!isFiringBarrage && currentAmmo > 0)
         {
             StartCoroutine(FireBarrageRoutine());
@@ -167,44 +167,44 @@ public class DroneAI : MonoBehaviour
         isFiringBarrage = true;
         int shotsToFire = currentAmmo;
 
-        // --- ºËĞÄÓÅ»¯£ºÇ¿ÖÆÖØÖÃ WeaponPart µÄÀäÈ´ (Èç¹ûÄÜ·ÃÎÊµÄ»°) ---
-        // µ«×îÎÈÍ×µÄ»¹ÊÇÄãÔÚ Inspector Àï°Ñ Fire Rate ÉèÎª 0.05
+        // --- æ ¸å¿ƒä¼˜åŒ–ï¼šå¼ºåˆ¶é‡ç½® WeaponPart çš„å†·å´ (å¦‚æœèƒ½è®¿é—®çš„è¯) ---
+        // ä½†æœ€ç¨³å¦¥çš„è¿˜æ˜¯ä½ åœ¨ Inspector é‡ŒæŠŠ Fire Rate è®¾ä¸º 0.05
 
         for (int i = 0; i < shotsToFire; i++)
         {
-            // Èç¹ûÄ¿±êÃ»ÁË£¬ÇÒÃ»ÓĞÉÏÒ»¸öÄ¿±êµÄ²ĞÁôÎ»ÖÃ£¬¾ÍÍ£Ö¹
+            // å¦‚æœç›®æ ‡æ²¡äº†ï¼Œä¸”æ²¡æœ‰ä¸Šä¸€ä¸ªç›®æ ‡çš„æ®‹ç•™ä½ç½®ï¼Œå°±åœæ­¢
             if (currentTarget == null) break;
 
-            // 1. »ñÈ¡»ù´¡·½Ïò
+            // 1. è·å–åŸºç¡€æ–¹å‘
             Vector3 targetPoint = currentTarget.position;
             Transform aimPoint = currentTarget.Find("AimTargetPoint");
             if (aimPoint != null) targetPoint = aimPoint.position;
 
             Vector3 baseDir = (targetPoint - transform.position).normalized;
 
-            // 2. ¡¾ºËĞÄĞŞ¸Ä¡¿¼ÆËãÌØ¶¨µÄÇ¯ĞÎÉ¢Éä
-            // ÎÒÃÇ²»Ï£ÍûËæ»úÂÒÉä£¬¶øÊÇÏ£ÍûÏò¡°×óÓÒÁ½²à¡±·¢Éä£¬²¢ÇÒÉÔÎ¢¡°ÏòÉÏ¡±Ì§Æğ£¬¾ø²»ÏòÏÂ
+            // 2. ã€æ ¸å¿ƒä¿®æ”¹ã€‘è®¡ç®—ç‰¹å®šçš„é’³å½¢æ•£å°„
+            // æˆ‘ä»¬ä¸å¸Œæœ›éšæœºä¹±å°„ï¼Œè€Œæ˜¯å¸Œæœ›å‘â€œå·¦å³ä¸¤ä¾§â€å‘å°„ï¼Œå¹¶ä¸”ç¨å¾®â€œå‘ä¸Šâ€æŠ¬èµ·ï¼Œç»ä¸å‘ä¸‹
 
-            // YÖá (×óÓÒ)£º´ó·ù¶ÈËæ»ú£¬ÊµÏÖ¡°ÏòÁ½²à·¢Éä¡±
-            // ±ÈÈç -80¶È µ½ +80¶È£¬×Óµ¯»áºá×Å·É³öÈ¥
+            // Yè½´ (å·¦å³)ï¼šå¤§å¹…åº¦éšæœºï¼Œå®ç°â€œå‘ä¸¤ä¾§å‘å°„â€
+            // æ¯”å¦‚ -80åº¦ åˆ° +80åº¦ï¼Œå­å¼¹ä¼šæ¨ªç€é£å‡ºå»
             float ySpread = Random.Range(-spreadAngle, spreadAngle);
 
-            // XÖá (ÉÏÏÂ)£ºÏŞÖÆÖ»ĞíÍùÉÏÆ®£¬²»ĞíÍùÏÂ´ò
-            // ÔÚ Unity ÖĞ£¬-X ÊÇÌ§Í· (Look Up)£¬+X ÊÇµÍÍ·¡£ÎÒÃÇÈ¡ -30 µ½ -5 ¶È¡£
-            // ÕâÑù×Óµ¯Ò»¶¨»áÓĞÒ»¸öÏòÉÏµÄ³õËÙ¶È£¬·ÀÖ¹´òµØ
+            // Xè½´ (ä¸Šä¸‹)ï¼šé™åˆ¶åªè®¸å¾€ä¸Šé£˜ï¼Œä¸è®¸å¾€ä¸‹æ‰“
+            // åœ¨ Unity ä¸­ï¼Œ-X æ˜¯æŠ¬å¤´ (Look Up)ï¼Œ+X æ˜¯ä½å¤´ã€‚æˆ‘ä»¬å– -30 åˆ° -5 åº¦ã€‚
+            // è¿™æ ·å­å¼¹ä¸€å®šä¼šæœ‰ä¸€ä¸ªå‘ä¸Šçš„åˆé€Ÿåº¦ï¼Œé˜²æ­¢æ‰“åœ°
             float xSpread = Random.Range(-30f, -5f);
 
-            // ×éºÏĞı×ª
+            // ç»„åˆæ—‹è½¬
             Quaternion spreadRot = Quaternion.Euler(xSpread, ySpread, 0);
 
-            // Ó¦ÓÃĞı×ª
+            // åº”ç”¨æ—‹è½¬
             Vector3 finalDir = (Quaternion.LookRotation(baseDir) * spreadRot) * Vector3.forward;
 
-            // 3. ¿ª»ğ
+            // 3. å¼€ç«
             if (myWeaponPart != null)
             {
-                // ÕâÀïµÄ Fire ¿ÉÄÜ»á±» WeaponPart ÄÚ²¿µÄ cooldown ¾Ü¾ø
-                // ËùÒÔÇëÎñ±ØÈ·±£ Weapon_DroneGun µÄ FireRate ÉèÖÃÎªÁË 0.05
+                // è¿™é‡Œçš„ Fire å¯èƒ½ä¼šè¢« WeaponPart å†…éƒ¨çš„ cooldown æ‹’ç»
+                // æ‰€ä»¥è¯·åŠ¡å¿…ç¡®ä¿ Weapon_DroneGun çš„ FireRate è®¾ç½®ä¸ºäº† 0.05
                 myWeaponPart.Fire(finalDir);
             }
             currentAmmo--;
@@ -225,6 +225,6 @@ public class DroneAI : MonoBehaviour
         currentState = DroneState.Reloading;
         yield return new WaitForSeconds(reloadTime);
         currentAmmo = maxAmmo;
-        currentState = DroneState.Orbiting; // »»µ¯Íê»ØÑ²º½ÕÒÈË
+        currentState = DroneState.Orbiting; // æ¢å¼¹å®Œå›å·¡èˆªæ‰¾äºº
     }
 }

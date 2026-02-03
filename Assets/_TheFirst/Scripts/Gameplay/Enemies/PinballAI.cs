@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -10,22 +10,22 @@ public class PinballAI : MonoBehaviour
     private int touchDamage;
     private Vector3 lastVelocity;
 
-    [Header("ÉËº¦ÉèÖÃ")]
+    [Header("ä¼¤å®³è®¾ç½®")]
     public float damageCooldown = 1.0f; //
     private bool canDealDamage = true; //
 
-    [Header("ÊÓ¿Ú·´µ¯ ÉèÖÃ")]
+    [Header("è§†å£åå¼¹ è®¾ç½®")]
     public float viewportPadding = 0.01f; //
     private Camera _mainCamera; //
-    private float offScreenTimer = 0f; // [!] ÓÃÓÚ2Ãë ¼ÆÊ±
+    private float offScreenTimer = 0f; // [!] ç”¨äº2ç§’ è®¡æ—¶
 
-    [Header("·´µ¯ Ëæ»ú»¯")]
+    [Header("åå¼¹ éšæœºåŒ–")]
     public float maxRandomBounceAngle = 15f; //
 
-    [Header("³¯ÏòÉèÖÃ")]
+    [Header("æœå‘è®¾ç½®")]
     public float rotationSpeed = 10f; //
 
-    [Header("·´µ¯ ÀäÈ´")]
+    [Header("åå¼¹ å†·å´")]
     public float bounceCooldown = 0.2f; //
     private float lastBounceTime = -1f; //
 
@@ -37,12 +37,12 @@ public class PinballAI : MonoBehaviour
         rb.isKinematic = false; //
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation; //
 
-        // [!] ÒÆ³ı col.isTrigger = true;
+        // [!] ç§»é™¤ col.isTrigger = true;
 
         _mainCamera = Camera.main; //
     }
 
-    // --- (Initialize() ·½·¨±£³Ö²»±ä) ---
+    // --- (Initialize() æ–¹æ³•ä¿æŒä¸å˜) ---
     public void Initialize(float speed, float lifetime, int damage) //
     {
         this.moveSpeed = speed;
@@ -58,23 +58,23 @@ public class PinballAI : MonoBehaviour
     {
         if (_mainCamera == null)
         {
-            _mainCamera = Camera.main; // ³¢ÊÔÖØĞÂ»ñÈ¡
+            _mainCamera = Camera.main; // å°è¯•é‡æ–°è·å–
             if (_mainCamera == null) return;
         }
 
-        // --- (³¯Ïò Âß¼­ - ±£³Ö²»±ä) ---
+        // --- (æœå‘ é€»è¾‘ - ä¿æŒä¸å˜) ---
         if (rb.velocity.sqrMagnitude > 0.01f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(rb.velocity.normalized); //
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * rotationSpeed); //
         }
 
-        // --- vvv [ ºËĞÄĞŞ¸Ä ] vvv ---
+        // --- vvv [ æ ¸å¿ƒä¿®æ”¹ ] vvv ---
 
         Vector3 viewportPos = _mainCamera.WorldToViewportPoint(transform.position); //
 
-        // 1. (ĞÂ) ³öÆÁ 2Ãë »ØÊÕÂß¼­
-        // (¼ì²éÊÇ·ñÔÚÊÓ¿Ú 0-1 ·¶Î§Ö®Íâ)
+        // 1. (æ–°) å‡ºå± 2ç§’ å›æ”¶é€»è¾‘
+        // (æ£€æŸ¥æ˜¯å¦åœ¨è§†å£ 0-1 èŒƒå›´ä¹‹å¤–)
         bool isOffScreen = viewportPos.x < 0f || viewportPos.x > 1f || viewportPos.z < 0f || viewportPos.z > 1f;
 
         if (isOffScreen)
@@ -83,22 +83,22 @@ public class PinballAI : MonoBehaviour
 
             if (offScreenTimer >= 2.0f) //
             {
-                // Ç¿ÖÆÒÆ»ØÆÁÄ» ÖĞĞÄ
+                // å¼ºåˆ¶ç§»å›å±å¹• ä¸­å¿ƒ
                 Vector3 centerOfScreenWorld = _mainCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, viewportPos.z));
                 Vector3 directionToCenter = (centerOfScreenWorld - transform.position).normalized;
                 directionToCenter.y = 0;
 
                 rb.velocity = directionToCenter * moveSpeed;
                 lastVelocity = rb.velocity;
-                offScreenTimer = 0f; // ÖØÖÃ
+                offScreenTimer = 0f; // é‡ç½®
             }
         }
         else
         {
-            offScreenTimer = 0f; // ÔÚÆÁÄ» ÄÚ£¬ÖØÖÃ¼ÆÊ±Æ÷
+            offScreenTimer = 0f; // åœ¨å±å¹• å†…ï¼Œé‡ç½®è®¡æ—¶å™¨
         }
 
-        // 2. (ĞŞ¸Ä) ÊÓ¿Ú ±ßÔµ·´µ¯ Âß¼­
+        // 2. (ä¿®æ”¹) è§†å£ è¾¹ç¼˜åå¼¹ é€»è¾‘
         Vector3 reflectionNormal = Vector3.zero;
         if (viewportPos.x < viewportPadding) reflectionNormal = Vector3.right; //
         else if (viewportPos.x > 1f - viewportPadding) reflectionNormal = Vector3.left; //
@@ -107,10 +107,10 @@ public class PinballAI : MonoBehaviour
 
         if (reflectionNormal != Vector3.zero && Time.time > lastBounceTime + bounceCooldown) //
         {
-            ApplyBounce(reflectionNormal); // [!] µ÷ÓÃĞÂµÄ·´µ¯ ·½·¨
+            ApplyBounce(reflectionNormal); // [!] è°ƒç”¨æ–°çš„åå¼¹ æ–¹æ³•
         }
 
-        // 3. (±£³Ö²»±ä) ËÙ¶ÈÎ¬³Ö
+        // 3. (ä¿æŒä¸å˜) é€Ÿåº¦ç»´æŒ
         if (rb.velocity.sqrMagnitude > 0.1f)
         {
             rb.velocity = rb.velocity.normalized * moveSpeed; //
@@ -120,29 +120,29 @@ public class PinballAI : MonoBehaviour
         {
             rb.velocity = lastVelocity.normalized * moveSpeed; //
         }
-        // --- ^^^ [ ºËĞÄĞŞ¸Ä ] ^^^ ---
+        // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ ] ^^^ ---
     }
 
 
-    // --- vvv [ ºËĞÄĞŞ¸Ä ] vvv ---
-    // (ÖØÃüÃû: OnTriggerEnter -> OnCollisionEnter)
+    // --- vvv [ æ ¸å¿ƒä¿®æ”¹ ] vvv ---
+    // (é‡å‘½å: OnTriggerEnter -> OnCollisionEnter)
     void OnCollisionEnter(Collision collision)
     {
-        // 1. ¼ì²éÊÇ·ñÊÇÇ½Ìå£¬²¢ÇÒÀäÈ´ ÒÑ¹ı
+        // 1. æ£€æŸ¥æ˜¯å¦æ˜¯å¢™ä½“ï¼Œå¹¶ä¸”å†·å´ å·²è¿‡
         if (collision.gameObject.CompareTag("Wall") && Time.time > lastBounceTime + bounceCooldown) //
         {
-            // 2. [ĞÂÂß¼­] ´ÓÎïÀíÅö×²ÖĞ»ñÈ¡·¨Ïß
+            // 2. [æ–°é€»è¾‘] ä»ç‰©ç†ç¢°æ’ä¸­è·å–æ³•çº¿
             Vector3 normal = collision.contacts[0].normal;
             normal.y = 0;
 
-            ApplyBounce(normal.normalized); // [!] µ÷ÓÃĞÂµÄ·´µ¯ ·½·¨
+            ApplyBounce(normal.normalized); // [!] è°ƒç”¨æ–°çš„åå¼¹ æ–¹æ³•
         }
     }
 
-    // (ÖØÃüÃû: OnTriggerStay -> OnCollisionStay)
+    // (é‡å‘½å: OnTriggerStay -> OnCollisionStay)
     void OnCollisionStay(Collision collision)
     {
-        // (ÉËº¦Íæ¼ÒµÄÂß¼­ - ±£³Ö²»±ä)
+        // (ä¼¤å®³ç©å®¶çš„é€»è¾‘ - ä¿æŒä¸å˜)
         if (canDealDamage && collision.gameObject.CompareTag("Player")) //
         {
             Health playerHealth = collision.gameObject.GetComponentInParent<Health>(); //
@@ -154,18 +154,18 @@ public class PinballAI : MonoBehaviour
             }
         }
     }
-    // --- ^^^ [ ºËĞÄĞŞ¸Ä ] ^^^ ---
+    // --- ^^^ [ æ ¸å¿ƒä¿®æ”¹ ] ^^^ ---
 
 
-    // --- vvv [ ºËĞÄĞÂÔö ] vvv ---
+    // --- vvv [ æ ¸å¿ƒæ–°å¢ ] vvv ---
     /// <summary>
-    /// (ĞÂÔö) Í³Ò»µÄ·´µ¯ ·½·¨
+    /// (æ–°å¢) ç»Ÿä¸€çš„åå¼¹ æ–¹æ³•
     /// </summary>
     void ApplyBounce(Vector3 normal)
     {
-        lastBounceTime = Time.time; // [!] ÖØÖÃÀäÈ´
+        lastBounceTime = Time.time; // [!] é‡ç½®å†·å´
 
-        // (Ëæ»ú»¯ ·´µ¯ Âß¼­ - ±£³Ö²»±ä)
+        // (éšæœºåŒ– åå¼¹ é€»è¾‘ - ä¿æŒä¸å˜)
         Vector3 perfectDir = Vector3.Reflect(lastVelocity, normal).normalized; //
         Quaternion randomRot = Quaternion.Euler(0, Random.Range(-maxRandomBounceAngle, maxRandomBounceAngle), 0); //
         Vector3 finalDir = randomRot * perfectDir; //
@@ -173,10 +173,10 @@ public class PinballAI : MonoBehaviour
         rb.velocity = finalDir * moveSpeed; //
         lastVelocity = rb.velocity; //
     }
-    // --- ^^^ [ ºËĞÄĞÂÔö ] ^^^ ---
+    // --- ^^^ [ æ ¸å¿ƒæ–°å¢ ] ^^^ ---
 
 
-    // --- (DamageCooldownRoutine ... ±£³Ö²»±ä) ---
+    // --- (DamageCooldownRoutine ... ä¿æŒä¸å˜) ---
     IEnumerator DamageCooldownRoutine()
     {
         yield return new WaitForSeconds(damageCooldown); //

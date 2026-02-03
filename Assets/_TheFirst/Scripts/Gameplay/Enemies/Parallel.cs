@@ -1,4 +1,4 @@
-// --- Parallel.cs ---
+﻿// --- Parallel.cs ---
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,46 +24,46 @@ public class Parallel : Node
         int successCount = 0;
         bool anyChildIsRunning = false;
 
-        // ��ÿһ֡�����Ƕ���Ҫ�������е��ӽڵ㣬�Ա�֤���Ƕ��ܱ�����
+        // 在每一帧，我们都需要评估所有的子节点，以保证它们都能被更新
         foreach (Node node in children)
         {
             switch (node.Evaluate())
             {
                 case NodeState.RUNNING:
-                    // ֻҪ���κ�һ���ӽڵ㻹�����У��ͱ��һ��
+                    // 只要有任何一个子节点还在运行，就标记一下
                     anyChildIsRunning = true;
                     break;
                 case NodeState.SUCCESS:
-                    // ��¼�ɹ����ӽڵ�����
+                    // 记录成功的子节点数量
                     successCount++;
                     break;
                 case NodeState.FAILURE:
-                    // ����κ�һ���ӽڵ�ʧ���ˣ����������нڵ�����ʧ��
-                    // ����һ���ϸ�Ĳ��ԣ�Ҳ���Ը�����Ҫ�޸�
-                    ResetChildren(); // ���������ӽڵ��״̬
+                    // 如果任何一个子节点失败了，则整个并行节点立即失败
+                    // 这是一个严格的策略，也可以根据需要修改
+                    ResetChildren(); // 重置所有子节点的状态
                     return NodeState.FAILURE;
             }
         }
 
-        // ֻ�е������ӽڵ㶼�ɹ�ʱ���������нڵ����ɹ�
+        // 只有当所有子节点都成功时，整个并行节点才算成功
         if (successCount == children.Count)
         {
             ResetChildren();
             return NodeState.SUCCESS;
         }
 
-        // ֻҪ�����κ�һ���ڵ������У��ͼ�������RUNNING
+        // 只要还有任何一个节点在运行，就继续返回RUNNING
         return anyChildIsRunning ? NodeState.RUNNING : NodeState.SUCCESS;
     }
 
-    // �����нڵ�����������ǳɹ�����ʧ�ܣ�ʱ�����������ӽڵ��״̬
-    // ����һ����ϰ�ߣ����Է�ֹ״̬��Ⱦ
+    // 当并行节点结束（无论是成功还是失败）时，重置所有子节点的状态
+    // 这是一个好习惯，可以防止状态污染
     private void ResetChildren()
     {
         foreach (Node node in children)
         {
-            // �������Ǽ���Action�ڵ��ڲ����Լ��������߼���������������currentState = Ready��
-            // �����Ҫ���ϸ�����ã�����ΪNode��������һ��OnReset()�鷽��
+            // 这里我们假设Action节点内部有自己的重置逻辑（比如我们做的currentState = Ready）
+            // 如果需要更严格的重置，可以为Node基类添加一个OnReset()虚方法
         }
     }
 }

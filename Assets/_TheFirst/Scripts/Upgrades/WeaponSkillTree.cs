@@ -1,28 +1,28 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "SkillTree_", menuName = "Skill Tree/Weapon Skill Tree")]
 public class WeaponSkillTree : ScriptableObject
 {
-    [Header("¹ØÁªÎäÆ÷")]
-    [Tooltip("Õâ¿Ã¼¼ÄÜÊ÷ÊôÓÚÄÄÒ»°ÑÎäÆ÷")]
+    [Header("å…³è”æ­¦å™¨")]
+    [Tooltip("è¿™æ£µæŠ€èƒ½æ ‘å±äºå“ªä¸€æŠŠæ­¦å™¨")]
     public WeaponStatBlock associatedWeapon;
 
-    [Header("½âËøÌõ¼ş (Unlock Condition)")]
-    [Tooltip("Ä¬ÈÏÊÇ·ñÒÑ½âËø (³õÊ¼ÎäÆ÷¹´Ñ¡´ËÏî)")]
+    [Header("è§£é”æ¡ä»¶ (Unlock Condition)")]
+    [Tooltip("é»˜è®¤æ˜¯å¦å·²è§£é” (åˆå§‹æ­¦å™¨å‹¾é€‰æ­¤é¡¹)")]
     public bool isDefaultUnlocked = false;
 
-    [Tooltip("½âËøËùĞèµÄÍ³¼Æ¼üÖµ (¶ÔÓ¦ PlayerProgressManager ÖĞµÄ achievementStats Key)")]
-    public string unlockStatKey = "Ignite_Count"; // ÀıÈç "Ignite_Count"
+    [Tooltip("è§£é”æ‰€éœ€çš„ç»Ÿè®¡é”®å€¼ (å¯¹åº” PlayerProgressManager ä¸­çš„ achievementStats Key)")]
+    public string unlockStatKey = "Ignite_Count"; // ä¾‹å¦‚ "Ignite_Count"
 
-    [Tooltip("½âËøËùĞèµÄÄ¿±êÊıÁ¿")]
+    [Tooltip("è§£é”æ‰€éœ€çš„ç›®æ ‡æ•°é‡")]
     public int unlockThreshold = 1000;
 
     [TextArea]
-    [Tooltip("Î´½âËøÊ±ÏÔÊ¾µÄÃèÊöÎÄ±¾")]
-    public string lockedDescription = "Ôì³É 1000 µãÈ¼ÉÕÉËº¦ÒÔ½âËø";
+    [Tooltip("æœªè§£é”æ—¶æ˜¾ç¤ºçš„æè¿°æ–‡æœ¬")]
+    public string lockedDescription = "é€ æˆ 1000 ç‚¹ç‡ƒçƒ§ä¼¤å®³ä»¥è§£é”";
 
-    [Header("¼¼ÄÜ½Úµã")]
-    [Tooltip("½«Õâ°ÑÎäÆ÷µÄËùÓĞ¼¼ÄÜ½Úµã×Ê²ú¶¼ÍÏµ½ÕâÀï")]
+    [Header("æŠ€èƒ½èŠ‚ç‚¹")]
+    [Tooltip("å°†è¿™æŠŠæ­¦å™¨çš„æ‰€æœ‰æŠ€èƒ½èŠ‚ç‚¹èµ„äº§éƒ½æ‹–åˆ°è¿™é‡Œ")]
     public List<WeaponUpgradeNode> allNodesInTree;
 }

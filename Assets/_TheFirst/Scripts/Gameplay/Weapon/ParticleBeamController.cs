@@ -1,26 +1,26 @@
-// --- ParticleBeamController.cs (´øÃüÖĞÌØĞ§°æ) ---
+ï»¿// --- ParticleBeamController.cs (å¸¦å‘½ä¸­ç‰¹æ•ˆç‰ˆ) ---
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class ParticleBeamController : MonoBehaviour
 {
-    // ÉËº¦Ïà¹Ø
+    // ä¼¤å®³ç›¸å…³
     private GameObject firer;
     private float damagePerSecond;
     private float damageTickRate;
     private float damagePerTick;
     private float damageTimer;
 
-    // ¡¾ĞÂÔö¡¿ÃüÖĞÌØĞ§Ïà¹Ø
+    // ã€æ–°å¢ã€‘å‘½ä¸­ç‰¹æ•ˆç›¸å…³
     private float maxDistance;
     private GameObject impactEffectPrefab;
-    private GameObject impactEffectInstance; // ÓÃÓÚ´æ´¢Éú³ÉµÄÌØĞ§ÊµÀı
+    private GameObject impactEffectInstance; // ç”¨äºå­˜å‚¨ç”Ÿæˆçš„ç‰¹æ•ˆå®ä¾‹
 
-    [Header("¡¾ĞÂ¡¿ÉäÏß¼ì²âÉèÖÃ")]
-    [Tooltip("ÉèÖÃÉäÏß¿ÉÒÔ»÷ÖĞµÄ²ã£¬ÀıÈç'Player'ºÍ'Ground'")]
+    [Header("ã€æ–°ã€‘å°„çº¿æ£€æµ‹è®¾ç½®")]
+    [Tooltip("è®¾ç½®å°„çº¿å¯ä»¥å‡»ä¸­çš„å±‚ï¼Œä¾‹å¦‚'Player'å’Œ'Ground'")]
     public LayerMask hitLayers;
 
-    // ÓÉBeamAttackActionµ÷ÓÃ£¬ÓÃÓÚ³õÊ¼»¯
+    // ç”±BeamAttackActionè°ƒç”¨ï¼Œç”¨äºåˆå§‹åŒ–
     public void Activate(GameObject firer, WeaponStatBlock beamData)
     {
         this.firer = firer;
@@ -41,22 +41,22 @@ public class ParticleBeamController : MonoBehaviour
         }
     }
 
-    // ¡¾ĞÂÔö¡¿Ê¹ÓÃUpdateÀ´´¦ÀíÊÓ¾õ¶¨Î»
+    // ã€æ–°å¢ã€‘ä½¿ç”¨Updateæ¥å¤„ç†è§†è§‰å®šä½
     void Update()
     {
-        // --- ¡¾ĞÂÔö¡¿¿ÉÊÓ»¯µ÷ÊÔ ---
-        // ÔÚSceneÊÓÍ¼ÖĞ£¬»­³öÒ»ÌõÂÌÉ«µÄÏß£¬´ú±íÎÒÃÇµÄÉäÏß
-        // ÕâÌõÏßÖ»ÔÚ±à¼­Æ÷Àï¿É¼û£¬²»Ó°Ïì×îÖÕÓÎÏ·
+        // --- ã€æ–°å¢ã€‘å¯è§†åŒ–è°ƒè¯• ---
+        // åœ¨Sceneè§†å›¾ä¸­ï¼Œç”»å‡ºä¸€æ¡ç»¿è‰²çš„çº¿ï¼Œä»£è¡¨æˆ‘ä»¬çš„å°„çº¿
+        // è¿™æ¡çº¿åªåœ¨ç¼–è¾‘å™¨é‡Œå¯è§ï¼Œä¸å½±å“æœ€ç»ˆæ¸¸æˆ
         Debug.DrawRay(transform.position, transform.forward * maxDistance, Color.green);
 
-        // --- Ô­ÓĞµÄÉäÏß¼ì²âÂß¼­ ---
+        // --- åŸæœ‰çš„å°„çº¿æ£€æµ‹é€»è¾‘ ---
         if (impactEffectInstance == null) return;
 
         RaycastHit hit;
         if (Physics.Raycast(transform.position, transform.forward, out hit, maxDistance, hitLayers, QueryTriggerInteraction.Collide))
         {
-            // ¡¾ĞÂÔö¡¿Èç¹û»÷ÖĞ£¬ÔÚConsole´°¿Ú´òÓ¡³ö»÷ÖĞ¶ÔÏóµÄÃû×Ö
-            Debug.Log($"[ParticleBeamController] ÉäÏß»÷ÖĞÁË: {hit.collider.name}");
+            // ã€æ–°å¢ã€‘å¦‚æœå‡»ä¸­ï¼Œåœ¨Consoleçª—å£æ‰“å°å‡ºå‡»ä¸­å¯¹è±¡çš„åå­—
+            Debug.Log($"[ParticleBeamController] å°„çº¿å‡»ä¸­äº†: {hit.collider.name}");
 
             impactEffectInstance.SetActive(true);
             impactEffectInstance.transform.position = hit.point;
@@ -68,10 +68,10 @@ public class ParticleBeamController : MonoBehaviour
         }
     }
 
-    // OnTriggerStay Âß¼­±£³Ö²»±ä£¬¼ÌĞø¸ºÔğÉËº¦ÅĞ¶¨
+    // OnTriggerStay é€»è¾‘ä¿æŒä¸å˜ï¼Œç»§ç»­è´Ÿè´£ä¼¤å®³åˆ¤å®š
     void OnTriggerStay(Collider other)
     {
-        // ... (Ô­ÓĞµÄÉËº¦Âß¼­ÍêÈ«²»±ä) ...
+        // ... (åŸæœ‰çš„ä¼¤å®³é€»è¾‘å®Œå…¨ä¸å˜) ...
         if (damagePerTick <= 0 || !other.CompareTag("Player"))
         {
             return;
@@ -88,7 +88,7 @@ public class ParticleBeamController : MonoBehaviour
         }
     }
 
-    // ¡¾ĞÂÔö¡¿ÔÚ¹âÊø±»Ïú»ÙÊ±£¬È·±£ÃüÖĞÌØĞ§Ò²±»Ò»²¢Ïú»Ù
+    // ã€æ–°å¢ã€‘åœ¨å…‰æŸè¢«é”€æ¯æ—¶ï¼Œç¡®ä¿å‘½ä¸­ç‰¹æ•ˆä¹Ÿè¢«ä¸€å¹¶é”€æ¯
     void OnDestroy()
     {
         if (impactEffectInstance != null)

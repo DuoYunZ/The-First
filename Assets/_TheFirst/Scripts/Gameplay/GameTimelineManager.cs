@@ -1,34 +1,34 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
-using System.Linq; // ÓÃÓÚÅÅĞò
-using UnityEngine.SceneManagement; // ÓÃÓÚ½áÊøÓÎÏ·
+using System.Linq; // ç”¨äºæ’åº
+using UnityEngine.SceneManagement; // ç”¨äºç»“æŸæ¸¸æˆ
 
 public class GameTimelineManager : MonoBehaviour
 {
     public static GameTimelineManager Instance { get; private set; }
 
-    [Header("Ê±¼äÖáÅäÖÃ")]
-    [Tooltip("ÍÏÈë¶¨ÒåÁË20·ÖÖÓ¹Ø¿¨ÊÂ¼şµÄ ScriptableObject")]
+    [Header("æ—¶é—´è½´é…ç½®")]
+    [Tooltip("æ‹–å…¥å®šä¹‰äº†20åˆ†é’Ÿå…³å¡äº‹ä»¶çš„ ScriptableObject")]
     public GameTimelineConfig timelineConfig;
 
-    [Header("ÓÎÏ·×´Ì¬")]
-    public int totalKills = 0; // ¿ÉÒÔÓÃÀ´Í³¼Æ»÷É±Êı
+    [Header("æ¸¸æˆçŠ¶æ€")]
+    public int totalKills = 0; // å¯ä»¥ç”¨æ¥ç»Ÿè®¡å‡»æ€æ•°
 
-    [Header("ÒıÓÃ")]
-    [Tooltip("±ØĞëÒıÓÃ³¡¾°ÖĞµÄ EnemySpawner")]
+    [Header("å¼•ç”¨")]
+    [Tooltip("å¿…é¡»å¼•ç”¨åœºæ™¯ä¸­çš„ EnemySpawner")]
     public EnemySpawner enemySpawner;
-    [Tooltip("±ØĞëÒıÓÃ³¡¾°ÖĞµÄ GameTimer")]
+    [Tooltip("å¿…é¡»å¼•ç”¨åœºæ™¯ä¸­çš„ GameTimer")]
     public GameTimer gameTimer;
 
-    [Header("µĞÈËÊôĞÔ³É³¤Òò×Ó (È«¾Ö)")]
-    [Tooltip("Ã¿¡°·ÖÖÓ¡±µĞÈËÔö¼ÓµÄÉúÃüÖµ°Ù·Ö±È")]
+    [Header("æ•Œäººå±æ€§æˆé•¿å› å­ (å…¨å±€)")]
+    [Tooltip("æ¯â€œåˆ†é’Ÿâ€æ•Œäººå¢åŠ çš„ç”Ÿå‘½å€¼ç™¾åˆ†æ¯”")]
     public float healthGrowthFactorPerMinute = 0.1f;
-    [Tooltip("Ã¿¡°·ÖÖÓ¡±µĞÈËÔö¼ÓµÄÉËº¦°Ù·Ö±È")]
+    [Tooltip("æ¯â€œåˆ†é’Ÿâ€æ•Œäººå¢åŠ çš„ä¼¤å®³ç™¾åˆ†æ¯”")]
     public float damageGrowthFactorPerMinute = 0.05f;
-    [Tooltip("Ã¿¡°·ÖÖÓ¡±µĞÈËÔö¼ÓµÄËÙ¶È°Ù·Ö±È")]
+    [Tooltip("æ¯â€œåˆ†é’Ÿâ€æ•Œäººå¢åŠ çš„é€Ÿåº¦ç™¾åˆ†æ¯”")]
     public float speedGrowthFactorPerMinute = 0.02f;
 
-    // --- ÄÚ²¿ÔËĞĞÊ±ÁĞ±í ---
+    // --- å†…éƒ¨è¿è¡Œæ—¶åˆ—è¡¨ ---
     private class PendingEvent
     {
         public float triggerTime;
@@ -47,7 +47,7 @@ public class GameTimelineManager : MonoBehaviour
     {
         if (timelineConfig == null || enemySpawner == null || gameTimer == null)
         {
-            Debug.LogError("GameTimelineManager È±ÉÙ¹Ø¼üÒıÓÃ (Timeline, Spawner, or Timer)£¡", this);
+            Debug.LogError("GameTimelineManager ç¼ºå°‘å…³é”®å¼•ç”¨ (Timeline, Spawner, or Timer)ï¼", this);
             enabled = false;
             return;
         }
@@ -60,7 +60,7 @@ public class GameTimelineManager : MonoBehaviour
         totalKills = 0;
         gameFinished = false;
 
-        // ×¼±¸ËùÓĞ´ı´¦ÀíÊÂ¼ş
+        // å‡†å¤‡æ‰€æœ‰å¾…å¤„ç†äº‹ä»¶
         foreach (var evt in timelineConfig.timelineEvents)
         {
             PendingEvent pending = new PendingEvent();
@@ -68,7 +68,7 @@ public class GameTimelineManager : MonoBehaviour
 
             if (evt.useRandomTimeRange)
             {
-                // ÔÚÓÎÏ·¿ªÊ¼Ê±¾Í¼ÆËãºÃËæ»úÊ±¼ä
+                // åœ¨æ¸¸æˆå¼€å§‹æ—¶å°±è®¡ç®—å¥½éšæœºæ—¶é—´
                 pending.triggerTime = Random.Range(evt.minTriggerTime, evt.maxTriggerTime);
             }
             else
@@ -78,10 +78,10 @@ public class GameTimelineManager : MonoBehaviour
             pendingEvents.Add(pending);
         }
 
-        // ¡¾¹Ø¼ü¡¿°´´¥·¢Ê±¼ä¶ÔÁĞ±í½øĞĞÅÅĞò
+        // ã€å…³é”®ã€‘æŒ‰è§¦å‘æ—¶é—´å¯¹åˆ—è¡¨è¿›è¡Œæ’åº
         pendingEvents = pendingEvents.OrderBy(e => e.triggerTime).ToList();
 
-        Debug.Log($"Ê±¼äÖáÒÑ³õÊ¼»¯£¬×Ü¼Æ {pendingEvents.Count} ¸öÊÂ¼şÒÑÅÅĞò¡£");
+        Debug.Log($"æ—¶é—´è½´å·²åˆå§‹åŒ–ï¼Œæ€»è®¡ {pendingEvents.Count} ä¸ªäº‹ä»¶å·²æ’åºã€‚");
     }
 
     void Update()
@@ -90,14 +90,14 @@ public class GameTimelineManager : MonoBehaviour
 
         float elapsedTime = gameTimer.GetElapsedTime();
 
-        // 1. ¼ì²éÊÇ·ñ´¥·¢ÁËÏÂÒ»¸öÊÂ¼ş
+        // 1. æ£€æŸ¥æ˜¯å¦è§¦å‘äº†ä¸‹ä¸€ä¸ªäº‹ä»¶
         if (pendingEvents.Count > 0 && elapsedTime >= pendingEvents[0].triggerTime)
         {
             FireEvent(pendingEvents[0]);
-            pendingEvents.RemoveAt(0); // ÒÆ³ıÒÑ´¥·¢µÄÊÂ¼ş
+            pendingEvents.RemoveAt(0); // ç§»é™¤å·²è§¦å‘çš„äº‹ä»¶
         }
 
-        // 2. ¼ì²éÓÎÏ·ÊÇ·ñÊ¤Àû (Ê±¼äµ½)
+        // 2. æ£€æŸ¥æ¸¸æˆæ˜¯å¦èƒœåˆ© (æ—¶é—´åˆ°)
         if (elapsedTime >= timelineConfig.totalGameDuration)
         {
             GameWin();
@@ -108,13 +108,13 @@ public class GameTimelineManager : MonoBehaviour
     {
         if (evt.waveConfig == null) return;
 
-        Debug.Log($"<color=cyan>Ê±¼äÖáÊÂ¼ş´¥·¢: {evt.waveConfig.name} (Ê±¼ä: {gameTimer.GetElapsedTime():F1}s)</color>");
+        Debug.Log($"<color=cyan>æ—¶é—´è½´äº‹ä»¶è§¦å‘: {evt.waveConfig.name} (æ—¶é—´: {gameTimer.GetElapsedTime():F1}s)</color>");
 
-        // --- ¶¯Ì¬¼ÆËãÊôĞÔ³É³¤ ---
-        // ÎÒÃÇÓÃ "·ÖÖÓ" ×÷Îª "²¨Êı" À´¼ÆËã³É³¤
+        // --- åŠ¨æ€è®¡ç®—å±æ€§æˆé•¿ ---
+        // æˆ‘ä»¬ç”¨ "åˆ†é’Ÿ" ä½œä¸º "æ³¢æ•°" æ¥è®¡ç®—æˆé•¿
         int effectiveWaveNumber = 1 + (int)(gameTimer.GetElapsedTime() / 60f);
 
-        // ¡¾ÖØÒª¡¿ÎÒÃÇ¸´ÓÃ EnemySpawner µÄ·½·¨£¬´«Èë¼ÆËãºÃµÄ³É³¤Öµ
+        // ã€é‡è¦ã€‘æˆ‘ä»¬å¤ç”¨ EnemySpawner çš„æ–¹æ³•ï¼Œä¼ å…¥è®¡ç®—å¥½çš„æˆé•¿å€¼
         enemySpawner.InstructToSpawnWaveConfig(
             evt.waveConfig,
             effectiveWaveNumber,
@@ -123,43 +123,43 @@ public class GameTimelineManager : MonoBehaviour
             speedGrowthFactorPerMinute
         );
 
-        // ×¢Òâ£ºÎÒÃÇ²»ÔÙ¹ØĞÄÕâ¸ö²¨´ÎºÎÊ±¡°½áÊø¡±£¬ÏµÍ³»á¼ÌĞø°´Ê±¼ä´¥·¢ÏÂÒ»¸öÊÂ¼ş¡£
-        // WaveConfig ÉÏµÄ "maxWaveDuration" ×Ö¶ÎÏÖÔÚ»ù±¾Ê§Ğ§ÁË¡£
+        // æ³¨æ„ï¼šæˆ‘ä»¬ä¸å†å…³å¿ƒè¿™ä¸ªæ³¢æ¬¡ä½•æ—¶â€œç»“æŸâ€ï¼Œç³»ç»Ÿä¼šç»§ç»­æŒ‰æ—¶é—´è§¦å‘ä¸‹ä¸€ä¸ªäº‹ä»¶ã€‚
+        // WaveConfig ä¸Šçš„ "maxWaveDuration" å­—æ®µç°åœ¨åŸºæœ¬å¤±æ•ˆäº†ã€‚
     }
 
     void GameWin()
     {
         gameFinished = true;
-        Debug.Log("<color=green>ÓÎÏ·Ê¤Àû£¡Ê±¼äÒÑµ½£¡</color>");
+        Debug.Log("<color=green>æ¸¸æˆèƒœåˆ©ï¼æ—¶é—´å·²åˆ°ï¼</color>");
 
-        // Í£Ö¹ËùÓĞË¢¹Ö
+        // åœæ­¢æ‰€æœ‰åˆ·æ€ª
         enemySpawner.StopAndClearSpawning();
 
-        // (ÔÚÕâÀïÌí¼ÓÄúµÄÊ¤ÀûÂß¼­£¬ÀıÈçÏÔÊ¾Ê¤ÀûUI£¬±£´æÊı¾İ£¬·µ»ØHub)
-        // Ê¾Àı£º2Ãëºó·µ»ØHub
+        // (åœ¨è¿™é‡Œæ·»åŠ æ‚¨çš„èƒœåˆ©é€»è¾‘ï¼Œä¾‹å¦‚æ˜¾ç¤ºèƒœåˆ©UIï¼Œä¿å­˜æ•°æ®ï¼Œè¿”å›Hub)
+        // ç¤ºä¾‹ï¼š2ç§’åè¿”å›Hub
         // Invoke("ReturnToHub", 2f);
     }
 
-    // (¿ÉÑ¡) ·µ»ØHubµÄ·½·¨
+    // (å¯é€‰) è¿”å›Hubçš„æ–¹æ³•
     // void ReturnToHub()
     // {
     //     SceneManager.LoadScene("HubScene");
     // }
 
 
-    // --- ¹«¹²·½·¨£¬ÓÃÓÚÌæ»» WaveManager µÄ¹¦ÄÜ ---
+    // --- å…¬å…±æ–¹æ³•ï¼Œç”¨äºæ›¿æ¢ WaveManager çš„åŠŸèƒ½ ---
 
     public void EnemyDefeated()
     {
-        // ÎÒÃÇ²»ÔÙ¼ì²é²¨´ÎÊÇ·ñ½áÊø£¬Ö»ÊÇ¼òµ¥¼ÆÊı
+        // æˆ‘ä»¬ä¸å†æ£€æŸ¥æ³¢æ¬¡æ˜¯å¦ç»“æŸï¼Œåªæ˜¯ç®€å•è®¡æ•°
         totalKills++;
-        // (Äú¿ÉÒÔÔÚ´Ë¸üĞÂUIÉÏµÄ»÷É±Êı)
+        // (æ‚¨å¯ä»¥åœ¨æ­¤æ›´æ–°UIä¸Šçš„å‡»æ€æ•°)
         // UIManager.Instance?.UpdateKills(totalKills);
     }
 
     public void AnEnemyFailedToSpawn()
     {
-        // ÔÚÕâ¸öĞÂÏµÍ³ÏÂ£¬Ò»¸öµĞÈËÉú³ÉÊ§°Ü²¢²»»áÓ°Ïì²¨´ÎÂß¼­
-        Debug.LogWarning("[GameTimelineManager] Ò»¸öµĞÈËÎ´ÄÜÉú³É¡£");
+        // åœ¨è¿™ä¸ªæ–°ç³»ç»Ÿä¸‹ï¼Œä¸€ä¸ªæ•Œäººç”Ÿæˆå¤±è´¥å¹¶ä¸ä¼šå½±å“æ³¢æ¬¡é€»è¾‘
+        Debug.LogWarning("[GameTimelineManager] ä¸€ä¸ªæ•Œäººæœªèƒ½ç”Ÿæˆã€‚");
     }
 }

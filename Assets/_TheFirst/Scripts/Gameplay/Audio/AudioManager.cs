@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
@@ -7,18 +7,18 @@ public class AudioManager : MonoBehaviour
 
     void Awake()
     {
-        // ÊµÏÖµ¥ÀıÄ£Ê½£¬È·±£Ö»ÓĞÒ»¸öAudioManager
+        // å®ç°å•ä¾‹æ¨¡å¼ï¼Œç¡®ä¿åªæœ‰ä¸€ä¸ªAudioManager
         if (Instance == null)
         {
             Instance = this;
-            // ÈÃÕâ¸öGameObjectÔÚ¼ÓÔØĞÂ³¡¾°Ê±²»±»Ïú»Ù
+            // è®©è¿™ä¸ªGameObjectåœ¨åŠ è½½æ–°åœºæ™¯æ—¶ä¸è¢«é”€æ¯
             DontDestroyOnLoad(gameObject);
             sfxSource = gameObject.AddComponent<AudioSource>();
-            sfxSource.spatialBlend = 0; // È·±£ÊÇ2DÒôĞ§
+            sfxSource.spatialBlend = 0; // ç¡®ä¿æ˜¯2DéŸ³æ•ˆ
         }
         else
         {
-            // Èç¹ûÒÑ´æÔÚAudioManager£¬ÔòÏú»ÙÕâ¸öÖØ¸´µÄ
+            // å¦‚æœå·²å­˜åœ¨AudioManagerï¼Œåˆ™é”€æ¯è¿™ä¸ªé‡å¤çš„
             Destroy(gameObject);
         }
     }

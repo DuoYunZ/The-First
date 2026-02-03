@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class SimpleFollow : MonoBehaviour
 {
-    // Õâ¸ö target ½«ÓÉ´´½¨ËüµÄ½Å±¾À´Ö¸¶¨
+    // è¿™ä¸ª target å°†ç”±åˆ›å»ºå®ƒçš„è„šæœ¬æ¥æŒ‡å®š
     public Transform target;
 
-    // Ê¹ÓÃ LateUpdate ¿ÉÒÔÈ·±£ÎÒÃÇÔÚÄ¿±ê£¨Íæ¼Ò£©Íê³ÉËùÓĞÎïÀíÒÆ¶¯Ö®ºó£¬ÔÙ¸üĞÂ×Ô¼ºµÄÎ»ÖÃ
+    // ä½¿ç”¨ LateUpdate å¯ä»¥ç¡®ä¿æˆ‘ä»¬åœ¨ç›®æ ‡ï¼ˆç©å®¶ï¼‰å®Œæˆæ‰€æœ‰ç‰©ç†ç§»åŠ¨ä¹‹åï¼Œå†æ›´æ–°è‡ªå·±çš„ä½ç½®
     void LateUpdate()
     {
         if (target != null)
         {
-            // ÔÚÃ¿Ò»Ö¡µÄ×îºó£¬¶¼½«×Ô¼ºµÄÎ»ÖÃºÍĞı×ª£¬Ç¿ÖÆÉèÖÃÎªÓëÄ¿±êÍêÈ«Ò»ÖÂ
+            // åœ¨æ¯ä¸€å¸§çš„æœ€åï¼Œéƒ½å°†è‡ªå·±çš„ä½ç½®å’Œæ—‹è½¬ï¼Œå¼ºåˆ¶è®¾ç½®ä¸ºä¸ç›®æ ‡å®Œå…¨ä¸€è‡´
             transform.position = target.position;
             transform.rotation = target.rotation;
         }

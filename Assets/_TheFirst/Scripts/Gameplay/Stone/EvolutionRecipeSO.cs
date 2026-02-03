@@ -1,26 +1,26 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "Recipe_FireStorm", menuName = "Weapons/Evolution Recipe")]
 public class EvolutionRecipeSO : ScriptableObject
 {
-    [Header("½ø»¯½á¹û (ÖÕ¼«¼¼ÄÜ)")]
-    public WeaponStatBlock resultWeapon; // ½ø»¯ºóµÄÎäÆ÷ (ÁÒÑæ·ç±©)
+    [Header("è¿›åŒ–ç»“æœ (ç»ˆææŠ€èƒ½)")]
+    public WeaponStatBlock resultWeapon; // è¿›åŒ–åçš„æ­¦å™¨ (çƒˆç„°é£æš´)
 
-    [Header("ºÏ³ÉÌõ¼ş")]
-    [Tooltip("ºËĞÄÖ÷ÎäÆ÷ (ÀıÈç»ğÇòÊõ)")]
+    [Header("åˆæˆæ¡ä»¶")]
+    [Tooltip("æ ¸å¿ƒä¸»æ­¦å™¨ (ä¾‹å¦‚ç«çƒæœ¯)")]
     public WeaponStatBlock mainWeapon;
-    [Tooltip("Ö÷ÎäÆ÷ĞèÒªµÄµÈ¼¶")]
+    [Tooltip("ä¸»æ­¦å™¨éœ€è¦çš„ç­‰çº§")]
     public int mainWeaponLevelReq = 10;
 
-    [Tooltip("¸¨ÖúÎäÆ÷/±»¶¯ (ÀıÈçÈ¼ÉÕÆ¿)")]
+    [Tooltip("è¾…åŠ©æ­¦å™¨/è¢«åŠ¨ (ä¾‹å¦‚ç‡ƒçƒ§ç“¶)")]
     public WeaponStatBlock subItem;
-    [Tooltip("¸¨ÖúÎäÆ÷ĞèÒªµÄµÈ¼¶")]
+    [Tooltip("è¾…åŠ©æ­¦å™¨éœ€è¦çš„ç­‰çº§")]
     public int subItemLevelReq = 5;
 
-    [Tooltip("ÌØÊâµÀ¾ß (ÀıÈç»ğÑæÖ®ĞÄ - ±¦ÏäµôÂä)")]
-    public PassiveItemSO specialItem; // ¼ÙÉèÄãÓĞÒ»¸öÕë¶Ô±»¶¯/ÌØÊâµÀ¾ßµÄSO
+    [Tooltip("ç‰¹æ®Šé“å…· (ä¾‹å¦‚ç«ç„°ä¹‹å¿ƒ - å®ç®±æ‰è½)")]
+    public PassiveItemSO specialItem; // å‡è®¾ä½ æœ‰ä¸€ä¸ªé’ˆå¯¹è¢«åŠ¨/ç‰¹æ®Šé“å…·çš„SO
 
-    [Header("½ø»¯ÃèÊö")]
-    [TextArea] public string description = "ÁÒÑæÓëÈ¼ÓÍµÄÖÕ¼«ÈÚºÏ¡£";
+    [Header("è¿›åŒ–æè¿°")]
+    [TextArea] public string description = "çƒˆç„°ä¸ç‡ƒæ²¹çš„ç»ˆæèåˆã€‚";
 }

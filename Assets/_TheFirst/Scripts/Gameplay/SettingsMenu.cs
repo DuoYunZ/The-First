@@ -1,38 +1,105 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
+
 using UnityEngine.Audio;
+using TMPro; // å¼•å…¥ TextMeshPro å‘½åç©ºé—´
+using System.Collections.Generic;
+using System.Linq;
 
 public class SettingsMenu : MonoBehaviour
 {
-    [Header("×é¼şÒıÓÃ")]
-    [Tooltip("ÓÎÏ·µÄÖ÷ÒôÆµ»ìºÏÆ÷")]
+    [Header("ç»„ä»¶å¼•ç”¨")]
+    [Tooltip("æ¸¸æˆçš„ä¸»éŸ³é¢‘æ··åˆå™¨")]
     public AudioMixer mainMixer;
 
-    [Header("UIÔªËØÒıÓÃ")]
+    [Header("UIå…ƒç´ å¼•ç”¨")]
     public Slider masterVolumeSlider;
     public Slider bgmVolumeSlider;
+
     public Slider sfxVolumeSlider;
 
-    // PlayerPrefs ±£´æµÄ¼üÃû
+    [Header("æ˜¾ç¤ºè®¾ç½®")]
+    public TMP_Dropdown resolutionDropdown;
+    public Toggle fullscreenToggle;
+
+    private Resolution[] resolutions;
+
+
+    // PlayerPrefs ä¿å­˜çš„é”®å
     private const string MASTER_VOL_KEY = "MasterVolume";
     private const string BGM_VOL_KEY = "BGMVolume";
     private const string SFX_VOL_KEY = "SFXVolume";
 
     void Start()
     {
-        // ÓÎÏ·Æô¶¯Ê±£¬¼ÓÔØÒÑ±£´æµÄÉèÖÃ
+        // æ¸¸æˆå¯åŠ¨æ—¶ï¼ŒåŠ è½½å·²ä¿å­˜çš„è®¾ç½®
         LoadVolumeSettings();
 
-        // ÎªÃ¿¸ö»¬¿éÌí¼Ó¼àÌıÆ÷£¬µ±Öµ¸Ä±äÊ±µ÷ÓÃ¶ÔÓ¦µÄ·½·¨
+        // ä¸ºæ¯ä¸ªæ»‘å—æ·»åŠ ç›‘å¬å™¨ï¼Œå½“å€¼æ”¹å˜æ—¶è°ƒç”¨å¯¹åº”çš„æ–¹æ³•
         masterVolumeSlider.onValueChanged.AddListener(SetMasterVolume);
         bgmVolumeSlider.onValueChanged.AddListener(SetBGMVolume);
         sfxVolumeSlider.onValueChanged.AddListener(SetSFXVolume);
+
+        // åˆå§‹åŒ–åˆ†è¾¨ç‡è®¾ç½®
+        InitResolutionSettings();
+    }
+
+    private void InitResolutionSettings()
+    {
+        resolutions = Screen.resolutions;
+        
+        // è¿‡æ»¤æ‰åˆ·æ–°ç‡è¾ƒä½çš„åˆ†è¾¨ç‡ï¼ˆå¯é€‰ï¼‰å¹¶å»é‡
+        // è¿™é‡Œç®€å•å¤„ç†ï¼Œç›´æ¥ä½¿ç”¨æ‰€æœ‰æ”¯æŒçš„åˆ†è¾¨ç‡
+        
+        if (resolutionDropdown == null) return;
+        
+        resolutionDropdown.ClearOptions();
+
+        List<string> options = new List<string>();
+        int currentResolutionIndex = 0;
+
+        for (int i = 0; i < resolutions.Length; i++)
+        {
+            string option = resolutions[i].width + " x " + resolutions[i].height + " @ " + resolutions[i].refreshRateRatio.value.ToString("F0") + "Hz";
+            options.Add(option);
+
+            if (resolutions[i].width == Screen.currentResolution.width &&
+                resolutions[i].height == Screen.currentResolution.height)
+            {
+                currentResolutionIndex = i;
+            }
+        }
+
+        resolutionDropdown.AddOptions(options);
+        resolutionDropdown.value = currentResolutionIndex;
+        resolutionDropdown.RefreshShownValue();
+        
+        // æ·»åŠ ç›‘å¬å™¨
+        resolutionDropdown.onValueChanged.AddListener(SetResolution);
+
+         // åˆå§‹åŒ–å…¨å± Toggle
+        if (fullscreenToggle != null)
+        {
+            fullscreenToggle.isOn = Screen.fullScreen;
+            fullscreenToggle.onValueChanged.AddListener(SetFullscreen);
+        }
+    }
+
+    public void SetResolution(int resolutionIndex)
+    {
+        Resolution resolution = resolutions[resolutionIndex];
+        Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
+    }
+
+    public void SetFullscreen(bool isFullscreen)
+    {
+        Screen.fullScreen = isFullscreen;
     }
 
     public void SetMasterVolume(float value)
     {
-        // UI»¬¿éµÄÖµÊÇÏßĞÔµÄ (0-1)£¬¶øMixerµÄÒôÁ¿ÊÇ¶ÔÊıµÄ (dB)
-        // ÎÒÃÇĞèÒª×ª»»Ò»ÏÂ¡£µ±valueÎª0Ê±£¬log10(0)ÊÇ¸ºÎŞÇî£¬ËùÒÔÎÒÃÇ¸øÒ»¸ö¼«Ğ¡ÖµÀ´´ú±í¾²Òô¡£
+        // UIæ»‘å—çš„å€¼æ˜¯çº¿æ€§çš„ (0-1)ï¼Œè€ŒMixerçš„éŸ³é‡æ˜¯å¯¹æ•°çš„ (dB)
+        // æˆ‘ä»¬éœ€è¦è½¬æ¢ä¸€ä¸‹ã€‚å½“valueä¸º0æ—¶ï¼Œlog10(0)æ˜¯è´Ÿæ— ç©·ï¼Œæ‰€ä»¥æˆ‘ä»¬ç»™ä¸€ä¸ªæå°å€¼æ¥ä»£è¡¨é™éŸ³ã€‚
         float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
         mainMixer.SetFloat("MasterVolume", volumeInDb);
         PlayerPrefs.SetFloat(MASTER_VOL_KEY, value);
@@ -54,23 +121,23 @@ public class SettingsMenu : MonoBehaviour
 
     private void LoadVolumeSettings()
     {
-        // ´Ó PlayerPrefs ¼ÓÔØÖµ£¬Èç¹û²»´æÔÚÔòÄ¬ÈÏÎª1 (ÂúÒôÁ¿)
+        // ä» PlayerPrefs åŠ è½½å€¼ï¼Œå¦‚æœä¸å­˜åœ¨åˆ™é»˜è®¤ä¸º1 (æ»¡éŸ³é‡)
         float masterValue = PlayerPrefs.GetFloat(MASTER_VOL_KEY, 1f);
         float bgmValue = PlayerPrefs.GetFloat(BGM_VOL_KEY, 1f);
         float sfxValue = PlayerPrefs.GetFloat(SFX_VOL_KEY, 1f);
 
-        // ½«¼ÓÔØµÄÖµÓ¦ÓÃµ½UI»¬¿éÉÏ
+        // å°†åŠ è½½çš„å€¼åº”ç”¨åˆ°UIæ»‘å—ä¸Š
         masterVolumeSlider.value = masterValue;
         bgmVolumeSlider.value = bgmValue;
         sfxVolumeSlider.value = sfxValue;
 
-        // Í¬Ê±£¬Á¢¼´½«ÕâĞ©ÖµÓ¦ÓÃµ½Audio Mixer
+        // åŒæ—¶ï¼Œç«‹å³å°†è¿™äº›å€¼åº”ç”¨åˆ°Audio Mixer
         SetMasterVolume(masterValue);
         SetBGMVolume(bgmValue);
         SetSFXVolume(sfxValue);
     }
 
-    // µ±½Å±¾±»Ïú»ÙÊ±£¬È·±£ËùÓĞÉèÖÃ¶¼±»±£´æ
+    // å½“è„šæœ¬è¢«é”€æ¯æ—¶ï¼Œç¡®ä¿æ‰€æœ‰è®¾ç½®éƒ½è¢«ä¿å­˜
     private void OnDisable()
     {
         PlayerPrefs.Save();

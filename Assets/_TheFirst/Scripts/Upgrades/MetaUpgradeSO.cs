@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(menuName = "Meta Game/Upgrade Definition")]
 public class MetaUpgradeSO : ScriptableObject
@@ -7,23 +7,23 @@ public class MetaUpgradeSO : ScriptableObject
     [TextArea] public string description;
     public Sprite icon;
 
-    [Header("·ÑÓÃÉèÖÃ")]
+    [Header("è´¹ç”¨è®¾ç½®")]
     public int baseCost = 100;
-    public float costMultiplier = 1.5f; // Ã¿¼¶ÕÇ¼Û±¶ÂÊ
+    public float costMultiplier = 1.5f; // æ¯çº§æ¶¨ä»·å€ç‡
 
-    [Header("ÊôĞÔÉèÖÃ")]
-    public UpgradeType statType; // ¸´ÓÃÄãÏÖÓĞµÄÃ¶¾Ù
-    public float valuePerLevel = 10f; // Ã¿¼¶Ôö¼Ó¶àÉÙÊıÖµ
+    [Header("å±æ€§è®¾ç½®")]
+    public UpgradeType statType; // å¤ç”¨ä½ ç°æœ‰çš„æšä¸¾
+    public float valuePerLevel = 10f; // æ¯çº§å¢åŠ å¤šå°‘æ•°å€¼
     public int maxLevel = 10;
 
-    // ¼ÆËãµ±Ç°µÈ¼¶µÄ·ÑÓÃ
+    // è®¡ç®—å½“å‰ç­‰çº§çš„è´¹ç”¨
     public int GetCost(int currentLevel)
     {
-        // ¼òµ¥¹«Ê½£º»ù´¡ * (±¶ÂÊ ^ µÈ¼¶)
+        // ç®€å•å…¬å¼ï¼šåŸºç¡€ * (å€ç‡ ^ ç­‰çº§)
         return Mathf.RoundToInt(baseCost * Mathf.Pow(costMultiplier, currentLevel));
     }
 
-    // ¼ÆËãµ±Ç°µÈ¼¶µÄ×Ü¼Ó³É
+    // è®¡ç®—å½“å‰ç­‰çº§çš„æ€»åŠ æˆ
     public float GetTotalBonus(int currentLevel)
     {
         return valuePerLevel * currentLevel;

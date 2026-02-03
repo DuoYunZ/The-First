@@ -1,21 +1,21 @@
-// EnemyStatOverrides.cs
+ï»¿// EnemyStatOverrides.cs
 using UnityEngine;
 
 [System.Serializable]
 public class EnemyStatOverrides
 {
-    [Tooltip("ĞÂµÄÉúÃüÖµ³ËÊı¡£1 ±íÊ¾Ê¹ÓÃ EnemyType ÖĞµÄ»ù´¡Öµ£¬1.5 ±íÊ¾ 150% ÉúÃüÖµ¡£")]
+    [Tooltip("æ–°çš„ç”Ÿå‘½å€¼ä¹˜æ•°ã€‚1 è¡¨ç¤ºä½¿ç”¨ EnemyType ä¸­çš„åŸºç¡€å€¼ï¼Œ1.5 è¡¨ç¤º 150% ç”Ÿå‘½å€¼ã€‚")]
     public float healthMultiplier = 1f;
 
-    [Tooltip("ĞÂµÄÉËº¦³ËÊı¡£1 ±íÊ¾²»¸Ä±ä¡£")]
+    [Tooltip("æ–°çš„ä¼¤å®³ä¹˜æ•°ã€‚1 è¡¨ç¤ºä¸æ”¹å˜ã€‚")]
     public float damageMultiplier = 1f;
 
-    [Tooltip("ĞÂµÄËÙ¶È³ËÊı¡£1 ±íÊ¾²»¸Ä±ä¡£")]
+    [Tooltip("æ–°çš„é€Ÿåº¦ä¹˜æ•°ã€‚1 è¡¨ç¤ºä¸æ”¹å˜ã€‚")]
     public float speedMultiplier = 1f;
 
-    [Tooltip("ĞÂµÄÄ£ĞÍËõ·Å´óĞ¡¡£1,1,1 ±íÊ¾²»¸Ä±ä¡£")]
+    [Tooltip("æ–°çš„æ¨¡å‹ç¼©æ”¾å¤§å°ã€‚1,1,1 è¡¨ç¤ºä¸æ”¹å˜ã€‚")]
     public Vector3 scale = Vector3.one;
 
-    // ÄúÎ´À´¿ÉÒÔÌí¼Ó¸ü¶àĞèÒª¸²¸ÇµÄÊôĞÔ£¬ÀıÈçÑÕÉ«
+    // æ‚¨æœªæ¥å¯ä»¥æ·»åŠ æ›´å¤šéœ€è¦è¦†ç›–çš„å±æ€§ï¼Œä¾‹å¦‚é¢œè‰²
     // public Color colorTint;
 }

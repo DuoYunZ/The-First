@@ -1,32 +1,32 @@
-// --- CircularFireAction.cs (´øÍêÕû¶¯×÷±íÏÖ°æ) ---
+ï»¿// --- CircularFireAction.cs (å¸¦å®Œæ•´åŠ¨ä½œè¡¨ç°ç‰ˆ) ---
 using UnityEngine;
 
 public class CircularFireAction : Node
 {
-    [Header("ÎäÆ÷ÉèÖÃ")]
+    [Header("æ­¦å™¨è®¾ç½®")]
     public WeaponStatBlock weaponToFire;
     public int projectileCount = 12;
     public Transform firePoint;
 
-    [Header("¶¯×÷±íÏÖ")]
-    [Tooltip("Ç°Ò¡¶¯»­µÄ´¥·¢Æ÷Ãû³Æ")]
+    [Header("åŠ¨ä½œè¡¨ç°")]
+    [Tooltip("å‰æ‘‡åŠ¨ç”»çš„è§¦å‘å™¨åç§°")]
     public string windupAnimationTrigger;
-    [Tooltip("Ç°Ò¡³ÖĞøÊ±¼ä£¨Ãë£©")]
+    [Tooltip("å‰æ‘‡æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float windupDuration = 1f;
-    [Tooltip("ºóÒ¡¶¯»­µÄ´¥·¢Æ÷Ãû³Æ")]
+    [Tooltip("åæ‘‡åŠ¨ç”»çš„è§¦å‘å™¨åç§°")]
     public string recoveryAnimationTrigger;
-    [Tooltip("ºóÒ¡³ÖĞøÊ±¼ä£¨Ãë£©")]
+    [Tooltip("åæ‘‡æŒç»­æ—¶é—´ï¼ˆç§’ï¼‰")]
     public float recoveryDuration = 0.5f;
 
-    [Header("ÀäÈ´ÉèÖÃ")]
+    [Header("å†·å´è®¾ç½®")]
     public string attackName = "CircularAttack";
     public float cooldownDuration = 5f;
 
-    [Header("ÅäºÏÌØĞ§µÄÔ¤ÖÆ¼ş")] // ¡¾ĞÂÔö¡¿
+    [Header("é…åˆç‰¹æ•ˆçš„é¢„åˆ¶ä»¶")] // ã€æ–°å¢ã€‘
     public GameObject windupEffectPrefab;
     public GameObject recoveryEffectPrefab;
 
-    // ÄÚ²¿×´Ì¬»ú
+    // å†…éƒ¨çŠ¶æ€æœº
     private enum ActionState { Ready, WindingUp, Firing, Recovering, Completed }
     private ActionState currentState;
     private float timer;
@@ -42,7 +42,7 @@ public class CircularFireAction : Node
         regularAI = GetComponentInParent<EnemyAI>();
     }
 
-    // µ±½Úµã±»ĞĞÎªÊ÷ÖØĞÂÆÀ¹ÀÊ±£¬È·±£×´Ì¬±»ÖØÖÃ
+    // å½“èŠ‚ç‚¹è¢«è¡Œä¸ºæ ‘é‡æ–°è¯„ä¼°æ—¶ï¼Œç¡®ä¿çŠ¶æ€è¢«é‡ç½®
     public override NodeState Evaluate()
     {
         if (currentState == ActionState.Completed)
@@ -52,12 +52,12 @@ public class CircularFireAction : Node
 
         if (currentState == ActionState.Ready)
         {
-            if (regularAI != null) regularAI.enabled = false; // ¶áÈ¡¿ØÖÆÈ¨
+            if (regularAI != null) regularAI.enabled = false; // å¤ºå–æ§åˆ¶æƒ
             currentState = ActionState.WindingUp;
             timer = 0f;
             if (animator != null && !string.IsNullOrEmpty(windupAnimationTrigger))
             {
-                animator.SetTrigger(windupAnimationTrigger); // ²¥·ÅÇ°Ò¡¶¯»­
+                animator.SetTrigger(windupAnimationTrigger); // æ’­æ”¾å‰æ‘‡åŠ¨ç”»
             }
             GetComponentInParent<BehaviorTree>().StartCooldown(attackName, cooldownDuration);
             return NodeState.RUNNING;
@@ -69,17 +69,17 @@ public class CircularFireAction : Node
                 timer += Time.deltaTime;
                 if (timer >= windupDuration)
                 {
-                    currentState = ActionState.Firing; // Ç°Ò¡½áÊø£¬×¼±¸¿ª»ğ
+                    currentState = ActionState.Firing; // å‰æ‘‡ç»“æŸï¼Œå‡†å¤‡å¼€ç«
                 }
                 break;
 
             case ActionState.Firing:
-                FireInCircle(); // Ë²¼äÍê³É¿ª»ğ
-                currentState = ActionState.Recovering; // Á¢¼´½øÈëºóÒ¡
+                FireInCircle(); // ç¬é—´å®Œæˆå¼€ç«
+                currentState = ActionState.Recovering; // ç«‹å³è¿›å…¥åæ‘‡
                 timer = 0f;
                 if (animator != null && !string.IsNullOrEmpty(recoveryAnimationTrigger))
                 {
-                    animator.SetTrigger(recoveryAnimationTrigger); // ²¥·ÅºóÒ¡¶¯»­
+                    animator.SetTrigger(recoveryAnimationTrigger); // æ’­æ”¾åæ‘‡åŠ¨ç”»
                 }
                 break;
 
@@ -87,7 +87,7 @@ public class CircularFireAction : Node
                 timer += Time.deltaTime;
                 if (timer >= recoveryDuration)
                 {
-                    currentState = ActionState.Completed; // ºóÒ¡½áÊø£¬Õû¸ö¶¯×÷Íê³É
+                    currentState = ActionState.Completed; // åæ‘‡ç»“æŸï¼Œæ•´ä¸ªåŠ¨ä½œå®Œæˆ
                     return NodeState.SUCCESS;
                 }
                 break;
