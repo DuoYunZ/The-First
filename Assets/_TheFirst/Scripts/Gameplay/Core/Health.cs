@@ -237,6 +237,20 @@ public class Health : MonoBehaviour
                 FlyingDaggerController dagger = attacker.GetComponent<FlyingDaggerController>();
                 if (dagger != null) sourcePart = dagger.sourceWeapon;
             }
+            
+            // E. 【新增】尝试从 attacker 身上获取 Landmine (如果是地雷)
+            if (sourcePart == null && attacker != null)
+            {
+                Landmine landmine = attacker.GetComponent<Landmine>();
+                if (landmine != null) sourcePart = landmine.sourceWeapon;
+            }
+            
+            // F. 【新增】尝试从 attacker 身上直接获取 WeaponPart (如果是Aura类型武器)
+            if (sourcePart == null && attacker != null)
+            {
+                WeaponPart weaponPart = attacker.GetComponent<WeaponPart>();
+                if (weaponPart != null) sourcePart = weaponPart;
+            }
             // ----------------------------------------------------
             if (sourcePart == null)
             {
@@ -257,6 +271,12 @@ public class Health : MonoBehaviour
             {
                 float xp = remainingDamage * sourcePart.StatBlock.xpGainFactor;               
                 sourcePart.GainProficiencyXP(xp);
+                
+                // --- 【新增】触发XP粒子飞向技能图标 ---
+                if (WeaponUI.Instance != null)
+                {
+                    WeaponUI.Instance.SpawnXpParticlesToWeapon(sourcePart, hitPosition);
+                }
             }
             // ------------------------------------
 

@@ -27,6 +27,9 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     private bool isSelected = false;
     private Animator animator;
 
+    // 分支选择回调（如果设置，则点击时调用此回调而非UpgradeManager）
+    private System.Action onBranchSelected;
+
     void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
@@ -37,6 +40,12 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void Setup(SkillTreeNodeData node, UpgradeOption option)
     {
+        // 确保组件已初始化（防止Awake未执行的情况）
+        if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+        if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        if (animator == null) animator = GetComponent<Animator>();
+
         this.sourceNode = node;
         this.displayedOption = option;
         this.isSelected = false;
@@ -64,6 +73,23 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         Canvas.ForceUpdateCanvases();
         initialScale = transform.localScale;
         initialAnchorPos = rectTransform.anchoredPosition;
+    }
+
+    // 分支选择专用的Setup重载
+    public void SetupForBranch(SkillTreeNodeData node, UpgradeOption option, System.Action onSelected)
+    {
+        Setup(node, option);
+        this.onBranchSelected = onSelected;
+    }
+
+    // 刷新初始位置（用于布局完成后重新记录）
+    public void RefreshInitialPosition()
+    {
+        if (rectTransform != null)
+        {
+            initialScale = transform.localScale;
+            initialAnchorPos = rectTransform.anchoredPosition;
+        }
     }
 
     // --- 动画逻辑 (保持不变) ---
@@ -100,7 +126,15 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         clickSequence.Join(canvasGroup.DOFade(0f, 0.3f).SetDelay(0.1f));
         clickSequence.SetUpdate(true);
         clickSequence.OnComplete(() => {
-            if (UpgradeManager.Instance != null) UpgradeManager.Instance.OnUpgradeOptionSelected(sourceNode, displayedOption);
+            // 如果是分支选择模式，调用分支回调
+            if (onBranchSelected != null)
+            {
+                onBranchSelected.Invoke();
+            }
+            else if (UpgradeManager.Instance != null)
+            {
+                UpgradeManager.Instance.OnUpgradeOptionSelected(sourceNode, displayedOption);
+            }
         });
     }
 

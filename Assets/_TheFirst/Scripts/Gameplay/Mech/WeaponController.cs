@@ -254,6 +254,24 @@ public class WeaponController : MonoBehaviour
         ownedWeapons.Remove(weaponToRemove);
     }
 
+    /// <summary>
+    /// 根据武器StatBlock移除武器（融合系统使用）
+    /// </summary>
+    public void RemoveWeaponByStatBlock(WeaponStatBlock statBlock)
+    {
+        if (statBlock == null) return;
+        
+        var toRemove = ownedWeapons.FirstOrDefault(w => 
+            w.weaponPartInstance != null && 
+            w.weaponPartInstance.StatBlock == statBlock);
+        
+        if (toRemove != null)
+        {
+            Debug.Log($"[融合] 移除武器: {statBlock.weaponName}");
+            RemoveWeapon(toRemove);
+        }
+    }
+
     // --- 武器管理 ---
 
     public void AddNewWeapon(WeaponStatBlock weaponData)

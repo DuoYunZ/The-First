@@ -87,6 +87,12 @@ public class WeaponPart : MonoBehaviour
     [HideInInspector] public float localStunChanceBonus = 0f; // 局部麻痹概率
     [HideInInspector] public float localFreezeChanceBonus = 0f; // 【新增】冰冻概率加成
     [HideInInspector] public int localPierceCountBonus = 0; // 这个你应该早就有了，如果没有请加上
+    [HideInInspector] public int localBurstCountBonus = 0; // 【新增】连射次数加成（连珠火球用）
+    [HideInInspector] public int localSubProjectileCountBonus = 0; // 【新增】分裂子弹数量加成
+    [HideInInspector] public bool isSubProjectileEnabled = false; // 【新增】是否开启分裂
+    [HideInInspector] public float localIgnitionChanceBonus = 0f; // 【新增】点燃概率加成
+    [HideInInspector] public float localBurnDurationBonus = 0f;   // 【新增】燃烧持续时间加成（秒）
+    [HideInInspector] public float localMaxHealthBurnPercent = 0f; // 【新增】猛烈燃烧：基于最大生命值的百分比伤害
 
 
     // 由 WeaponController 在运行时赋值
@@ -112,12 +118,18 @@ public class WeaponPart : MonoBehaviour
     [Header("运行时熟练度 (Runtime Proficiency)")]
     public int currentProficiencyLevel = 1;
     public float currentProficiencyXP = 0f;
-    public float xpToNextLevel = 100f; // 初始值，会被Curve覆盖
+    public float xpToNextLevel = 200f; // 初始值 (Base阶段默认200)
+
+    [Header("武器阶段 (Weapon Stage)")]
+    public WeaponStage currentStage = WeaponStage.Base; // 当前阶段
+    public bool hasBranched = false; // 是否已选择分支
 
     // 事件：当武器升级时触发 (用于播放特效、UI更新)
     public System.Action<int> OnWeaponLevelUp;
     // 事件：当经验变化时 (用于UI条)
     public System.Action<float, float> OnWeaponXpChanged;
+    // 事件：当需要选择分支时 (用于弹出分支选择UI)
+    public System.Action<WeaponPart> OnBranchChoiceRequired;
 
     #region Unity Lifecycle Methods
 
@@ -197,6 +209,20 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Boomerang)
         {
             isBoomerangOut = false;
+        }
+
+        // --- 5. 初始化武器阶段和经验 ---
+        // 重置阶段状态（防止预制件序列化值影响）
+        currentStage = WeaponStage.Base;
+        hasBranched = false;
+        currentProficiencyXP = 0f;
+        CalculateNextLevelXP();
+        Debug.Log($"[武器激活] {StatBlock?.weaponName} 阶段:{currentStage} hasBranched:{hasBranched} 经验需求:{xpToNextLevel}");
+
+        // --- 6. 自动注册分支选择事件 ---
+        if (WeaponBranchManager.Instance != null)
+        {
+            WeaponBranchManager.Instance.RegisterWeapon(this);
         }
     }
 
@@ -398,21 +424,10 @@ public class WeaponPart : MonoBehaviour
         if (isFireball && isNodeUnlocked)
         {
             chance += 0.3f; // 加上 30%
+        }
 
-            // 成功日志
-            // Debug.Log($"[点燃概率] 加成生效！基础: {StatBlock.ignitionChance} + 局外: 0.3 = {chance}");
-        }
-        else
-        {
-            // 【调试日志】如果没生效，这行日志会告诉你原因！
-            // 只有当这是火球术，且原本应该有加成但没加成时，才打印，避免刷屏
-            if (isFireball && chance <= 0.15f) // 0.15f 是个阈值，如果是0.4说明已经生效了就不报了
-            {
-                Debug.LogWarning($"[点燃概率异常] 武器是火球术，但没有获得 0.3 加成。\n" +
-                                 $"检查 1 (节点解锁): 查找 '{nodeName}' -> 结果: {isNodeUnlocked}\n" +
-                                 $"检查 2 (武器ID): ID='{StatBlock.weaponID}', Name='{StatBlock.weaponName}'");
-            }
-        }
+        // 【新增】叠加局部点燃概率加成（来自技能树 UpgradeType.IgnitionChance）
+        chance += localIgnitionChanceBonus;
 
         return chance;
     }
@@ -420,21 +435,93 @@ public class WeaponPart : MonoBehaviour
     public void GainProficiencyXP(float amount)
     {
         if (StatBlock == null || !StatBlock.usesProficiency) return;
-        if (currentProficiencyLevel >= StatBlock.maxLevel) return; // 满级了
+        if (currentStage == WeaponStage.Evolved) return; // 已进化，不再获得经验
+
+        // 保护检查：确保经验需求已正确初始化
+        if (xpToNextLevel < 10f)
+        {
+            CalculateNextLevelXP();
+        }
 
         currentProficiencyXP += amount;
 
         // 通知 UI 更新
         OnWeaponXpChanged?.Invoke(currentProficiencyXP, xpToNextLevel);
 
-        // 检查升级
+        // 检查经验是否满了
         if (currentProficiencyXP >= xpToNextLevel)
         {
-            LevelUpWeapon();
+            // HandleXpFull(); // [修改] 移除旧的分支/进化逻辑
+             LevelUpWeapon(); // [修改] 启用新的技能树升级逻辑
         }
-        Debug.Log($"[武器经验] {StatBlock.weaponName} 获得 {amount} 点经验! 当前: {currentProficiencyXP}/{xpToNextLevel}");
-
+        Debug.Log($"[武器经验] {StatBlock.weaponName} 获得 {amount} 点经验! 当前: {currentProficiencyXP}/{xpToNextLevel} 阶段:{currentStage}");
     }
+
+    // 纯经验条模式：经验满时的处理
+    private void HandleXpFull()
+    {
+        // [已弃用] 改为使用 LevelUpWeapon + UpgradeManager
+        Debug.LogWarning("[HandleXpFull] 此方法已弃用，请检查调用堆栈");
+    }
+
+    // 外部调用：玩家选择分支后
+    public void ApplyBranch(WeaponStatBlock branchStatBlock)
+    {
+        Debug.Log($"<color=cyan>选择分支: {StatBlock.weaponName} → {branchStatBlock.weaponName}</color>");
+        
+        // 【新增】清理已存在的飞刀实例（进化/融合时需要重新生成新类型的飞刀）
+        ClearActiveFlyingDaggers();
+        
+        // 【新增】清理已存在的光环（进化/融合时需要重新生成新类型的光环）
+        ClearActiveAura();
+        
+        StatBlock = branchStatBlock;
+        currentStage = WeaponStage.Branched;
+        hasBranched = true;
+        currentProficiencyXP = 0f; // 重置经验
+        CalculateNextLevelXP();
+        UpdateVisualModel();
+        
+        Time.timeScale = 1f; // 恢复游戏
+        OnWeaponLevelUp?.Invoke(1); // 通知UI刷新
+    }
+    
+    /// <summary>
+    /// 清理所有活跃的飞刀实例（用于进化/融合时清理旧飞刀）
+    /// </summary>
+    private void ClearActiveFlyingDaggers()
+    {
+        foreach (var dagger in activeFlyingDaggers)
+        {
+            if (dagger != null) Destroy(dagger);
+        }
+        activeFlyingDaggers.Clear();
+        Debug.Log("<color=yellow>[融合/进化] 清理了所有现存飞刀实例</color>");
+    }
+    
+    /// <summary>
+    /// 清理活跃的光环实例（用于进化/融合时清理旧光环）
+    /// </summary>
+    private void ClearActiveAura()
+    {
+        if (orbitalPivot != null)
+        {
+            Destroy(orbitalPivot.gameObject);
+            orbitalPivot = null;
+            Debug.Log("<color=yellow>[融合/进化] 清理了光环实例</color>");
+        }
+    }
+
+    // 获取可用的分支选项列表
+    public List<WeaponStatBlock> GetBranchOptions()
+    {
+        var options = new List<WeaponStatBlock>();
+        if (StatBlock.branchOptionA != null) options.Add(StatBlock.branchOptionA);
+        if (StatBlock.branchOptionB != null) options.Add(StatBlock.branchOptionB);
+        return options;
+    }
+
+
 
     private void LevelUpWeapon()
     {
@@ -448,6 +535,7 @@ public class WeaponPart : MonoBehaviour
         localFireRateBonus += StatBlock.cooldownGrowthPerLevel;
         localAreaBonus += StatBlock.areaGrowthPerLevel;
 
+        /* [修改] 禁用旧的自动进化逻辑，现在由 UpgradeManager 的技能树卡片接管
         if (currentProficiencyLevel >= 10 && StatBlock.evolutionTarget != null)
         {
             bool canEvolve = false;
@@ -474,9 +562,16 @@ public class WeaponPart : MonoBehaviour
                 return;
             }
         }
+        */
 
         Debug.Log($"<color=cyan>武器升级! {StatBlock.weaponName} Lv.{currentProficiencyLevel}</color>");
         OnWeaponLevelUp?.Invoke(currentProficiencyLevel);
+
+        // 【新增】武器升级时触发技能树卡片选择
+        if (UpgradeManager.Instance != null)
+        {
+            UpgradeManager.Instance.HandleWeaponLevelUp(this);
+        }
 
         CalculateNextLevelXP();
 
@@ -492,8 +587,8 @@ public class WeaponPart : MonoBehaviour
         StatBlock = newBlock;
 
         // 2. 重置等级 (通常进化后变成新武器的 Lv1)
-        currentProficiencyLevel = 1;
-        CalculateNextLevelXP(); // 重新计算新武器的升级经验
+        currentStage = WeaponStage.Evolved;
+        currentProficiencyXP = 0f; // 重新计算新武器的升级经验
 
         // 3. 重置属性 (因为新武器的基础属性可能已经包含了旧武器的加成，或者你需要保留加成)
         // 这里的策略看你：是“继承旧武器的加成”还是“重置为新武器白板”
@@ -509,14 +604,20 @@ public class WeaponPart : MonoBehaviour
 
     private void CalculateNextLevelXP()
     {
-        if (StatBlock.xpRequirementCurve != null && StatBlock.xpRequirementCurve.length > 0)
+        // 纯经验条模式：根据阶段确定固定经验需求
+        switch (currentStage)
         {
-            xpToNextLevel = StatBlock.xpRequirementCurve.Evaluate(currentProficiencyLevel);
+            case WeaponStage.Base:
+                xpToNextLevel = 200f; // 基础阶段需要200经验触发分支
+                break;
+            case WeaponStage.Branched:
+                xpToNextLevel = 400f; // 分支阶段需要400经验触发进化
+                break;
+            case WeaponStage.Evolved:
+                xpToNextLevel = float.MaxValue; // 已进化，不需要更多经验
+                break;
         }
-        else
-        {
-            xpToNextLevel = 100f * currentProficiencyLevel; // 保底公式
-        }
+        Debug.Log($"[经验需求计算] {StatBlock?.weaponName} 阶段:{currentStage} 经验需求:{xpToNextLevel}");
     }
     void Update()
     {
@@ -581,16 +682,35 @@ public class WeaponPart : MonoBehaviour
     }
     private void SetupAura()
     {
-        Debug.Log($"[SetupAura] 尝试生成光环: {StatBlock.weaponName}");
+        Debug.Log($"<color=cyan>[SetupAura] 尝试生成光环: {StatBlock?.weaponName}</color>");
 
-        if (StatBlock == null) { Debug.LogError("[SetupAura] StatBlock 是空的！"); return; }
-        if (StatBlock.orbitalPrefab == null) { Debug.LogError("[SetupAura] Orbital Prefab 没赋值！"); return; }
+        // === 详细调试日志 ===
+        if (StatBlock == null) 
+        { 
+            Debug.LogError("[SetupAura] 失败: StatBlock 是空的！"); 
+            return; 
+        }
+        if (StatBlock.orbitalPrefab == null) 
+        { 
+            Debug.LogError($"[SetupAura] 失败: 武器 '{StatBlock.weaponName}' 的 OrbitalPrefab 没赋值！"); 
+            return; 
+        }
+        if (PlayerStats.Instance == null)
+        {
+            Debug.LogError("[SetupAura] 失败: PlayerStats.Instance 是空的！");
+            return;
+        }
+        if (WeaponController.Instance == null)
+        {
+            Debug.LogWarning("[SetupAura] 警告: WeaponController.Instance 是空的，将使用自身transform作为anchor");
+        }
 
         // 1. 清理旧光环
         if (orbitalPivot != null) Destroy(orbitalPivot.gameObject);
 
         // 2. 找到挂载点
         Transform anchor = FindStableAnchor();
+        Debug.Log($"[SetupAura] 使用挂载点: {anchor?.name}");
 
         // 3. 生成光环
         GameObject auraGO = Instantiate(StatBlock.orbitalPrefab, anchor);
@@ -598,6 +718,7 @@ public class WeaponPart : MonoBehaviour
         auraGO.transform.localRotation = Quaternion.identity;
 
         orbitalPivot = auraGO.transform;
+        Debug.Log($"<color=green>[SetupAura] 光环已生成: {auraGO.name}</color>");
 
         // 4. 初始化脚本
         MagneticStormAura auraScript = auraGO.GetComponent<MagneticStormAura>();
@@ -614,10 +735,14 @@ public class WeaponPart : MonoBehaviour
             // 【核心修改】计算麻痹概率 (基础概率 + 局部加成)
             // 你可以在 SO 里加一个 baseStunChance，或者默认 0
             float finalCritRate = PlayerStats.Instance.critRate + localCritRateBonus;
-            Debug.Log($"[Debug] 雷击初始化: 全局暴击({PlayerStats.Instance.critRate}) + 局部加成({localCritRateBonus}) = 最终({finalCritRate})");
+            Debug.Log($"<color=yellow>[SetupAura] 雷击初始化: 伤害={finalBaseDamage}, 范围倍率={rangeMult}, 数量={finalCount}, 暴击率={finalCritRate:P0}</color>");
 
             // 传入 finalCritRate
             auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount, finalCritRate);
+        }
+        else
+        {
+            Debug.LogError($"[SetupAura] 失败: 光环预制件 '{StatBlock.orbitalPrefab.name}' 上没有 MagneticStormAura 脚本！");
         }
     }
 
@@ -777,7 +902,9 @@ public class WeaponPart : MonoBehaviour
     private IEnumerator ChainLightningRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange, GameObject chainVfx, GameObject impactVfx)
     {
         var hitEnemies = new List<Health>();
-        Vector3 lastHitPosition = currentTarget.position; // [!] 从第一个目标开始
+        // 【修复】使用AimTargetPoint作为起始位置，而不是脚底
+        Health startHealth = currentTarget.GetComponent<Health>();
+        Vector3 lastHitPosition = (startHealth?.AimTargetPoint != null) ? startHealth.AimTargetPoint.position : currentTarget.position;
 
         while (currentTarget != null && remainingChains >= 0)
         {
@@ -1214,6 +1341,12 @@ public class WeaponPart : MonoBehaviour
             if (!isOrbitalActive && orbitalCooldownTimer <= 0) { SetupOrbiters(); }
             yield break;
         }
+        // 【修复】Aura类型武器不需要走Fire流程，在Start/SetupAura中已初始化
+        // 光环自身有Update持续运行，不需要每次Fire都刷新（否则会重置strikeTimer）
+        if (StatBlock?.behavior == WeaponBehaviorType.Aura)
+        {
+            yield break;
+        }
 
         // 7. 自动瞄准逻辑 (保持不变)
         Vector3 finalTargetDirection = initialDirection;
@@ -1290,56 +1423,58 @@ public class WeaponPart : MonoBehaviour
         int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
         float finalScale = baseScale * totalScaleMultiplier;
 
-        // 10. Switch 行为模式 (保持不变)
-        switch (StatBlock?.behavior)
+        // 10. Switch 行为模式
+        // 【新增】计算连射次数 (BurstCount)
+        int burstCount = 1 + localBurstCountBonus; // 基础1次 + 连射加成
+        float burstInterval = 0.1f; // 连射间隔（秒）
+
+        for (int burst = 0; burst < burstCount; burst++)
         {
-            case WeaponBehaviorType.Standard:
-            case WeaponBehaviorType.Pierce:
-                // ==========================================
-                // 【核心修改】支持多重射击与扇形散射 (极寒冰锥逻辑)
-                // ==========================================
+            // 连射时等待间隔（第一发不等待）
+            if (burst > 0)
+            {
+                yield return new WaitForSeconds(burstInterval);
+            }
 
-                // 1. 计算总子弹数
-                // 基础数量 + 全局加成 + 局部加成(用来支持"数量+1"这种局外升级)
-                // 注意：如果 StatBlock 还没加 projectileCount 字段，请务必去加上！
-                int finalProjCount = StatBlock.projectileCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
+            switch (StatBlock?.behavior)
+            {
+                case WeaponBehaviorType.Standard:
+                case WeaponBehaviorType.Pierce:
+                    // ==========================================
+                    // 支持多重射击与扇形散射 (齐射逻辑)
+                    // ==========================================
 
-                // 特殊保底：如果是极寒冰锥，强制至少 3 发 (防止配置表没填对)
-                if (StatBlock.weaponID == "ExtremeIceShard" && finalProjCount < 3)
-                {
-                    finalProjCount = 3;
-                }
+                    // 1. 计算总子弹数（齐射：同时发射的数量）
+                    int finalProjCount = StatBlock.projectileCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
 
-                // 2. 准备发射
-                if (finalProjCount <= 1)
-                {
-                    // 单发逻辑 (保持原样)
-                    InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
-                }
-                else
-                {
-                    // 多发散射逻辑
-                    float totalSpread = StatBlock.spreadAngle; // 读取配置的散射角度 (如 30)
-
-                    // 扇形算法：从 -Spread/2 开始，到 +Spread/2 结束
-                    float startAngle = -totalSpread / 2f;
-                    // 防止除以 0
-                    float stepAngle = (finalProjCount > 1) ? (totalSpread / (finalProjCount - 1)) : 0f;
-
-                    for (int i = 0; i < finalProjCount; i++)
+                    // 特殊保底：如果是极寒冰锥，强制至少 3 发
+                    if (StatBlock.weaponID == "ExtremeIceShard" && finalProjCount < 3)
                     {
-                        // 计算当前子弹的偏转角
-                        float currentAngle = startAngle + (stepAngle * i);
-
-                        // 绕 Y 轴旋转基准方向
-                        Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
-                        Vector3 spreadDirection = rotation * finalTargetDirection;
-
-                        // 发射子弹
-                        InstantiateAndFireProjectile(spreadDirection, finalDamage);
+                        finalProjCount = 3;
                     }
-                }
-                break;
+
+                    // 2. 准备发射
+                    if (finalProjCount <= 1)
+                    {
+                        // 单发逻辑
+                        InstantiateAndFireProjectile(finalTargetDirection, finalDamage);
+                    }
+                    else
+                    {
+                        // 多发散射逻辑（齐射：同时左右排开）
+                        float totalSpread = StatBlock.spreadAngle;
+                        float startAngle = -totalSpread / 2f;
+                        float stepAngle = (finalProjCount > 1) ? (totalSpread / (finalProjCount - 1)) : 0f;
+
+                        for (int i = 0; i < finalProjCount; i++)
+                        {
+                            float currentAngle = startAngle + (stepAngle * i);
+                            Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
+                            Vector3 spreadDirection = rotation * finalTargetDirection;
+                            InstantiateAndFireProjectile(spreadDirection, finalDamage);
+                        }
+                    }
+                    break;
 
             case WeaponBehaviorType.CreateAndForget:
                 InstantiateAndFireCreateAndForget(finalDamage, finalScale);
@@ -1377,6 +1512,7 @@ public class WeaponPart : MonoBehaviour
                 InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale);
                 break;
         }
+        } // for burst 循环结束
 
         // 11-13. 枪口特效与后续 (保持不变)
         if (StatBlock != null && StatBlock.muzzleFlashPrefab != null)
@@ -2601,17 +2737,23 @@ public class WeaponPart : MonoBehaviour
 
                 GameObject daggerObj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
                 
-                // 获取控制器并初始化
-                FlyingDaggerController controller = daggerObj.GetComponent<FlyingDaggerController>();
-                if (controller != null)
+                // 获取控制器并初始化 - 支持FlyingDaggerController和FlameDaggerController
+                FlyingDaggerController flyingController = daggerObj.GetComponent<FlyingDaggerController>();
+                FlameDaggerController flameController = daggerObj.GetComponent<FlameDaggerController>();
+                
+                if (flyingController != null)
                 {
-                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                    flyingController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+                else if (flameController != null)
+                {
+                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
                 }
                 else
                 {
-                    // 尝试动态添加脚本 (如果Prefab上忘了挂)
-                    controller = daggerObj.AddComponent<FlyingDaggerController>();
-                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                    // 预制件上没有任何飞刀控制器，添加默认的FlyingDaggerController
+                    flyingController = daggerObj.AddComponent<FlyingDaggerController>();
+                    flyingController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
                 }
 
                 activeFlyingDaggers.Add(daggerObj);
@@ -2636,11 +2778,17 @@ public class WeaponPart : MonoBehaviour
         {
             if (dagger != null)
             {
-                FlyingDaggerController controller = dagger.GetComponent<FlyingDaggerController>();
-                if (controller != null)
+                // 支持两种飞刀控制器
+                FlyingDaggerController flyingController = dagger.GetComponent<FlyingDaggerController>();
+                FlameDaggerController flameController = dagger.GetComponent<FlameDaggerController>();
+                
+                if (flyingController != null)
                 {
-                    // 重新初始化以更新伤害数值
-                    controller.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                    flyingController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+                else if (flameController != null)
+                {
+                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
                 }
             }
         }

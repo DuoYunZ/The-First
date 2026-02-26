@@ -159,7 +159,14 @@ public class WeaponStatBlock : ScriptableObject
 
     [Header("进阶与进化")]
     [Tooltip("当达到最大等级且满足进化条件时，进化成这把武器")]
-    public WeaponStatBlock evolutionTarget; // 拖入“爆裂火球”的 SO 文件
+    public WeaponStatBlock evolutionTarget;
+
+    [Header("分支选择 (纯经验条模式)")]
+    [Tooltip("分支选项A (经验满时可选)")]
+    public WeaponStatBlock branchOptionA;
+    [Tooltip("分支选项B (经验满时可选)")]
+    public WeaponStatBlock branchOptionB;
+ // 拖入“爆裂火球”的 SO 文件
 
     [Header("开火行为 (Firing Behavior)")] // 可以新建一个Header
     [Tooltip("如果勾选，此武器将自动瞄准范围内最近的敌人，忽略鼠标朝向")]

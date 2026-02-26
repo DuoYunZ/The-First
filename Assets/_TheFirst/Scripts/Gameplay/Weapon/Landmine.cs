@@ -12,6 +12,9 @@ public class Landmine : MonoBehaviour
     private LayerMask damageableLayers;
 
     private WeaponPart launcher; // 用于获取武器名称进行统计
+    
+    // 公共属性供Health.cs获取经验
+    public WeaponPart sourceWeapon => launcher;
 
     private bool isArmed = false;
 
@@ -66,8 +69,8 @@ public class Landmine : MonoBehaviour
             if (enemyHealth != null && !enemyHealth.IsDead)
             {
                 string weaponName = (launcher != null && launcher.StatBlock != null) ? launcher.StatBlock.weaponName : "Landmine";
-                // 对范围内的所有敌人造成伤害
-                enemyHealth.TakeDamage(damage, transform.position, attacker, AttackType.Standard, null, null, weaponName);
+                // 对范围内的所有敌人造成伤害，传递gameObject让Health能获取Landmine的sourceWeapon
+                enemyHealth.TakeDamage(damage, transform.position, gameObject, AttackType.Standard, null, null, weaponName);
                 
             }
         }

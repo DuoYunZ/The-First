@@ -1,6 +1,5 @@
 ﻿// WeaponUI.cs
 using System.Collections.Generic;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,24 +13,57 @@ public class WeaponUI : MonoBehaviour
     [Tooltip("图标预制件 (包含 Image 组件)")]
     public GameObject iconPrefab;
 
-    [Header("颜色设置")]
-    [Tooltip("没有武器时的底框颜色 (例如：半透明黑)")]
-    public Color emptySlotColor = new Color(0, 0, 0, 0.5f);
-
-    [Tooltip("获得武器后的底框颜色 (例如：橙色/棕色)")]
-    public Color equippedSlotColor = new Color(0.6f, 0.3f, 0.1f, 1f); // 参考你截图的颜色
+    [Header("经验条设置")]
+    [Tooltip("经验条填充颜色")]
+    public Color xpBarColor = new Color(0.2f, 0.8f, 1f, 1f);
+    [Tooltip("经验条满时的颜色")]
+    public Color xpBarFullColor = new Color(1f, 0.9f, 0.2f, 1f);
 
     [Header("设置")]
-    public int maxIcons = 6; // 最大显示数量
+    public int maxIcons = 6;
+    [Tooltip("只显示已装备的武器槽位")]
+    public bool hideEmptySlots = true;
 
+    // 内部类：武器槽位
     private class WeaponSlot
     {
-        public Image backgroundImage; // 底框
-        public Image iconImage;       // 武器图标
+        public GameObject rootObject;
+        public Image backgroundImage;
+        public Image iconImage;
+        public Image xpBarFill;
+        public WeaponPart linkedWeapon;
+        public float displayedFillAmount; // 用于平滑过渡
+        public float lastXp; // 上次经验值，用于检测变化
     }
 
-    // 缓存生成的图标对象
     private List<WeaponSlot> slots = new List<WeaponSlot>();
+
+    /// <summary>
+    /// 根据WeaponPart获取对应的UI槽位RectTransform
+    /// </summary>
+    public RectTransform GetSlotRectForWeapon(WeaponPart weapon)
+    {
+        foreach (var slot in slots)
+        {
+            if (slot.linkedWeapon == weapon && slot.rootObject != null)
+            {
+                return slot.rootObject.GetComponent<RectTransform>();
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 从世界位置发射XP粒子飞向目标武器的图标
+    /// </summary>
+    public void SpawnXpParticlesToWeapon(WeaponPart weapon, Vector3 worldPosition)
+    {
+        RectTransform targetSlot = GetSlotRectForWeapon(weapon);
+        if (targetSlot != null && XpParticleManager.Instance != null)
+        {
+            XpParticleManager.Instance.SpawnXpParticles(worldPosition, targetSlot);
+        }
+    }
 
     void Awake()
     {
@@ -41,109 +73,263 @@ public class WeaponUI : MonoBehaviour
 
     void Start()
     {
-        // 初始化生成空的槽位
         InitializeSlots();
-        // 开局刷新一次 (显示初始刀光)
         UpdateWeaponIcons();
     }
 
     private void InitializeSlots()
     {
+        // 清空现有槽位
         foreach (Transform child in iconContainer) Destroy(child.gameObject);
         slots.Clear();
 
         for (int i = 0; i < maxIcons; i++)
         {
             GameObject go = Instantiate(iconPrefab, iconContainer);
+            go.name = $"WeaponSlot_{i}";
 
-            // 1. 获取底框 (Prefab 根节点上的 Image)
+            // 获取组件
             Image bg = go.GetComponent<Image>();
-
-            // 2. 获取图标 (Prefab 第一个子节点上的 Image)
-            // 注意：我们假设 Prefab 结构是 Root(背景) -> Child(图标)
             Image icon = null;
+            Image xpBar = null;
+
+            // 查找图标 (第一个子节点)
             if (go.transform.childCount > 0)
             {
                 icon = go.transform.GetChild(0).GetComponent<Image>();
             }
 
+            // 递归查找经验条
+            xpBar = FindXpBar(go.transform);
+
             if (bg != null && icon != null)
             {
-                // 初始化状态
-                bg.color = emptySlotColor;
-                icon.sprite = null;
-                icon.enabled = false; // 隐藏图标，只留底框
+                // 初始隐藏
+                go.SetActive(false);
 
-                // 保存引用
-                slots.Add(new WeaponSlot { backgroundImage = bg, iconImage = icon });
+                slots.Add(new WeaponSlot
+                {
+                    rootObject = go,
+                    backgroundImage = bg,
+                    iconImage = icon,
+                    xpBarFill = xpBar
+                });
+
+                // 调试日志
+                Debug.Log($"[WeaponUI] 槽位{i} 初始化 - XpBar找到: {xpBar != null}");
             }
             else
             {
-                Debug.LogError("WeaponIconPrefab 结构不对！请确保根节点有Image，且有一个带Image的子节点。");
+                Debug.LogError($"[WeaponUI] 槽位{i} 结构不对！需要根节点Image和子节点Image");
             }
         }
     }
 
+    // 递归查找经验条
+    private Image FindXpBar(Transform parent)
+    {
+        // 打印所有子节点帮助调试
+        Debug.Log($"[WeaponUI] 查找XpBar - 父节点: {parent.name}, 子节点数: {parent.childCount}");
+        
+        // 使用GetComponentsInChildren查找所有Image
+        Image[] allImages = parent.GetComponentsInChildren<Image>(true);
+        foreach (Image img in allImages)
+        {
+            Debug.Log($"[WeaponUI] 发现Image: {img.gameObject.name}");
+            
+            // 检查名字是否包含xp或exp
+            string lowerName = img.gameObject.name.ToLower();
+            if (lowerName.Contains("xp") || lowerName.Contains("exp") || lowerName.Contains("bar"))
+            {
+                Debug.Log($"[WeaponUI] 找到经验条: {img.gameObject.name}");
+                return img;
+            }
+        }
+        
+        return null;
+    }
+
     /// <summary>
-    /// 刷新所有武器图标 (逻辑参考 FusionUIManager)
+    /// 刷新所有武器图标
     /// </summary>
     public void UpdateWeaponIcons()
     {
         var controller = WeaponController.Instance;
         if (controller == null) return;
 
-        List<Sprite> iconsToShow = new List<Sprite>();
+        List<WeaponPart> weaponsToShow = new List<WeaponPart>();
 
-        // A. 自带刀光
+        // 收集所有武器
         if (controller.builtInBladeWeapon != null &&
-             controller.builtInBladeWeapon.StatBlock != null &&
-             controller.builtInBladeWeapon.isActiveAndEnabled)
+            controller.builtInBladeWeapon.StatBlock != null &&
+            controller.builtInBladeWeapon.isActiveAndEnabled)
         {
-            iconsToShow.Add(controller.builtInBladeWeapon.StatBlock.weaponIcon);
+            weaponsToShow.Add(controller.builtInBladeWeapon);
         }
 
-        // B. 动态武器 (带去重)
         foreach (var owned in controller.ownedWeapons)
         {
             if (owned.weaponPartInstance != null && owned.weaponPartInstance.StatBlock != null)
             {
-                // 去重逻辑
+                // 去重
                 if (controller.builtInBladeWeapon != null &&
                     controller.builtInBladeWeapon.StatBlock != null &&
                     owned.weaponPartInstance.StatBlock == controller.builtInBladeWeapon.StatBlock)
                 {
                     continue;
                 }
-                iconsToShow.Add(owned.weaponPartInstance.StatBlock.weaponIcon);
+                weaponsToShow.Add(owned.weaponPartInstance);
             }
         }
 
-        // C. 更新 UI
+        // 更新槽位
         for (int i = 0; i < slots.Count; i++)
         {
             WeaponSlot slot = slots[i];
 
-            if (i < iconsToShow.Count)
+            if (i < weaponsToShow.Count)
             {
-                // --- 有武器状态 ---
-                // 1. 底框变色 (变成“已装备”颜色)
-                slot.backgroundImage.color = equippedSlotColor;
+                WeaponPart weapon = weaponsToShow[i];
+                slot.linkedWeapon = weapon;
 
-                // 2. 显示图标
-                slot.iconImage.sprite = iconsToShow[i];
+                // 显示槽位
+                slot.rootObject.SetActive(true);
+
+                // 更新图标
+                slot.iconImage.sprite = weapon.StatBlock.weaponIcon;
                 slot.iconImage.enabled = true;
-                slot.iconImage.color = Color.white; // 确保图标本身不透明
+                slot.iconImage.color = Color.white;
+
+                // 显示经验条
+                if (slot.xpBarFill != null)
+                {
+                    slot.xpBarFill.enabled = true;
+                    slot.xpBarFill.color = xpBarColor;
+                }
             }
             else
             {
-                // --- 空槽状态 ---
-                // 1. 底框变回默认色
-                slot.backgroundImage.color = emptySlotColor;
+                slot.linkedWeapon = null;
 
-                // 2. 隐藏图标
-                slot.iconImage.sprite = null;
-                slot.iconImage.enabled = false;
+                // 隐藏空槽位
+                if (hideEmptySlots)
+                {
+                    slot.rootObject.SetActive(false);
+                }
+                else
+                {
+                    slot.rootObject.SetActive(true);
+                    slot.iconImage.enabled = false;
+                    if (slot.xpBarFill != null) slot.xpBarFill.enabled = false;
+                }
             }
         }
+    }
+
+    void Update()
+    {
+        UpdateXpBars();
+        UpdateIcons(); // 实时更新图标（进化后会变）
+    }
+
+    // 实时更新图标（进化后图标会变）
+    private void UpdateIcons()
+    {
+        foreach (var slot in slots)
+        {
+            if (slot.linkedWeapon == null) continue;
+            if (slot.linkedWeapon.StatBlock == null) continue;
+
+            // 实时同步图标
+            if (slot.iconImage.sprite != slot.linkedWeapon.StatBlock.weaponIcon)
+            {
+                slot.iconImage.sprite = slot.linkedWeapon.StatBlock.weaponIcon;
+            }
+        }
+    }
+
+    private void UpdateXpBars()
+    {
+        foreach (var slot in slots)
+        {
+            if (slot.linkedWeapon == null || slot.xpBarFill == null) continue;
+
+            WeaponPart weapon = slot.linkedWeapon;
+            if (weapon.StatBlock == null || !weapon.StatBlock.usesProficiency)
+            {
+                slot.xpBarFill.fillAmount = 0f;
+                continue;
+            }
+
+            // 计算目标经验百分比
+            float targetPercent = 0f;
+            if (weapon.xpToNextLevel > 0 && weapon.xpToNextLevel < float.MaxValue)
+            {
+                targetPercent = Mathf.Clamp01(weapon.currentProficiencyXP / weapon.xpToNextLevel);
+            }
+
+            // 平滑过渡经验条
+            slot.displayedFillAmount = Mathf.Lerp(slot.displayedFillAmount, targetPercent, Time.deltaTime * 8f);
+            slot.xpBarFill.fillAmount = slot.displayedFillAmount;
+
+            // 检测经验变化，触发脉冲效果
+            if (weapon.currentProficiencyXP > slot.lastXp + 0.1f)
+            {
+                // 经验增加时，图标弹一下
+                PulseIcon(slot);
+            }
+            slot.lastXp = weapon.currentProficiencyXP;
+
+            // 经验满时变色
+            slot.xpBarFill.color = targetPercent >= 1f ? xpBarFullColor : xpBarColor;
+        }
+    }
+
+    // 图标脉冲动画 - 追踪正在播放的协程，防止重复触发导致缩放叠加
+    private Dictionary<Transform, Coroutine> activePulseCoroutines = new Dictionary<Transform, Coroutine>();
+    
+    private void PulseIcon(WeaponSlot slot)
+    {
+        if (slot.iconImage == null) return;
+        Transform target = slot.iconImage.transform;
+        
+        // 如果已有脉冲动画在播放，先停止并重置
+        if (activePulseCoroutines.TryGetValue(target, out Coroutine running) && running != null)
+        {
+            StopCoroutine(running);
+            target.localScale = Vector3.one; // 立即重置为标准大小
+        }
+        
+        activePulseCoroutines[target] = StartCoroutine(PulseCoroutine(target));
+    }
+
+    private System.Collections.IEnumerator PulseCoroutine(Transform target)
+    {
+        // 【修复】始终以 Vector3.one 为基准，不再取当前值
+        Vector3 originalScale = Vector3.one;
+        Vector3 pulseScale = originalScale * 1.15f;
+        
+        // 放大
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 10f;
+            target.localScale = Vector3.Lerp(originalScale, pulseScale, t);
+            yield return null;
+        }
+        
+        // 缩小回原始
+        t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 8f;
+            target.localScale = Vector3.Lerp(pulseScale, originalScale, t);
+            yield return null;
+        }
+        
+        target.localScale = originalScale;
+        
+        // 动画完成，移除追踪
+        activePulseCoroutines.Remove(target);
     }
 }

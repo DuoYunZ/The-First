@@ -86,14 +86,17 @@ public class MagneticOrbiter : MonoBehaviour
             Health targetHealth = bestTarget.GetComponent<Health>();
             if (targetHealth != null && !targetHealth.IsDead)
             {
+                // 【修复】使用AimTargetPoint作为攻击位置，而不是脚底
+                Vector3 hitPoint = (targetHealth.AimTargetPoint != null) ? targetHealth.AimTargetPoint.position : bestTarget.position;
+                
                 // 1. 造成主伤害
-                targetHealth.TakeDamage(damagePerSecond, bestTarget.position, ownerWeapon != null ? ownerWeapon.gameObject : gameObject, AttackType.Standard);
+                targetHealth.TakeDamage(damagePerSecond, hitPoint, ownerWeapon != null ? ownerWeapon.gameObject : gameObject, AttackType.Standard);
 
                 // --- 【核心修改】将特效挂载到敌人身上 (bestTarget) ---
                 if (impactVfxPrefab != null)
                 {
-                    // 第四个参数 bestTarget 表示将特效设为敌人的子物体
-                    Instantiate(impactVfxPrefab, bestTarget.position, Quaternion.identity, bestTarget);
+                    // 将特效实例化到AimTargetPoint位置
+                    Instantiate(impactVfxPrefab, hitPoint, Quaternion.identity, bestTarget);
                 }
                 // ------------------------------------------------
 

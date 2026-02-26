@@ -31,7 +31,11 @@ public class Projectile : MonoBehaviour
     public GameObject owner;
     private int aoeDamage = 0;
     private bool hasExploded = false;
-    public bool isCritical = false;
+    [HideInInspector] public bool isCritical = false;
+    [System.NonSerialized] public bool canSplit = true; // 【新增】防止无限分裂（不序列化，运行时始终为 true）
+
+    private float spawnProtectionTimer = 0.5f; // 【新增】生成保护时间（秒）：在这个时间内不进行撞墙/撞地检测，防止出生距地太近直接销毁。
+
 
     [Header("效果与范围 (由Initialize方法设置)")]
     public GameObject impactEffectPrefab;
@@ -179,6 +183,7 @@ public class Projectile : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = false; // 确保非运动学
+            rb.useGravity = false;  // 强制关闭重力
                                     // 可以选择性地设置 Constraints，如果直线弹不需要旋转的话
             rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         }
@@ -221,6 +226,12 @@ public class Projectile : MonoBehaviour
         if (rb == null && spd > 0)
         {
             Debug.LogError("[Projectile Init Straight] FAILED: Rigidbody reference is null.", this);
+        }
+        else if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = false; // 强制关闭重力，防止因预制体勾选了重力导致直射变斜下射
+            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         }
 
         this.mode = ProjectileMode.Straight;
@@ -430,6 +441,11 @@ public class Projectile : MonoBehaviour
     {
         if (hasExploded) return;
 
+        if (spawnProtectionTimer > 0f)
+        {
+            spawnProtectionTimer -= Time.deltaTime;
+        }
+
         // 自转逻辑
         if (mode == ProjectileMode.Boomerang)
         {
@@ -632,6 +648,12 @@ public class Projectile : MonoBehaviour
             // 检查是否碰撞到了我们关心的层 (地面/墙壁 或 可伤害层)
             int hitLayer = collision.gameObject.layer;
 
+            // 如果碰到了地面/墙壁，检查是否还在出生保护期
+            if (((1 << hitLayer) & groundAndWallLayers) != 0)
+            {
+                if (spawnProtectionTimer > 0f) return; // 保护期内，忽略地形碰撞
+            }
+
             // 使用你在 InitializeAsParabolic 中设置的层掩码
             if (((1 << hitLayer) & groundAndWallLayers) != 0 || ((1 << hitLayer) & damageableLayers) != 0)
             {
@@ -651,7 +673,7 @@ public class Projectile : MonoBehaviour
             if (((1 << other.gameObject.layer) & damageableLayers) != 0)
             {
                 // 在敌人身上爆炸
-                Explode(other.ClosestPoint(transform.position), other);
+                Explode(SafeClosestPoint(other, transform.position), other);
             }
             // 无论碰到什么，抛物线模式都不应执行下面的其他逻辑（如回旋镖抓取）
             return;
@@ -684,6 +706,8 @@ public class Projectile : MonoBehaviour
         // 撞墙/地面 (保持不变)
         else if (((1 << other.gameObject.layer) & groundAndWallLayers) != 0)
         {
+            if (spawnProtectionTimer > 0f) return; // 【新增】保护期内，忽略地形碰撞
+
             if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Outbound)
             {
                 SetReturnState(); // 撞墙开始返回
@@ -693,12 +717,17 @@ public class Projectile : MonoBehaviour
                 // 【核心修改】如果是爆裂弹，撞墙也要爆炸
                 if (explosionRadius > 0)
                 {
-                    Explode(other.ClosestPoint(transform.position), other);
+                    Explode(SafeClosestPoint(other, transform.position), other);
                 }
                 else
                 {
                     // 普通子弹：播个撞击特效然后销毁
-                    HandleImpactEffect(false, other.ClosestPoint(transform.position));
+                    // 添加日志帮助排查子弹不明原因消失的问题
+                    if (!this.gameObject.name.Contains("Spark")) 
+                    {
+                        Debug.LogWarning($"[Projectile] 子弹 {gameObject.name} 碰撞到 Ground/Wall 层物体 ({other.gameObject.name})，触发销毁。请检查该物体(Layer:{LayerMask.LayerToName(other.gameObject.layer)})是否错误阻挡了子弹！");
+                    }
+                    HandleImpactEffect(false, SafeClosestPoint(other, transform.position));
                     Destroy(gameObject);
                 }
             }
@@ -780,10 +809,23 @@ public class Projectile : MonoBehaviour
             weaponName = stats.weaponName;
         }
 
-        // 播放爆炸特效
+        // 播放爆炸特效 (受范围加成影响缩放)
         if (explosionEffectPrefab != null)
         {
-            Instantiate(explosionEffectPrefab, explosionPoint, Quaternion.identity);
+            GameObject vfxObj = Instantiate(explosionEffectPrefab, explosionPoint, Quaternion.identity);
+
+            // 【新增】根据范围加成缩放特效
+            float vfxScale = 1f;
+            if (sourceWeapon != null)
+            {
+                float areaBonus = sourceWeapon.localAreaBonus; // 局部范围加成
+                float globalMult = (PlayerStats.Instance != null) ? PlayerStats.Instance.aoeRadiusMultiplier : 1f;
+                vfxScale = globalMult + areaBonus; // 例: 基础1.0 + 爆发0.8 = 1.8倍
+            }
+            if (vfxScale > 1f)
+            {
+                vfxObj.transform.localScale *= vfxScale;
+            }
         }
 
         bool hasCreatedHazard = false;
@@ -880,17 +922,38 @@ public class Projectile : MonoBehaviour
         }
 
 
-        // =========================================================
-        //  逻辑 2: 分裂毒爆 (生成追踪虫)
-        // =========================================================
-        if (stats != null && stats.subProjectilePrefab != null && stats.subProjectileCount > 0)
+    // =========================================================
+    //  逻辑 2: 分裂子弹 (火花/追踪虫)
+    // =========================================================
+    // 先检查 canSplit，防止火花弹再次分裂导致数量爆炸
+    if (canSplit)
+    {
+        // 支持局部子弹分裂数量加成
+        int finalSubProjectileCount = (stats != null) ? stats.subProjectileCount : 0;
+        if (sourceWeapon != null)
         {
-            SpawnClusterProjectiles(explosionPoint, stats);
+            finalSubProjectileCount += sourceWeapon.localSubProjectileCountBonus;
         }
 
-        // =========================================================
-        //  逻辑 3: 伤害与物理效果 (含奇点手雷)
-        // =========================================================
+        // 获取子弹 Prefab（优先用 stats 上的，如果没有则尝试从投射物自身获取）
+        GameObject subPrefab = (stats != null) ? stats.subProjectilePrefab : null;
+
+        if (subPrefab != null && finalSubProjectileCount > 0)
+        {
+            Debug.Log($"[分裂] 生成 {finalSubProjectileCount} 个火花弹 (prefab={subPrefab.name})");
+            SpawnClusterProjectiles(explosionPoint, stats, finalSubProjectileCount);
+        }
+        else if (finalSubProjectileCount > 0)
+        {
+            Debug.LogWarning($"[分裂] 分裂数量={finalSubProjectileCount} 但 subProjectilePrefab 为空！请检查 SO 配置或重新 Generate Fireball Nodes");
+        }
+    }
+
+    // =========================================================
+    //  逻辑 3: 伤害与物理效果 (含奇点手雷)
+    // =========================================================
+    if (stats != null && stats.baseAoeRadius > 0)
+    {
 
         // A. 处理直接命中 (如果有)
         Health directlyHitEnemyHealth = null;
@@ -949,77 +1012,67 @@ public class Projectile : MonoBehaviour
 
         Destroy(gameObject);
     }
+}
 
-    private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats)
+private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int countOverride = -1)
+{
+    int countToSpawn = (countOverride > 0) ? countOverride : stats.subProjectileCount;
+
+    // 1. --- 生成基准点 ---
+    // 直接在爆炸点（稍加抬高）生成，不要向下射线压到地面，否则火花弹会立刻触发 Ground 碰撞器导致销毁
+    Vector3 spawnBasePos = origin + Vector3.up * 0.5f;
+
+    for (int i = 0; i < countToSpawn; i++)
     {
-        // 1. --- 寻找地面生成点 ---
-        Vector3 spawnBasePos = origin;
-        // 定义地面层级 (排除敌人和玩家，防止生成在头顶)
-        int groundMask = LayerMask.GetMask("Ground",  "Terrain");
-        if (groundMask == 0) groundMask = ~(LayerMask.GetMask("Enemies", "Player", "PlayerProjectile"));
+        // 2. --- 计算随机散布方向 (水平面) ---
+        Vector3 spreadDir = Random.onUnitSphere; 
+        spreadDir.y = 0; 
+        spreadDir.Normalize();
 
-        RaycastHit hit;
-        // 从爆炸点上方一点向下射，找地面
-        if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out hit, 50f, groundMask))
+        // 稍微随机化一下生成位置，避免所有火花弹完全重叠在一起
+        Vector3 finalSpawnPos = spawnBasePos + spreadDir * Random.Range(0.2f, 0.8f);
+
+        // 3. --- 生成子弹 ---
+        GameObject subObj = Instantiate(stats.subProjectilePrefab, finalSpawnPos, Quaternion.LookRotation(spreadDir));
+
+        // 可选：让分裂出来的小蜘蛛看起来小一点
+        subObj.transform.localScale = transform.localScale * 0.6f;
+
+        // 4. --- 初始化子弹 ---
+        Projectile subScript = subObj.GetComponent<Projectile>();
+        if (subScript != null)
         {
-            // 找到了地面，基准点设为地面点
-            spawnBasePos = hit.point;
-        }
-        else
-        {
-            // 没找到地面 (空中爆炸)，就勉强用空中点，但最好确保你的地图有地面层
-            // spawnBasePos = origin; 
-        }
+            // 防止子弹再次分裂 (解决无限递归问题)
+            subScript.canSplit = false;
 
-        for (int i = 0; i < stats.subProjectileCount; i++)
-        {
-            // 2. --- 计算随机散布方向 (仅水平面) ---
-            Vector3 spreadDir = Random.onUnitSphere; // 生成一个随机球体方向
-            spreadDir.y = 0; // 压平到水平面，让蜘蛛在地上爬散开
-            spreadDir.Normalize();
+            // 在地面基准点附近找目标
+            Transform target = FindRandomNearbyEnemy(spawnBasePos, 15f);
+// ...
+            // 伤害减半
+            int subDmg = Mathf.RoundToInt(aoeDamage * 0.5f);
+            if (subDmg < 1) subDmg = 1;
 
-            // 生成点稍微抬高一点点，防止卡进地里
-            Vector3 finalSpawnPos = spawnBasePos + Vector3.up * 0.1f;
+            // 确定特效：优先用专属特效，没有就用默认保底
+            GameObject vfxToUse = stats.subProjectileHitVfx != null ? stats.subProjectileHitVfx : defaultImpactEffectPrefab;
 
-            // 3. --- 生成子弹 ---
-            GameObject subObj = Instantiate(stats.subProjectilePrefab, finalSpawnPos, Quaternion.LookRotation(spreadDir));
+            // 初始化为追踪弹 (Homing)
+            // 注意：最后两个参数传入我们确定的 vfxToUse
+            subScript.InitializeAsHoming(
+                target,
+                8f,  // 速度稍微慢点，像爬行
+                subDmg,
+                false,
+                15f, // 转向速度快点，更灵活
+                2f,  // 【修改】存活时间稍微短一点 (原来是4f)
+                vfxToUse, // 命中特效 (Hit VFX)
+                vfxToUse  // 障碍物特效 (Obstacle VFX) - 蜘蛛通常用同一个
+            );
 
-            // 可选：让分裂出来的小蜘蛛看起来小一点
-            subObj.transform.localScale = transform.localScale * 0.6f;
-
-            // 4. --- 初始化子弹 ---
-            Projectile subScript = subObj.GetComponent<Projectile>();
-            if (subScript != null)
-            {
-                // 在地面基准点附近找目标
-                Transform target = FindRandomNearbyEnemy(spawnBasePos, 15f);
-
-                // 伤害减半
-                int subDmg = Mathf.RoundToInt(aoeDamage * 0.5f);
-                if (subDmg < 1) subDmg = 1;
-
-                // 确定特效：优先用专属特效，没有就用默认保底
-                GameObject vfxToUse = stats.subProjectileHitVfx != null ? stats.subProjectileHitVfx : defaultImpactEffectPrefab;
-
-                // 初始化为追踪弹 (Homing)
-                // 注意：最后两个参数传入我们确定的 vfxToUse
-                subScript.InitializeAsHoming(
-                    target,
-                    8f,  // 速度稍微慢点，像爬行
-                    subDmg,
-                    false,
-                    15f, // 转向速度快点，更灵活
-                    4f,  // 存活时间略长
-                    vfxToUse, // 命中特效 (Hit VFX)
-                    vfxToUse  // 障碍物特效 (Obstacle VFX) - 蜘蛛通常用同一个
-                );
-
-                // 【核心】：传递发射器引用，这让子弹能继承毒石属性！
-                subScript.sourceWeapon = this.sourceWeapon;
-            }
+            // 【核心】：传递发射器引用，这让子弹能继承毒石属性！
+            subScript.sourceWeapon = this.sourceWeapon;
         }
     }
-
+}
     private Transform FindRandomNearbyEnemy(Vector3 center, float radius)
     {
         Collider[] hits = Physics.OverlapSphere(center, radius, damageableLayers);
@@ -1035,7 +1088,7 @@ public class Projectile : MonoBehaviour
         if (hitCooldowns.ContainsKey(targetHealth)) return;
         hitCooldowns[targetHealth] = hitCooldown;
 
-        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
+        Vector3 hitPoint = SafeClosestPoint(hitCollider, transform.position);
         bool targetHasShield = isEnemyProjectile && targetHealth.HasActiveShield();        
 
         GameObject attacker = owner;
@@ -1052,14 +1105,14 @@ public class Projectile : MonoBehaviour
         if (explosionRadius > 0)
         {
             // 在接触点引爆 (Explode 方法里已经包含了 AOE 伤害、特效和销毁自身的逻辑)
-            Explode(hitCollider.ClosestPoint(transform.position), hitCollider);
+            Explode(SafeClosestPoint(hitCollider, transform.position), hitCollider);
             return; // 爆炸后子弹销毁，不再执行穿透/连锁逻辑
         }
 
         string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "";
         bool wasReflected = targetHealth.TakeDamage(
             damage,
-            hitCollider.ClosestPoint(transform.position),
+            SafeClosestPoint(hitCollider, transform.position),
             attacker,
             this.attackType,
             this,
@@ -1144,6 +1197,26 @@ public class Projectile : MonoBehaviour
             Destroy(gameObject); // 没有下一个目标
         }
     }
+    /// <summary>
+    /// 安全版 ClosestPoint：对非凸 MeshCollider 回退到 bounds.ClosestPoint，避免报错
+    /// </summary>
+    private Vector3 SafeClosestPoint(Collider col, Vector3 point)
+    {
+        // BoxCollider, SphereCollider, CapsuleCollider, 凸 MeshCollider 都支持 ClosestPoint
+        if (col is BoxCollider || col is SphereCollider || col is CapsuleCollider)
+        {
+            return col.ClosestPoint(point);
+        }
+
+        if (col is MeshCollider mc && mc.convex)
+        {
+            return col.ClosestPoint(point);
+        }
+
+        // 非凸 MeshCollider 或其他类型：用 bounds 近似
+        return col.bounds.ClosestPoint(point);
+    }
+
     private void HandleImpactEffect(bool hitShield, Vector3 position) // 添加此方法
     {
         GameObject effectToPlay = hitShield ? shieldImpactEffectPrefab : defaultImpactEffectPrefab;
@@ -1245,7 +1318,10 @@ public class Projectile : MonoBehaviour
 
         // =========================================================
         // 4. 燃烧 (Burn)
-        float finalChance = (sourceWeapon != null) ? sourceWeapon.GetIgnitionChance() : stats.ignitionChance;        
+        float finalChance = (sourceWeapon != null) ? sourceWeapon.GetIgnitionChance() : stats.ignitionChance;
+        // 【新增】读取局部加成
+        float burnDurationBonus = (sourceWeapon != null) ? sourceWeapon.localBurnDurationBonus : 0f;
+        float maxHpBurnPct = (sourceWeapon != null) ? sourceWeapon.localMaxHealthBurnPercent : 0f;
 
         bool appliedBurn = false;
 
@@ -1259,8 +1335,9 @@ public class Projectile : MonoBehaviour
                 int burnDmg = Mathf.CeilToInt(this.damage * stats.burnDamagePercent);
                 if (burnDmg < 1) burnDmg = 1; 
 
-                // 应用燃烧 (去掉了 !IsBurning 限制，允许刷新)
-                receiver.ApplyBurn(burnDmg, stats.baseDotDuration, stats.dotTickInterval, weaponName);
+                // 【修改】加上局部持续时间加成 + 传递最大HP%伤害
+                float finalBurnDuration = stats.baseDotDuration + burnDurationBonus;
+                receiver.ApplyBurn(burnDmg, finalBurnDuration, stats.dotTickInterval, weaponName, maxHpBurnPct);
                 appliedBurn = true;
 
                 if (PlayerProgressManager.Instance != null)
@@ -1274,10 +1351,10 @@ public class Projectile : MonoBehaviour
         // 3. 向下兼容：如果没触发概率，但勾选了 nativeBurn (必燃)，则补上
         if (!appliedBurn && stats.nativeBurn)
         {
-            // 旧逻辑保留防覆盖检查 (或者你也想让它能刷新，就去掉 if)
             if (!receiver.IsBurning)
             {
-                receiver.ApplyBurn(stats.baseDotDamage, stats.baseDotDuration, stats.dotTickInterval, weaponName);
+                float finalBurnDuration2 = stats.baseDotDuration + burnDurationBonus;
+                receiver.ApplyBurn(stats.baseDotDamage, finalBurnDuration2, stats.dotTickInterval, weaponName, maxHpBurnPct);
             }
         }
 

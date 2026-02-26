@@ -68,9 +68,17 @@ public class MagneticStormAura : MonoBehaviour
         }
 
         strikeTimer += Time.deltaTime;
+        
+        // 【调试】每秒输出一次计时状态
+        if (Time.frameCount % 60 == 0)
+        {
+            Debug.Log($"<color=magenta>[雷击Update] strikeTimer={strikeTimer:F1}/{lightningInterval}, ownerWeapon={(ownerWeapon != null ? ownerWeapon.name : "NULL")}</color>");
+        }
+        
         if (strikeTimer >= lightningInterval)
         {
             strikeTimer = 0f;
+            Debug.Log("<color=lime>[雷击] 触发落雷协程!</color>");
             // 【核心修改】启动协程，而不是直接调用函数
             StartCoroutine(TriggerLightningStrikeRoutine());
         }
@@ -81,6 +89,9 @@ public class MagneticStormAura : MonoBehaviour
     {
         // 1. 获取范围内所有敌人碰撞体
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, enemyLayer);
+        
+        // 【调试】输出检测结果
+        Debug.Log($"<color=orange>[雷击检测] 位置:{transform.position}, 半径:{radius}, Layer:{enemyLayer.value}, 检测到碰撞体数量:{hits.Length}</color>");
 
         if (hits.Length == 0) yield break;
 

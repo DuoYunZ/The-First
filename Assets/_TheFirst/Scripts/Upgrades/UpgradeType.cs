@@ -15,6 +15,7 @@ public enum UpgradeType
     OrbitalCount,       // 轨道武器数量
     OrbitalSpeed,
     WeaponDuration,
+    BurstCount,         // 【新增】连射次数（一次开火连续释放多次）
     CritRate,
     CritDamage,
 
@@ -35,5 +36,10 @@ public enum UpgradeType
     // 特殊机制
     BoomerangStackUpgrade, // 回旋镖叠加规则
     ParabolicAoeStunChance, // 抛物线眩晕几率
-    Stun                   // 眩晕
+    Stun,                   // 眩晕
+    SubProjectile,           // 【新增】分裂子弹（开启分裂）
+    SubProjectileCount,      // 【新增】分裂数量
+    IgnitionChance,          // 【新增】点燃概率加成
+    BurnDuration,            // 【新增】燃烧持续时间加成
+    MaxHealthBurn            // 【新增】猛烈燃烧（基于目标最大生命值的百分比伤害）
 }

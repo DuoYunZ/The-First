@@ -46,6 +46,7 @@ public class StatusEffectReceiver : MonoBehaviour
     private float burnDurationRemaining = 0f;
     private int currentBurnDamagePerTick = 0;
     private float currentBurnTickInterval = 1f;
+    private float currentMaxHealthBurnPercent = 0f; // 【新增】猛烈燃烧：每跳附加最大生命值百分比
 
     [Header("特效预制件 (可选)")]
     public GameObject stunVfxPrefab;
@@ -100,13 +101,15 @@ public class StatusEffectReceiver : MonoBehaviour
     /// <summary>
     /// 應用燃燒效果
     /// </summary>
-    public void ApplyBurn(int damagePerTick, float duration, float tickInterval, string sourceWeaponName = "")
+    public void ApplyBurn(int damagePerTick, float duration, float tickInterval, string sourceWeaponName = "", float maxHealthBurnPercent = 0f)
     {
         // 1. 存储燃烧数据 (用于爆燃)
         currentBurnDamagePerTick = damagePerTick;
         currentBurnTickInterval = (tickInterval > 0) ? tickInterval : 1f;
         // (如果已经燃烧，我们刷新(刷新/叠加)持续时间，而不是重置)
         burnDurationRemaining = Mathf.Max(burnDurationRemaining, duration);
+        // 【新增】猛烈燃烧：存储最大生命值百分比伤害 (取最大值，避免降级)
+        currentMaxHealthBurnPercent = Mathf.Max(currentMaxHealthBurnPercent, maxHealthBurnPercent);
 
         if (!string.IsNullOrEmpty(sourceWeaponName)) currentBurnSource = sourceWeaponName;
 
@@ -166,6 +169,7 @@ public class StatusEffectReceiver : MonoBehaviour
 
         IsBurning = false;
         burnDurationRemaining = 0f;
+        currentMaxHealthBurnPercent = 0f; // [新增] 清理百分比伤害
 
         if (burnVfxInstance != null)
         {
@@ -613,7 +617,14 @@ public class StatusEffectReceiver : MonoBehaviour
             {
                 if (enemyHealth != null && !enemyHealth.IsDead)
                 {
-                    enemyHealth.TakeDamage(currentBurnDamagePerTick, transform.position, null, AttackType.Standard, null, null, currentBurnSource);
+                    // 【新增】猛烈燃烧：基础燃烧伤害 + 最大生命值百分比附加
+                    int finalBurnDmg = currentBurnDamagePerTick;
+                    if (currentMaxHealthBurnPercent > 0f)
+                    {
+                        int maxHpDmg = Mathf.CeilToInt(enemyHealth.maxHealth * currentMaxHealthBurnPercent);
+                        finalBurnDmg += maxHpDmg;
+                    }
+                    enemyHealth.TakeDamage(finalBurnDmg, transform.position, null, AttackType.Standard, null, null, currentBurnSource);
                 }
                 else
                 {
