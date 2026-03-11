@@ -196,7 +196,7 @@ public class StatusEffectReceiver : MonoBehaviour
         activeStatusCoroutines[DebuffType.Slow] = slowCoroutine;
     }
 
-    public void ApplyFreeze(float duration, GameObject vfxOverride = null)
+    public void ApplyFreeze(float duration, GameObject vfxOverride = null, bool applyFrostBite = false)
     {
         // 1. 打断攻击
         if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
@@ -222,10 +222,10 @@ public class StatusEffectReceiver : MonoBehaviour
         GameObject vfxToUse = (vfxOverride != null) ? vfxOverride : freezeVfxPrefab;
 
         // 3. 启动新协程
-        var freezeCoroutine = StartCoroutine(FreezeRoutine(duration, vfxToUse));
+        var freezeCoroutine = StartCoroutine(FreezeRoutine(duration, vfxToUse, applyFrostBite));
         activeStatusCoroutines[DebuffType.Freeze] = freezeCoroutine;
     }
-    private IEnumerator FreezeRoutine(float duration, GameObject vfxToUse)
+    private IEnumerator FreezeRoutine(float duration, GameObject vfxToUse, bool applyFrostBite)
     {
         IsFrozen = true;
 
@@ -261,8 +261,31 @@ public class StatusEffectReceiver : MonoBehaviour
             }
         }
 
-        // --- 等待 ---
-        yield return new WaitForSeconds(duration);
+        // --- 等待（加入刺骨寒霜扣血判断） ---
+        float elapsed = 0f;
+        float tickTimer = 0f;
+        while (elapsed < duration)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+            
+            if (applyFrostBite)
+            {
+                tickTimer += Time.deltaTime;
+                if (tickTimer >= 1f)
+                {
+                    tickTimer -= 1f;
+                    if (health != null)
+                    {
+                        // 扣除1%最大生命值
+                        int dmg = Mathf.Max(1, Mathf.RoundToInt(health.maxHealth * 0.01f));
+                        // 传入空 source 避免再次触发层级伤害特效，也可以传 transform.gameObject
+                        health.TakeDamage(dmg, transform.position, null);
+                        Debug.Log($"<color=#88DDFF>[刺骨寒霜] 对 {gameObject.name} 造成 {dmg} 点冰冻扣血！</color>");
+                    }
+                }
+            }
+        }
 
         // ==========================================
         // 【核心修复 3】稳健的恢复逻辑
@@ -517,7 +540,12 @@ public class StatusEffectReceiver : MonoBehaviour
 
         if (vfxToUse != null && stunVfxInstance == null)
         {
-            stunVfxInstance = Instantiate(vfxToUse, transform.position, Quaternion.identity, transform);
+            // 眩晕特效挂到头顶 HP_Head
+            Transform headMount = transform.Find("HP_Head");
+            if (headMount == null && health != null && health.AimTargetPoint != null)
+                headMount = health.AimTargetPoint;
+            Transform mountParent = headMount != null ? headMount : transform;
+            stunVfxInstance = Instantiate(vfxToUse, mountParent.position, Quaternion.identity, mountParent);
         }
 
         if (enemyAI != null) enemyAI.SetStunned(true); //
@@ -659,6 +687,51 @@ public class StatusEffectReceiver : MonoBehaviour
         IsElectrified = false;
         if (electrifiedVfxInstance != null) Destroy(electrifiedVfxInstance);
         activeStatusCoroutines.Remove(DebuffType.Electrified);
+    }
+
+    /// <summary>
+    /// 麻痹效果：复用感电VFX，但实际停止敌人移动（独立于眩晕）
+    /// </summary>
+    public void ApplyParalyze(float duration)
+    {
+        if (activeStatusCoroutines.ContainsKey(DebuffType.Paralyze))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.Paralyze]);
+        }
+        activeStatusCoroutines[DebuffType.Paralyze] = StartCoroutine(ParalyzeRoutine(duration));
+    }
+
+    private IEnumerator ParalyzeRoutine(float duration)
+    {
+        IsStunned = true; // 实际停止移动
+
+        // 复用感电VFX
+        GameObject paralyzeVfx = null;
+        if (electrifiedVfxPrefab != null)
+        {
+            paralyzeVfx = Instantiate(electrifiedVfxPrefab, transform.position, Quaternion.identity, transform);
+        }
+
+        if (enemyAI != null) enemyAI.SetStunned(true);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(true);
+
+        yield return new WaitForSeconds(duration);
+
+        IsStunned = false;
+        if (enemyAI != null) enemyAI.SetStunned(false);
+        if (straightMoverAI != null) straightMoverAI.SetStunned(false);
+
+        if (persistentSlowSources.Count > 0)
+        {
+            UpdateSlowState();
+        }
+        else
+        {
+            if (animator != null) animator.speed = 1f;
+        }
+
+        if (paralyzeVfx != null) Destroy(paralyzeVfx);
+        activeStatusCoroutines.Remove(DebuffType.Paralyze);
     }
     public void ApplyShock(float duration, GameObject vfxPrefab)
     {

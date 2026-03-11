@@ -26,8 +26,8 @@ public class MagneticStormAura : MonoBehaviour
     public GameObject thunderStrikeVfxPrefab;
     public GameObject electricSparkVfxPrefab;
 
-    private float critRate = 0f; // 【修改】以前是 stunChance，现在存暴击率
-    private float critMultiplier = 1.5f; // 暴击伤害倍率 (可配置)
+    private float critRate = 0f; // 暴击率
+    private float critMultiplier = 1.5f; // 暴击伤害倍率
     private float stunDuration = 1.0f;   // 眩晕时间
 
     [Header("目标层级")]
@@ -42,18 +42,47 @@ public class MagneticStormAura : MonoBehaviour
     private float strikeTimer;
     private WeaponPart ownerWeapon;
 
+    // === 技能树扩展属性 ===
+    private int lightningRepeatCount = 0;    // 连续雷击次数（每次落雷后0.3秒再落一道）
+    private bool magneticStormEnabled = false; // 磁暴开关
+    private float magneticStormDamageBonus = 0f; // 磁暴伤害/范围加成
+    private float magneticStormAreaBonus = 0f;   // 磁暴范围加成
+    private bool electricFieldEnabled = false;   // 电磁场开关
+    private float electricFieldDamageBonus = 0f; // 电磁场伤害加成
+    private float electricFieldDurationBonus = 0f; // 电磁场持续时间加成
+
+    [Header("技能树特效预制件")]
+    [Tooltip("磁暴爆炸特效")]
+    public GameObject magneticStormVfxPrefab;
+    [Tooltip("电磁场持续特效")]
+    public GameObject electricFieldVfxPrefab;
+
     public void Initialize(int baseWeaponDamage, float rangeMult, WeaponPart weapon, int count, float critRateParam)
     {
         this.ownerWeapon = weapon;
         this.lightningCount = count;
-        this.critRate = critRateParam; // 【修改】保存暴击率
+        this.critRate = critRateParam;
 
         this.finalDotDamage = Mathf.RoundToInt(baseWeaponDamage * dotDamageMultiplier);
         this.finalLightningDamage = Mathf.RoundToInt(baseWeaponDamage * lightningDamageMultiplier);
 
         this.radius *= rangeMult;
         transform.localScale = Vector3.one * (this.radius * 0.7f);
-        Debug.Log($"[光环初始化] 暴击率: {this.critRate:P0}");
+
+        // 从 WeaponPart 读取技能树升级属性
+        if (weapon != null)
+        {
+            this.lightningRepeatCount = weapon.localLightningRepeatCount;
+            this.stunDuration += weapon.localStunDurationBonus;
+            this.magneticStormEnabled = weapon.isMagneticStormEnabled;
+            this.magneticStormDamageBonus = weapon.localDamageBonus;
+            this.magneticStormAreaBonus = weapon.localAreaBonus;
+            this.electricFieldEnabled = weapon.isElectricFieldEnabled;
+            this.electricFieldDamageBonus = weapon.localElectricFieldDamageBonus;
+            this.electricFieldDurationBonus = weapon.localElectricFieldDurationBonus;
+        }
+
+        Debug.Log($"[光环初始化] 暴击率:{this.critRate:P0}, 连续雷击:{lightningRepeatCount}, 磁暴:{magneticStormEnabled}, 电磁场:{electricFieldEnabled}");
     }
 
     void Update()
@@ -132,9 +161,10 @@ public class MagneticStormAura : MonoBehaviour
         {
             if (target == null || target.IsDead) continue;
 
-            Vector3 strikePos = target.transform.position;
+            // 使用 AimTargetPoint 作为落雷位置（而非脚底）
+            Vector3 strikePos = (target.AimTargetPoint != null) ? target.AimTargetPoint.position : target.transform.position;
 
-            // A. 特效 (不变)
+            // A. 特效挂到目标身上
             if (thunderStrikeVfxPrefab != null) Instantiate(thunderStrikeVfxPrefab, strikePos, Quaternion.identity);
 
             // B. 造成溅射伤害 (AOE)
@@ -154,9 +184,10 @@ public class MagneticStormAura : MonoBehaviour
                     // 1. 获取当前的目标的实际暴击率
                     // (如果你的感电 Debuff 会增加怪物被暴击的概率，在这里加上逻辑)
                     // 比如: float effectiveCrit = this.critRate + (receiver.HasShock ? 0.1f : 0f);
-                    float effectiveCrit = this.critRate;
+                    // 感电状态下暴击率提升
+                    float effectiveCrit = this.critRate + (receiver != null && receiver.IsShocked ? 0.2f : 0f);
 
-                    bool isCrit = Random.value <= this.critRate;
+                    bool isCrit = Random.value <= effectiveCrit;
                     int actualDamage = finalLightningDamage;
 
                     if (isCrit)
@@ -187,6 +218,108 @@ public class MagneticStormAura : MonoBehaviour
                 }
             }
             yield return new WaitForSeconds(lightningStrikeDelay);
+
+            // === 连续雷击：每次落雷后0.3秒再落一道 ===
+            for (int r = 0; r < lightningRepeatCount; r++)
+            {
+                yield return new WaitForSeconds(0.3f);
+                // 随机选新目标，没有就打同一个
+                Health repeatTarget = GetRandomAliveEnemy(validEnemies);
+                if (repeatTarget == null) repeatTarget = target;
+                if (repeatTarget == null || repeatTarget.IsDead) continue;
+
+                Vector3 repeatPos = repeatTarget.transform.position;
+                if (thunderStrikeVfxPrefab != null) Instantiate(thunderStrikeVfxPrefab, repeatPos, Quaternion.identity);
+                DealLightningDamage(repeatPos);
+            }
+
+            // === 磁暴：落雷后触发一次性范围爆炸 ===
+            if (magneticStormEnabled)
+            {
+                float stormRadius = lightningSplashRadius * (1f + magneticStormAreaBonus);
+                int stormDamage = Mathf.RoundToInt(finalLightningDamage * 0.5f * (1f + magneticStormDamageBonus));
+                if (magneticStormVfxPrefab != null)
+                {
+                    GameObject stormVfx = Instantiate(magneticStormVfxPrefab, strikePos, Quaternion.identity);
+                    // 磁暴特效按范围缩放
+                    stormVfx.transform.localScale = Vector3.one * (stormRadius / lightningSplashRadius);
+                }
+
+                Collider[] stormHits = Physics.OverlapSphere(strikePos, stormRadius, enemyLayer);
+                foreach (var sh in stormHits)
+                {
+                    Health shHealth = sh.GetComponentInParent<Health>();
+                    if (shHealth != null && !shHealth.IsDead)
+                    {
+                        shHealth.TakeDamage(stormDamage, strikePos, ownerWeapon.gameObject, AttackType.Standard);
+                    }
+                }
+
+                // === 电磁场：磁暴后生成持续区域，提升暴击率 ===
+                if (electricFieldEnabled && electricFieldVfxPrefab != null)
+                {
+                    float fieldDuration = 3f + electricFieldDurationBonus;
+                    GameObject field = Instantiate(electricFieldVfxPrefab, strikePos, Quaternion.identity);
+                    var fieldScript = field.GetComponent<ElectricFieldZone>();
+                    if (fieldScript != null)
+                    {
+                        float fieldDamage = stormDamage * 0.2f * (1f + electricFieldDamageBonus);
+                        fieldScript.Initialize(fieldDuration, fieldDamage, stormRadius, enemyLayer);
+                    }
+                    Destroy(field, fieldDuration);
+                }
+            }
+        }
+    }
+
+    // === 大招 BUFF：雷霆之力（临时增加暴击率）===
+    private float thunderBuffCritBonus = 0f;
+
+    public void ApplyThunderBuff(float critBonus, float duration)
+    {
+        thunderBuffCritBonus = critBonus;
+        critRate += critBonus;
+        Debug.Log($"<color=yellow>[雷霆之力] 暴击率临时 +{critBonus:P0}，持续 {duration} 秒，当前暴击率: {critRate:P0}</color>");
+        StartCoroutine(ThunderBuffRoutine(critBonus, duration));
+    }
+
+    IEnumerator ThunderBuffRoutine(float critBonus, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        critRate -= critBonus;
+        thunderBuffCritBonus = 0f;
+        Debug.Log($"<color=yellow>[雷霆之力] BUFF 结束，暴击率恢复为: {critRate:P0}</color>");
+    }
+
+    // 辅助：随机获取一个存活敌人
+    Health GetRandomAliveEnemy(List<Health> enemies)
+    {
+        var alive = enemies.FindAll(e => e != null && !e.IsDead);
+        if (alive.Count == 0) return null;
+        return alive[Random.Range(0, alive.Count)];
+    }
+
+    // 辅助：对落雷点造成溅射伤害
+    void DealLightningDamage(Vector3 pos)
+    {
+        Collider[] nearby = Physics.OverlapSphere(pos, lightningSplashRadius, enemyLayer);
+        foreach (var hit in nearby)
+        {
+            if (hit == null) continue;
+            Health h = hit.GetComponentInParent<Health>();
+            if (h != null && !h.IsDead)
+            {
+                StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
+                float effectiveCrit = critRate + (receiver != null && receiver.IsShocked ? 0.2f : 0f);
+                bool isCrit = Random.value <= effectiveCrit;
+                int dmg = isCrit ? Mathf.RoundToInt(finalLightningDamage * critMultiplier) : finalLightningDamage;
+                if (isCrit && receiver != null)
+                {
+                    receiver.ApplyStun(stunDuration, electricSparkVfxPrefab);
+                }
+                h.TakeDamage(dmg, pos, ownerWeapon.gameObject, AttackType.Standard,
+                    null, null, ownerWeapon.StatBlock.weaponName, isCrit);
+            }
         }
     }
 

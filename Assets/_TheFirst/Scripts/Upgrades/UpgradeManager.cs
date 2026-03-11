@@ -76,11 +76,12 @@ public class UpgradeManager : MonoBehaviour
         }
         else
         {
-            // --- 【双轨道系统】混合卡池抽卡逻辑 ---
-            // 武器轨道：武器通过自身经验升级/分支/进化，此处仅提供武器解锁卡
-            // 人物轨道：被动道具、精通卡、天赋、消耗品
+            // --- 【三轨道系统】混合卡池抽卡逻辑 ---
+            // 武器解锁轨道：解锁新武器
+            // 被动轨道：被动道具、精通卡、天赋、消耗品
+            // 武器技能轨道：已拥有武器的技能树节点（按链路依次解锁）
 
-            // A. 获取所有可用的武器解锁卡（不再包含升级/进化）
+            // A. 获取所有可用的武器解锁卡
             List<SkillTreeNodeData> validWeapons = GenerateWeaponNodes();
 
             // B. 获取所有可用的被动升级
@@ -98,26 +99,45 @@ public class UpgradeManager : MonoBehaviour
                 }
             }
 
+            // C. 【新增】获取所有已拥有武器的可用技能树节点
+            List<SkillTreeNodeData> validWeaponSkills = new List<SkillTreeNodeData>();
+            if (WeaponController.Instance != null)
+            {
+                foreach (var owned in WeaponController.Instance.ownedWeapons)
+                {
+                    if (owned.weaponPartInstance != null && owned.stats != null)
+                    {
+                        var nodes = GetAvailableWeaponSkillNodes(owned.stats);
+                        validWeaponSkills.AddRange(nodes);
+                    }
+                }
+            }
+
             // 打乱列表
             var shuffledWeapons = validWeapons.OrderBy(a => Random.value).ToList();
             var shuffledPassives = validPassives.OrderBy(a => Random.value).ToList();
+            var shuffledSkills = validWeaponSkills.OrderBy(a => Random.value).ToList();
 
-            // C. 抽取 3 张卡
+            // D. 抽取 3 张卡（三轨道混合）
             int slotsToFill = 3;
 
             for (int i = 0; i < slotsToFill; i++)
             {
-                // 判定权重：如果 随机数 < 0.6 (60%) 且 还有武器可升，就给武器
-                // 否则给被动。如果没有被动了，也得给武器。
-                bool wantWeapon = Random.value < 0.6f;
+                // 权重：40% 武器技能树、30% 武器解锁、30% 被动
+                float roll = Random.value;
 
-                // 确保池子里有东西
                 bool hasWeapon = shuffledWeapons.Count > 0;
                 bool hasPassive = shuffledPassives.Count > 0;
+                bool hasSkill = shuffledSkills.Count > 0;
 
                 SkillTreeNodeData pickedNode = null;
 
-                if (wantWeapon && hasWeapon)
+                if (roll < 0.4f && hasSkill)
+                {
+                    pickedNode = shuffledSkills[0];
+                    shuffledSkills.RemoveAt(0);
+                }
+                else if (roll < 0.7f && hasWeapon)
                 {
                     pickedNode = shuffledWeapons[0];
                     shuffledWeapons.RemoveAt(0);
@@ -127,10 +147,21 @@ public class UpgradeManager : MonoBehaviour
                     pickedNode = shuffledPassives[0];
                     shuffledPassives.RemoveAt(0);
                 }
-                else if (hasWeapon) // 没被动了，只能给武器
+                // 保底：哪个池子有就给哪个
+                else if (hasSkill)
+                {
+                    pickedNode = shuffledSkills[0];
+                    shuffledSkills.RemoveAt(0);
+                }
+                else if (hasWeapon)
                 {
                     pickedNode = shuffledWeapons[0];
                     shuffledWeapons.RemoveAt(0);
+                }
+                else if (hasPassive)
+                {
+                    pickedNode = shuffledPassives[0];
+                    shuffledPassives.RemoveAt(0);
                 }
 
                 if (pickedNode != null)
@@ -457,9 +488,13 @@ public class UpgradeManager : MonoBehaviour
 
                         case UpgradeType.OrbitalCount:
                         case UpgradeType.AddProjectile:
-                        case UpgradeType.PierceCount:
                             part.localOrbitalCountBonus += Mathf.RoundToInt(effect.value);
                             appliedLocally = true;
+                            break;
+                        case UpgradeType.PierceCount:
+                            part.localPierceCountBonus += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 穿透 +{effect.value}，当前总穿透加成: {part.localPierceCountBonus}</color>");
                             break;
                         case UpgradeType.SlashCount:
                             part.localSlashCountBonus += Mathf.RoundToInt(effect.value);
@@ -525,6 +560,186 @@ public class UpgradeManager : MonoBehaviour
                             part.localMaxHealthBurnPercent += effect.value / 100f; // 1 代表 1%/跳
                             appliedLocally = true;
                             Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 猛烈燃烧 +{effect.value}% 最大生命值/跳</color>");
+                            break;
+
+                        case UpgradeType.FreezeChance:
+                            part.localFreezeChanceBonus += effect.value / 100f; // 30 代表 +30% 冰冻概率
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 冰冻概率 +{effect.value}%。当前总加成: {part.localFreezeChanceBonus:P0}</color>");
+                            break;
+
+                        case UpgradeType.SubProjectileDamageBonus:
+                            part.localSubProjectileDamageBonus += effect.value / 100f; // 80 代表 +80% 伤害
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 分裂子弹伤害 +{effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.SubProjectileInherit:
+                            part.subProjectileInheritEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 分裂子弹继承母弹属性（穿透/冰冻）</color>");
+                            break;
+
+                        // === 雷击类 ===
+                        case UpgradeType.LightningRepeatCount:
+                            part.localLightningRepeatCount += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 连续雷击 +{effect.value}。当前总次数: {part.localLightningRepeatCount}</color>");
+                            break;
+
+                        case UpgradeType.StunDuration:
+                            part.localStunDurationBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 眩晕时间 +{effect.value}秒</color>");
+                            break;
+
+                        case UpgradeType.MagneticStormBurst:
+                            part.isMagneticStormEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 磁暴已开启</color>");
+                            break;
+
+                        case UpgradeType.ElectricField:
+                            part.isElectricFieldEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 电磁场已开启</color>");
+                            break;
+
+                        case UpgradeType.ElectricFieldDamage:
+                            part.localElectricFieldDamageBonus += effect.value / 100f;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 电磁场伤害 +{effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.ElectricFieldDuration:
+                            part.localElectricFieldDurationBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 电磁场持续时间 +{effect.value}秒</color>");
+                            break;
+
+                        case UpgradeType.OnKillChainLightning:
+                            part.isOnKillChainEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=yellow>[升级生效] {sourceNode.associatedWeapon.weaponName} 击杀连锁雷击已开启</color>");
+                            break;
+
+                        // === 飓风术类 ===
+                        case UpgradeType.KnockbackForce:
+                            part.localKnockbackBonus += effect.value / 100f;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 击退力度 +{effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.VacuumPull:
+                            part.isVacuumPullEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 真空牵引已开启</color>");
+                            break;
+
+                        case UpgradeType.VacuumDamage:
+                            part.localVacuumDamageBonus += effect.value / 100f;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 真空伤害 +{effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.WindReturn:
+                            part.isWindReturnEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 风力回旋已开启</color>");
+                            break;
+
+                        case UpgradeType.Turbulence:
+                            part.localTurbulenceLevel = Mathf.Max(part.localTurbulenceLevel, 1);
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 乱流已开启</color>");
+                            break;
+
+                        case UpgradeType.TurbulenceIntensify:
+                            part.localTurbulenceLevel += 1;
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 乱流加剧 Lv.{part.localTurbulenceLevel}</color>");
+                            break;
+
+                        // === 榴弹类 ===
+                        case UpgradeType.GrenadeBounce:
+                            part.localBounceCount += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=orange>[升级生效] {sourceNode.associatedWeapon.weaponName} 弹跳 +{Mathf.RoundToInt(effect.value)}，当前弹跳: {part.localBounceCount}</color>");
+                            break;
+
+                        case UpgradeType.Stun:
+                            part.localStunDurationBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=orange>[升级生效] {sourceNode.associatedWeapon.weaponName} 眩晕 +{effect.value}秒，当前: {part.localStunDurationBonus}秒</color>");
+                            break;
+
+                        // === 闪电链类 ===
+                        case UpgradeType.ChainCount:
+                            part.localChainCountBonus += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 弹射次数 +{Mathf.RoundToInt(effect.value)}，当前: {part.localChainCountBonus}</color>");
+                            break;
+
+                        case UpgradeType.IonExplosion:
+                            part.localIonExplosionEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 离子爆破已开启</color>");
+                            break;
+
+                        case UpgradeType.IonExplosionDamage:
+                            part.localIonExplosionDamageBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 离子爆破伤害 +{effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.IonExplosionRadius:
+                            part.localIonExplosionRadiusBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=cyan>[升级生效] {sourceNode.associatedWeapon.weaponName} 离子爆破范围 +{effect.value}%</color>");
+                            break;
+
+                        // === 冰霜新星类 ===
+                        case UpgradeType.FrostNovaExtraCast:
+                            part.localFrostNovaExtraCast += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 额外释放 +{Mathf.RoundToInt(effect.value)}，当前: {part.localFrostNovaExtraCast}</color>");
+                            break;
+
+                        case UpgradeType.FreezeDuration:
+                            part.localFreezeDurationBonus += effect.value;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 冻结时间 +{effect.value}秒，当前: {part.localFreezeDurationBonus}秒</color>");
+                            break;
+
+                        case UpgradeType.FrostNovaCenterDamage:
+                            part.localFrostNovaCenterDmg = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 寒霜之心已开启</color>");
+                            break;
+
+                        case UpgradeType.AbsoluteZero:
+                            part.localAbsoluteZero = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 绝对零度已开启</color>");
+                            break;
+
+                        // === 冰霜融合类 ===
+                        case UpgradeType.FrostBite:
+                            part.localFrostBite = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 刺骨寒霜已开启</color>");
+                            break;
+
+                        case UpgradeType.IceCrystalShatter:
+                            part.localIceCrystalShatter += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 冰晶碎裂 +{Mathf.RoundToInt(effect.value)}，当前: {part.localIceCrystalShatter}</color>");
+                            break;
+
+                        case UpgradeType.CooldownReduction:
+                            part.localCooldownReduction += effect.value / 100f;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 冷却缩减 +{effect.value}%</color>");
                             break;
                         
                     }
@@ -724,6 +939,15 @@ public class UpgradeManager : MonoBehaviour
             {
                 bool hasConflict = node.mutuallyExclusive.Any(m => m != null && ownedUpgrades.ContainsKey(m));
                 if (hasConflict) continue;
+            }
+
+            // E. 必需武器检查：必须拥有这些武器（融合技能等）
+            if (node.requiredWeapons != null && node.requiredWeapons.Count > 0)
+            {
+                bool hasAllWeapons = node.requiredWeapons.All(rw => 
+                    rw != null && WeaponController.Instance.ownedWeapons.Any(ow => ow.stats == rw)
+                );
+                if (!hasAllWeapons) continue;
             }
 
             result.Add(node);

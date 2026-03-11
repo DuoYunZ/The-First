@@ -94,6 +94,25 @@ public class MechController : MonoBehaviour
             moveInput = playerControls.Player.Move.ReadValue<Vector2>();
         }
 
+        // 【新增】大招释放（Space键）
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            if (UltimateManager.Instance != null)
+            {
+                UltimateManager.Instance.TryReleaseUltimate();
+            }
+        }
+
+        // 【新增】滚轮切换大招主武器
+        if (Mouse.current != null)
+        {
+            float scroll = Mouse.current.scroll.ReadValue().y;
+            if (Mathf.Abs(scroll) > 0.1f && UltimateManager.Instance != null)
+            {
+                UltimateManager.Instance.ScrollSelectWeapon(scroll);
+            }
+        }
+
         // 【新增】每帧更新动画参数
         UpdateAnimation();
     }

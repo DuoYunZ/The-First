@@ -4,7 +4,8 @@
     Slow,       // 减速
     Stun,       // 眩晕
     Weaken,     // 弱化 (大地石)
-    Electrified,//感电 
-    Freeze,
-    Corrode     // 腐蚀 (剧毒石)
+    Electrified,// 感电 
+    Freeze,     // 冰冻
+    Corrode,    // 腐蚀 (剧毒石)
+    Paralyze    // 麻痹 (闪电链)
 }

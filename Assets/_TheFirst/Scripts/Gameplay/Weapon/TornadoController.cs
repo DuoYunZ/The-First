@@ -33,7 +33,8 @@ public class TornadoController : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Enemy"))
+        // 用 Layer 或 Tag 检测敌人
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemies") || other.CompareTag("Enemy"))
         {
             Health h = other.GetComponentInParent<Health>();
             if (h != null) victims.Add(h);
@@ -42,7 +43,7 @@ public class TornadoController : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Enemy"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemies") || other.CompareTag("Enemy"))
         {
             Health h = other.GetComponentInParent<Health>();
             if (h != null) victims.Remove(h);
@@ -101,8 +102,8 @@ public class TornadoController : MonoBehaviour
         foreach (var h in victims)
         {
             // 造成伤害
-            // 注意：这里我们不再传递 Projectile 引用，防止触发 Projectile 自身的 OnHit 逻辑 (防止双重击退)
-            h.TakeDamage(damagePerTick, h.transform.position, launcher.gameObject, AttackType.Standard, null, null, weaponName);
+            GameObject attackerGO = (launcher != null) ? launcher.gameObject : gameObject;
+            h.TakeDamage(damagePerTick, h.transform.position, attackerGO, AttackType.Standard, null, null, weaponName);
 
             // --- 触发元素效果 ---
             // 因为是持续伤害，我们手动触发 StatusEffectReceiver

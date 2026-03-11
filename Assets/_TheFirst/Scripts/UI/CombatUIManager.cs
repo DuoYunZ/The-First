@@ -82,6 +82,12 @@ public class CombatUIManager : MonoBehaviour
         isPaused = true;
         pausePanel.SetActive(true);
         Time.timeScale = 0f;
+
+        var selectable = pausePanel.GetComponentInChildren<UnityEngine.UI.Selectable>(false);
+        if (selectable != null && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+        }
     }
 
     // 继续游戏 (这个方法现在可以被按钮和ESC键共用)
@@ -103,6 +109,12 @@ public class CombatUIManager : MonoBehaviour
         
         settingsPanel.SetActive(true);
         isSettingsOpen = true;
+
+        var selectable = settingsPanel.GetComponentInChildren<UnityEngine.UI.Selectable>(false);
+        if (selectable != null && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+        }
     }
 
     // 关闭设置面板
@@ -112,6 +124,15 @@ public class CombatUIManager : MonoBehaviour
         
         settingsPanel.SetActive(false);
         isSettingsOpen = false;
+
+        if (pausePanel != null && pausePanel.activeInHierarchy)
+        {
+            var selectable = pausePanel.GetComponentInChildren<UnityEngine.UI.Selectable>(false);
+            if (selectable != null && UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+            }
+        }
     }
 
     // 返回枢纽场景
@@ -129,7 +150,9 @@ public class CombatUIManager : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene("HubScene");
+        var transitioner = Object.FindFirstObjectByType<Transitioner>();
+        if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("HubScene");
+        else SceneManager.LoadScene("HubScene");
     }
 
     // 返回主菜单
@@ -143,7 +166,9 @@ public class CombatUIManager : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene("MainMenu");
+        var transitioner = Object.FindFirstObjectByType<Transitioner>();
+        if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("MainMenu");
+        else SceneManager.LoadScene("MainMenu");
     }
 
     // 退出游戏

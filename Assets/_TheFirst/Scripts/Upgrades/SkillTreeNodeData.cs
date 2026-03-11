@@ -16,6 +16,9 @@ public class SkillTreeNodeData : ScriptableObject
     [Tooltip("前置节点：必须全部拥有后，该节点才能出现在候选池中")]
     public List<SkillTreeNodeData> prerequisites;
 
+    [Tooltip("需要同时拥有的武器（用于融合技能等需要特定武器组合的前提）")]
+    public List<WeaponStatBlock> requiredWeapons;
+
     [Tooltip("互斥节点：如果玩家已拥有列表中任一节点，该节点将不再出现")]
     public List<SkillTreeNodeData> mutuallyExclusive;
 

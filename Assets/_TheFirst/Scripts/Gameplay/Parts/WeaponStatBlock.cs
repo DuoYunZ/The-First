@@ -19,7 +19,8 @@ public enum WeaponBehaviorType
     Boomerang,      // 回旋镖
     Aura,           // 光环
     CreateAndForget, // <--- 【新增】生成后不管 (用于游荡型超武)
-    FlyingDagger    // <--- 【新增】追踪飞刀 (无需发射，本体撞击)
+    FlyingDagger,    // <--- 【新增】追踪飞刀 (无需发射，本体撞击)
+    FrostNova        // 冰霜新星 (在敌人脚底爆发冰晶)
 }
 
 public enum WeaponXpSource
@@ -106,6 +107,8 @@ public class WeaponStatBlock : ScriptableObject
     public float baseKnockbackForce = 5f; // <--- 【新增】
     [Tooltip("基础穿透次数。1表示击中第一个敌人后消失。")]
     public int basePierceCount = 1;    
+    [Tooltip("乱流/风力回旋生成的小飓风预制件（如果为空则使用主飓风预制件）")]
+    public GameObject subHurricanePrefab;
     [Tooltip("连锁攻击的基础跳跃次数。0表示不连锁。")]
     public int baseChainCount = 0; // <--- 新增
     [Tooltip("连锁攻击寻找下一个目标的范围半径。")]
@@ -384,4 +387,25 @@ public class WeaponStatBlock : ScriptableObject
     public float cooldownGrowthPerLevel = 0.05f;
     [Tooltip("每级增加的范围 (0.1 = +10%)")]
     public float areaGrowthPerLevel = 0.1f;
+
+    // =========================================================
+    // 【新增】能量蓄力与大招系统 (Energy & Ultimate System)
+    // =========================================================
+    [Header("能量蓄力系统 (Energy System)")]
+    [Tooltip("是否启用能量系统")]
+    public bool usesEnergy = true;
+    [Tooltip("能量上限")]
+    public float maxEnergy = 100f;
+    [Tooltip("每造成1点伤害获得的能量值")]
+    public float energyGainPerDamage = 0.1f;
+
+    [Header("大招配置 (Ultimate Skill)")]
+    [Tooltip("大招效果预制件")]
+    public GameObject ultimateEffectPrefab;
+    [Tooltip("大招伤害")]
+    public int ultimateDamage = 100;
+    [Tooltip("大招范围")]
+    public float ultimateRadius = 5f;
+    [Tooltip("大招图标 (能量满时显示)")]
+    public Sprite ultimateIcon;
 }

@@ -169,7 +169,12 @@ public class SkillTreeGraphView : GraphView
     {
         _activeWeapon = weapon;
         
-        DeleteElements(graphElements);
+        // 【修复连线断裂】临时禁用回调，防止 DeleteElements 触发 OnGraphViewChanged
+        // 从而误删数据中的 prerequisites 引用
+        graphViewChanged = null;
+        DeleteElements(graphElements.ToList());
+        graphViewChanged = OnGraphViewChanged; // 恢复回调
+
         _allNodes.Clear();
 
         if (weapon == null) return;

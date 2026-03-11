@@ -252,6 +252,15 @@ public class Health : MonoBehaviour
                 if (weaponPart != null) sourcePart = weaponPart;
             }
             // ----------------------------------------------------
+            
+            // 【修补】大招特殊处理：屏蔽大招的能量获取
+            bool isUltimateHit = false;
+            // 优先从传入的 projectile 参数检查（因为 attacker 可能是 WeaponPart 而非 Projectile）
+            if (projectile != null && projectile.isUltimate)
+            {
+                isUltimateHit = true;
+            }
+
             if (sourcePart == null)
             {
                 
@@ -266,7 +275,7 @@ public class Health : MonoBehaviour
             }
 
             // --- 【核心新增】造成伤害获得经验 ---
-            if (sourcePart != null && sourcePart.StatBlock != null &&
+            if (!isUltimateHit && sourcePart != null && sourcePart.StatBlock != null &&
                 sourcePart.StatBlock.xpSource == WeaponXpSource.DamageDealt)
             {
                 float xp = remainingDamage * sourcePart.StatBlock.xpGainFactor;               

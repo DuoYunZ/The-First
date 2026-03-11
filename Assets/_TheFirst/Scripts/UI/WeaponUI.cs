@@ -13,11 +13,11 @@ public class WeaponUI : MonoBehaviour
     [Tooltip("图标预制件 (包含 Image 组件)")]
     public GameObject iconPrefab;
 
-    [Header("经验条设置")]
-    [Tooltip("经验条填充颜色")]
-    public Color xpBarColor = new Color(0.2f, 0.8f, 1f, 1f);
-    [Tooltip("经验条满时的颜色")]
-    public Color xpBarFullColor = new Color(1f, 0.9f, 0.2f, 1f);
+    [Header("能量条设置")]
+    [Tooltip("能量条填充颜色")]
+    public Color energyBarColor = new Color(0.2f, 0.8f, 1f, 1f);
+    [Tooltip("能量条满时的颜色")]
+    public Color energyBarFullColor = new Color(1f, 0.9f, 0.2f, 1f);
 
     [Header("设置")]
     public int maxIcons = 6;
@@ -33,7 +33,7 @@ public class WeaponUI : MonoBehaviour
         public Image xpBarFill;
         public WeaponPart linkedWeapon;
         public float displayedFillAmount; // 用于平滑过渡
-        public float lastXp; // 上次经验值，用于检测变化
+        public float lastEnergy; // 上次能量值，用于检测变化
     }
 
     private List<WeaponSlot> slots = new List<WeaponSlot>();
@@ -200,11 +200,11 @@ public class WeaponUI : MonoBehaviour
                 slot.iconImage.enabled = true;
                 slot.iconImage.color = Color.white;
 
-                // 显示经验条
+                // 显示能量条
                 if (slot.xpBarFill != null)
                 {
                     slot.xpBarFill.enabled = true;
-                    slot.xpBarFill.color = xpBarColor;
+                    slot.xpBarFill.color = energyBarColor;
                 }
             }
             else
@@ -228,7 +228,7 @@ public class WeaponUI : MonoBehaviour
 
     void Update()
     {
-        UpdateXpBars();
+        UpdateEnergyBars();
         UpdateIcons(); // 实时更新图标（进化后会变）
     }
 
@@ -248,40 +248,40 @@ public class WeaponUI : MonoBehaviour
         }
     }
 
-    private void UpdateXpBars()
+    private void UpdateEnergyBars()
     {
         foreach (var slot in slots)
         {
             if (slot.linkedWeapon == null || slot.xpBarFill == null) continue;
 
             WeaponPart weapon = slot.linkedWeapon;
-            if (weapon.StatBlock == null || !weapon.StatBlock.usesProficiency)
+            if (weapon.StatBlock == null || !weapon.StatBlock.usesEnergy)
             {
                 slot.xpBarFill.fillAmount = 0f;
                 continue;
             }
 
-            // 计算目标经验百分比
+            // 计算目标能量百分比
+            float maxEnergy = weapon.StatBlock.maxEnergy;
             float targetPercent = 0f;
-            if (weapon.xpToNextLevel > 0 && weapon.xpToNextLevel < float.MaxValue)
+            if (maxEnergy > 0f)
             {
-                targetPercent = Mathf.Clamp01(weapon.currentProficiencyXP / weapon.xpToNextLevel);
+                targetPercent = Mathf.Clamp01(weapon.currentEnergy / maxEnergy);
             }
 
-            // 平滑过渡经验条
+            // 平滑过渡能量条
             slot.displayedFillAmount = Mathf.Lerp(slot.displayedFillAmount, targetPercent, Time.deltaTime * 8f);
             slot.xpBarFill.fillAmount = slot.displayedFillAmount;
 
-            // 检测经验变化，触发脉冲效果
-            if (weapon.currentProficiencyXP > slot.lastXp + 0.1f)
+            // 检测能量变化，触发脉冲效果
+            if (weapon.currentEnergy > slot.lastEnergy + 0.1f)
             {
-                // 经验增加时，图标弹一下
                 PulseIcon(slot);
             }
-            slot.lastXp = weapon.currentProficiencyXP;
+            slot.lastEnergy = weapon.currentEnergy;
 
-            // 经验满时变色
-            slot.xpBarFill.color = targetPercent >= 1f ? xpBarFullColor : xpBarColor;
+            // 能量满时变色
+            slot.xpBarFill.color = targetPercent >= 1f ? energyBarFullColor : energyBarColor;
         }
     }
 

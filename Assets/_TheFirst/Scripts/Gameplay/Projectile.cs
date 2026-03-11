@@ -34,6 +34,10 @@ public class Projectile : MonoBehaviour
     [HideInInspector] public bool isCritical = false;
     [System.NonSerialized] public bool canSplit = true; // 【新增】防止无限分裂（不序列化，运行时始终为 true）
 
+    [HideInInspector] public bool isUltimate = false; // 【新增】标记是否为大招发出的子弹
+    [HideInInspector] public bool isSubHurricane = false; // 【新增】标记是否为子飓风，防止无限递归生成
+    [HideInInspector] public int remainingBounces = 0; // 榴弹弹跳剩余次数
+
     private float spawnProtectionTimer = 0.5f; // 【新增】生成保护时间（秒）：在这个时间内不进行撞墙/撞地检测，防止出生距地太近直接销毁。
 
 
@@ -104,6 +108,7 @@ public class Projectile : MonoBehaviour
     private Dictionary<Health, float> hitCooldowns = new Dictionary<Health, float>();
     private float hitCooldown = 0.5f;
 
+    [HideInInspector] public float ignoreEnemyTimer = 0f; // 短时间内忽略敌人碰撞
 
     void Awake()
     {
@@ -178,6 +183,10 @@ public class Projectile : MonoBehaviour
         this.homingTurnSpeed = turnSpeed;
         this.isEnemyProjectile = isEnemyBullet;
         this.lifetime = life;
+        this.explosionRadius = 0f; // 【修复】重置爆炸半径，防止走进 Explode() 路径
+        this.aoeDamage = 0; // 追踪弹不应有 AOE 伤害
+        this.damageableLayers = isEnemyBullet ? LayerMask.GetMask("Player") : LayerMask.GetMask("Enemies");
+        this.groundAndWallLayers = LayerMask.GetMask("Ground");
         this.shieldImpactEffectPrefab = shieldVfx;
         this.defaultImpactEffectPrefab = defaultVfx;
         if (rb != null)
@@ -244,6 +253,7 @@ public class Projectile : MonoBehaviour
         this.damage = directDmg;
         this.isEnemyProjectile = isEnemyBullet;
         this.pierceCount = pierce > 0 ? pierce : 1;
+        Debug.Log($"<color=orange>[穿透调试-子弹初始化] {gameObject.name} pierceCount={this.pierceCount} (传入pierce={pierce})</color>");
         this.lifetime = life;
         this.dotDamage = dotDmg;
         this.dotDuration = dotDur;
@@ -339,6 +349,10 @@ public class Projectile : MonoBehaviour
         this.sourceWeapon = weaponPart; // <--- vvv [新增] vvv
         Collider col = GetComponent<Collider>(); // 抛物线需要非触发器
         if (col != null) col.isTrigger = false;
+
+        // 读取弹跳次数
+        if (sourceWeapon != null)
+            this.remainingBounces = sourceWeapon.localBounceCount;
 
         Destroy(gameObject, this.lifetime);
     }
@@ -444,6 +458,10 @@ public class Projectile : MonoBehaviour
         if (spawnProtectionTimer > 0f)
         {
             spawnProtectionTimer -= Time.deltaTime;
+        }
+        if (ignoreEnemyTimer > 0f)
+        {
+            ignoreEnemyTimer -= Time.deltaTime;
         }
 
         // 自转逻辑
@@ -667,6 +685,7 @@ public class Projectile : MonoBehaviour
     {
         if (hasExploded) return;
 
+
         if (mode == ProjectileMode.Parabolic)
         {
             // 检查是否碰到了可伤害层 (即敌人)
@@ -696,10 +715,11 @@ public class Projectile : MonoBehaviour
             }
             return; // 碰到玩家不再处理其他
         }       
-        // 伤害敌人 (保持不变)
+        // 伤害敌人 (保持不变但加入新判断)
         int targetLayer = isEnemyProjectile ? LayerMask.NameToLayer("Player") : LayerMask.NameToLayer("Enemies");
         if (other.gameObject.layer == targetLayer)
         {
+            if (ignoreEnemyTimer > 0f) return; // 【新增】短时间内忽略敌人碰撞
             Health targetHealth = other.GetComponentInParent<Health>();
             if (targetHealth != null) { HandleHit(targetHealth, other); }
         }
@@ -964,6 +984,14 @@ public class Projectile : MonoBehaviour
             {
                 directlyHitEnemyHealth.TakeDamage(damage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
                 ApplyElementalEffects(directlyHitEnemyHealth, weaponName);
+
+                // 直接命中也要检查眩晕
+                if (stunChance > 0f && stunDuration > 0f && Random.value <= stunChance)
+                {
+                    StatusEffectReceiver directReceiver = directlyHitEnemyHealth.GetComponent<StatusEffectReceiver>();
+                    if (directReceiver != null) directReceiver.ApplyStun(stunDuration);
+                    Debug.Log($"<color=yellow>[眩晕] 直接命中眩晕 {stunDuration}秒</color>");
+                }
             }
         }
         if (!hasCreatedHazard)
@@ -985,49 +1013,116 @@ public class Projectile : MonoBehaviour
                     healthComponent.TakeDamage(aoeDamage, explosionPoint, this.gameObject, AttackType.Standard, null, null, weaponName);
                     ApplyElementalEffects(healthComponent, weaponName);
 
-                    // 3. 处理【奇点手雷 (Black Hole)】 vs 普通击退
+                    // 2. 处理物理效果 + 眩晕
                     StatusEffectReceiver receiver = healthComponent.GetComponent<StatusEffectReceiver>();
                     if (receiver != null && stats != null)
                     {
                         if (stats.isBlackHole)
                         {
-                            // --- 奇点逻辑：吸力 ---
-                            // 方向：从敌人位置 -> 指向爆炸中心
                             Vector3 pullDir = (explosionPoint - healthComponent.transform.position).normalized;
-                            pullDir.y = 0; // 保持水平
-                                           // 施加吸力 (复用 ApplyKnockback，因为本质都是位移)
+                            pullDir.y = 0;
                             receiver.ApplyKnockback(pullDir, stats.blackHoleForce);
                         }
-                        else
-                        {
-                            // --- 普通逻辑：爆炸击退 (可选) ---
-                            // 如果你也想让普通手雷有击退，可以在这里写：
-                            // Vector3 pushDir = (healthComponent.transform.position - explosionPoint).normalized;
-                            // receiver.ApplyKnockback(pushDir, 5f); 
-                        }
+                    }
+                    // 眩晕判定（独立于黑洞判定）
+                    if (stunChance > 0f && stunDuration > 0f && Random.value <= stunChance)
+                    {
+                        StatusEffectReceiver stunReceiver = receiver ?? healthComponent.GetComponent<StatusEffectReceiver>();
+                        if (stunReceiver != null) stunReceiver.ApplyStun(stunDuration);
+                        Debug.Log($"<color=yellow>[眩晕] AOE眩晕 {stunDuration}秒</color>");
                     }
                 }
             }
+        }
+
+        // === 弹跳榴弹逻辑 ===
+        if (remainingBounces > 0 && isParabolic)
+        {
+            // 找爆炸点附近最近的存活敌人
+            Health nearestEnemy = null;
+            float nearestDist = float.MaxValue;
+            Collider[] nearby = Physics.OverlapSphere(explosionPoint, 30f, LayerMask.GetMask("Enemies"));
+            foreach (var col in nearby)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h == null || h.IsDead) continue;
+                float d = Vector3.Distance(explosionPoint, h.transform.position);
+                if (d < nearestDist) { nearestDist = d; nearestEnemy = h; }
+            }
+
+            // 无敌人则不弹跳
+            if (nearestEnemy == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            remainingBounces--;
+            hasExploded = false; // 重置爆炸标记，允许再次爆炸
+
+            // 弹跳方向 = 敌人朝向，弹跳距离固定
+            Vector3 bounceDir = nearestEnemy.transform.forward;
+            bounceDir.y = 0;
+            if (bounceDir.sqrMagnitude < 0.01f) bounceDir = Vector3.forward;
+            bounceDir.Normalize();
+
+            float bounceDist = Mathf.Clamp(nearestDist * 0.5f, 2f, 6f);
+            Vector3 bounceTarget = nearestEnemy.transform.position + bounceDir * bounceDist;
+
+            // 计算弹跳弹道
+            Vector3 toTarget = bounceTarget - explosionPoint;
+            toTarget.y = 0;
+            float dist = toTarget.magnitude;
+            float bounceHeight = Mathf.Clamp(dist * 0.4f, 1f, 4f);
+            float gravity = 20f;
+
+            float timeToApex = Mathf.Sqrt(2f * bounceHeight / gravity);
+            float totalTime = timeToApex * 2f;
+            float vy = gravity * timeToApex;
+            Vector3 horizontalVel = toTarget / totalTime;
+            Vector3 bounceVelocity = horizontalVel + Vector3.up * vy;
+
+            // 重置物理状态
+            transform.position = explosionPoint + Vector3.up * 0.3f;
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.velocity = bounceVelocity;
+                rb.isKinematic = false;
+            }
+
+            Debug.Log($"<color=orange>[弹跳榴弹] 向敌人朝向弹跳！剩余: {remainingBounces}</color>");
+            return; // 不销毁，继续飞行
         }
 
         Destroy(gameObject);
     }
 }
 
-private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int countOverride = -1)
+private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int countOverride = -1, bool useRingSpread = false)
 {
     int countToSpawn = (countOverride > 0) ? countOverride : stats.subProjectileCount;
 
     // 1. --- 生成基准点 ---
-    // 直接在爆炸点（稍加抬高）生成，不要向下射线压到地面，否则火花弹会立刻触发 Ground 碰撞器导致销毁
     Vector3 spawnBasePos = origin + Vector3.up * 0.5f;
 
     for (int i = 0; i < countToSpawn; i++)
     {
-        // 2. --- 计算随机散布方向 (水平面) ---
-        Vector3 spreadDir = Random.onUnitSphere; 
-        spreadDir.y = 0; 
-        spreadDir.Normalize();
+        // 2. --- 计算散布方向 ---
+        Vector3 spreadDir;
+        if (useRingSpread)
+        {
+            // 环形均匀分布
+            float angle = (360f / countToSpawn) * i;
+            spreadDir = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), 0f, Mathf.Cos(angle * Mathf.Deg2Rad));
+        }
+        else
+        {
+            // 随机方向
+            spreadDir = Random.onUnitSphere;
+            spreadDir.y = 0;
+            spreadDir.Normalize();
+        }
 
         // 稍微随机化一下生成位置，避免所有火花弹完全重叠在一起
         Vector3 finalSpawnPos = spawnBasePos + spreadDir * Random.Range(0.2f, 0.8f);
@@ -1035,11 +1130,48 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         // 3. --- 生成子弹 ---
         GameObject subObj = Instantiate(stats.subProjectilePrefab, finalSpawnPos, Quaternion.LookRotation(spreadDir));
 
-        // 可选：让分裂出来的小蜘蛛看起来小一点
-        subObj.transform.localScale = transform.localScale * 0.6f;
+        // 【修复】分裂弹使用固定最小 Scale，不继承母弹的缩放
+        // 冰锥母弹 Scale 只有 0.3，乘 0.6 后仅 0.18，碰撞器有效半径只有 0.16 太小导致穿过敌人
+        float subScale = Mathf.Max(transform.localScale.x * 0.6f, 0.5f);
+        subObj.transform.localScale = Vector3.one * subScale;
+
 
         // 4. --- 初始化子弹 ---
         Projectile subScript = subObj.GetComponent<Projectile>();
+
+        // 【修复】如果分裂预制体上没有 Projectile 脚本（例如纯粒子特效预制体），
+        // 则动态添加必要组件，否则分裂弹无法造成伤害（会直接穿过敌人）
+        if (subScript == null)
+        {
+            Debug.Log($"<color=yellow>[分裂修复] 预制体 {stats.subProjectilePrefab.name} 缺少 Projectile 组件，动态添加中...</color>");
+
+            // 添加 Rigidbody（Projectile.Awake 需要）
+            Rigidbody subRb = subObj.GetComponent<Rigidbody>();
+            if (subRb == null)
+            {
+                subRb = subObj.AddComponent<Rigidbody>();
+            }
+            subRb.useGravity = false;
+            subRb.isKinematic = false;
+
+            // 添加 SphereCollider 作为触发器（用于 OnTriggerEnter 检测敌人）
+            SphereCollider subCol = subObj.GetComponent<SphereCollider>();
+            if (subCol == null)
+            {
+                subCol = subObj.AddComponent<SphereCollider>();
+            }
+            subCol.isTrigger = true;
+            subCol.radius = 0.5f; // 合适的碰撞半径
+
+            // 设置为 PlayerProjectiles 层，避免与玩家碰撞
+            int playerProjLayer = LayerMask.NameToLayer("PlayerProjectiles");
+            if (playerProjLayer >= 0)
+                subObj.layer = playerProjLayer;
+
+            // 添加 Projectile 脚本
+            subScript = subObj.AddComponent<Projectile>();
+        }
+
         if (subScript != null)
         {
             // 防止子弹再次分裂 (解决无限递归问题)
@@ -1048,31 +1180,136 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             // 在地面基准点附近找目标
             Transform target = FindRandomNearbyEnemy(spawnBasePos, 15f);
 // ...
-            // 伤害减半
-            int subDmg = Mathf.RoundToInt(aoeDamage * 0.5f);
+            // 【修复】基础伤害计算：优先用AOE伤害，AOE为0时用直线伤害（冰锥等非爆炸弹）
+            int baseDmg = (aoeDamage > 0) ? aoeDamage : this.damage;
+            int subDmg = Mathf.RoundToInt(baseDmg * 0.5f);
             if (subDmg < 1) subDmg = 1;
+
+            // 【新增】应用分裂伤害加成（冰片伤害增幅）
+            if (sourceWeapon != null && sourceWeapon.localSubProjectileDamageBonus > 0f)
+            {
+                subDmg = Mathf.RoundToInt(subDmg * (1f + sourceWeapon.localSubProjectileDamageBonus));
+                if (subDmg < 1) subDmg = 1;
+            }
 
             // 确定特效：优先用专属特效，没有就用默认保底
             GameObject vfxToUse = stats.subProjectileHitVfx != null ? stats.subProjectileHitVfx : defaultImpactEffectPrefab;
 
-            // 初始化为追踪弹 (Homing)
-            // 注意：最后两个参数传入我们确定的 vfxToUse
-            subScript.InitializeAsHoming(
-                target,
-                8f,  // 速度稍微慢点，像爬行
-                subDmg,
-                false,
-                15f, // 转向速度快点，更灵活
-                2f,  // 【修改】存活时间稍微短一点 (原来是4f)
-                vfxToUse, // 命中特效 (Hit VFX)
-                vfxToUse  // 障碍物特效 (Obstacle VFX) - 蜘蛛通常用同一个
-            );
+            // 【新增】计算继承属性
+            int subPierce = 0;
+            float subFreezeChance = 0f;
+            if (sourceWeapon != null && sourceWeapon.subProjectileInheritEnabled)
+            {
+                // 继承穿透
+                subPierce = this.pierceCount; // 继承母弹的穿透次数
+                if (sourceWeapon.localPierceCountBonus > 0)
+                    subPierce += sourceWeapon.localPierceCountBonus;
 
-            // 【核心】：传递发射器引用，这让子弹能继承毒石属性！
+                // 继承冰冻概率
+                subFreezeChance = this.freezeChance;
+                if (subFreezeChance <= 0f && sourceWeapon.StatBlock != null)
+                    subFreezeChance = sourceWeapon.StatBlock.baseFreezeChance + sourceWeapon.localFreezeChanceBonus;
+            }
+
+            if (subPierce > 0)
+            {
+                // 有穿透 → 使用直线飞行模式，继承穿透和冰冻
+                subScript.InitializeAsStraight(
+                    dir: spreadDir,
+                    spd: 8f,
+                    directDmg: subDmg,
+                    isEnemyBullet: false,
+                    pierce: subPierce,
+                    life: 2f,
+                    shieldVfx: null,
+                    defaultVfx: vfxToUse,
+                    dotDmg: 0, dotDur: 0f, dotTick: 0f,
+                    slowPct: 0f, slowDur: 0f,
+                    type: AttackType.Standard,
+                    launcher: sourceWeapon,
+                    aoeDmg: 0, aoeRad: 0f,
+                    explodeVfx: null,
+                    freezeChance: subFreezeChance
+                );
+            }
+            else if (useRingSpread)
+            {
+                // 环形扩散 → 直线飞行，不追踪
+                subScript.InitializeAsStraight(
+                    dir: spreadDir,
+                    spd: 8f,
+                    directDmg: subDmg,
+                    isEnemyBullet: false,
+                    pierce: 1,
+                    life: 2f,
+                    shieldVfx: null,
+                    defaultVfx: vfxToUse,
+                    dotDmg: 0, dotDur: 0f, dotTick: 0f,
+                    slowPct: 0f, slowDur: 0f,
+                    type: AttackType.Standard,
+                    launcher: sourceWeapon,
+                    aoeDmg: 0, aoeRad: 0f,
+                    explodeVfx: null,
+                    freezeChance: subFreezeChance
+                );
+            }
+            else
+            {
+                // 火球分裂 → 追踪模式
+                subScript.InitializeAsHoming(
+                    target,
+                    8f,
+                    subDmg,
+                    false,
+                    15f,
+                    2f,
+                    vfxToUse,
+                    vfxToUse
+                );
+            }
+
+            // 【核心】：传递发射器引用，这让子弹能继承属性！
             subScript.sourceWeapon = this.sourceWeapon;
         }
     }
 }
+
+    /// <summary>
+    /// 非爆炸型弹（冰锥等）命中时触发分裂
+    /// 仅在技能树解锁分裂后才生效（isSubProjectileEnabled=true）
+    /// </summary>
+    private void TryNonExplosiveSplit(Vector3 hitPoint)
+    {
+        if (!canSplit) return;
+        if (sourceWeapon == null) return;
+
+        // 必须通过技能树解锁了分裂才生效
+        if (!sourceWeapon.isSubProjectileEnabled) return;
+
+        WeaponStatBlock stats = sourceWeapon.StatBlock;
+        if (stats == null) return;
+
+        GameObject subPrefab = stats.subProjectilePrefab;
+        if (subPrefab == null) return;
+
+        int finalCount = sourceWeapon.localSubProjectileCountBonus;
+        if (finalCount <= 0) return;
+
+        // 【关键】分裂后关闭canSplit，防止穿透弹每次命中都分裂
+        canSplit = false;
+
+        // 【修复】将分裂点Y坐标投影到地面
+        // 冰锥飞行高度较高(~1.5m)，hitPoint在敌人碰撞器表面也较高
+        // SpawnClusterProjectiles 内部会 +Vector3.up*0.5f
+        // 如果Y太高，子弹被FreezePositionY锁定后会飞过敌人上方
+        // 火球爆炸点(explosionPoint)通常在地面附近，所以火球分裂没问题
+        Vector3 groundedHitPoint = hitPoint;
+        groundedHitPoint.y = 0f; // 投影到地面，让子弹在 Y=0.5 处飞行
+
+        Debug.Log($"<color=cyan>[冰锥分裂] 首次命中时生成 {finalCount} 个分裂子弹 (原始Y={hitPoint.y:F1}, 修正Y=0)</color>");
+        SpawnClusterProjectiles(groundedHitPoint, stats, finalCount, useRingSpread: true);
+    }
+
     private Transform FindRandomNearbyEnemy(Vector3 center, float radius)
     {
         Collider[] hits = Physics.OverlapSphere(center, radius, damageableLayers);
@@ -1102,11 +1339,12 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             attacker = sourceWeapon.gameObject;
         }
         // ------------------
-        if (explosionRadius > 0)
+        // 【修复】穿透型子弹即使有爆炸半径，也不应在穿透用完前直接销毁
+        if (explosionRadius > 0 && pierceCount <= 1)
         {
-            // 在接触点引爆 (Explode 方法里已经包含了 AOE 伤害、特效和销毁自身的逻辑)
+            // 无穿透的爆炸弹：直接引爆并销毁
             Explode(SafeClosestPoint(hitCollider, transform.position), hitCollider);
-            return; // 爆炸后子弹销毁，不再执行穿透/连锁逻辑
+            return;
         }
 
         string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "";
@@ -1120,6 +1358,7 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             weaponName,
             this.isCritical // <--- 补上这一块！
         );
+
 
         if (!wasReflected)
         {
@@ -1137,9 +1376,30 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             HandleImpactEffect(targetHasShield, hitPoint);
             hitEnemies.Add(targetHealth);
             piercedEnemies++;
+            Debug.Log($"<color=orange>[穿透调试-命中] {gameObject.name} 命中 {targetHealth.name}，已穿透: {piercedEnemies}/{pierceCount}</color>");
+
+            // 【飓风-乱流】命中时尝试生成小飓风
+            if (!isSubHurricane)
+            {
+                HurricaneProjectile hc = GetComponent<HurricaneProjectile>();
+                if (hc != null) hc.TrySpawnTurbulence(hitPoint, piercedEnemies);
+            }
+
+            // 【修复】每次命中都尝试触发分裂（冰锥：第一次命中就分裂）
+            // TryNonExplosiveSplit 内部会用 canSplit 防止多次分裂
+            TryNonExplosiveSplit(hitPoint);
 
             if (mode != ProjectileMode.Boomerang && piercedEnemies >= pierceCount)
             {
+                Debug.Log($"<color=red>[穿透调试-销毁] {gameObject.name} 穿透次数用尽 ({piercedEnemies}>={pierceCount})，准备销毁</color>");
+
+                // 【飓风-风力回旋】穿透耗尽时尝试再发一道飓风
+                if (!isSubHurricane)
+                {
+                    HurricaneProjectile hc = GetComponent<HurricaneProjectile>();
+                    if (hc != null) hc.TryWindReturn();
+                }
+
                 if (remainingChains > 0) HandleChaining(hitPoint);
                 else Destroy(gameObject);
             }

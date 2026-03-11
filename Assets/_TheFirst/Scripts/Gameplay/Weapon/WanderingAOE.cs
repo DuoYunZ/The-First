@@ -12,6 +12,11 @@ public class WanderingAOE : MonoBehaviour
     public float reachThreshold = 0.5f; // 到达判定距离
     public float changeDestInterval = 3.0f; // 强制换点间隔
 
+    [Header("生命周期")]
+    [Tooltip("存活时间（秒），0 表示永不消失")]
+    public float lifetime = 0f;
+    private float lifetimeTimer = 0f;
+
     private Vector3 currentDestination;
     private float changeTimer;
     private Rigidbody rb;
@@ -38,6 +43,17 @@ public class WanderingAOE : MonoBehaviour
     void FixedUpdate()
     {
         if (target == null) return;
+
+        // 生命周期检查
+        if (lifetime > 0f)
+        {
+            lifetimeTimer += Time.fixedDeltaTime;
+            if (lifetimeTimer >= lifetime)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
 
         // --- 逻辑判定 ---
         float distToPlayer = Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z), new Vector3(target.position.x, 0, target.position.z));

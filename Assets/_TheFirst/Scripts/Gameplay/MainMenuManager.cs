@@ -21,7 +21,9 @@ public class MainMenuManager : MonoBehaviour
     {
         // 现在这个按钮直接加载Hub场景，存档加载逻辑会在PlayerProgressManager中处理
         Debug.Log("开始游戏，加载Hub场景...");
-        SceneManager.LoadScene("HubScene"); // 推荐使用场景名称加载
+        var transitioner = Object.FindFirstObjectByType<Transitioner>();
+        if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("HubScene");
+        else SceneManager.LoadScene("HubScene");
     }
 
     /// <summary>

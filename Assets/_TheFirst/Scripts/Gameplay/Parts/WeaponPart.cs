@@ -93,7 +93,44 @@ public class WeaponPart : MonoBehaviour
     [HideInInspector] public float localIgnitionChanceBonus = 0f; // 【新增】点燃概率加成
     [HideInInspector] public float localBurnDurationBonus = 0f;   // 【新增】燃烧持续时间加成（秒）
     [HideInInspector] public float localMaxHealthBurnPercent = 0f; // 【新增】猛烈燃烧：基于最大生命值的百分比伤害
+    [HideInInspector] public float localSubProjectileDamageBonus = 0f; // 【新增】分裂子弹伤害加成（百分比，如 0.8 = +80%）
+    [HideInInspector] public bool subProjectileInheritEnabled = false; // 【新增】分裂子弹是否继承母弹属性（穿透/冰冻等）
 
+    // 雷击类
+    [HideInInspector] public int localLightningRepeatCount = 0;  // 连续雷击次数（落雷后0.3秒再落一道）
+    [HideInInspector] public float localStunDurationBonus = 0f;  // 眩晕持续时间加成
+    [HideInInspector] public bool isMagneticStormEnabled = false; // 磁暴开关（落雷后触发范围爆炸）
+    [HideInInspector] public bool isElectricFieldEnabled = false; // 电磁场开关（磁暴后生成暴击率提升区域）
+    [HideInInspector] public float localElectricFieldDamageBonus = 0f; // 电磁场伤害加成
+    [HideInInspector] public float localElectricFieldDurationBonus = 0f; // 电磁场持续时间加成
+    [HideInInspector] public bool isOnKillChainEnabled = false;  // 击杀时触发连锁雷击
+
+    // 飓风术类
+    [HideInInspector] public float localKnockbackBonus = 0f;     // 击退力度加成
+    [HideInInspector] public bool isVacuumPullEnabled = false;   // 真空牵引开关
+    [HideInInspector] public float localVacuumDamageBonus = 0f;  // 真空伤害加成
+    [HideInInspector] public bool isWindReturnEnabled = false;   // 风力回旋开关
+    [HideInInspector] public int localTurbulenceLevel = 0;       // 乱流等级（0=无，1=乱流，2+=乱流加剧）
+
+    // 榴弹类
+    [HideInInspector] public int localBounceCount = 0;           // 弹跳次数（爆炸后再弹跳几次）
+
+    // 闪电链类
+    [HideInInspector] public int localChainCountBonus = 0;       // 弹射次数加成
+    [HideInInspector] public bool localIonExplosionEnabled = false; // 离子爆破开关
+    [HideInInspector] public float localIonExplosionDamageBonus = 0f; // 离子爆破伤害加成
+    [HideInInspector] public float localIonExplosionRadiusBonus = 0f; // 离子爆破范围加成
+
+    // 冰霜新星类
+    [HideInInspector] public int localFrostNovaExtraCast = 0;        // 额外释放次数（连环霜爆）
+    [HideInInspector] public float localFreezeDurationBonus = 0f;    // 冻结持续时间加成
+    [HideInInspector] public bool localFrostNovaCenterDmg = false;   // 寒霜之心（中心额外伤害）
+    [HideInInspector] public bool localAbsoluteZero = false;         // 绝对零度（中心冻结翻倍）
+
+    // 冰霜融合类
+    [HideInInspector] public bool localFrostBite = false;            // 刺骨寒霜（冻结扣血）
+    [HideInInspector] public int localIceCrystalShatter = 0;         // 冰晶碎裂（分裂冰锥数量）
+    [HideInInspector] public float localCooldownReduction = 0f;      // 冷却缩减（百分比小数）
 
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
@@ -130,6 +167,17 @@ public class WeaponPart : MonoBehaviour
     public System.Action<float, float> OnWeaponXpChanged;
     // 事件：当需要选择分支时 (用于弹出分支选择UI)
     public System.Action<WeaponPart> OnBranchChoiceRequired;
+
+    // =========================================================
+    // 【新增】能量蓄力系统 (Energy System)
+    // =========================================================
+    [Header("能量蓄力 (Energy)")]
+    public float currentEnergy = 0f;
+    public bool IsEnergyFull => StatBlock != null && StatBlock.usesEnergy && currentEnergy >= StatBlock.maxEnergy;
+    // 事件：当能量变化时 (current, max)
+    public System.Action<float, float> OnEnergyChanged;
+    // 事件：当能量满时
+    public System.Action<WeaponPart> OnEnergyFull;
 
     #region Unity Lifecycle Methods
 
@@ -434,27 +482,41 @@ public class WeaponPart : MonoBehaviour
 
     public void GainProficiencyXP(float amount)
     {
-        if (StatBlock == null || !StatBlock.usesProficiency) return;
-        if (currentStage == WeaponStage.Evolved) return; // 已进化，不再获得经验
+        if (StatBlock == null) return;
 
-        // 保护检查：确保经验需求已正确初始化
-        if (xpToNextLevel < 10f)
-        {
-            CalculateNextLevelXP();
-        }
+        // 伤害转为能量蓄力（用于大招），不再触发武器独立升级
+        GainEnergy(amount);
+    }
 
-        currentProficiencyXP += amount;
+    /// <summary>
+    /// 【新增】获得能量（伤害或特色行为触发）
+    /// </summary>
+    public void GainEnergy(float damageAmount)
+    {
+        if (StatBlock == null || !StatBlock.usesEnergy) return;
+        if (IsEnergyFull) return; // 已满，不再累加
+
+        float energyGain = damageAmount * StatBlock.energyGainPerDamage;
+        currentEnergy = Mathf.Min(currentEnergy + energyGain, StatBlock.maxEnergy);
 
         // 通知 UI 更新
-        OnWeaponXpChanged?.Invoke(currentProficiencyXP, xpToNextLevel);
+        OnEnergyChanged?.Invoke(currentEnergy, StatBlock.maxEnergy);
 
-        // 检查经验是否满了
-        if (currentProficiencyXP >= xpToNextLevel)
+        // 能量满了
+        if (IsEnergyFull)
         {
-            // HandleXpFull(); // [修改] 移除旧的分支/进化逻辑
-             LevelUpWeapon(); // [修改] 启用新的技能树升级逻辑
+            OnEnergyFull?.Invoke(this);
+            Debug.Log($"<color=yellow>[能量满] {StatBlock.weaponName} 能量已满！可以释放大招！</color>");
         }
-        Debug.Log($"[武器经验] {StatBlock.weaponName} 获得 {amount} 点经验! 当前: {currentProficiencyXP}/{xpToNextLevel} 阶段:{currentStage}");
+    }
+
+    /// <summary>
+    /// 消耗能量（释放大招后调用）
+    /// </summary>
+    public void ConsumeAllEnergy()
+    {
+        currentEnergy = 0f;
+        OnEnergyChanged?.Invoke(0f, StatBlock.maxEnergy);
     }
 
     // 纯经验条模式：经验满时的处理
@@ -1489,17 +1551,31 @@ public class WeaponPart : MonoBehaviour
                 break;
 
             case WeaponBehaviorType.ParabolicAOE:
+                // 榴弹必须有目标且在射程内才发射
+                Transform grenadeTarget = firstTarget ?? FindNearestEnemyTransform();
+                if (grenadeTarget == null) { yield break; } // 无敌人不发射
+
+                float grenadeRange = StatBlock.autoAimRange > 0 ? StatBlock.autoAimRange : 15f;
+                float distToTarget = Vector3.Distance(firePoint.position, grenadeTarget.position);
+                if (distToTarget > grenadeRange) { yield break; } // 超出射程不发射
+
                 int finalParabolicAoe = Mathf.RoundToInt(
                     StatBlock.baseAoeDamage * (PlayerStats.Instance.aoeDamageMultiplier + localDamageBonus + stoneDmgMod) +
                     PlayerStats.Instance.flatAoeDamageBonus
                 );
-                InstantiateAndFireParabolicProjectile(finalTargetDirection, StatBlock, finalDamage, finalParabolicAoe);
+                InstantiateAndFireParabolicProjectile(grenadeTarget.position, StatBlock, finalDamage, finalParabolicAoe);
                 break;
 
             case WeaponBehaviorType.Chain:
                 if (firstTarget != null)
                 {
                     StartCoroutine(ChainDamageRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange));
+
+                    // 交叉闪电：额外闪电链，0.3秒后对另一个目标发射
+                    if (localOrbitalCountBonus > 0)
+                    {
+                        StartCoroutine(CrossLightningRoutine(firstTarget, StatBlock.baseChainCount, finalDamage, StatBlock.chainRange, localOrbitalCountBonus));
+                    }
                 }
                 break;
 
@@ -1510,6 +1586,14 @@ public class WeaponPart : MonoBehaviour
 
             case WeaponBehaviorType.Boomerang:
                 InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale);
+                break;
+
+            case WeaponBehaviorType.FrostNova:
+                Transform frostTarget = firstTarget ?? FindNearestEnemyTransform();
+                if (frostTarget != null)
+                {
+                    StartCoroutine(FrostNovaRoutine(frostTarget.position, finalDamage, finalScale));
+                }
                 break;
         }
         } // for burst 循环结束
@@ -1630,6 +1714,7 @@ public class WeaponPart : MonoBehaviour
 
             // 基础穿透 + 玩家全局穿透 + 能量石穿透 + 局外升级穿透(localPierceCountBonus)
             int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus + localPierceCountBonus; // <--- 加上 localPierceCountBonus
+            Debug.Log($"<color=orange>[穿透调试-发射] {StatBlock.weaponName} finalPierceCount={finalPierceCount} (base:{StatBlock.basePierceCount} + global:{PlayerStats.Instance.bonusPierceCount} + stone:{stonePierceBonus} + local:{localPierceCountBonus})</color>");
 
             // 特殊逻辑：极寒冰锥 (进化后) 无限穿透
             // 可以判断 ID (ExtremeIceShard) 或者名字
@@ -1686,49 +1771,71 @@ public class WeaponPart : MonoBehaviour
             {
                 // Debug.Log($"[WeaponPart] 发射了一颗暴击子弹！武器: {StatBlock.weaponName}");
             }
+
+            // 【飓风】如果预制件上有 HurricaneProjectile 组件，初始化它
+            HurricaneProjectile hc = bullet.GetComponent<HurricaneProjectile>();
+            if (hc != null)
+            {
+                hc.Setup(this);
+            }
         }
         else { Destroy(bullet); }
     }
 
     // Updated to accept finalDirectDamage and finalAoeDamage
-    private void InstantiateAndFireParabolicProjectile(Vector3 horizontalDir, WeaponStatBlock statsToUse, int finalDirectDamage, int finalAoeDamage)
+    private void InstantiateAndFireParabolicProjectile(Vector3 targetPos, WeaponStatBlock statsToUse, int finalDirectDamage, int finalAoeDamage)
     {
         if (firePoint == null || statsToUse?.projectilePrefab == null) return;
 
-        // Calculate other final stats as needed
+        // 计算最终属性
         float finalAoeRadius = statsToUse.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
-        float finalLaunchForce = statsToUse.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        int finalDotDamage = Mathf.RoundToInt(statsToUse.baseDotDamage /* * ScalingFactorIfNeeded */);
+        int finalDotDamage = Mathf.RoundToInt(statsToUse.baseDotDamage);
         float finalDotDuration = statsToUse.baseDotDuration;
         float finalDotTickInterval = statsToUse.dotTickInterval;
-
         float finalStunChance = statsToUse.baseStunChance + PlayerStats.Instance.parabolicAoeStunChance;
-        // 最终时长 = 武器基础时长 (未来也可以让 PlayerStats 强化这个)
-        float finalStunDuration = statsToUse.baseStunDuration;
-        float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
+        float finalStunDuration = statsToUse.baseStunDuration + localStunDurationBonus;
+        // 有眩晕加成时强制100%概率
+        if (localStunDurationBonus > 0f && finalStunChance <= 0f) finalStunChance = 1f;
 
-        GameObject bullet = Instantiate(statsToUse.projectilePrefab, firePoint.position, Quaternion.LookRotation(horizontalDir));
+        // === 精确弹道计算 ===
+        Vector3 startPos = firePoint.position;
+        Vector3 toTarget = targetPos - startPos;
+        float horizontalDist = new Vector3(toTarget.x, 0, toTarget.z).magnitude;
+        float heightDiff = toTarget.y;
+        Vector3 horizontalDir = new Vector3(toTarget.x, 0, toTarget.z).normalized;
+
+        // 根据距离动态调整弧线高度：近距离低弧，远距离高弧
+        float gravity = 20f;
+        float arcHeight = Mathf.Clamp(horizontalDist * 0.5f, 1.5f, 8f); // 距离的一半，限制在1.5~8之间
+
+        // 飞行时间由弧线高度决定（上升+下降）
+        float timeToApex = Mathf.Sqrt(2f * arcHeight / gravity);
+        float totalTime = timeToApex + Mathf.Sqrt(2f * (arcHeight - heightDiff) / gravity);
+
+        // 计算初始速度
+        float vy = gravity * timeToApex; // 垂直初速度
+        Vector3 horizontalVel = horizontalDir * (horizontalDist / totalTime); // 水平速度 = 距离/时间
+        Vector3 initialVelocity = horizontalVel + Vector3.up * vy;
+
+        // 生成子弹
+        GameObject bullet = Instantiate(statsToUse.projectilePrefab, startPos, Quaternion.LookRotation(horizontalDir));
         bool isCrit = Random.value <= PlayerStats.Instance.critRate;
         int damageToUse = isCrit ? Mathf.RoundToInt(finalDirectDamage * PlayerStats.Instance.critDamage) : finalDirectDamage;
+        
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
         {
-            float angleRad = statsToUse.launchAngle * Mathf.Deg2Rad;
-            float hVel = finalLaunchForce * Mathf.Cos(angleRad);
-            float vVel = finalLaunchForce * Mathf.Sin(angleRad);
-            Vector3 initialVelocity = (horizontalDir * hVel) + (Vector3.up * vVel);
-
             projectileScript.InitializeAsParabolic(
                  initialVelocity, finalDirectDamage, finalAoeDamage,
                  statsToUse.baseProjectileLifetime, statsToUse.explosionEffectPrefab, finalAoeRadius,
                  statsToUse.layersToDamageByAOE, statsToUse.layersToExplodeOn,
                  finalDotDamage, finalDotDuration, finalDotTickInterval,
-                finalStunChance, finalStunDuration, //
+                 finalStunChance, finalStunDuration,
                  this
              );
             projectileScript.isCritical = isCrit;
         }
-        else { Destroy(bullet); } // Clean up
+        else { Destroy(bullet); }
     }
 
     // Updated to accept finalDamage and finalScale
@@ -1899,37 +2006,301 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 冰霜新星：在目标位置爆发冰晶刺，对范围内敌人造成伤害+冻结
+    /// </summary>
+    private IEnumerator FrostNovaRoutine(Vector3 center, int damage, float scale)
+    {
+        float baseRadius = StatBlock.baseAoeRadius * scale * (1f + localAreaBonus);
+        float freezeDuration = 1f + localFreezeDurationBonus; // 基础冻结2秒 + 加成
+        int totalCasts = 1 + localFrostNovaExtraCast; // 连环霜爆
+
+        HashSet<Transform> hitTargets = new HashSet<Transform>(); // 记录已命中的敌人，优先找新目标
+
+        for (int cast = 0; cast < totalCasts; cast++)
+        {
+            if (cast > 0)
+            {
+                yield return new WaitForSeconds(0.6f);
+                
+                // 额外释放时，优先找范围内【未被本轮冰霜新星命中过】的最近敌人
+                Transform newTarget = null;
+                float minDist = float.MaxValue;
+                float searchRadius = StatBlock?.autoAimRange ?? 20f;
+                Collider[] cols = Physics.OverlapSphere(transform.position, searchRadius, LayerMask.GetMask("Enemies"));
+                
+                foreach (var c in cols)
+                {
+                    Health pH = c.GetComponentInParent<Health>();
+                    if (pH == null || pH.IsDead || hitTargets.Contains(pH.transform)) continue;
+                    
+                    float dist = Vector3.Distance(transform.position, pH.transform.position);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        newTarget = pH.transform;
+                    }
+                }
+                
+                // 如果范围内没有新目标了，则回退逻辑：找离玩家最近的任何活着的敌人（允许重复命中）
+                if (newTarget == null)
+                {
+                    newTarget = FindNearestEnemyTransform();
+                }
+
+                if (newTarget != null) center = newTarget.position;
+            }
+
+            // 生成冰晶刺特效
+            if (StatBlock.impactEffectPrefab != null)
+            {
+                var vfx = Instantiate(StatBlock.impactEffectPrefab, center, Quaternion.identity);
+                vfx.transform.localScale = Vector3.one * (baseRadius / StatBlock.baseAoeRadius);
+                Destroy(vfx, 3f);
+            }
+
+            PlayFireSound();
+
+            // 对范围内敌人造成伤害
+            Collider[] hits = Physics.OverlapSphere(center, baseRadius, LayerMask.GetMask("Enemies"));
+            foreach (var col in hits)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h == null || h.IsDead) continue;
+
+                hitTargets.Add(h.transform); // 记录被命中的敌人
+
+                float distToCenter = Vector3.Distance(center, h.transform.position);
+                bool isInCenter = distToCenter <= baseRadius * 0.4f; // 内圈40%为中心区域
+
+                h.TakeDamage(damage, h.transform.position, this.gameObject);
+
+                // 寒霜之心：中心区域额外伤害
+                if (localFrostNovaCenterDmg && isInCenter)
+                {
+                    h.TakeDamage(damage, h.transform.position, this.gameObject);
+                }
+
+                // 冻结效果
+                StatusEffectReceiver receiver = h.GetComponent<StatusEffectReceiver>();
+                if (receiver != null)
+                {
+                    float finalFreeze = freezeDuration;
+                    // 绝对零度：中心区域冻结翻倍
+                    if (localAbsoluteZero && isInCenter)
+                    {
+                        finalFreeze *= 2f;
+                    }
+                    receiver.ApplyFreeze(finalFreeze, null, localFrostBite);
+                }
+            }
+
+            Debug.Log($"<color=#88DDFF>[冰霜新星] 第{cast + 1}次释放，命中 {hits.Length} 目标，半径: {baseRadius:F1}，冻结: {freezeDuration}秒</color>");
+        }
+
+        // === 冰晶碎裂：新星结束后从被冻结敌人处发射小冰锥 ===
+        if (localIceCrystalShatter > 0 && StatBlock.subProjectilePrefab != null)
+        {
+            yield return new WaitForSeconds(0.2f); // 短暂延迟后碎裂
+
+            // 找所有被冻结的敌人
+            Collider[] frozenEnemies = Physics.OverlapSphere(center, baseRadius * 1.5f, LayerMask.GetMask("Enemies"));
+            foreach (var col in frozenEnemies)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h == null || h.IsDead) continue;
+
+                StatusEffectReceiver ser = h.GetComponent<StatusEffectReceiver>();
+                if (ser == null || !ser.IsFrozen) continue;
+
+                // 从 AimTargetPoint 发射冰锥
+                Vector3 spawnPos = (h.AimTargetPoint != null) ? h.AimTargetPoint.position : h.transform.position + Vector3.up;
+
+                for (int s = 0; s < localIceCrystalShatter; s++)
+                {
+                    // 随机方向（水平散射）
+                    float angle = (360f / localIceCrystalShatter) * s + Random.Range(-15f, 15f);
+                    Vector3 dir = Quaternion.Euler(0, angle, 0) * Vector3.forward;
+
+                    GameObject shard = Instantiate(StatBlock.subProjectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+                    Projectile p = shard.GetComponent<Projectile>();
+                    if (p != null)
+                    {
+                        int shardDmg = Mathf.RoundToInt(damage * 0.3f); // 冰锥伤害为新星30%
+                        p.InitializeAsStraight(dir, 12f,
+                            shardDmg, false, 1, 3f, null, null, 0, 0, 0, 0, 0, AttackType.Standard, this);
+                        p.ignoreEnemyTimer = 0.5f; // 【新增】0.5秒内不触发敌人碰撞
+                    }
+                }
+
+                Debug.Log($"<color=#88DDFF>[冰晶碎裂] 从 {h.name} 发射 {localIceCrystalShatter} 个冰锥</color>");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 大招闪电链：弹射次数极多，允许重复命中同一敌人
+    /// </summary>
+    public IEnumerator UltimateChainLightning(Transform currentTarget, int totalChains, int damage, float chainRange)
+    {
+        var recentlyHit = new List<Health>(); // 仅记录最近3个，允许回弹
+        Vector3 lastHitPosition = firePoint.position;
+        int remaining = totalChains;
+
+        while (currentTarget != null && remaining > 0)
+        {
+            Health targetHealth = currentTarget.GetComponent<Health>();
+            Vector3 hitPoint = (targetHealth != null && targetHealth.AimTargetPoint != null)
+                ? targetHealth.AimTargetPoint.position : currentTarget.position;
+
+            if (targetHealth != null && !targetHealth.IsDead)
+            {
+                targetHealth.TakeDamage(damage, hitPoint, this.gameObject);
+
+                // 闪电链特效
+                if (lightningChainPrefab != null)
+                {
+                    var vfx = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity);
+                    vfx.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, hitPoint);
+                }
+                if (StatBlock?.impactEffectPrefab != null)
+                {
+                    Instantiate(StatBlock.impactEffectPrefab, hitPoint, Quaternion.identity);
+                }
+
+                // 记录最近命中（只保留最近3个，允许链式回弹）
+                recentlyHit.Add(targetHealth);
+                if (recentlyHit.Count > 3) recentlyHit.RemoveAt(0);
+            }
+
+            yield return new WaitForSeconds(0.05f);
+
+            // 找下一个目标（排除最近命中的）
+            Transform nextTarget = null;
+            float closestDist = float.MaxValue;
+            Collider[] nearby = Physics.OverlapSphere(hitPoint, chainRange, LayerMask.GetMask("Enemies"));
+            foreach (var col in nearby)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h == null || h.IsDead || recentlyHit.Contains(h)) continue;
+                float d = Vector3.Distance(hitPoint, col.transform.position);
+                if (d < closestDist) { closestDist = d; nextTarget = col.transform; }
+            }
+            // 没有新目标就回弹到任意存活敌人
+            if (nextTarget == null)
+            {
+                foreach (var col in nearby)
+                {
+                    Health h = col.GetComponentInParent<Health>();
+                    if (h == null || h.IsDead) continue;
+                    nextTarget = col.transform;
+                    break;
+                }
+            }
+
+            remaining--;
+            lastHitPosition = hitPoint;
+            currentTarget = nextTarget;
+        }
+    }
+
+    /// <summary>
+    /// 交叉闪电：每0.3秒对另一个目标发射额外闪电链
+    /// </summary>
+    private IEnumerator CrossLightningRoutine(Transform firstTarget, int chainCount, int damage, float chainRange, int extraCount)
+    {
+        for (int i = 0; i < extraCount; i++)
+        {
+            yield return new WaitForSeconds(0.6f);
+
+            // 找另一个目标
+            Transform crossTarget = null;
+            float closestDist = float.MaxValue;
+            Collider[] enemies = Physics.OverlapSphere(firePoint.position, chainRange, LayerMask.GetMask("Enemies"));
+            foreach (var col in enemies)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h == null || h.IsDead) continue;
+                // 优先选不同于 firstTarget 的目标
+                if (col.transform == firstTarget) continue;
+                float d = Vector3.Distance(firePoint.position, col.transform.position);
+                if (d < closestDist) { closestDist = d; crossTarget = col.transform; }
+            }
+
+            // 只有一个敌人时对同一目标
+            if (crossTarget == null) crossTarget = firstTarget;
+            if (crossTarget == null) yield break;
+
+            StartCoroutine(ChainDamageRoutine(crossTarget, chainCount, damage, chainRange));
+            Debug.Log($"<color=cyan>[交叉闪电] 第{i + 1}条额外闪电链发射</color>");
+        }
+    }
+
     private IEnumerator ChainDamageRoutine(Transform currentTarget, int remainingChains, int damage, float chainRange)
     {
+        // 弹射次数加成
+        remainingChains += localChainCountBonus;
+
         var hitEnemies = new List<Health>();
         Vector3 lastHitPosition = firePoint.position;
 
         while (currentTarget != null && remainingChains >= 0)
         {
-            Vector3 currentTargetPosition = currentTarget.position;
             Health targetHealth = currentTarget.GetComponent<Health>();
+            // 使用 AimTargetPoint 避免特效在脚底
+            Vector3 hitPoint = (targetHealth != null && targetHealth.AimTargetPoint != null)
+                ? targetHealth.AimTargetPoint.position : currentTarget.position;
 
             if (targetHealth != null && !hitEnemies.Contains(targetHealth) && !targetHealth.IsDead)
             {
                 hitEnemies.Add(targetHealth);
-                targetHealth.TakeDamage(damage, currentTargetPosition, this.gameObject); // Use calculated damage
+                targetHealth.TakeDamage(damage, hitPoint, this.gameObject);
 
+                // 闪电链特效
                 if (lightningChainPrefab != null)
                 {
                     var chainVFX_GO = Instantiate(lightningChainPrefab, Vector3.zero, Quaternion.identity);
-                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, currentTargetPosition);
+                    chainVFX_GO.GetComponent<ChainLightningVFX>()?.Setup(lastHitPosition, hitPoint);
                 }
-                if (StatBlock?.impactEffectPrefab != null) // Use StatBlock impact
+                if (StatBlock?.impactEffectPrefab != null)
                 {
-                    Instantiate(StatBlock.impactEffectPrefab, currentTargetPosition, Quaternion.identity);
+                    Instantiate(StatBlock.impactEffectPrefab, hitPoint, Quaternion.identity);
+                }
+
+                // 麻痹效果（使用感电特效，不和眩晕共用）
+                if (localStunDurationBonus > 0f)
+                {
+                    StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
+                    if (receiver != null) receiver.ApplyParalyze(localStunDurationBonus);
+                }
+
+                // 离子爆破
+                if (localIonExplosionEnabled)
+                {
+                    float ionRadius = 2f * (1f + localIonExplosionRadiusBonus / 100f);
+                    int ionDmg = Mathf.RoundToInt(damage * 0.5f * (1f + localIonExplosionDamageBonus / 100f));
+
+                    Collider[] ionHits = Physics.OverlapSphere(hitPoint, ionRadius, LayerMask.GetMask("Enemies"));
+                    foreach (var col in ionHits)
+                    {
+                        Health h = col.GetComponentInParent<Health>();
+                        if (h == null || h.IsDead || hitEnemies.Contains(h)) continue;
+                        h.TakeDamage(ionDmg, hitPoint, this.gameObject);
+
+                        if (localStunDurationBonus > 0f)
+                        {
+                            StatusEffectReceiver r = h.GetComponent<StatusEffectReceiver>();
+                            if (r != null) r.ApplyParalyze(localStunDurationBonus);
+                        }
+                    }
                 }
             }
 
             yield return new WaitForSeconds(0.05f);
 
-            Transform nextTarget = FindNextChainTarget(currentTargetPosition, chainRange, hitEnemies);
+            Transform nextTarget = FindNextChainTarget(hitPoint, chainRange, hitEnemies);
             remainingChains--;
-            lastHitPosition = currentTargetPosition;
+            lastHitPosition = hitPoint;
             currentTarget = nextTarget;
         }
     }

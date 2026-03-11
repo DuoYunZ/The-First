@@ -41,5 +41,45 @@ public enum UpgradeType
     SubProjectileCount,      // 【新增】分裂数量
     IgnitionChance,          // 【新增】点燃概率加成
     BurnDuration,            // 【新增】燃烧持续时间加成
-    MaxHealthBurn            // 【新增】猛烈燃烧（基于目标最大生命值的百分比伤害）
+    MaxHealthBurn,           // 【新增】猛烈燃烧（基于目标最大生命值的百分比伤害）
+    FreezeChance,            // 【新增】冰冻概率加成
+    SubProjectileDamageBonus,// 【新增】分裂子弹伤害加成（百分比）
+    SubProjectileInherit,    // 【新增】分裂子弹继承母弹属性（穿透/冰冻等）
+
+    // 雷击类
+    StunDuration,            // 眩晕/麻痹持续时间加成
+    LightningRepeatCount,    // 连续雷击次数（每次落雷后0.3秒再落一道）
+    MagneticStormBurst,      // 磁暴（一次性范围攻击，落雷后触发）
+    ElectricField,           // 电磁场（持续范围效果，提升暴击率）
+    ElectricFieldDamage,     // 电磁场伤害加成
+    ElectricFieldDuration,   // 电磁场持续时间加成
+    OnKillChainLightning,    // 击杀时触发连锁雷击
+
+    // 飓风术类
+    KnockbackForce,          // 击退力度加成
+    VacuumPull,              // 真空牵引（命中时吸引周围怪物）
+    VacuumDamage,            // 真空伤害加成
+    WindReturn,              // 风力回旋（穿透耗尽后向其他方向释放一道飓风）
+    Turbulence,              // 乱流（命中时生成小飓风）
+    TurbulenceIntensify,     // 乱流加剧（每次命中都生成小飓风）
+
+    // 榴弹类
+    GrenadeBounce,           // 弹跳榴弹（爆炸后弹跳再炸一次）
+
+    // 闪电链类
+    ChainCount,              // 弹射次数增加
+    IonExplosion,            // 离子爆破（开启链式命中爆炸）
+    IonExplosionDamage,      // 离子爆破伤害加成
+    IonExplosionRadius,      // 离子爆破范围加成
+
+    // 冰霜新星类
+    FrostNovaExtraCast,      // 冰霜新星额外释放次数
+    FreezeDuration,          // 冻结持续时间增加
+    FrostNovaCenterDamage,   // 寒霜之心（中心区域额外伤害）
+    AbsoluteZero,            // 绝对零度（中心区域冻结翻倍）
+
+    // 冰霜融合类（冰霜新星+冰锥术）
+    FrostBite,               // 刺骨寒霜（冻结怪物每秒扣1%最大生命值）
+    IceCrystalShatter,       // 冰晶碎裂（新星结束后分裂小冰锥数量）
+    CooldownReduction        // 冷却缩减（百分比）
 }
