@@ -47,6 +47,22 @@ public class SkillTreeGenerator : EditorWindow
         {
             GenerateIceFusionNodes();
         }
+        if (GUILayout.Button("Generate Orbiter Nodes"))
+        {
+            GenerateOrbiterNodes();
+        }
+        if (GUILayout.Button("Generate Landmine Nodes"))
+        {
+            GenerateLandmineNodes();
+        }
+        if (GUILayout.Button("Generate Aura (Support) Nodes"))
+        {
+            GenerateAuraNodes();
+        }
+        if (GUILayout.Button("Generate FlameDagger Nodes"))
+        {
+            GenerateFlameDaggerNodes();
+        }
     }
 
     private static void GenerateFireballNodes()
@@ -772,6 +788,218 @@ public class SkillTreeGenerator : EditorWindow
         Debug.Log("冰霜融合技能节点生成完成。");
     }
 
+    private static void GenerateOrbiterNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/Orbiter";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock orbiterWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Orbit.asset");
+        if (orbiterWeapon == null) { Debug.LogError("找不到 Orbiter Weapon SO (SO_Orbit)"); return; }
+
+        // === 第一层 (基础) ===
+
+        var n_dmg = CreateNode(folderPath, "OB_DmgBoost", "护盾伤害增幅", orbiterWeapon, "环绕武器伤害+60%");
+        SetEffects(n_dmg, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 60, ModifierType.Percentage)
+        });
+
+        var n_speed = CreateNode(folderPath, "OB_SpeedBoost", "加速旋转", orbiterWeapon, "环绕武器旋转速度+30%");
+        SetEffects(n_speed, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalSpeed, 30, ModifierType.Percentage)
+        });
+
+        var n_count = CreateNode(folderPath, "OB_CountI", "护盾增殖 I", orbiterWeapon, "环绕武器数量+1");
+        SetEffects(n_count, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalCount, 1, ModifierType.Flat)
+        });
+
+        var n_dur1 = CreateNode(folderPath, "OB_DurationI", "延续 I", orbiterWeapon, "环绕武器持续时间+30%");
+        SetEffects(n_dur1, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDuration, 30, ModifierType.Percentage)
+        });
+
+        var n_expand1 = CreateNode(folderPath, "OB_ExpandI", "巨化 I", orbiterWeapon, "环绕武器体积+40%，冷却+10%");
+        SetEffects(n_expand1, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 40, ModifierType.Percentage),
+            (UpgradeType.WeaponFireRate, 10, ModifierType.Percentage)
+        });
+
+        var n_reload = CreateNode(folderPath, "OB_ReloadI", "快速装填 I", orbiterWeapon, "环绕武器冷却-15%");
+        SetEffects(n_reload, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CooldownReduction, 15, ModifierType.Percentage)
+        });
+
+        // === 第二层 (基础进阶) ===
+
+        var n_dur2 = CreateNode(folderPath, "OB_DurationII", "延续 II", orbiterWeapon, "环绕武器持续时间+30%");
+        SetEffects(n_dur2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDuration, 30, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_dur2, n_dur1);
+
+        var n_expand2 = CreateNode(folderPath, "OB_ExpandII", "巨化 II", orbiterWeapon, "环绕武器体积+40%，冷却+10%");
+        SetEffects(n_expand2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 40, ModifierType.Percentage),
+            (UpgradeType.WeaponFireRate, 10, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_expand2, n_expand1);
+
+        var n_reload2 = CreateNode(folderPath, "OB_ReloadII", "快速装填 II", orbiterWeapon, "环绕武器冷却-15%");
+        SetEffects(n_reload2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CooldownReduction, 15, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_reload2, n_reload);
+
+        var n_count2 = CreateNode(folderPath, "OB_CountII", "护盾增殖 II", orbiterWeapon, "环绕武器数量+1");
+        SetEffects(n_count2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalCount, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_count2, n_count);
+
+        // === 第三层 (中阶) ===
+
+        // 动能吸附：需要"延续 I"+"巨化 I"
+        var n_absorb = CreateNode(folderPath, "OB_Absorb", "动能吸附", orbiterWeapon, "环绕武器摧毁敌方弹射物时延长0.5秒持续时间");
+        SetEffects(n_absorb, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalAbsorbProjectiles, 1, ModifierType.Flat)
+        });
+        SetPrerequisites(n_absorb, new List<SkillTreeNodeData> { n_dur1, n_expand1 });
+
+        // 引力呼吸：需要"加速旋转"
+        var n_breathing = CreateNode(folderPath, "OB_Breathing", "引力呼吸", orbiterWeapon, "环绕武器半径周期性扩大和缩小");
+        SetEffects(n_breathing, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalExpansionBreathing, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_breathing, n_speed);
+
+        // 充能释放：需要"快速装填 II"
+        var n_release = CreateNode(folderPath, "OB_Release", "充能释放", orbiterWeapon, "环绕武器持续时间结束时释放范围爆炸冲击波");
+        SetEffects(n_release, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.OrbitalReleaseExplosion, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_release, n_reload2);
+
+        // --- 添加到数据库 ---
+        AddToDatabase(new List<SkillTreeNodeData> {
+            n_dmg, n_speed, n_count, n_dur1, n_expand1, n_reload,
+            n_dur2, n_expand2, n_reload2, n_count2,
+            n_absorb, n_breathing, n_release
+        });
+
+        AssetDatabase.SaveAssets();
+        Debug.Log("环绕武器技能树节点生成完成。");
+    }
+
+    private static void GenerateLandmineNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/Landmine";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock mineWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Landmine.asset");
+        if (mineWeapon == null) { Debug.LogError("找不到 Landmine Weapon SO (SO_Landmine)"); return; }
+
+        WeaponStatBlock fireballWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Fireball.asset");
+
+        // === 第一层 (基础) ===
+
+        var n_dmg = CreateNode(folderPath, "LM_DmgBoost", "烈性火药", mineWeapon, "地雷伤害+60%");
+        SetEffects(n_dmg, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeDamage, 60, ModifierType.Percentage)
+        });
+
+        var n_cd = CreateNode(folderPath, "LM_CooldownI", "引信缩短 I", mineWeapon, "地雷布置冷却-15%");
+        SetEffects(n_cd, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CooldownReduction, 15, ModifierType.Percentage)
+        });
+
+        var n_radius = CreateNode(folderPath, "LM_RadiusI", "破片装药 I", mineWeapon, "地雷爆炸范围+30%");
+        SetEffects(n_radius, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 30, ModifierType.Percentage)
+        });
+
+        var n_count = CreateNode(folderPath, "LM_CountI", "雷区扩张", mineWeapon, "每次布置地雷数+1，冷却+30%");
+        SetEffects(n_count, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AddProjectile, 1, ModifierType.Flat),
+            (UpgradeType.WeaponFireRate, 30, ModifierType.Percentage)
+        });
+
+        // === 第二层 (基础进阶) ===
+
+        var n_cd2 = CreateNode(folderPath, "LM_CooldownII", "引信缩短 II", mineWeapon, "地雷布置冷却-15%");
+        SetEffects(n_cd2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CooldownReduction, 15, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_cd2, n_cd);
+
+        var n_radius2 = CreateNode(folderPath, "LM_RadiusII", "破片装药 II", mineWeapon, "地雷爆炸范围+30%");
+        SetEffects(n_radius2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 30, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_radius2, n_radius);
+
+        // === 第三层 (中阶 - 质变) ===
+
+        // 引力陷阱：需要「破片装药 I」
+        var n_gravity = CreateNode(folderPath, "LM_GravityTrap", "引力陷阱", mineWeapon, "地雷武装后吸引附近敌人，伤害-10%");
+        SetEffects(n_gravity, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LandmineGravityTrap, 1, ModifierType.Flat),
+            (UpgradeType.AoeDamage, -10, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_gravity, n_radius);
+
+        // 震撼弹片：需要「烈性火药」
+        var n_stun = CreateNode(folderPath, "LM_Stun", "震撼弹片", mineWeapon, "地雷爆炸附加1.5秒眩晕，冷却+15%");
+        SetEffects(n_stun, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LandmineStun, 1, ModifierType.Flat),
+            (UpgradeType.WeaponFireRate, 15, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_stun, n_dmg);
+
+        // 能量回收：需要「引信缩短 I」
+        var n_energy = CreateNode(folderPath, "LM_EnergyRecovery", "能量回收", mineWeapon, "地雷击杀时15%概率获得额外大招能量");
+        SetEffects(n_energy, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LandmineEnergyRecovery, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_energy, n_cd);
+
+        // 引力黑洞：需要「引力陷阱」
+        var n_blackhole = CreateNode(folderPath, "LM_BlackHole", "引力黑洞", mineWeapon, "地雷爆炸后留下2.5秒黑洞吸引怪物，范围-10%");
+        SetEffects(n_blackhole, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LandmineBlackHole, 1, ModifierType.Flat),
+            (UpgradeType.AoeRadius, -10, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_blackhole, n_gravity);
+
+        // === 融合技能（需要火球+地雷） ===
+        if (fireballWeapon != null)
+        {
+            var n_napalm = CreateNode(folderPath, "LM_Napalm", "凝固汽油弹", mineWeapon, "地雷爆炸后留下4秒燃烧区域");
+            SetEffects(n_napalm, new List<(UpgradeType, float, ModifierType)> {
+                (UpgradeType.FusionNapalm, 1, ModifierType.Flat)
+            });
+            n_napalm.requiredWeapons = new List<WeaponStatBlock> { mineWeapon, fireballWeapon };
+            SetPrerequisite(n_napalm, n_blackhole);
+
+            AddToDatabase(new List<SkillTreeNodeData> {
+                n_dmg, n_cd, n_radius, n_count,
+                n_cd2, n_radius2,
+                n_gravity, n_stun, n_energy, n_blackhole,
+                n_napalm
+            });
+        }
+        else
+        {
+            AddToDatabase(new List<SkillTreeNodeData> {
+                n_dmg, n_cd, n_radius, n_count,
+                n_cd2, n_radius2,
+                n_gravity, n_stun, n_energy, n_blackhole
+            });
+        }
+
+        AssetDatabase.SaveAssets();
+        Debug.Log("地雷技能树节点生成完成。");
+    }
+
     private static void AddToDatabase(List<SkillTreeNodeData> newNodes)
     {
         UpgradeDatabase db = LoadAsset<UpgradeDatabase>("Assets/_TheFirst/GameData/UpgradeDatabase.asset");
@@ -841,6 +1069,82 @@ public class SkillTreeGenerator : EditorWindow
         return node;
     }
 
+    // === Aura 辅助型光环技能树 ===
+    private static void GenerateAuraNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/Aura";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock auraWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Aura.asset");
+        if (auraWeapon == null) { Debug.LogError("找不到 Aura Weapon SO"); return; }
+
+        // === 第一层：基础强化 ===
+        var n_expand = CreateNode(folderPath, "AURA_Expand", "光环扩展", auraWeapon, "光环范围+25%");
+        SetEffects(n_expand, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 25, ModifierType.Percentage)
+        });
+
+        var n_freq = CreateNode(folderPath, "AURA_Frequency", "磁场共振", auraWeapon, "光环触发频率+20%");
+        SetEffects(n_freq, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponFireRate, 20, ModifierType.Percentage)
+        });
+
+        var n_dmg = CreateNode(folderPath, "AURA_DmgBoost", "光环强化", auraWeapon, "光环伤害+40%");
+        SetEffects(n_dmg, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 40, ModifierType.Percentage)
+        });
+
+        // === 第二层：进阶I（需要第一层任意一个前置） ===
+        var n_healI = CreateNode(folderPath, "AURA_HealI", "生命脉动I", auraWeapon, "每60秒恢复3点生命值");
+        SetEffects(n_healI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraHealingPulse, 3, ModifierType.Flat)
+        });
+
+        var n_slowI = CreateNode(folderPath, "AURA_SlowI", "迟缓力场I", auraWeapon, "光环范围内敌人移速降低25%（与冰系减速叠加）");
+        SetEffects(n_slowI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraSluggishField, 25, ModifierType.Flat)
+        });
+
+        var n_fragileI = CreateNode(folderPath, "AURA_FragileI", "脆弱印记I", auraWeapon, "光环范围内敌人受到全部伤害+8%，但触发间隔增加");
+        SetEffects(n_fragileI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraFragileMark, 8, ModifierType.Flat)
+        });
+
+        SetPrerequisites(n_healI, new List<SkillTreeNodeData> { n_expand, n_freq, n_dmg });
+        SetPrerequisites(n_slowI, new List<SkillTreeNodeData> { n_expand, n_freq, n_dmg });
+        SetPrerequisites(n_fragileI, new List<SkillTreeNodeData> { n_expand, n_freq, n_dmg });
+
+        // === 第三层：进阶II（需要对应I级前置） ===
+        var n_healII = CreateNode(folderPath, "AURA_HealII", "生命脉动II", auraWeapon, "每60秒恢复6点生命值（替代I级）");
+        SetEffects(n_healII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraHealingPulse, 6, ModifierType.Flat)
+        });
+        SetPrerequisite(n_healII, n_healI);
+
+        var n_slowII = CreateNode(folderPath, "AURA_SlowII", "迟缓力场II", auraWeapon, "光环范围内敌人移速降低35%（与冰系减速叠加）");
+        SetEffects(n_slowII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraSluggishField, 35, ModifierType.Flat)
+        });
+        SetPrerequisite(n_slowII, n_slowI);
+
+        var n_fragileII = CreateNode(folderPath, "AURA_FragileII", "脆弱印记II", auraWeapon, "光环范围内敌人受到全部伤害+15%，触发间隔减少");
+        SetEffects(n_fragileII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AuraFragileMark, 15, ModifierType.Flat)
+        });
+        SetPrerequisite(n_fragileII, n_fragileI);
+
+        // --- 添加到数据库 ---
+        AddToDatabase(new List<SkillTreeNodeData> {
+            n_expand, n_freq, n_dmg,
+            n_healI, n_slowI, n_fragileI,
+            n_healII, n_slowII, n_fragileII
+        });
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=green>[技能树生成] Aura (辅助) 节点已生成完毕！共9个节点</color>");
+    }
+
     private static void SetEffects(SkillTreeNodeData node, List<(UpgradeType, float, ModifierType)> effects)
     {
         if (node.possibleOptions.Count == 0) return;
@@ -878,5 +1182,105 @@ public class SkillTreeGenerator : EditorWindow
         if (!nodeB.mutuallyExclusive.Contains(nodeA)) nodeB.mutuallyExclusive.Add(nodeA);
         EditorUtility.SetDirty(nodeA);
         EditorUtility.SetDirty(nodeB);
+    }
+
+    // ==================== 灵能飞刀 ====================
+    private static void GenerateFlameDaggerNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/FlameDagger";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock daggerWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_FlameDagger.asset");
+        if (daggerWeapon == null) { Debug.LogError("找不到 FlameDagger Weapon SO"); return; }
+
+        // === 第一层：基础强化 I ===
+        var n_dmgI = CreateNode(folderPath, "DAGGER_DmgBoostI", "烈焰增幅I", daggerWeapon, "飞刀伤害+30%，环绕速度-15%");
+        SetEffects(n_dmgI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerDamageBoost, 1, ModifierType.Flat)
+        });
+
+        var n_countI = CreateNode(folderPath, "DAGGER_ExtraCountI", "多重飞刀I", daggerWeapon, "额外+1把飞刀，每把伤害-15%");
+        SetEffects(n_countI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerExtraCount, 1, ModifierType.Flat)
+        });
+
+        var n_speedI = CreateNode(folderPath, "DAGGER_SpeedBoostI", "焰舞加速I", daggerWeapon, "环绕速度x1.3，伤害间隔-20%");
+        SetEffects(n_speedI, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerSpeedBoost, 1, ModifierType.Flat)
+        });
+
+        // === 第一层：基础强化 II（需对应I级前置） ===
+        var n_dmgII = CreateNode(folderPath, "DAGGER_DmgBoostII", "烈焰增幅II", daggerWeapon, "飞刀伤害+60%，环绕速度-25%（替代I级）");
+        SetEffects(n_dmgII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerDamageBoost, 2, ModifierType.Flat)
+        });
+        SetPrerequisite(n_dmgII, n_dmgI);
+
+        var n_countII = CreateNode(folderPath, "DAGGER_ExtraCountII", "多重飞刀II", daggerWeapon, "额外+2把飞刀，每把伤害-25%（替代I级）");
+        SetEffects(n_countII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerExtraCount, 2, ModifierType.Flat)
+        });
+        SetPrerequisite(n_countII, n_countI);
+
+        var n_speedII = CreateNode(folderPath, "DAGGER_SpeedBoostII", "焰舞加速II", daggerWeapon, "环绕速度x1.6，伤害间隔-35%（替代I级）");
+        SetEffects(n_speedII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerSpeedBoost, 2, ModifierType.Flat)
+        });
+        SetPrerequisite(n_speedII, n_speedI);
+
+        // === 第二层：进阶分支（需第一层任意1个前置） ===
+        var n_homing = CreateNode(folderPath, "DAGGER_Homing", "锁魂追击", daggerWeapon, "索敌范围+50%，锁定+2秒，环绕半径-50%（紧贴目标提高命中率）");
+        SetEffects(n_homing, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerHoming, 1, ModifierType.Flat)
+        });
+        SetPrerequisites(n_homing, new List<SkillTreeNodeData> { n_dmgI, n_countI, n_speedI });
+
+        var n_clone = CreateNode(folderPath, "DAGGER_Clone", "刃影分身", daggerWeapon, "命中时1%概率生成分身飞刀（存在10秒，20%伤害），环绕半径-50%");
+        SetEffects(n_clone, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerClone, 1, ModifierType.Flat)
+        });
+        SetPrerequisites(n_clone, new List<SkillTreeNodeData> { n_dmgI, n_countI, n_speedI });
+
+        // 灵能烙印：需要火球的 Fireball_Ignite 作为跨武器前置
+        var n_ignite = CreateNode(folderPath, "DAGGER_Ignite", "灵能烙印", daggerWeapon, "飞刀命中有20%概率点燃敌人（需解锁火球爆燃）");
+        SetEffects(n_ignite, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerIgnite, 1, ModifierType.Flat)
+        });
+        SetPrerequisites(n_ignite, new List<SkillTreeNodeData> { n_dmgI, n_countI, n_speedI });
+        // 跨武器前置：火球的 Fireball_Ignite 节点
+        SkillTreeNodeData fireballIgnite = LoadAsset<SkillTreeNodeData>("Assets/_TheFirst/Prefabs/Skill Tree/Fireball/Fireball_Ignite.asset");
+        if (fireballIgnite != null)
+        {
+            SetPrerequisite(n_ignite, fireballIgnite);
+        }
+        else
+        {
+            Debug.LogWarning("[技能树生成] 未找到 Fireball_Ignite 节点，灵能烙印的跨武器前置未设置");
+        }
+
+        // === 第三层：高级 ===
+        var n_lifeSteal = CreateNode(folderPath, "DAGGER_LifeSteal", "灵魂收割", daggerWeapon, "飞刀击杀敌人恢复2%最大HP");
+        SetEffects(n_lifeSteal, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerLifeSteal, 1, ModifierType.Flat)
+        });
+        SetPrerequisites(n_lifeSteal, new List<SkillTreeNodeData> { n_homing, n_clone });
+
+        var n_chainExplosion = CreateNode(folderPath, "DAGGER_ChainExplosion", "连锁灵刃", daggerWeapon, "命中被点燃敌人触发小范围爆破伤害");
+        SetEffects(n_chainExplosion, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.DaggerChainExplosion, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_chainExplosion, n_ignite);
+
+        // --- 添加到数据库 ---
+        AddToDatabase(new List<SkillTreeNodeData> {
+            n_dmgI, n_countI, n_speedI,
+            n_dmgII, n_countII, n_speedII,
+            n_homing, n_clone, n_ignite,
+            n_lifeSteal, n_chainExplosion
+        });
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=red>[技能树生成] 灵能飞刀节点已生成完毕！共11个节点</color>");
     }
 }

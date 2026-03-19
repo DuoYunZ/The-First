@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -132,6 +132,39 @@ public class WeaponPart : MonoBehaviour
     [HideInInspector] public int localIceCrystalShatter = 0;         // 冰晶碎裂（分裂冰锥数量）
     [HideInInspector] public float localCooldownReduction = 0f;      // 冷却缩减（百分比小数）
 
+    // 环绕武器类 (Orbiter)
+    [HideInInspector] public bool isOrbitalAbsorbEnabled = false;    // 动能吸附开关
+    [HideInInspector] public bool isOrbitalBreathingEnabled = false; // 引力呼吸开关
+    [HideInInspector] public bool isOrbitalReleaseEnabled = false;   // 充能释放开关
+    [HideInInspector] public float orbitalSpeedMultiplier = 1f;      // 终极：旋转速度倍率
+    [HideInInspector] public bool isUltimateBuffActive = false;      // BUFF型大招激活中（阻止能量积累）
+
+    // 地雷类 (Landmine)
+    [HideInInspector] public bool isMineEnergyRecovery = false;      // 能量回收开关
+    [HideInInspector] public bool isMineStun = false;                // 震撼弹片开关
+    [HideInInspector] public bool isMineGravityTrap = false;         // 引力陷阱开关
+    [HideInInspector] public bool isMineBlackHole = false;           // 引力黑洞开关
+    [HideInInspector] public bool isMineFusionNapalm = false;        // 凝固汽油弹开关
+    [HideInInspector] public int localMineCountBonus = 0;            // 雷区扩张：额外地雷数量
+
+    // Aura辅助型光环类（值由 SO 的 value 字段直接控制）
+    [HideInInspector] public float auraHealAmount = 0;              // 生命脉动回血量（0=未开启）
+    [HideInInspector] public float auraSlowPercent = 0;             // 迟缓力场减速百分比（0=未开启，如25表示25%减速）
+    [HideInInspector] public float auraFragilePercent = 0;          // 脆弱印记增伤百分比（0=未开启，如8表示8%增伤）
+
+    // === 灵能飞刀升级字段 ===
+    [HideInInspector] public float daggerDamageBoost = 0;           // 烈焰增幅伤害加成百分比（30/60）
+    [HideInInspector] public float daggerSpeedPenalty = 0;          // 烈焰增幅速度惩罚百分比（15/25）
+    [HideInInspector] public int daggerExtraCount = 0;              // 多重飞刀额外数量（1/2）
+    [HideInInspector] public float daggerCountDmgPenalty = 0;       // 多重飞刀伤害惩罚百分比（15/25）
+    [HideInInspector] public float daggerSpeedBoost = 0;            // 焰舞加速倍率（1.3/1.6）
+    [HideInInspector] public float daggerIntervalReduction = 0;     // 焰舞加速间隔缩减百分比（20/35）
+    [HideInInspector] public bool daggerHomingUpgrade = false;      // 锁魂追击
+    [HideInInspector] public bool daggerCloneUpgrade = false;       // 刃影分身
+    [HideInInspector] public bool daggerIgniteUpgrade = false;      // 灵能烙印（需火球前置）
+    [HideInInspector] public bool daggerLifeStealUpgrade = false;   // 灵魂收割
+    [HideInInspector] public bool daggerChainExplosion = false;     // 连锁灵刃
+
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
     {
@@ -144,6 +177,24 @@ public class WeaponPart : MonoBehaviour
     private float orbitalCooldownTimer = 0f;
     private bool isOrbitalActive = false;
     private Transform orbitalPivot;
+    private float currentOrbitalDuration = 0f;
+
+    /// <summary>
+    /// 获取光环上的指定组件（由 UltimateManager 调用）
+    /// </summary>
+    public T GetAuraComponent<T>() where T : Component
+    {
+        if (orbitalPivot == null) return null;
+        return orbitalPivot.GetComponent<T>();
+    }
+
+    public void ExtendOrbitalDuration(float extraTime)
+    {
+        if (isOrbitalActive)
+        {
+            currentOrbitalDuration += extraTime;
+        }
+    }
 
     public bool IsReadyToFire => fireCooldown <= 0f;
 
@@ -495,6 +546,7 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || !StatBlock.usesEnergy) return;
         if (IsEnergyFull) return; // 已满，不再累加
+        if (isUltimateBuffActive) return; // BUFF型大招期间不积累能量
 
         float energyGain = damageAmount * StatBlock.energyGainPerDamage;
         currentEnergy = Mathf.Min(currentEnergy + energyGain, StatBlock.maxEnergy);
@@ -700,8 +752,8 @@ public class WeaponPart : MonoBehaviour
 
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital && orbitalPivot != null)
         {
-            // 使用 localSpeedBonus
-            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed * (1f + localSpeedBonus);
+            // 使用 localSpeedBonus + 大招的 orbitalSpeedMultiplier
+            float finalOrbitalSpeed = StatBlock.baseOrbitalSpeed * (1f + localSpeedBonus) * orbitalSpeedMultiplier;
             orbitalPivot.Rotate(Vector3.up, finalOrbitalSpeed * Time.deltaTime);
         }
 
@@ -804,7 +856,25 @@ public class WeaponPart : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"[SetupAura] 失败: 光环预制件 '{StatBlock.orbitalPrefab.name}' 上没有 MagneticStormAura 脚本！");
+            // 辅助型光环
+            SupportAura supportAuraScript = auraGO.GetComponent<SupportAura>();
+            if (supportAuraScript != null)
+            {
+                int finalBaseDamage = Mathf.RoundToInt(
+                    ((StatBlock.baseAoeDamage > 0) ? StatBlock.baseAoeDamage : StatBlock.baseDirectDamage) *
+                    (PlayerStats.Instance.damageMultiplier + localDamageBonus) +
+                    PlayerStats.Instance.flatDamageBonus
+                );
+                if (finalBaseDamage <= 0) finalBaseDamage = 10;
+                float rangeMult = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
+                
+                Debug.Log($"<color=green>[SetupAura] 辅助光环初始化: 伤害={finalBaseDamage}, 范围倍率={rangeMult}, 回血={auraHealAmount}, 减速={auraSlowPercent}%, 增伤={auraFragilePercent}%</color>");
+                supportAuraScript.Initialize(finalBaseDamage, rangeMult, this);
+            }
+            else
+            {
+                Debug.LogError($"[SetupAura] 失败: 光环预制件 '{StatBlock.orbitalPrefab.name}' 上没有 MagneticStormAura 或 SupportAura 脚本！");
+            }
         }
     }
 
@@ -2314,6 +2384,91 @@ public class WeaponPart : MonoBehaviour
         SetupOrbiters(); // Call setup again
     }
 
+    /// <summary>
+    /// 大招专用：强制重置冷却并立即召唤环绕武器（无视当前冷却状态）
+    /// </summary>
+    public void ForceSpawnOrbiters()
+    {
+        if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital) return;
+
+        // 销毁当前活跃的环绕武器
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
+        isOrbitalActive = false;
+        StopCoroutine(nameof(OrbitalLifetimeRoutine));
+        StopCoroutine(nameof(OrbitalFlickerRoutine));
+        StopCoroutine(nameof(OrbitalBreathingRoutine));
+
+        // 重置冷却计时器
+        orbitalCooldownTimer = 0f;
+
+        // 立即生成新的环绕武器
+        SetupOrbiters();
+        Debug.Log($"<color=yellow>[大招] 强制召唤环绕武器！</color>");
+    }
+
+    /// <summary>
+    /// 用自定义预制件替换当前环绕武器（融合大招用）
+    /// 结束后需要调用 ForceSpawnOrbiters 恢复普通环绕武器
+    /// </summary>
+    public Transform ForceSpawnOrbitersWithPrefab(GameObject customPrefab, float duration)
+    {
+        if (myStatBlock == null || myStatBlock.behavior != WeaponBehaviorType.Orbital) return null;
+
+        // 销毁当前活跃的环绕武器
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
+        isOrbitalActive = false;
+        StopCoroutine(nameof(OrbitalLifetimeRoutine));
+        StopCoroutine(nameof(OrbitalFlickerRoutine));
+        StopCoroutine(nameof(OrbitalBreathingRoutine));
+
+        // 重置冷却计时器
+        orbitalCooldownTimer = 0f;
+
+        // 用自定义预制件生成环绕武器
+        Transform stableAnchor = FindStableAnchor();
+
+        orbitalPivot = new GameObject($"{StatBlock.weaponName}_ComboPivot").transform;
+        orbitalPivot.SetParent(stableAnchor);
+        orbitalPivot.localPosition = Vector3.zero;
+        orbitalPivot.localRotation = Quaternion.identity;
+
+        isOrbitalActive = true;
+        int finalOrbitalCount = GetTotalCount();
+        float finalOrbitalRadius = StatBlock.baseOrbitalRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
+        int finalDamage = Mathf.RoundToInt(
+            StatBlock.baseDirectDamage * (PlayerStats.Instance.damageMultiplier + localDamageBonus) +
+            PlayerStats.Instance.flatDamageBonus
+        );
+        float finalScale = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
+
+        for (int i = 0; i < finalOrbitalCount; i++)
+        {
+            float angle = i * (360f / finalOrbitalCount);
+            Vector3 spawnPos = Quaternion.Euler(0, angle, 0) * (Vector3.forward * finalOrbitalRadius);
+
+            // 使用自定义预制件替代 orbitalPrefab
+            GameObject orbiterGO = Instantiate(customPrefab, orbitalPivot);
+            orbiterGO.transform.localPosition = spawnPos;
+            orbiterGO.transform.localRotation = Quaternion.Euler(0, angle, 0);
+            orbiterGO.transform.localScale = Vector3.one * finalScale;
+
+            // 尝试初始化 Orbiter 组件（如果有的话，保留碰撞伤害逻辑）
+            Orbiter orb = orbiterGO.GetComponent<Orbiter>();
+            if (orb != null)
+            {
+                orb.Initialize(finalDamage, this);
+            }
+        }
+
+        // 融合大招持续时间由外部控制，设置当前持续时间
+        currentOrbitalDuration = duration;
+        StartCoroutine(OrbitalLifetimeRoutine(duration));
+
+        Debug.Log($"<color=yellow>[连携技] 用自定义预制件替换环绕武器！数量={finalOrbitalCount} 持续={duration}s</color>");
+
+        return orbitalPivot;
+    }
+
     private void SetupOrbiters() // Creates the orbital system
     {
         if (StatBlock == null || StatBlock.orbitalPrefab == null) return; // Need data
@@ -2333,6 +2488,8 @@ public class WeaponPart : MonoBehaviour
         PlayerStats.Instance.flatDamageBonus
          );
 
+        float finalScale = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
+
         for (int i = 0; i < finalOrbitalCount; i++)
         {
             float angle = i * (360f / finalOrbitalCount);
@@ -2341,6 +2498,7 @@ public class WeaponPart : MonoBehaviour
             GameObject orbiterGO = Instantiate(StatBlock.orbitalPrefab, orbitalPivot);
             orbiterGO.transform.localPosition = spawnPos;
             orbiterGO.transform.localRotation = Quaternion.Euler(0, angle, 0);
+            orbiterGO.transform.localScale = Vector3.one * finalScale;
 
             // --- 【核心修改】区分普通盾和磁暴盾 ---
 
@@ -2361,19 +2519,133 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        float finalDuration = StatBlock.baseDuration; // Apply player bonuses if any
+        float finalDuration = StatBlock.baseDuration * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
         if (finalDuration > 0)
         {
+            currentOrbitalDuration = finalDuration;
             StartCoroutine(OrbitalLifetimeRoutine(finalDuration));
+
+            if (isOrbitalBreathingEnabled)
+            {
+                StartCoroutine(OrbitalBreathingRoutine(finalDuration));
+            }
         }
     }
 
-    private IEnumerator OrbitalLifetimeRoutine(float duration)
+    private IEnumerator OrbitalLifetimeRoutine(float initialDuration)
     {
-        yield return new WaitForSeconds(duration);
-        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); } // Destroy pivot and children
-        isOrbitalActive = false; // Mark inactive
-        orbitalCooldownTimer = (1f / StatBlock.baseFireRate); // Start cooldown based on fire rate after duration ends
+        float warningTime = 2f; // 最后2秒开始闪烁警告
+        bool isFlickering = false;
+
+        while (currentOrbitalDuration > 0)
+        {
+            yield return null;
+            currentOrbitalDuration -= Time.deltaTime;
+
+            // 若隐若现的闪烁警告：剩余时间不足2秒时开始
+            if (!isFlickering && currentOrbitalDuration <= warningTime && orbitalPivot != null)
+            {
+                isFlickering = true;
+                StartCoroutine(OrbitalFlickerRoutine());
+            }
+        }
+
+        // 充能释放 (Charged Release)
+        if (isOrbitalReleaseEnabled && orbitalPivot != null)
+        {
+            if (StatBlock != null && StatBlock.explosionEffectPrefab != null)
+            {
+                Instantiate(StatBlock.explosionEffectPrefab, transform.position, Quaternion.identity);
+            }
+            float releaseRadius = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus) * 2f; 
+            int releaseDmg = Mathf.RoundToInt(StatBlock.baseDirectDamage * 2f * (PlayerStats.Instance.damageMultiplier + localDamageBonus));
+            Collider[] hits = Physics.OverlapSphere(transform.position, releaseRadius, LayerMask.GetMask("Enemies"));
+            foreach (var col in hits)
+            {
+                Health h = col.GetComponentInParent<Health>();
+                if (h != null && !h.IsDead)
+                {
+                     h.TakeDamage(releaseDmg, transform.position, this.gameObject, AttackType.Standard);
+                }
+            }
+        }
+
+        // 平滑缩放消失（0.5秒内缩小到0）
+        if (orbitalPivot != null)
+        {
+            yield return StartCoroutine(OrbitalScaleDownRoutine(0.5f));
+        }
+
+        if (orbitalPivot != null) { Destroy(orbitalPivot.gameObject); }
+        isOrbitalActive = false;
+        
+        float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus - localCooldownReduction);
+        if (finalFireRateMultiplier <= 0.1f) finalFireRateMultiplier = 0.1f;
+        orbitalCooldownTimer = (1f / StatBlock.baseFireRate) * finalFireRateMultiplier;
+    }
+
+    /// <summary>
+    /// 环绕武器消失前的闪烁警告效果
+    /// </summary>
+    private IEnumerator OrbitalFlickerRoutine()
+    {
+        if (orbitalPivot == null) yield break;
+
+        Renderer[] renderers = orbitalPivot.GetComponentsInChildren<Renderer>();
+        float flickerInterval = 0.15f; // 闪烁间隔
+
+        while (isOrbitalActive && orbitalPivot != null && currentOrbitalDuration > 0)
+        {
+            // 隐藏
+            foreach (var r in renderers) { if (r != null) r.enabled = false; }
+            yield return new WaitForSeconds(flickerInterval);
+
+            // 显示
+            foreach (var r in renderers) { if (r != null) r.enabled = true; }
+            yield return new WaitForSeconds(flickerInterval);
+
+            // 越接近消失，闪烁越快
+            flickerInterval = Mathf.Max(0.05f, flickerInterval * 0.9f);
+        }
+
+        // 确保最终可见（给缩放消失用）
+        foreach (var r in renderers) { if (r != null) r.enabled = true; }
+    }
+
+    /// <summary>
+    /// 环绕武器平滑缩放消失
+    /// </summary>
+    private IEnumerator OrbitalScaleDownRoutine(float duration)
+    {
+        if (orbitalPivot == null) yield break;
+
+        Vector3 startScale = orbitalPivot.localScale;
+        float timer = 0f;
+
+        while (timer < duration && orbitalPivot != null)
+        {
+            timer += Time.deltaTime;
+            float t = timer / duration;
+            orbitalPivot.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+            yield return null;
+        }
+    }
+
+    private IEnumerator OrbitalBreathingRoutine(float duration)
+    {
+        if (orbitalPivot == null) yield break;
+        
+        float timer = 0f;
+        float baseScale = orbitalPivot.localScale.x;
+        
+        while (isOrbitalActive && orbitalPivot != null)
+        {
+            timer += Time.deltaTime;
+            // 呼吸频率: 每秒1次循环，缩放范围0.8 - 1.2
+            float scaleMultiplier = 1f + 0.2f * Mathf.Sin(timer * Mathf.PI * 2f);
+            orbitalPivot.localScale = Vector3.one * (baseScale * scaleMultiplier);
+            yield return null;
+        }
     }
 
     private Transform FindNearestEnemyTransform() { return FindNearestEnemyTransform(transform.position, StatBlock?.autoAimRange ?? 0f); }
@@ -2737,38 +3009,43 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || !IsReadyToFire || WeaponController.Instance == null) return;
 
-        Vector2 randomCirclePoint = Random.insideUnitCircle * StatBlock.spawnRadius;
-        Vector3 spawnPositionBase = WeaponController.Instance.transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
+        int mineCount = 1 + localMineCountBonus; // 基础1颗 + 雷区扩张加成
 
-        RaycastHit hit;
-        Vector3 spawnPosition = spawnPositionBase;
-        LayerMask groundMask = StatBlock.beamScorchMarkGroundLayer != 0 ? StatBlock.beamScorchMarkGroundLayer : LayerMask.GetMask("Ground");
-        if (Physics.Raycast(spawnPositionBase + Vector3.up * 5f, Vector3.down, out hit, 10f, groundMask))
-        { spawnPosition = hit.point; } // Place on ground if found
-
-        if (StatBlock.minePrefab != null)
+        for (int i = 0; i < mineCount; i++)
         {
-            GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity);
-            Landmine mineScript = mineGO.GetComponent<Landmine>();
-            if (mineScript != null)
-            {
-                int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
-                float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
-                mineScript.Initialize(
-                    finalDamage,
-                    finalRadius,
-                    StatBlock.armingTime,
-                    StatBlock.mineDuration,
-                    WeaponController.Instance.gameObject,
-                    StatBlock.explosionEffectPrefab,
-                    StatBlock.layersToDamageByAOE,
-                    this // <--- [新增] 传递 WeaponPart 自身
-                );
-            }
-            else { Debug.LogWarning($"Mine prefab '{StatBlock.minePrefab.name}' is missing Landmine script.", mineGO); }
+            Vector2 randomCirclePoint = Random.insideUnitCircle * StatBlock.spawnRadius;
+            Vector3 spawnPositionBase = WeaponController.Instance.transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
 
-            if (landminePlaceSound != null && audioSource != null)
-            { AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition); } // Play sound at location
+            RaycastHit hit;
+            Vector3 spawnPosition = spawnPositionBase;
+            LayerMask groundMask = StatBlock.beamScorchMarkGroundLayer != 0 ? StatBlock.beamScorchMarkGroundLayer : LayerMask.GetMask("Ground");
+            if (Physics.Raycast(spawnPositionBase + Vector3.up * 5f, Vector3.down, out hit, 10f, groundMask))
+            { spawnPosition = hit.point; }
+
+            if (StatBlock.minePrefab != null)
+            {
+                GameObject mineGO = Instantiate(StatBlock.minePrefab, spawnPosition, Quaternion.identity);
+                Landmine mineScript = mineGO.GetComponent<Landmine>();
+                if (mineScript != null)
+                {
+                    int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
+                    float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
+                    mineScript.Initialize(
+                        finalDamage,
+                        finalRadius,
+                        StatBlock.armingTime,
+                        StatBlock.mineDuration,
+                        WeaponController.Instance.gameObject,
+                        StatBlock.explosionEffectPrefab,
+                        StatBlock.layersToDamageByAOE,
+                        this
+                    );
+                }
+                else { Debug.LogWarning($"Mine prefab '{StatBlock.minePrefab.name}' is missing Landmine script.", mineGO); }
+
+                if (i == 0 && landminePlaceSound != null && audioSource != null)
+                { AudioSource.PlayClipAtPoint(landminePlaceSound, spawnPosition); }
+            }
         }
 
         // Reset cooldown
@@ -2829,6 +3106,7 @@ public class WeaponPart : MonoBehaviour
 
     public void RefreshWeaponStateFromStone()
     {
+        Debug.Log($"<color=cyan>[WeaponPart] RefreshWeaponStateFromStone 被调用, behavior={StatBlock.behavior}, weapon={StatBlock.weaponName}, daggerExtraCount={daggerExtraCount}, daggerCountDmgPenalty={daggerCountDmgPenalty}</color>");
         if (StatBlock.behavior == WeaponBehaviorType.Aura) RefreshAura();
         if (StatBlock.behavior == WeaponBehaviorType.Orbital) RefreshOrbiters();
 
@@ -3088,13 +3366,15 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock.projectilePrefab == null) return;
 
-        int desiredCount = GetTotalCount(); // 获取当前数量 (基础 + 升级)
+        int desiredCount = GetTotalCount() + daggerExtraCount;
         int currentCount = activeFlyingDaggers.Count;
 
-        // 计算最终属性
-        float damageMult = PlayerStats.Instance != null ? PlayerStats.Instance.damageMultiplier : 1f;
-        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * damageMult);
-        float knockback = StatBlock.baseKnockbackForce; // 飞刀使用配置的击退值
+        float damageMult = PlayerStats.Instance != null ? (PlayerStats.Instance.damageMultiplier + localDamageBonus) : 1f;
+        int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * damageMult + 
+            (PlayerStats.Instance != null ? PlayerStats.Instance.flatDamageBonus : 0));
+        float knockback = StatBlock.baseKnockbackForce;
+
+        Debug.Log($"<color=cyan>[SetupFlyingDaggers] desiredCount={desiredCount}, currentCount={currentCount}, finalDamage={finalDamage}, daggerExtraCount={daggerExtraCount}, daggerCountDmgPenalty={daggerCountDmgPenalty}</color>");
 
         // 情况1：数量不足，补充生成
         if (currentCount < desiredCount)
@@ -3108,17 +3388,19 @@ public class WeaponPart : MonoBehaviour
 
                 GameObject daggerObj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
                 
-                // 获取控制器并初始化 - 支持FlyingDaggerController和FlameDaggerController
-                FlyingDaggerController flyingController = daggerObj.GetComponent<FlyingDaggerController>();
+                // 获取控制器并初始化 - FlameDaggerController 优先（含升级逻辑）
                 FlameDaggerController flameController = daggerObj.GetComponent<FlameDaggerController>();
+                FlyingDaggerController flyingController = daggerObj.GetComponent<FlyingDaggerController>();
                 
-                if (flyingController != null)
+                if (flameController != null)
+                {
+                    // 移除多余的 FlyingDaggerController，避免双重碰撞伤害
+                    if (flyingController != null) Destroy(flyingController);
+                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+                else if (flyingController != null)
                 {
                     flyingController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
-                }
-                else if (flameController != null)
-                {
-                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
                 }
                 else
                 {
@@ -3149,17 +3431,19 @@ public class WeaponPart : MonoBehaviour
         {
             if (dagger != null)
             {
-                // 支持两种飞刀控制器
-                FlyingDaggerController flyingController = dagger.GetComponent<FlyingDaggerController>();
+                // FlameDaggerController 优先（含升级逻辑）
                 FlameDaggerController flameController = dagger.GetComponent<FlameDaggerController>();
+                FlyingDaggerController flyingController = dagger.GetComponent<FlyingDaggerController>();
                 
-                if (flyingController != null)
+                if (flameController != null)
+                {
+                    // 移除多余的 FlyingDaggerController，避免双重碰撞伤害
+                    if (flyingController != null) Destroy(flyingController);
+                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
+                }
+                else if (flyingController != null)
                 {
                     flyingController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
-                }
-                else if (flameController != null)
-                {
-                    flameController.Initialize(this.StatBlock, transform, finalDamage, knockback, this);
                 }
             }
         }

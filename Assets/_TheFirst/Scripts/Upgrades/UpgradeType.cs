@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// 定义升级效果的类型，这有助于我们在代码中根据类型来应用不同的强化逻辑。
 /// </summary>
 public enum UpgradeType
@@ -81,5 +81,34 @@ public enum UpgradeType
     // 冰霜融合类（冰霜新星+冰锥术）
     FrostBite,               // 刺骨寒霜（冻结怪物每秒扣1%最大生命值）
     IceCrystalShatter,       // 冰晶碎裂（新星结束后分裂小冰锥数量）
-    CooldownReduction        // 冷却缩减（百分比）
+    CooldownReduction,       // 冷却缩减（百分比）
+
+    // 环绕武器类
+    OrbitalAbsorbProjectiles,  // 动能吸附（摧毁弹射物延长持续时间）
+    OrbitalExpansionBreathing, // 引力呼吸（半径周期性改变）
+    OrbitalReleaseExplosion,   // 充能释放（结束时释放爆炸）
+
+    // 地雷类
+    LandmineEnergyRecovery,    // 能量回收（击杀时有概率获得额外大招能量）
+    LandmineStun,              // 震撼弹片（爆炸附加眩晕）
+    LandmineGravityTrap,       // 引力陷阱（武装后微弱吸引怪物）
+    LandmineBlackHole,         // 引力黑洞（爆炸后留下黑洞吸引怪物）
+
+    // 地雷融合类（地雷+火球）
+    FusionNapalm,              // 凝固汽油弹（爆炸后留下燃烧区域）
+
+    // Aura辅助型光环类（通过 value 区分等级：1=I级，2=II级）
+    AuraHealingPulse,          // 生命脉动（value=1: 回3血, value=2: 回6血）
+    AuraSluggishField,         // 迟缓力场（value=1: 减速25%, value=2: 减速35%）
+    AuraFragileMark,           // 脆弱印记（value=1: 增伤8%, value=2: 增伤15%）
+
+    // 灵能飞刀类（通过 value 区分等级）
+    DaggerDamageBoost,         // 烈焰增幅（value=1: 伤害+30%速度-15%, value=2: 伤害+60%速度-25%）
+    DaggerExtraCount,          // 多重飞刀（value=1: +1刀伤害-15%, value=2: +2刀伤害-25%）
+    DaggerSpeedBoost,          // 焰舞加速（value=1: 速度x1.3间隔-20%, value=2: 速度x1.6间隔-35%）
+    DaggerHoming,              // 锁魂追击（索敌+50%，锁定+2秒，半径-50%）
+    DaggerClone,               // 刃影分身（1%生成分身，半径-50%）
+    DaggerIgnite,              // 灵能烙印（飞刀点燃，需火球Ignite前置）
+    DaggerLifeSteal,           // 灵魂收割（击杀回2%最大HP）
+    DaggerChainExplosion       // 连锁灵刃（命中点燃敌人爆破）
 }

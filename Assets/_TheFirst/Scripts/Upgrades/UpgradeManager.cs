@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
@@ -487,8 +487,20 @@ public class UpgradeManager : MonoBehaviour
                             break;
 
                         case UpgradeType.OrbitalCount:
-                        case UpgradeType.AddProjectile:
                             part.localOrbitalCountBonus += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            break;
+                        case UpgradeType.AddProjectile:
+                            // 根据武器类型分配到不同的字段
+                            if (part.StatBlock != null && part.StatBlock.behavior == WeaponBehaviorType.Landmine)
+                            {
+                                part.localMineCountBonus += Mathf.RoundToInt(effect.value);
+                                Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 地雷数量+{effect.value}，当前额外数: {part.localMineCountBonus}</color>");
+                            }
+                            else
+                            {
+                                part.localOrbitalCountBonus += Mathf.RoundToInt(effect.value);
+                            }
                             appliedLocally = true;
                             break;
                         case UpgradeType.PierceCount:
@@ -740,6 +752,135 @@ public class UpgradeManager : MonoBehaviour
                             part.localCooldownReduction += effect.value / 100f;
                             appliedLocally = true;
                             Debug.Log($"<color=#88DDFF>[升级生效] {sourceNode.associatedWeapon.weaponName} 冷却缩减 +{effect.value}%</color>");
+                            break;
+
+                        // === 环绕武器类 ===
+                        case UpgradeType.OrbitalAbsorbProjectiles:
+                            part.isOrbitalAbsorbEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 动能吸附已开启</color>");
+                            break;
+
+                        case UpgradeType.OrbitalExpansionBreathing:
+                            part.isOrbitalBreathingEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 引力呼吸已开启</color>");
+                            break;
+
+                        case UpgradeType.OrbitalReleaseExplosion:
+                            part.isOrbitalReleaseEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 充能释放已开启</color>");
+                            break;
+
+                        // === 地雷类 ===
+                        case UpgradeType.LandmineEnergyRecovery:
+                            part.isMineEnergyRecovery = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 能量回收已开启</color>");
+                            break;
+
+                        case UpgradeType.LandmineStun:
+                            part.isMineStun = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 震撼弹片已开启</color>");
+                            break;
+
+                        case UpgradeType.LandmineGravityTrap:
+                            part.isMineGravityTrap = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 引力陷阱已开启</color>");
+                            break;
+
+                        case UpgradeType.LandmineBlackHole:
+                            part.isMineBlackHole = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=white>[升级生效] {sourceNode.associatedWeapon.weaponName} 引力黑洞已开启</color>");
+                            break;
+
+                        case UpgradeType.FusionNapalm:
+                            part.isMineFusionNapalm = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=orange>[升级生效] {sourceNode.associatedWeapon.weaponName} 凝固汽油弹已开启</color>");
+                            break;
+
+                        // === Aura辅助型光环类（value 直接为实际数值） ===
+                        case UpgradeType.AuraHealingPulse:
+                            part.auraHealAmount = Mathf.Max(part.auraHealAmount, effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 生命脉动 回血={effect.value}</color>");
+                            break;
+
+                        case UpgradeType.AuraSluggishField:
+                            part.auraSlowPercent = Mathf.Max(part.auraSlowPercent, effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 迟缓力场 减速={effect.value}%</color>");
+                            break;
+
+                        case UpgradeType.AuraFragileMark:
+                            part.auraFragilePercent = Mathf.Max(part.auraFragilePercent, effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=green>[升级生效] {sourceNode.associatedWeapon.weaponName} 脆弱印记 增伤={effect.value}%</color>");
+                            break;
+
+                        // === 灵能飞刀类 ===
+                        case UpgradeType.DaggerDamageBoost:
+                        {
+                            // value=1: 伤害+30%速度-15%, value=2: 伤害+60%速度-25%
+                            float dmgBonus = effect.value >= 2 ? 60f : 30f;
+                            float spdPenalty = effect.value >= 2 ? 25f : 15f;
+                            part.daggerDamageBoost = Mathf.Max(part.daggerDamageBoost, dmgBonus);
+                            part.daggerSpeedPenalty = Mathf.Max(part.daggerSpeedPenalty, spdPenalty);
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 烈焰增幅{(effect.value >= 2 ? "II" : "I")} 伤害+{dmgBonus}% 速度-{spdPenalty}%</color>");
+                            break;
+                        }
+                        case UpgradeType.DaggerExtraCount:
+                        {
+                            // value=1: +1刀伤害-15%, value=2: +2刀伤害-25%（叠加）
+                            int extraCount = effect.value >= 2 ? 2 : 1;
+                            float dmgPenalty = effect.value >= 2 ? 25f : 15f;
+                            part.daggerExtraCount += extraCount;
+                            part.daggerCountDmgPenalty += dmgPenalty;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 多重飞刀{(effect.value >= 2 ? "II" : "I")} +{extraCount}刀 伤害-{dmgPenalty}% (当前共+{part.daggerExtraCount}刀, 总惩罚-{part.daggerCountDmgPenalty}%)</color>");
+                            break;
+                        }
+                        case UpgradeType.DaggerSpeedBoost:
+                        {
+                            // value=1: 速度x1.3间隔-20%, value=2: 速度x1.6间隔-35%
+                            float spdMult = effect.value >= 2 ? 1.6f : 1.3f;
+                            float intervalReduce = effect.value >= 2 ? 35f : 20f;
+                            part.daggerSpeedBoost = Mathf.Max(part.daggerSpeedBoost, spdMult);
+                            part.daggerIntervalReduction = Mathf.Max(part.daggerIntervalReduction, intervalReduce);
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 焰舞加速{(effect.value >= 2 ? "II" : "I")} 速度x{spdMult} 间隔-{intervalReduce}%</color>");
+                            break;
+                        }
+                        case UpgradeType.DaggerHoming:
+                            part.daggerHomingUpgrade = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 锁魂追击 索敌+50%/锁定+2秒/半径-50%</color>");
+                            break;
+                        case UpgradeType.DaggerClone:
+                            part.daggerCloneUpgrade = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 刃影分身 1%概率生成分身/半径-50%</color>");
+                            break;
+                        case UpgradeType.DaggerIgnite:
+                            part.daggerIgniteUpgrade = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 灵能烙印 飞刀可点燃敌人</color>");
+                            break;
+                        case UpgradeType.DaggerLifeSteal:
+                            part.daggerLifeStealUpgrade = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 灵魂收割 击杀回2%最大HP</color>");
+                            break;
+                        case UpgradeType.DaggerChainExplosion:
+                            part.daggerChainExplosion = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=red>[升级生效] 连锁灵刃 命中点燃敌人触发爆破</color>");
                             break;
                         
                     }

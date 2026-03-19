@@ -191,38 +191,9 @@ public class UltimateManager : MonoBehaviour
             else
             {
                 // 没有 Projectile 组件 → 判断大招类型
-                var aura = FindObjectOfType<MagneticStormAura>();
-                bool isLightning = aura != null;
+                // 【关键修复】先检查 weaponID，再检查 behavior，确保每种武器进入正确分支
 
-                if (isLightning)
-                {
-                    // === 闪电大招：BUFF 型 - 雷霆之力 ===
-                    float buffDuration = 10f;
-                    float buffCritBonus = 0.5f;
-
-                    // 播放BUFF特效（挂到玩家身上跟随移动，复用外层 playerT）
-                    if (playerT != null && ultimateGo != null)
-                    {
-                        ultimateGo.transform.SetParent(playerT, false);
-                        ultimateGo.transform.localPosition = Vector3.up * 1f;
-                        ultimateGo.transform.localRotation = Quaternion.identity;
-
-                        // 强制把所有粒子系统改为 Local 空间，确保跟随移动
-                        foreach (var ps in ultimateGo.GetComponentsInChildren<ParticleSystem>())
-                        {
-                            var main = ps.main;
-                            main.simulationSpace = ParticleSystemSimulationSpace.Local;
-                        }
-
-                        Destroy(ultimateGo, buffDuration);
-                    }
-
-                    // 给 MagneticStormAura 临时加暴击率
-                    aura.ApplyThunderBuff(buffCritBonus, buffDuration);
-
-                    Debug.Log($"<color=yellow>[大招] 雷霆之力！暴击率 +{buffCritBonus:P0}，持续 {buffDuration} 秒</color>");
-                }
-                else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Hurricane"))
+                if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Hurricane"))
                 {
                     // === 飓风大招：风暴之怒 - 推开敌人 + 移速BUFF ===
                     float hurricaneBuffDuration = 15f;
@@ -259,16 +230,13 @@ public class UltimateManager : MonoBehaviour
                         if (pushDir.sqrMagnitude < 0.01f) pushDir = Random.insideUnitSphere;
                         pushDir.Normalize();
 
-                        // 直接位移推开 → 改用协程平滑推开
                         StartCoroutine(SmoothPush(h.transform, pushDir, pushForce));
 
-                        // 造成大招伤害
                         h.TakeDamage(weapon.StatBlock.ultimateDamage, h.transform.position, 
                             playerT != null ? playerT.gameObject : weapon.gameObject, 
                             AttackType.Standard, null, null, weapon.StatBlock.weaponName);
                     }
 
-                    // 临时增加移速
                     if (PlayerStats.Instance != null)
                     {
                         StartCoroutine(HurricaneSpeedBuff(moveSpeedBonus, hurricaneBuffDuration));
@@ -278,11 +246,10 @@ public class UltimateManager : MonoBehaviour
                 }
                 else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Grenade"))
                 {
-                    // === 榴弹大招：毁灭轰炸 - 投掷巨大榴弹造成高额伤害 ===
+                    // === 榴弹大招：毁灭轰炸 ===
                     float ultRadius = weapon.StatBlock.ultimateRadius > 0 ? weapon.StatBlock.ultimateRadius : 8f;
                     int ultDamage = weapon.StatBlock.ultimateDamage;
 
-                    // 找到最近敌人作为目标
                     Vector3 playerPos = playerT != null ? playerT.position : weapon.transform.position;
                     Transform targetEnemy = null;
                     float closestDist = float.MaxValue;
@@ -295,19 +262,15 @@ public class UltimateManager : MonoBehaviour
                         if (d < closestDist) { closestDist = d; targetEnemy = h.transform; }
                     }
 
-                    // 目标落点
                     Vector3 targetPos = targetEnemy != null ? targetEnemy.position : playerPos + (playerT != null ? playerT.forward * 5f : Vector3.forward * 5f);
 
-                    // 抛物线投掷特效（巨大榴弹）
                     if (ultimateGo != null)
                     {
-                        // 放大特效表现巨型榴弹
                         ultimateGo.transform.localScale *= 3f;
                         StartCoroutine(GrenadeUltimateArc(ultimateGo, playerPos + Vector3.up * 1.5f, targetPos, ultRadius, ultDamage, weapon, playerT));
                     }
                     else
                     {
-                        // 没有特效预制件，直接在目标位置造成伤害
                         DealAreaDamage(targetPos, ultRadius, ultDamage, 0f);
                     }
 
@@ -315,12 +278,11 @@ public class UltimateManager : MonoBehaviour
                 }
                 else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("ChainLightning"))
                 {
-                    // === 闪电链大招：雷神之怒 - 20次弹射的超级闪电链 ===
+                    // === 闪电链大招：雷神之怒 ===
                     int ultChainDamage = weapon.StatBlock.ultimateDamage;
                     float ultChainRange = weapon.StatBlock.chainRange > 0 ? weapon.StatBlock.chainRange * 1.5f : 15f;
                     int ultChainCount = 20;
 
-                    // 找最近敌人
                     Vector3 playerPos = playerT != null ? playerT.position : weapon.transform.position;
                     Transform chainTarget = null;
                     float closestDist = float.MaxValue;
@@ -335,14 +297,193 @@ public class UltimateManager : MonoBehaviour
 
                     if (chainTarget != null)
                     {
-                        // 通过 WeaponPart 发射超级闪电链
                         weapon.StartCoroutine(weapon.UltimateChainLightning(chainTarget, ultChainCount, ultChainDamage, ultChainRange));
                     }
 
-                    // 销毁大招特效（如果有）
                     if (ultimateGo != null) Destroy(ultimateGo, 3f);
 
                     Debug.Log($"<color=cyan>[大招] 雷神之怒！弹射{ultChainCount}次，伤害: {ultChainDamage}</color>");
+                }
+                else if (weapon.StatBlock.behavior == WeaponBehaviorType.Aura)
+                {
+                    // 【关键修复】通过 weapon.orbitalPivot 获取正确的光环实例，避免 FindObjectOfType 找到残留副本
+                    SupportAura supportAura = weapon.GetAuraComponent<SupportAura>();
+                    MagneticStormAura magneticAura = weapon.GetAuraComponent<MagneticStormAura>();
+
+                    if (magneticAura != null)
+                    {
+                        // === 雷击光环大招：雷霆之力 - BUFF型加暴击率 ===
+                        float buffDuration = 10f;
+                        float buffCritBonus = 0.5f;
+
+                        if (playerT != null && ultimateGo != null)
+                        {
+                            ultimateGo.transform.SetParent(playerT, false);
+                            ultimateGo.transform.localPosition = Vector3.up * 1f;
+                            ultimateGo.transform.localRotation = Quaternion.identity;
+
+                            foreach (var ps in ultimateGo.GetComponentsInChildren<ParticleSystem>())
+                            {
+                                var main = ps.main;
+                                main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                            }
+
+                            Destroy(ultimateGo, buffDuration);
+                        }
+
+                        magneticAura.ApplyThunderBuff(buffCritBonus, buffDuration);
+
+                        weapon.isUltimateBuffActive = true;
+                        StartCoroutine(ClearUltimateBuffFlag(weapon, buffDuration));
+
+                        Debug.Log($"<color=yellow>[大招] 雷霆之力！暴击率 +{buffCritBonus:P0}，持续 {buffDuration} 秒</color>");
+                    }
+                    else if (supportAura != null)
+                    {
+                        // === 辅助光环大招：生命汲取 - 30秒范围x1.5 + 击杀恢复 ===
+                        float lifeSiphonDuration = 30f;
+
+                        if (playerT != null && ultimateGo != null)
+                        {
+                            ultimateGo.transform.SetParent(playerT, false);
+                            ultimateGo.transform.localPosition = Vector3.up * 0.5f;
+                            ultimateGo.transform.localRotation = Quaternion.identity;
+
+                            foreach (var ps in ultimateGo.GetComponentsInChildren<ParticleSystem>())
+                            {
+                                var main = ps.main;
+                                main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                            }
+
+                            Destroy(ultimateGo, lifeSiphonDuration);
+                        }
+
+                        supportAura.isLifeSiphonActive = true;
+                        supportAura.isRadiusBoostActive = true;
+                        StartCoroutine(LifeSiphonBuff(supportAura, lifeSiphonDuration));
+
+                        weapon.isUltimateBuffActive = true;
+                        StartCoroutine(ClearUltimateBuffFlag(weapon, lifeSiphonDuration));
+
+                        Debug.Log($"<color=green>[大招] 生命汲取！持续 {lifeSiphonDuration} 秒，范围x1.5 + 光环内击杀恢复1%最大HP</color>");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[大招] Aura 武器但找不到 SupportAura 或 MagneticStormAura 实例！");
+                        if (ultimateGo != null) Destroy(ultimateGo, 3f);
+                    }
+                }
+                else if (weapon.StatBlock.behavior == WeaponBehaviorType.Orbital)
+                {
+                    // === 环绕武器大招：涡轮驱动 ===
+                    float buffDuration = 10f;
+                    float speedMultiplier = 2f;
+
+                    if (playerT != null && ultimateGo != null)
+                    {
+                        ultimateGo.transform.SetParent(playerT, false);
+                        ultimateGo.transform.localPosition = Vector3.up * 0.5f;
+                        ultimateGo.transform.localRotation = Quaternion.identity;
+
+                        foreach (var ps in ultimateGo.GetComponentsInChildren<ParticleSystem>())
+                        {
+                            var main = ps.main;
+                            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                        }
+
+                        Destroy(ultimateGo, buffDuration);
+                    }
+
+                    weapon.ForceSpawnOrbiters();
+
+                    weapon.orbitalSpeedMultiplier *= speedMultiplier;
+                    Orbiter[] activeOrbiters = FindObjectsOfType<Orbiter>();
+                    foreach (var orb in activeOrbiters)
+                    {
+                        orb.selfRotationSpeed *= speedMultiplier;
+                    }
+
+                    StartCoroutine(OrbiterSpeedBuff(weapon, activeOrbiters, speedMultiplier, buffDuration));
+
+                    Debug.Log($"<color=white>[大招] 涡轮驱动！旋转速度x{speedMultiplier}，持续 {buffDuration} 秒</color>");
+                }
+                else if (weapon.StatBlock.behavior == WeaponBehaviorType.FlyingDagger)
+                {
+                    // === 灵能飞刀大招：灵刃风暴 - 速度x3 + 伤害x2 + 体积x2 ===
+                    float daggerBuffDuration = 8f;
+
+                    // 找到所有活跃的飞刀，开启大招状态
+                    FlameDaggerController[] daggers = FindObjectsOfType<FlameDaggerController>();
+                    int activatedCount = 0;
+                    foreach (var dagger in daggers)
+                    {
+                        if (dagger != null && dagger.sourceWeapon == weapon)
+                        {
+                            dagger.isUltimateActive = true;
+                            dagger.transform.localScale *= 2f;
+
+                            // 在每把飞刀上挂载大招特效
+                            if (weapon.StatBlock.ultimateEffectPrefab != null)
+                            {
+                                dagger.AttachUltimateVfx(weapon.StatBlock.ultimateEffectPrefab);
+                            }
+                            else if (ultimateGo != null)
+                            {
+                                // 没有专用飞刀特效，用大招特效的子粒子复制到飞刀上
+                                dagger.AttachUltimateVfx(ultimateGo);
+                            }
+                            activatedCount++;
+                        }
+                    }
+
+                    // 如果大招特效对象还在（没被用作飞刀特效源），挂到玩家身上
+                    if (playerT != null && ultimateGo != null && weapon.StatBlock.ultimateEffectPrefab != null)
+                    {
+                        ultimateGo.transform.SetParent(playerT, false);
+                        ultimateGo.transform.localPosition = Vector3.up * 1f;
+                        Destroy(ultimateGo, daggerBuffDuration);
+                    }
+
+                    StartCoroutine(DaggerUltimateBuff(weapon, daggers, daggerBuffDuration));
+
+                    weapon.isUltimateBuffActive = true;
+                    StartCoroutine(ClearUltimateBuffFlag(weapon, daggerBuffDuration));
+
+                    Debug.Log($"<color=red>[大招] 灵刃风暴！激活{activatedCount}把飞刀，{daggerBuffDuration}秒内速度x3 + 伤害x2 + 体积x2</color>");
+                }
+                else if (weapon.StatBlock.behavior == WeaponBehaviorType.FrostNova)
+                {
+                    // === 冰霜新星大招：冰爽之星 ===
+                    // 在玩家前方生成冰晶体，冰冻范围敌人并阻碍移动
+                    float spawnDistance = 5f; // 玩家前方距离
+                    // 角色面朝方向在 Visuals 子物体上
+                    Transform visualsForFrost = playerT?.Find("Visuals");
+                    Vector3 spawnDir = (visualsForFrost != null) ? visualsForFrost.forward : (playerT != null ? playerT.forward : Vector3.forward);
+                    spawnDir.y = 0f;
+                    if (spawnDir.sqrMagnitude < 0.01f) spawnDir = Vector3.forward;
+                    spawnDir.Normalize();
+                    Vector3 frostPos = (playerT != null ? playerT.position : weapon.transform.position) + spawnDir * spawnDistance;
+                    frostPos.y = playerT != null ? playerT.position.y : frostPos.y; // 保持地面高度
+
+                    if (ultimateGo != null)
+                    {
+                        // 移动特效到前方
+                        ultimateGo.transform.position = frostPos;
+
+                        // 添加冰霜大招组件
+                        FrostNovaUltimate frostUlt = ultimateGo.GetComponent<FrostNovaUltimate>();
+                        if (frostUlt == null) frostUlt = ultimateGo.AddComponent<FrostNovaUltimate>();
+
+                        // 配置参数
+                        frostUlt.freezeRadius = weapon.StatBlock.ultimateRadius > 0 ? weapon.StatBlock.ultimateRadius : 8f;
+                        frostUlt.damage = weapon.StatBlock.ultimateDamage > 0 ? weapon.StatBlock.ultimateDamage : 150;
+                        frostUlt.freezeDuration = 10f;
+                        frostUlt.lifetime = 15f;
+                        frostUlt.blockEnemies = true;
+                        // 碰撞体使用预制体自带的 Collider，不再代码中添加
+                    }
+
+                    Debug.Log($"<color=cyan>[大招] 冰爽之星！前方{spawnDistance}米处生成，冰冻半径{weapon.StatBlock.ultimateRadius}，伤害{weapon.StatBlock.ultimateDamage}</color>");
                 }
                 else
                 {
@@ -386,6 +527,60 @@ public class UltimateManager : MonoBehaviour
                 }
                 Debug.Log($"<color=cyan>[大招] 雷神之怒！弹射{ultChainCount}次，伤害: {ultChainDamage}</color>");
             }
+            else if (weapon.StatBlock.behavior == WeaponBehaviorType.Orbital)
+            {
+                // 环绕武器大招（无特效预制件情况）：直接加速
+                float buffDuration = 10f;
+                float speedMultiplier = 2f;
+
+                // 强制重置冷却并立即召唤环绕武器
+                weapon.ForceSpawnOrbiters();
+
+                weapon.orbitalSpeedMultiplier *= speedMultiplier;
+                Orbiter[] activeOrbiters = FindObjectsOfType<Orbiter>();
+                foreach (var orb in activeOrbiters)
+                {
+                    orb.selfRotationSpeed *= speedMultiplier;
+                }
+                StartCoroutine(OrbiterSpeedBuff(weapon, activeOrbiters, speedMultiplier, buffDuration));
+                Debug.Log($"<color=white>[大招] 涡轮驱动！旋转速度x{speedMultiplier}，持续 {buffDuration} 秒（无特效）</color>");
+            }
+            else if (weapon.StatBlock.behavior == WeaponBehaviorType.Landmine)
+            {
+                // === 地雷大招：矩阵雷区 - 在周围生成3颗地雷 ===
+                int mineCount = 3;
+                Transform playerT = GameManager.Instance?.playerTransform;
+                Vector3 playerPos = playerT != null ? playerT.position : weapon.transform.position;
+
+                for (int i = 0; i < mineCount; i++)
+                {
+                    Vector2 rnd = Random.insideUnitCircle * (weapon.StatBlock.spawnRadius * 1.5f);
+                    Vector3 spawnPos = playerPos + new Vector3(rnd.x, 0, rnd.y);
+
+                    // 尝试放在地面上
+                    RaycastHit hit;
+                    if (Physics.Raycast(spawnPos + Vector3.up * 5f, Vector3.down, out hit, 10f))
+                    { spawnPos = hit.point; }
+
+                    if (weapon.StatBlock.minePrefab != null)
+                    {
+                        GameObject mineGO = Instantiate(weapon.StatBlock.minePrefab, spawnPos, Quaternion.identity);
+                        Landmine mineScript = mineGO.GetComponent<Landmine>();
+                        if (mineScript != null)
+                        {
+                            int finalDmg = Mathf.RoundToInt(weapon.StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier);
+                            float finalRadius = weapon.StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier * 1.5f;
+                            mineScript.Initialize(
+                                finalDmg, finalRadius, 0.1f, weapon.StatBlock.mineDuration,
+                                GameManager.Instance?.playerTransform?.gameObject,
+                                weapon.StatBlock.explosionEffectPrefab,
+                                weapon.StatBlock.layersToDamageByAOE, weapon
+                            );
+                        }
+                    }
+                }
+                Debug.Log($"<color=red>[大招] 矩阵雷区！布置了 {mineCount} 颗高爆地雷</color>");
+            }
             else
             {
                 // 通用：范围伤害
@@ -417,18 +612,172 @@ public class UltimateManager : MonoBehaviour
 
         // 生成连携技效果
         Vector3 spawnPos = GameManager.Instance?.playerTransform?.position ?? transform.position;
-        if (combo.comboEffectPrefab != null)
-        {
-            GameObject effectGO = Instantiate(combo.comboEffectPrefab, spawnPos, Quaternion.identity);
+        Transform playerT = GameManager.Instance?.playerTransform;
 
-            // 【修复】初始化龙卷风/持续AOE的伤害参数
-            TornadoController tornado = effectGO.GetComponent<TornadoController>();
-            if (tornado == null) tornado = effectGO.GetComponentInChildren<TornadoController>();
-            if (tornado != null)
+        // 判断是否为 Orbital+ChainLightning 组合（由专属分支处理特效，跳过通用生成）
+        bool isOrbitalLightningCombo = 
+            ((weaponA.StatBlock.behavior == WeaponBehaviorType.Orbital || weaponB.StatBlock.behavior == WeaponBehaviorType.Orbital) &&
+             ((weaponA.StatBlock.weaponID != null && weaponA.StatBlock.weaponID.Contains("ChainLightning")) ||
+              (weaponB.StatBlock.weaponID != null && weaponB.StatBlock.weaponID.Contains("ChainLightning"))));
+
+        if (combo.comboEffectPrefab != null && !isOrbitalLightningCombo)
+        {
+            // 检查预制件是否为喷火塔类型（地雷+火球连携）
+            FlamethrowerTurret turretCheck = combo.comboEffectPrefab.GetComponent<FlamethrowerTurret>();
+            if (turretCheck != null)
             {
-                tornado.Setup(combo.comboDamage, weaponA);
-                Debug.Log($"<color=green>[连携技] 初始化龙卷风: 伤害={combo.comboDamage}, 来源={weaponA.StatBlock.weaponName}</color>");
+                // === 烈焰炮台阵：在玩家周围生成3个喷火塔 ===
+                int turretCount = 3;
+                float spawnRadius = 4f;
+                for (int i = 0; i < turretCount; i++)
+                {
+                    // 均匀分布在圆周上
+                    float angle = (360f / turretCount) * i;
+                    Vector3 offset = Quaternion.Euler(0, angle, 0) * Vector3.forward * spawnRadius;
+                    Vector3 turretPos = spawnPos + offset;
+
+                    // 尝试放在地面上
+                    RaycastHit hit;
+                    if (Physics.Raycast(turretPos + Vector3.up * 5f, Vector3.down, out hit, 10f))
+                    { turretPos = hit.point; }
+
+                    GameObject turretGO = Instantiate(combo.comboEffectPrefab, turretPos, Quaternion.identity);
+                    FlamethrowerTurret turret = turretGO.GetComponent<FlamethrowerTurret>();
+                    if (turret != null)
+                    {
+                        turret.Initialize(
+                            combo.comboDamage,  // 每tick伤害
+                            8f,                 // 持续8秒
+                            GameManager.Instance?.playerTransform?.gameObject,
+                            turret.flameRange,  // 使用预制件上配置的射程
+                            0.2f,               // 伤害间隔
+                            combo.comboName
+                        );
+                    }
+                }
+                Debug.Log($"<color=red>[连携技] 烈焰炮台阵！生成了 {turretCount} 个喷火塔</color>");
             }
+            else
+            {
+                // 非喷火塔：使用原有的生成逻辑
+                GameObject effectGO = Instantiate(combo.comboEffectPrefab, spawnPos, Quaternion.identity);
+
+                // 初始化龙卷风/持续AOE的伤害参数
+                TornadoController tornado = effectGO.GetComponent<TornadoController>();
+                if (tornado == null) tornado = effectGO.GetComponentInChildren<TornadoController>();
+                if (tornado != null)
+                {
+                    tornado.Setup(combo.comboDamage, weaponA);
+                    Debug.Log($"<color=green>[连携技] 初始化龙卷风: 伤害={combo.comboDamage}, 来源={weaponA.StatBlock.weaponName}</color>");
+                }
+            }
+        }
+
+        // === 检查是否有 Aura 武器参与连携 → 启用推开效果 ===
+        bool hasAura = (weaponA.StatBlock.behavior == WeaponBehaviorType.Aura ||
+                        weaponB.StatBlock.behavior == WeaponBehaviorType.Aura);
+        if (hasAura)
+        {
+            float comboDuration = 15f;
+            // 【关键修复】通过 auraWeapon.orbitalPivot 获取正确的光环实例
+            WeaponPart auraWeapon = (weaponA.StatBlock.behavior == WeaponBehaviorType.Aura) ? weaponA : weaponB;
+            SupportAura supportAura = auraWeapon.GetAuraComponent<SupportAura>();
+            if (supportAura != null)
+            {
+                supportAura.isPushActive = true;
+                supportAura.isRadiusBoostActive = true;
+                supportAura.isLifeSiphonActive = true;
+                StartCoroutine(AuraPushBuff(supportAura, comboDuration));
+                Debug.Log($"<color=red>[连携技] 光环风暴！{comboDuration}秒内推开敌人 + 范围x1.5 + 击杀恢复</color>");
+            }
+
+            // 阻止 Aura 武器能量积累
+            auraWeapon.isUltimateBuffActive = true;
+            StartCoroutine(ClearUltimateBuffFlag(auraWeapon, comboDuration));
+        }
+
+        // === 检查是否有飞刀+火球参与连携 → 炎刃流星 ===
+        bool hasDagger = (weaponA.StatBlock.behavior == WeaponBehaviorType.FlyingDagger ||
+                          weaponB.StatBlock.behavior == WeaponBehaviorType.FlyingDagger);
+        bool hasFireball = (weaponA.StatBlock.weaponID != null && weaponA.StatBlock.weaponID.Contains("Fireball")) ||
+                           (weaponB.StatBlock.weaponID != null && weaponB.StatBlock.weaponID.Contains("Fireball"));
+        if (hasDagger && hasFireball)
+        {
+            float comboDuration = 15f;
+            WeaponPart daggerWeapon = (weaponA.StatBlock.behavior == WeaponBehaviorType.FlyingDagger) ? weaponA : weaponB;
+
+            FlameDaggerController[] daggers = FindObjectsOfType<FlameDaggerController>();
+            foreach (var dagger in daggers)
+            {
+                if (dagger.sourceWeapon == daggerWeapon)
+                {
+                    dagger.isFlameUltimateActive = true;
+                    dagger.isUltimateActive = true;
+                    dagger.transform.localScale *= 2f;
+
+                    // 在每把飞刀上挂载融合大招特效
+                    if (combo.comboEffectPrefab != null)
+                    {
+                        dagger.AttachUltimateVfx(combo.comboEffectPrefab);
+                    }
+                    else if (daggerWeapon.StatBlock.ultimateEffectPrefab != null)
+                    {
+                        dagger.AttachUltimateVfx(daggerWeapon.StatBlock.ultimateEffectPrefab);
+                    }
+                }
+            }
+
+            StartCoroutine(DaggerFlameUltimateBuff(daggerWeapon, daggers, comboDuration));
+
+            daggerWeapon.isUltimateBuffActive = true;
+            StartCoroutine(ClearUltimateBuffFlag(daggerWeapon, comboDuration));
+
+            Debug.Log($"<color=orange>[连携技] 炎刃流星！{comboDuration}秒内火焰伤害x3 + 速度x3 + 体积x2</color>");
+        }
+
+        // === 检查是否有 Orbital+ChainLightning 参与连携 → 雷暴漩涡 ===
+        if (isOrbitalLightningCombo)
+        {
+            float comboDuration = 12f;
+            float speedMultiplier = 3f;
+            WeaponPart orbitalWeapon = (weaponA.StatBlock.behavior == WeaponBehaviorType.Orbital) ? weaponA : weaponB;
+            WeaponPart lightningWeapon = (weaponA.StatBlock.behavior == WeaponBehaviorType.Orbital) ? weaponB : weaponA;
+
+            // 用 comboEffectPrefab 替换当前环绕武器（销毁旧盾，生成紫色 orbit）
+            // 复用现有的环绕旋转系统，到期后进入冷却自动重生普通盾
+            Transform comboPivot = null;
+            if (combo.comboEffectPrefab != null)
+            {
+                comboPivot = orbitalWeapon.ForceSpawnOrbitersWithPrefab(combo.comboEffectPrefab, comboDuration);
+            }
+            else
+            {
+                // 没有专属预制件，直接用普通盾加速
+                orbitalWeapon.ForceSpawnOrbiters();
+            }
+
+            // 加速环绕旋转
+            orbitalWeapon.orbitalSpeedMultiplier *= speedMultiplier;
+            Orbiter[] activeOrbiters = FindObjectsOfType<Orbiter>();
+            foreach (var orb in activeOrbiters)
+            {
+                orb.selfRotationSpeed *= speedMultiplier;
+            }
+            StartCoroutine(OrbiterSpeedBuff(orbitalWeapon, activeOrbiters, speedMultiplier, comboDuration));
+
+            // 把吸附+闪电链逻辑挂到枢轴上（和盾同生共死）
+            if (comboPivot != null)
+            {
+                StormOrbiterUltimate stormUlt = comboPivot.gameObject.AddComponent<StormOrbiterUltimate>();
+                stormUlt.Initialize(orbitalWeapon, lightningWeapon, combo.comboDamage, comboDuration);
+            }
+
+            orbitalWeapon.isUltimateBuffActive = true;
+            lightningWeapon.isUltimateBuffActive = true;
+            StartCoroutine(ClearUltimateBuffFlag(orbitalWeapon, comboDuration));
+            StartCoroutine(ClearUltimateBuffFlag(lightningWeapon, comboDuration));
+
+            Debug.Log($"<color=yellow>[连携技] 雷暴漩涡！{comboDuration}秒内 环绕替换为大招Orbit x{speedMultiplier} + 吸附 + 闪电链</color>");
         }
 
         // 一次性范围伤害（初始爆发）
@@ -560,5 +909,113 @@ public class UltimateManager : MonoBehaviour
         }
 
         Debug.Log($"<color=orange>[毁灭轰炸] 爆炸！命中 {hits.Length} 个敌人，伤害 {damage}</color>");
+    }
+
+    /// <summary>
+    /// 环绕武器大招：速度BUFF协程，BUFF结束后恢复旋转速度
+    /// </summary>
+    private System.Collections.IEnumerator OrbiterSpeedBuff(WeaponPart weapon, Orbiter[] orbiters, float multiplier, float duration)
+    {
+        // BUFF期间阻止能量积累
+        if (weapon != null) weapon.isUltimateBuffActive = true;
+
+        yield return new WaitForSeconds(duration);
+
+        // 恢复 WeaponPart 上的倍率（影响未来生成的 Orbiter）
+        if (weapon != null)
+        {
+            weapon.orbitalSpeedMultiplier /= multiplier;
+            weapon.isUltimateBuffActive = false; // BUFF结束，恢复能量积累
+        }
+
+        // 恢复当前仍存活的 Orbiter 的旋转速度
+        foreach (var orb in orbiters)
+        {
+            if (orb != null)
+            {
+                orb.selfRotationSpeed /= multiplier;
+            }
+        }
+
+        Debug.Log($"<color=white>[大招] 涡轮驱动BUFF结束，旋转速度已恢复</color>");
+    }
+
+    /// <summary>
+    /// 生命汲取大招BUFF协程：持续时间结束后关闭开关（包括范围增大）
+    /// </summary>
+    private System.Collections.IEnumerator LifeSiphonBuff(SupportAura aura, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (aura != null)
+        {
+            aura.isLifeSiphonActive = false;
+            aura.isRadiusBoostActive = false;
+            Debug.Log("<color=green>[大招] 生命汲取效果结束（范围恢复正常）</color>");
+        }
+    }
+
+    /// <summary>
+    /// Aura+Hurricane 连携大招BUFF协程：持续时间结束后关闭推开开关
+    /// </summary>
+    private System.Collections.IEnumerator AuraPushBuff(SupportAura aura, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (aura != null)
+        {
+            aura.isPushActive = false;
+            aura.isRadiusBoostActive = false;
+            aura.isLifeSiphonActive = false;
+            Debug.Log("<color=green>[连携技] 光环风暴效果结束</color>");
+        }
+    }
+
+    /// <summary>
+    /// 灵刃风暴大招结束 - 恢复飞刀状态
+    /// </summary>
+    private System.Collections.IEnumerator DaggerUltimateBuff(WeaponPart weapon, FlameDaggerController[] daggers, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        foreach (var dagger in daggers)
+        {
+            if (dagger != null && dagger.sourceWeapon == weapon)
+            {
+                dagger.isUltimateActive = false;
+                dagger.transform.localScale *= 0.5f;
+                dagger.RemoveUltimateVfx(); // 移除大招特效
+            }
+        }
+        Debug.Log("<color=red>[大招] 灵刃风暴效果结束</color>");
+    }
+
+    /// <summary>
+    /// 炎刃流星融合大招结束 - 恢复火焰生成状态
+    /// </summary>
+    private System.Collections.IEnumerator DaggerFlameUltimateBuff(WeaponPart weapon, FlameDaggerController[] daggers, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        foreach (var dagger in daggers)
+        {
+            if (dagger != null && dagger.sourceWeapon == weapon)
+            {
+                dagger.isFlameUltimateActive = false;
+                dagger.isUltimateActive = false;
+                dagger.transform.localScale *= 0.5f;
+                dagger.RemoveUltimateVfx(); // 移除大招特效
+            }
+        }
+        Debug.Log("<color=orange>[连携技] 炎刃流星效果结束</color>");
+    }
+
+    /// <summary>
+    /// 通用：BUFF型大招结束后恢复能量积累
+    /// </summary>
+    private System.Collections.IEnumerator ClearUltimateBuffFlag(WeaponPart weapon, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (weapon != null)
+        {
+            weapon.isUltimateBuffActive = false;
+            Debug.Log($"<color=white>[大招] {weapon.StatBlock?.weaponName} BUFF结束，恢复能量积累</color>");
+        }
     }
 }

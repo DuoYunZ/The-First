@@ -798,9 +798,63 @@ public class StatusEffectReceiver : MonoBehaviour
         }
     }
 
+    // === 脆弱印记 (FragileMark) ===
+    [HideInInspector] public bool IsFragile = false;
+    [HideInInspector] public float fragileDamageMultiplier = 1f;
+    private Coroutine fragileCoroutine;
+
+    /// <summary>
+    /// 施加脆弱印记，使敌人受到的伤害增加
+    /// </summary>
+    public void ApplyFragileMark(float damageMultiplierIncrease, float duration)
+    {
+        if (fragileCoroutine != null) StopCoroutine(fragileCoroutine);
+        fragileCoroutine = StartCoroutine(FragileMarkRoutine(damageMultiplierIncrease, duration));
+    }
+
+    private IEnumerator FragileMarkRoutine(float damageMultiplierIncrease, float duration)
+    {
+        IsFragile = true;
+        fragileDamageMultiplier = 1f + damageMultiplierIncrease;
+        yield return new WaitForSeconds(duration);
+        IsFragile = false;
+        fragileDamageMultiplier = 1f;
+        fragileCoroutine = null;
+    }
+
+    /// <summary>
+    /// 光环专用减速（独立于冰系减速，两者可叠加）
+    /// </summary>
+    public void ApplyAuraSlow(float slowPercentage, float duration)
+    {
+        if (activeStatusCoroutines.ContainsKey(DebuffType.AuraSlow))
+        {
+            StopCoroutine(activeStatusCoroutines[DebuffType.AuraSlow]);
+        }
+        var auraSlowCoroutine = StartCoroutine(AuraSlowRoutine(slowPercentage, duration));
+        activeStatusCoroutines[DebuffType.AuraSlow] = auraSlowCoroutine;
+    }
+
+    private IEnumerator AuraSlowRoutine(float slowPercentage, float duration)
+    {
+        if (enemyAI == null) yield break;
+
+        float speedMultiplier = Mathf.Max(0, 1f - slowPercentage);
+        enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed() * speedMultiplier);
+
+        yield return new WaitForSeconds(duration);
+
+        // 恢复速度（如果没有其他减速在作用）
+        if (enemyAI != null && !IsSlowed)
+        {
+            enemyAI.SetMoveSpeed(enemyAI.GetOriginalMoveSpeed());
+        }
+        activeStatusCoroutines.Remove(DebuffType.AuraSlow);
+    }
+
     // --- 【关键】当物体被禁用/销毁时，强制清理特效 ---
     void OnDisable()
     {
         ClearShockEffect();
     }
-}
+}

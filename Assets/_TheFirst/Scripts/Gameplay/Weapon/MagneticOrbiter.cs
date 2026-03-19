@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class MagneticOrbiter : MonoBehaviour
@@ -22,7 +22,8 @@ public class MagneticOrbiter : MonoBehaviour
     public LayerMask enemyLayer;
 
     private float damageTimer;
-    private WeaponPart ownerWeapon;
+    [HideInInspector] public WeaponPart ownerWeapon; // 公开给 Health.cs 做能量回溯
+    public WeaponPart launcher => ownerWeapon; // 别名，与 Orbiter 保持一致
 
     public void Initialize(int baseDamage, WeaponPart weapon)
     {
@@ -120,5 +121,17 @@ public class MagneticOrbiter : MonoBehaviour
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, pullRadius);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (ownerWeapon != null && ownerWeapon.isOrbitalAbsorbEnabled)
+        {
+            if (other.CompareTag("EnemyProjectile"))
+            {
+                Destroy(other.gameObject);
+                ownerWeapon.ExtendOrbitalDuration(0.5f);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -26,6 +26,9 @@ public class Health : MonoBehaviour
     [Tooltip("当生命值归零时触发的事件")]
     public UnityEvent OnDeath;
     public bool IsDead { get; private set; }
+
+    // 全局静态事件：当敌人死亡时触发，供光环等技能监听
+    public static event System.Action<Health> OnEnemyDied;
     [Header("受伤无敌与视觉 (新增)")]
     [Tooltip("玩家受伤后的无敌时间 (秒)")]
     public float invincibilityDuration = 1.0f;
@@ -181,9 +184,14 @@ public class Health : MonoBehaviour
             return false;
         }
 
-        // 2. 状态效果计算 (腐蚀等)
-        if (statusReceiver != null && statusReceiver.IsCorroded)
-            damageAmount = Mathf.RoundToInt(damageAmount * statusReceiver.corrodeDamageMultiplier);
+        // 2. 状态效果计算 (腐蚀、脆弱印记等)
+        if (statusReceiver != null)
+        {
+            if (statusReceiver.IsCorroded)
+                damageAmount = Mathf.RoundToInt(damageAmount * statusReceiver.corrodeDamageMultiplier);
+            if (statusReceiver.IsFragile)
+                damageAmount = Mathf.RoundToInt(damageAmount * statusReceiver.fragileDamageMultiplier);
+        }
 
         // 3. 玩家护甲计算
         if (isPlayerHealth && PlayerStats.Instance != null)
@@ -243,6 +251,18 @@ public class Health : MonoBehaviour
             {
                 Landmine landmine = attacker.GetComponent<Landmine>();
                 if (landmine != null) sourcePart = landmine.sourceWeapon;
+            }
+
+            // G. 【新增】尝试从 attacker 身上获取 Orbiter / MagneticOrbiter (环绕武器)
+            if (sourcePart == null && attacker != null)
+            {
+                Orbiter orbiter = attacker.GetComponent<Orbiter>();
+                if (orbiter != null) sourcePart = orbiter.launcher;
+            }
+            if (sourcePart == null && attacker != null)
+            {
+                MagneticOrbiter magOrbiter = attacker.GetComponent<MagneticOrbiter>();
+                if (magOrbiter != null) sourcePart = magOrbiter.launcher;
             }
             
             // F. 【新增】尝试从 attacker 身上直接获取 WeaponPart (如果是Aura类型武器)
@@ -402,6 +422,12 @@ public class Health : MonoBehaviour
         // --- 整合结束 ---
 
         OnDeath?.Invoke();
+
+        // 触发全局敌人死亡事件（供光环生命汲取等技能监听）
+        if (!isPlayerHealth)
+        {
+            OnEnemyDied?.Invoke(this);
+        }
 
         if (gameObject.CompareTag("Enemy"))
         {

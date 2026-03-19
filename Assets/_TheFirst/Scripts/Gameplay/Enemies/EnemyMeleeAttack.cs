@@ -1,4 +1,4 @@
-﻿// --- EnemyMeleeAttack.cs ---
+// --- EnemyMeleeAttack.cs ---
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
@@ -45,6 +45,7 @@ public class EnemyMeleeAttack : MonoBehaviour
     private bool isAttacking = false;
     private GameObject activeWarningIndicator;
     private EnemyAI enemyAI; // <--- [新增]
+    private Vector3 _lockedAttackForward; // 【修复】蓄力时锁定的攻击方向，防止出手瞬间转向
 
     void Start()
     {
@@ -107,6 +108,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         }
 
         transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
+        _lockedAttackForward = transform.forward; // 【修复】锁定攻击方向，后续判定使用此方向
 
 
         // 2. 预警阶段：在身前生成预警特效
@@ -128,10 +130,7 @@ public class EnemyMeleeAttack : MonoBehaviour
         yield return new WaitForSeconds(windupDuration);
 
         // 4. 攻击判定阶段
-        if (playerTarget != null)
-        {
-            transform.LookAt(new Vector3(playerTarget.position.x, transform.position.y, playerTarget.position.z));
-        }
+        // 【修复】不再二次 LookAt，使用蓄力时锁定的方向，确保攻击区域与预警一致
         if (animator != null) animator.SetTrigger("doAttack");
 
         if (slashEffectPrefab != null)
@@ -209,14 +208,15 @@ public class EnemyMeleeAttack : MonoBehaviour
             if (hit.transform == playerTarget)
             {
                 Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
-                if (attackAngle <= 0 || Vector3.Angle(transform.forward, directionToPlayer) < attackAngle / 2)
+                // 【修复】使用蓄力时锁定的方向（_lockedAttackForward）而非当前朝向（transform.forward）
+                // 这样确保玩家只有在预警区域内才会被命中
+                if (attackAngle <= 0 || Vector3.Angle(_lockedAttackForward, directionToPlayer) < attackAngle / 2)
                 {
                    
                     Health playerHealth = playerTarget.GetComponent<Health>();
                     if (playerHealth != null)
                     {
-                        // 【核心修正】将伤害事件的发生位置，从怪物自身(transform.position)
-                        // 改为玩家的位置(playerTarget.position)
+                        // 将伤害事件的发生位置设为玩家的位置
                         playerHealth.TakeDamage(damage, playerTarget.position, this.gameObject, AttackType.Standard);
 
                         if (hitEffectPrefab != null)

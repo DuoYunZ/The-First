@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 定义武器的核心行为类型
@@ -294,6 +294,12 @@ public class WeaponStatBlock : ScriptableObject
 
     [Tooltip("地雷放置后，能存在多久（秒），超时会自动消失")]
     public float mineDuration = 10f;
+
+    [Tooltip("引力黑洞预制件（地雷中阶技能：引力黑洞）")]
+    public GameObject blackHolePrefab;
+
+    [Tooltip("凝固汽油弹燃烧区域预制件（地雷融合技能：凝固汽油弹）")]
+    public GameObject napalmPrefab;
 
     [Header("近战范围攻击属性 (仅 Behavior=MeleeAOE 时有效)")]
     [Tooltip("攻击时产生的刀光/挥砍特效预制件")]

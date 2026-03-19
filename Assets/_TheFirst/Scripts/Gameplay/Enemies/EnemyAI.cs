@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections; // <--- 确保有这一行，用于协程
 using UnityEngine.AI;
 
@@ -51,6 +51,7 @@ public class EnemyAI : MonoBehaviour
     private float offsetRecalculateTimer;
 
     private EnemyExplosionAttack explosionAttackScript;
+    private EnemyMeleeAttack meleeAttackScript; // 【新增】用于在眩晕/击退时中断近战攻击
 
     // ... Start(), InitializeEnemy(), FixedUpdate() 方法保持不变 ...
     void Awake()
@@ -58,7 +59,8 @@ public class EnemyAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>(); // 【新增】获取 Rigidbody 组件
         animator = GetComponentInChildren<Animator>();
-        explosionAttackScript = GetComponent<EnemyExplosionAttack>(); // 【新增】获取爆炸攻击脚本
+        explosionAttackScript = GetComponent<EnemyExplosionAttack>();
+        meleeAttackScript = GetComponent<EnemyMeleeAttack>(); // 【新增】获取爆炸攻击脚本
         statusReceiver = GetComponent<StatusEffectReceiver>();
     }
     void Start()
@@ -109,6 +111,13 @@ public class EnemyAI : MonoBehaviour
     public void SetStunned(bool stunned)
     {
         isStunned = stunned;
+
+        // 【修复】被眩晕时，立即中断正在进行的近战攻击并清理预警特效
+        if (stunned && meleeAttackScript != null)
+        {
+            meleeAttackScript.InterruptAttack();
+        }
+
         if (agent != null && agent.isOnNavMesh)
         {
             // 立即停止或恢复 NavMeshAgent 的移动
@@ -132,6 +141,12 @@ public class EnemyAI : MonoBehaviour
     {
         // 眩晕时 或已经在被击退时，不触发
         if (isStunned || knockbackCoroutine != null) return;
+
+        // 【修复】被击退时，立即中断正在进行的近战攻击并清理预警特效
+        if (meleeAttackScript != null)
+        {
+            meleeAttackScript.InterruptAttack();
+        }
 
         knockbackCoroutine = StartCoroutine(KnockbackRoutine(forceDirection * forceAmount, duration));
     }

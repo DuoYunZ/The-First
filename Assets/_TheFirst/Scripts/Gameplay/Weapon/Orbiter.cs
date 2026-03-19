@@ -1,4 +1,4 @@
-﻿// 创建新脚本 Orbiter.cs
+// 创建新脚本 Orbiter.cs
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,7 +7,7 @@ public class Orbiter : MonoBehaviour
     [Header("基础设置")]
     public float selfRotationSpeed = 1440f;
     private int damage = 10;
-    private WeaponPart launcher;
+    [HideInInspector] public WeaponPart launcher; // 公开给 Health.cs 做能量回溯
 
     [Header("冷却设置")]
     private float hitCooldown = 0.5f;
@@ -33,6 +33,8 @@ public class Orbiter : MonoBehaviour
     {
         this.damage = damage;
         this.launcher = part;
+        // 应用终极技能的旋转速度倍率
+        this.selfRotationSpeed *= part.orbitalSpeedMultiplier;
         this.currentSpinSpeed = selfRotationSpeed;
 
         // --- 识别进化类型 ---
@@ -144,6 +146,17 @@ public class Orbiter : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // 动能吸附 (OrbitalAbsorbProjectiles) 中阶技能
+        if (launcher != null && launcher.isOrbitalAbsorbEnabled)
+        {
+            if (other.CompareTag("EnemyProjectile"))
+            {
+                Destroy(other.gameObject);
+                launcher.ExtendOrbitalDuration(0.5f); // 吸收子弹延长0.5秒
+                return;
+            }
+        }
+
         if (isEarthEvolution)
         {
             if (other.CompareTag("EnemyProjectile"))
