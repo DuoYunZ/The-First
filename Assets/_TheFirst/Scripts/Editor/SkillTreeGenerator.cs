@@ -63,6 +63,10 @@ public class SkillTreeGenerator : EditorWindow
         {
             GenerateFlameDaggerNodes();
         }
+        if (GUILayout.Button("Generate Blade Nodes"))
+        {
+            GenerateBladeNodes();
+        }
     }
 
     private static void GenerateFireballNodes()
@@ -1282,5 +1286,88 @@ public class SkillTreeGenerator : EditorWindow
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("<color=red>[技能树生成] 灵能飞刀节点已生成完毕！共11个节点</color>");
+    }
+
+    /// <summary>
+    /// 斩击技能树节点生成 — 3层9个节点
+    /// 设计原则：只强化底层数值，不涉及模式机制，确保与融合大招形态切换不冲突
+    /// </summary>
+    private static void GenerateBladeNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/Blade";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock bladeWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Blade.asset");
+        if (bladeWeapon == null) { Debug.LogError("找不到 Blade Weapon SO"); return; }
+
+        // === 第一层（基础） ===
+
+        var n_sharp1 = CreateNode(folderPath, "Blade_Sharp_I", "利刃 I", bladeWeapon, "斩击伤害 +40%");
+        SetEffects(n_sharp1, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 40, ModifierType.Percentage)
+        });
+
+        var n_swift = CreateNode(folderPath, "Blade_Swift", "迅捷斩", bladeWeapon, "攻击速度 +15%");
+        SetEffects(n_swift, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponFireRate, 15, ModifierType.Percentage)
+        });
+
+        var n_weakness = CreateNode(folderPath, "Blade_Weakness", "弱点打击", bladeWeapon, "暴击率 +10%");
+        SetEffects(n_weakness, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CritRate, 10, ModifierType.Percentage)
+        });
+
+        // === 第二层（进阶，需第一层前置） ===
+
+        var n_sharp2 = CreateNode(folderPath, "Blade_Sharp_II", "利刃 II", bladeWeapon, "斩击伤害 +60%，攻速 -10%");
+        SetEffects(n_sharp2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 60, ModifierType.Percentage),
+            (UpgradeType.WeaponFireRate, -10, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_sharp2, n_sharp1);
+
+        var n_armorBreak = CreateNode(folderPath, "Blade_ArmorBreak", "破甲斩", bladeWeapon, "暴击伤害 +50%");
+        SetEffects(n_armorBreak, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CritDamage, 50, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_armorBreak, n_weakness);
+
+        var n_range1 = CreateNode(folderPath, "Blade_Range_I", "扩大范围 I", bladeWeapon, "斩击范围 +40%");
+        SetEffects(n_range1, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 40, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_range1, n_swift);
+
+        // === 第三层（高级，需第二层前置） ===
+
+        var n_multi = CreateNode(folderPath, "Blade_MultiSlash", "多重斩", bladeWeapon, "刀光数量 +1");
+        SetEffects(n_multi, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.SlashCount, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_multi, n_sharp2);
+
+        var n_lethal = CreateNode(folderPath, "Blade_Lethal", "致命一击", bladeWeapon, "暴击率 +15%，暴击伤害 +30%");
+        SetEffects(n_lethal, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CritRate, 15, ModifierType.Percentage),
+            (UpgradeType.CritDamage, 30, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_lethal, n_armorBreak);
+
+        var n_range2 = CreateNode(folderPath, "Blade_Range_II", "扩大范围 II", bladeWeapon, "斩击范围 +60%");
+        SetEffects(n_range2, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.AoeRadius, 60, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_range2, n_range1);
+
+        // --- 添加到数据库 ---
+        AddToDatabase(new List<SkillTreeNodeData> {
+            n_sharp1, n_swift, n_weakness,
+            n_sharp2, n_armorBreak, n_range1,
+            n_multi, n_lethal, n_range2
+        });
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=cyan>[技能树生成] 斩击技能树节点已生成完毕！共9个节点</color>");
     }
 }

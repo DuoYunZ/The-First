@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq; // 用于排序
 using UnityEngine.SceneManagement; // 用于结束游戏
@@ -21,12 +21,22 @@ public class GameTimelineManager : MonoBehaviour
     public GameTimer gameTimer;
 
     [Header("敌人属性成长因子 (全局)")]
-    [Tooltip("每“分钟”敌人增加的生命值百分比")]
+    [Tooltip("每分钟敌人增加的生命值百分比")]
     public float healthGrowthFactorPerMinute = 0.1f;
-    [Tooltip("每“分钟”敌人增加的伤害百分比")]
+    [Tooltip("每分钟敌人增加的伤害百分比")]
     public float damageGrowthFactorPerMinute = 0.05f;
-    [Tooltip("每“分钟”敌人增加的速度百分比")]
+    [Tooltip("每分钟敌人增加的速度百分比")]
     public float speedGrowthFactorPerMinute = 0.02f;
+
+    [Header("波次提前完成设置")]
+    [Tooltip("勾选此项，当前波敌人全部被消灭后立即进入下一波")]
+    public bool advanceWaveOnClear = true;
+    [Tooltip("提前进入下一波前的短暂延迟（秒），给玩家喘息时间")]
+    public float advanceDelay = 1.0f;
+
+    [Header("调试显示")]
+    [Tooltip("勾选此项在左上角显示当前波次调试信息")]
+    public bool showDebugUI = true;
 
     // --- 内部运行时列表 ---
     private class PendingEvent
@@ -36,6 +46,14 @@ public class GameTimelineManager : MonoBehaviour
     }
     private List<PendingEvent> pendingEvents = new List<PendingEvent>();
     private bool gameFinished = false;
+
+    // --- 波次追踪 ---
+    private int currentWaveIndex = 0;    // 当前已触发的波次编号（从1开始）
+    private int totalWaveCount = 0;      // 总波次数量
+    private string currentWaveName = ""; // 当前波次名称
+    private int aliveEnemyCount = 0;     // 当前存活的敌人数量
+    private int waveSpawnedTotal = 0;    // 当前波生成的总敌人数
+    private bool isAdvancing = false;    // 是否正在提前推进
 
     void Awake()
     {
@@ -58,7 +76,10 @@ public class GameTimelineManager : MonoBehaviour
     {
         pendingEvents.Clear();
         totalKills = 0;
+        aliveEnemyCount = 0;
+        currentWaveIndex = 0;
         gameFinished = false;
+        isAdvancing = false;
 
         // 准备所有待处理事件
         foreach (var evt in timelineConfig.timelineEvents)
@@ -80,8 +101,9 @@ public class GameTimelineManager : MonoBehaviour
 
         // 【关键】按触发时间对列表进行排序
         pendingEvents = pendingEvents.OrderBy(e => e.triggerTime).ToList();
+        totalWaveCount = pendingEvents.Count;
 
-        Debug.Log($"时间轴已初始化，总计 {pendingEvents.Count} 个事件已排序。");
+        Debug.Log($"时间轴已初始化，总计 {totalWaveCount} 个事件已排序。");
     }
 
     void Update()
@@ -90,11 +112,11 @@ public class GameTimelineManager : MonoBehaviour
 
         float elapsedTime = gameTimer.GetElapsedTime();
 
-        // 1. 检查是否触发了下一个事件
+        // 1. 检查是否触发了下一个事件（按时间）
         if (pendingEvents.Count > 0 && elapsedTime >= pendingEvents[0].triggerTime)
         {
             FireEvent(pendingEvents[0]);
-            pendingEvents.RemoveAt(0); // 移除已触发的事件
+            pendingEvents.RemoveAt(0);
         }
 
         // 2. 检查游戏是否胜利 (时间到)
@@ -108,10 +130,14 @@ public class GameTimelineManager : MonoBehaviour
     {
         if (evt.waveConfig == null) return;
 
-        Debug.Log($"<color=cyan>时间轴事件触发: {evt.waveConfig.name} (时间: {gameTimer.GetElapsedTime():F1}s)</color>");
+        currentWaveIndex++;
+        currentWaveName = evt.waveConfig.waveName;
+        waveSpawnedTotal = evt.waveConfig.GetTotalEnemiesInWave();
+        aliveEnemyCount += waveSpawnedTotal; // 累加（可能上一波还没打完）
+
+        Debug.Log($"<color=cyan>时间轴事件触发: [{currentWaveIndex}/{totalWaveCount}] {currentWaveName} (时间: {gameTimer.GetElapsedTime():F1}s, 本波敌人: {waveSpawnedTotal}, 场上总存活: {aliveEnemyCount})</color>");
 
         // --- 动态计算属性成长 ---
-        // 我们用 "分钟" 作为 "波数" 来计算成长
         int effectiveWaveNumber = 1 + (int)(gameTimer.GetElapsedTime() / 60f);
 
         // 【重要】我们复用 EnemySpawner 的方法，传入计算好的成长值
@@ -122,9 +148,32 @@ public class GameTimelineManager : MonoBehaviour
             damageGrowthFactorPerMinute,
             speedGrowthFactorPerMinute
         );
+    }
 
-        // 注意：我们不再关心这个波次何时“结束”，系统会继续按时间触发下一个事件。
-        // WaveConfig 上的 "maxWaveDuration" 字段现在基本失效了。
+    /// <summary>
+    /// 提前触发下一波（当当前波敌人全部被消灭时）
+    /// </summary>
+    private void AdvanceToNextWave()
+    {
+        if (pendingEvents.Count == 0 || gameFinished || isAdvancing) return;
+
+        isAdvancing = true;
+        Debug.Log($"<color=yellow>波次提前完成！{advanceDelay}秒后进入下一波...</color>");
+
+        // 延迟一小段时间再推进，给玩家喘息
+        StartCoroutine(AdvanceDelayRoutine());
+    }
+
+    private System.Collections.IEnumerator AdvanceDelayRoutine()
+    {
+        yield return new WaitForSeconds(advanceDelay);
+
+        if (pendingEvents.Count > 0 && !gameFinished)
+        {
+            FireEvent(pendingEvents[0]);
+            pendingEvents.RemoveAt(0);
+        }
+        isAdvancing = false;
     }
 
     void GameWin()
@@ -136,30 +185,50 @@ public class GameTimelineManager : MonoBehaviour
         enemySpawner.StopAndClearSpawning();
 
         // (在这里添加您的胜利逻辑，例如显示胜利UI，保存数据，返回Hub)
-        // 示例：2秒后返回Hub
-        // Invoke("ReturnToHub", 2f);
     }
-
-    // (可选) 返回Hub的方法
-    // void ReturnToHub()
-    // {
-    //     SceneManager.LoadScene("HubScene");
-    // }
 
 
     // --- 公共方法，用于替换 WaveManager 的功能 ---
 
     public void EnemyDefeated()
     {
-        // 我们不再检查波次是否结束，只是简单计数
         totalKills++;
-        // (您可以在此更新UI上的击杀数)
-        // UIManager.Instance?.UpdateKills(totalKills);
+        aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
+
+        // 当场上敌人全部被消灭，且还有后续波次，立即推进
+        if (advanceWaveOnClear && aliveEnemyCount <= 0 && pendingEvents.Count > 0 && !isAdvancing)
+        {
+            AdvanceToNextWave();
+        }
     }
 
     public void AnEnemyFailedToSpawn()
     {
-        // 在这个新系统下，一个敌人生成失败并不会影响波次逻辑
+        // 生成失败的敌人也要从存活数中扣除，避免永远无法"清完"
+        aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
         Debug.LogWarning("[GameTimelineManager] 一个敌人未能生成。");
+    }
+
+    // --- 调试 UI ---
+    void OnGUI()
+    {
+        if (!showDebugUI || gameFinished) return;
+
+        // 左上角显示波次调试信息
+        GUIStyle style = new GUIStyle(GUI.skin.box);
+        style.fontSize = 18;
+        style.alignment = TextAnchor.UpperLeft;
+        style.normal.textColor = Color.white;
+        style.fontStyle = FontStyle.Bold;
+        style.padding = new RectOffset(10, 10, 5, 5);
+
+        float elapsed = gameTimer != null ? gameTimer.GetElapsedTime() : 0;
+        string timeStr = $"{(int)(elapsed / 60):00}:{(int)(elapsed % 60):00}";
+
+        string info = $"波次: {currentWaveIndex}/{totalWaveCount}  [{currentWaveName}]\n" +
+                      $"存活敌人: {aliveEnemyCount}  |  总击杀: {totalKills}\n" +
+                      $"时间: {timeStr}  |  剩余波次: {pendingEvents.Count}";
+
+        GUI.Box(new Rect(10, 10, 420, 80), info, style);
     }
 }

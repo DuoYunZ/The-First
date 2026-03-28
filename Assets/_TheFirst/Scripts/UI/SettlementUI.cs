@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -71,7 +71,7 @@ public class SettlementUI : MonoBehaviour
         panelRoot.SetActive(true);
         Time.timeScale = 0f;
 
-        mainTitleText.text = isVictory ? "任务完成" : "任务失败";
+        mainTitleText.text = isVictory ? LocalizationManager.T("ui.mission_complete") : LocalizationManager.T("ui.mission_failed");
         mainTitleText.color = isVictory ? Color.yellow : Color.white;
 
         if (buttonsPanel) buttonsPanel.SetActive(false);

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor.Experimental.GraphView;
@@ -34,9 +34,10 @@ public class Projectile : MonoBehaviour
     [HideInInspector] public bool isCritical = false;
     [System.NonSerialized] public bool canSplit = true; // 【新增】防止无限分裂（不序列化，运行时始终为 true）
 
-    [HideInInspector] public bool isUltimate = false; // 【新增】标记是否为大招发出的子弹
-    [HideInInspector] public bool isSubHurricane = false; // 【新增】标记是否为子飓风，防止无限递归生成
+    [HideInInspector] public bool isUltimate = false; // 标记是否为大招发出的子弹
+    [HideInInspector] public bool isSubHurricane = false; // 标记是否为子飓风，防止无限递归生成
     [HideInInspector] public int remainingBounces = 0; // 榴弹弹跳剩余次数
+    [HideInInspector] public float knockbackForce = 0f; // 击退力度（0=不击退）
 
     private float spawnProtectionTimer = 0.5f; // 【新增】生成保护时间（秒）：在这个时间内不进行撞墙/撞地检测，防止出生距地太近直接销毁。
 
@@ -119,14 +120,14 @@ public class Projectile : MonoBehaviour
             rb = GetComponentInChildren<Rigidbody>();
             if (rb != null)
             {
-                Debug.LogWarning("Rigidbody found on child, not self. Consider moving component.", this);
+
             }
         }
 
         // 最终检查
         if (rb == null)
         {
-            Debug.LogError("Projectile CRITICAL: Could not find Rigidbody component!", this);
+
         }
         else
         {
@@ -171,9 +172,7 @@ public class Projectile : MonoBehaviour
     {
         if (rb == null)
         {
-            Debug.LogError("[Projectile Init Homing] FAILED: Rigidbody reference is null (check Awake).", this);
-            // Destroy(gameObject);
-            // return;
+           
         }
         this.mode = ProjectileMode.Homing;
         this.isParabolic = false;
@@ -231,10 +230,9 @@ public class Projectile : MonoBehaviour
                                           float freezeChance = 0f)
     {
 
-        Debug.Log($"[Projectile Debug] 直线初始化。传入的 launcher 是: {(launcher != null ? launcher.name : "NULL (空)")}");
         if (rb == null && spd > 0)
         {
-            Debug.LogError("[Projectile Init Straight] FAILED: Rigidbody reference is null.", this);
+            
         }
         else if (rb != null)
         {
@@ -253,7 +251,6 @@ public class Projectile : MonoBehaviour
         this.damage = directDmg;
         this.isEnemyProjectile = isEnemyBullet;
         this.pierceCount = pierce > 0 ? pierce : 1;
-        Debug.Log($"<color=orange>[穿透调试-子弹初始化] {gameObject.name} pierceCount={this.pierceCount} (传入pierce={pierce})</color>");
         this.lifetime = life;
         this.dotDamage = dotDmg;
         this.dotDuration = dotDur;
@@ -381,13 +378,11 @@ public class Projectile : MonoBehaviour
     {
 
         if (rb == null)
-        {
-            Debug.LogError("[Projectile Init Boomerang] FAILED: Rigidbody reference is null (check Awake).", this);
+        {            
             Destroy(gameObject);
             return;
         }
         // 添加详细日志
-        Debug.Log($"[Projectile Init Boomerang] START - Dir:{dir}, Spd:{spd}, Dmg:{dmg}, MaxDist:{maxDist}, CatchRad:{catchRad}, Life:{life}, RotSpd:{rotSpeed}");
 
         this.mode = ProjectileMode.Boomerang;
         this.isParabolic = false;
@@ -419,7 +414,6 @@ public class Projectile : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
 
         // 结束日志
-        Debug.Log($"[Projectile Init Boomerang] FINISHED - Initial Velocity set in FixedUpdate. Lifetime={this.lifetime}");
     }
 
     private void SetReturnState()
@@ -436,8 +430,6 @@ public class Projectile : MonoBehaviour
             // --- 【核心修改】计算【固定】的返回方向 (从当前点指向目标点) ---
             currentReturnDirection = (returnTargetPoint - transform.position).normalized;
             // --- 计算结束 ---
-
-            Debug.Log($"[Projectile Boomerang] State changed to Inbound. TargetPoint={returnTargetPoint}, ReturnDir={currentReturnDirection}");
 
             // 清除当前速度，以便立即应用返回速度
             if (rb != null) rb.velocity = Vector3.zero;
@@ -745,7 +737,7 @@ public class Projectile : MonoBehaviour
                     // 添加日志帮助排查子弹不明原因消失的问题
                     if (!this.gameObject.name.Contains("Spark")) 
                     {
-                        Debug.LogWarning($"[Projectile] 子弹 {gameObject.name} 碰撞到 Ground/Wall 层物体 ({other.gameObject.name})，触发销毁。请检查该物体(Layer:{LayerMask.LayerToName(other.gameObject.layer)})是否错误阻挡了子弹！");
+
                     }
                     HandleImpactEffect(false, SafeClosestPoint(other, transform.position));
                     Destroy(gameObject);
@@ -779,7 +771,6 @@ public class Projectile : MonoBehaviour
             Transform nextTarget = FindNextTarget(enemyHealth.transform.position);
             if (nextTarget != null)
             {
-                Debug.Log($"连锁到新目标: {nextTarget.name}");
                 this.direction = (nextTarget.position - transform.position).normalized;
             }
             else
@@ -935,8 +926,6 @@ public class Projectile : MonoBehaviour
             }
             else
             {
-                // 既不是火焰也不是黑洞，才销毁并报错 (或者只作为纯特效)
-                Debug.LogWarning($"[Explode] 生成了 {hazardObj.name}，但上面既没有 GroundHazard 也没有 BlackHoleField 脚本。纯视觉销毁。");
                 Destroy(hazardObj, stats.groundHazardDuration);
             }
         }
@@ -960,12 +949,11 @@ public class Projectile : MonoBehaviour
 
         if (subPrefab != null && finalSubProjectileCount > 0)
         {
-            Debug.Log($"[分裂] 生成 {finalSubProjectileCount} 个火花弹 (prefab={subPrefab.name})");
             SpawnClusterProjectiles(explosionPoint, stats, finalSubProjectileCount);
         }
         else if (finalSubProjectileCount > 0)
         {
-            Debug.LogWarning($"[分裂] 分裂数量={finalSubProjectileCount} 但 subProjectilePrefab 为空！请检查 SO 配置或重新 Generate Fireball Nodes");
+
         }
     }
 
@@ -990,7 +978,6 @@ public class Projectile : MonoBehaviour
                 {
                     StatusEffectReceiver directReceiver = directlyHitEnemyHealth.GetComponent<StatusEffectReceiver>();
                     if (directReceiver != null) directReceiver.ApplyStun(stunDuration);
-                    Debug.Log($"<color=yellow>[眩晕] 直接命中眩晕 {stunDuration}秒</color>");
                 }
             }
         }
@@ -1029,7 +1016,6 @@ public class Projectile : MonoBehaviour
                     {
                         StatusEffectReceiver stunReceiver = receiver ?? healthComponent.GetComponent<StatusEffectReceiver>();
                         if (stunReceiver != null) stunReceiver.ApplyStun(stunDuration);
-                        Debug.Log($"<color=yellow>[眩晕] AOE眩晕 {stunDuration}秒</color>");
                     }
                 }
             }
@@ -1091,7 +1077,6 @@ public class Projectile : MonoBehaviour
                 rb.isKinematic = false;
             }
 
-            Debug.Log($"<color=orange>[弹跳榴弹] 向敌人朝向弹跳！剩余: {remainingBounces}</color>");
             return; // 不销毁，继续飞行
         }
 
@@ -1143,8 +1128,6 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         // 则动态添加必要组件，否则分裂弹无法造成伤害（会直接穿过敌人）
         if (subScript == null)
         {
-            Debug.Log($"<color=yellow>[分裂修复] 预制体 {stats.subProjectilePrefab.name} 缺少 Projectile 组件，动态添加中...</color>");
-
             // 添加 Rigidbody（Projectile.Awake 需要）
             Rigidbody subRb = subObj.GetComponent<Rigidbody>();
             if (subRb == null)
@@ -1306,7 +1289,6 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         Vector3 groundedHitPoint = hitPoint;
         groundedHitPoint.y = 0f; // 投影到地面，让子弹在 Y=0.5 处飞行
 
-        Debug.Log($"<color=cyan>[冰锥分裂] 首次命中时生成 {finalCount} 个分裂子弹 (原始Y={hitPoint.y:F1}, 修正Y=0)</color>");
         SpawnClusterProjectiles(groundedHitPoint, stats, finalCount, useRingSpread: true);
     }
 
@@ -1374,9 +1356,19 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
                 if (dotDamage > 0) receiver.ApplyBurn(dotDamage, dotDuration, dotTickInterval, weaponName);
             }
             HandleImpactEffect(targetHasShield, hitPoint);
+
+            // 击退效果（风刃等子弹命中时平滑推开敌人）
+            if (knockbackForce > 0f && targetHealth.transform != null && !targetHealth.IsDead)
+            {
+                Vector3 pushDir = (targetHealth.transform.position - transform.position);
+                pushDir.y = 0f;
+                if (pushDir.sqrMagnitude < 0.01f) pushDir = direction;
+                pushDir.Normalize();
+                targetHealth.StartCoroutine(SmoothKnockback(targetHealth.transform, pushDir, knockbackForce, 0.2f));
+            }
+
             hitEnemies.Add(targetHealth);
             piercedEnemies++;
-            Debug.Log($"<color=orange>[穿透调试-命中] {gameObject.name} 命中 {targetHealth.name}，已穿透: {piercedEnemies}/{pierceCount}</color>");
 
             // 【飓风-乱流】命中时尝试生成小飓风
             if (!isSubHurricane)
@@ -1391,7 +1383,6 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
 
             if (mode != ProjectileMode.Boomerang && piercedEnemies >= pierceCount)
             {
-                Debug.Log($"<color=red>[穿透调试-销毁] {gameObject.name} 穿透次数用尽 ({piercedEnemies}>={pierceCount})，准备销毁</color>");
 
                 // 【飓风-风力回旋】穿透耗尽时尝试再发一道飓风
                 if (!isSubHurricane)
@@ -1403,6 +1394,22 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
                 if (remainingChains > 0) HandleChaining(hitPoint);
                 else Destroy(gameObject);
             }
+        }
+    }
+
+    /// <summary>
+    /// 平滑击退协程：在 duration 秒内将目标沿 direction 推开 totalDistance 距离
+    /// </summary>
+    public static System.Collections.IEnumerator SmoothKnockback(Transform target, Vector3 dir, float totalDistance, float duration)
+    {
+        float elapsed = 0f;
+        float speed = totalDistance / duration;
+        while (elapsed < duration && target != null)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt;
+            target.position += dir * speed * dt;
+            yield return null;
         }
     }
 
@@ -1445,7 +1452,6 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         Transform nextTarget = FindNextTarget(hitPoint);
         if (nextTarget != null)
         {
-            Debug.Log($"连锁到新目标: {nextTarget.name}");
             this.direction = (nextTarget.position - transform.position).normalized;
             // 重置命中计数器，允许再次穿透
             piercedEnemies = 0;
@@ -1552,17 +1558,16 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
                 // 只有处于减速状态的敌人才会判定冰冻
                 if (Random.value <= this.freezeChance)
                 {
-                    Debug.Log($"<color=cyan>[冰锥连携] 成功冻结敌人! (概率: {this.freezeChance:P0})</color>");
                     receiver.ApplyFreeze(2.0f, null);
                 }
                 else
                 {
-                    Debug.Log($"[冰锥连携] 冰冻判定失败 (概率: {this.freezeChance:P0})");
+
                 }
             }
             else
             {
-                Debug.Log($"[冰锥] 第一击：已施加减速。再次攻击可触发冰冻。");
+
             }
         }
 

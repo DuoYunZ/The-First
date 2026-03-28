@@ -17,6 +17,44 @@ public class UltimateManager : MonoBehaviour
     [Tooltip("大招释放的伤害层")]
     public LayerMask damageableLayers;
 
+    [Header("剑士融合大招特效")]
+    [Tooltip("火斑融合 - 释放特效（一次性）")]
+    public GameObject bladeFire_ReleaseVFX;
+    [Tooltip("火斑融合 - 持续BUFF特效（循环，挂载到玩家身上）")]
+    public GameObject bladeFire_BuffVFX;
+    [Tooltip("火斑融合 - 火海预制体（包含GroundHazard组件）")]
+    public GameObject bladeFire_GroundHazardPrefab;
+    [Tooltip("雷斑融合 - 释放特效（一次性）")]
+    public GameObject bladeThunder_ReleaseVFX;
+    [Tooltip("雷斑融合 - 持续BUFF特效（循环）")]
+    public GameObject bladeThunder_BuffVFX;
+    [Tooltip("风斑融合 - 释放特效（一次性）")]
+    public GameObject bladeWind_ReleaseVFX;
+    [Tooltip("风斑融合 - 持续BUFF特效（循环）")]
+    public GameObject bladeWind_BuffVFX;
+
+    [Header("剑士融合大招数值配置")]
+    [Tooltip("火海伤害/跟")]
+    public int fireHazardDamagePerTick = 15;
+    [Tooltip("火海持续时间")]
+    public float fireHazardDuration = 5f;
+    [Tooltip("雷震麻痹半径")]
+    public float thunderParalyzeRadius = 8f;
+    [Tooltip("雷震麻痹时间")]
+    public float thunderParalyzeDuration = 3f;
+    [Tooltip("风暴吹飞半径")]
+    public float windBlowRadius = 10f;
+    [Tooltip("风暴吹飞力度")]
+    public float windBlowForce = 5f;
+
+    [Header("剑士融合大招音效")]
+    [Tooltip("火斑融合释放音效")]
+    public AudioClip bladeFire_ReleaseSFX;
+    [Tooltip("雷斑融合释放音效")]
+    public AudioClip bladeThunder_ReleaseSFX;
+    [Tooltip("风斑融合释放音效")]
+    public AudioClip bladeWind_ReleaseSFX;
+
     // 当前滚轮选中的主武器索引
     private int selectedWeaponIndex = 0;
     // 缓存能量满的武器列表
@@ -191,9 +229,39 @@ public class UltimateManager : MonoBehaviour
             else
             {
                 // 没有 Projectile 组件 → 判断大招类型
-                // 【关键修复】先检查 weaponID，再检查 behavior，确保每种武器进入正确分支
+                // 先检查 weaponID，再检查 behavior，确保每种武器进入正确分支
 
-                if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Hurricane"))
+                if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Blade"))
+                {
+                    // === 斩击大招：嗜血斩 - 10秒内造成伤害回血 ===
+                    float bladeBuffDuration = 10f;
+                    float lifeStealBonus = 0.02f; // +2% 吸血
+
+                    // 播放特效（挂到玩家身上）
+                    if (playerT != null && ultimateGo != null)
+                    {
+                        ultimateGo.transform.SetParent(playerT, false);
+                        ultimateGo.transform.localPosition = Vector3.up * 0.5f;
+                        ultimateGo.transform.localRotation = Quaternion.identity;
+
+                        foreach (var ps in ultimateGo.GetComponentsInChildren<ParticleSystem>())
+                        {
+                            var main = ps.main;
+                            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                        }
+
+                        Destroy(ultimateGo, bladeBuffDuration);
+                    }
+
+                    // 启动吸血BUFF协程
+                    if (PlayerStats.Instance != null)
+                    {
+                        StartCoroutine(BladeLifeStealBuff(lifeStealBonus, bladeBuffDuration));
+                    }
+
+                    Debug.Log($"<color=red>[大招] 嗜血斩！吸血 +{lifeStealBonus * 100}%，持续 {bladeBuffDuration} 秒</color>");
+                }
+                else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Hurricane"))
                 {
                     // === 飓风大招：风暴之怒 - 推开敌人 + 移速BUFF ===
                     float hurricaneBuffDuration = 15f;
@@ -610,6 +678,93 @@ public class UltimateManager : MonoBehaviour
     {
         Debug.Log($"<color=red>[连携技] 释放 {combo.comboName}！</color>");
 
+        // === 【剑士融合大招】检测是否有斩击武器参与 ===
+        WeaponController controller = WeaponController.Instance;
+        bool isBladeCombo = false;
+        WeaponPart bladeWeapon = null;
+        WeaponPart otherWeapon = null;
+
+        if (controller != null && controller.builtInBladeWeapon != null)
+        {
+            if (weaponA == controller.builtInBladeWeapon)
+            {
+                isBladeCombo = true;
+                bladeWeapon = weaponA;
+                otherWeapon = weaponB;
+            }
+            else if (weaponB == controller.builtInBladeWeapon)
+            {
+                isBladeCombo = true;
+                bladeWeapon = weaponB;
+                otherWeapon = weaponA;
+            }
+        }
+
+        if (isBladeCombo && bladeWeapon != null && otherWeapon != null)
+        {
+            // 找到玩家身上的 PlayerBladeAttack 组件
+            PlayerBladeAttack bladeAttack = controller.builtInBladeWeapon.GetComponentInParent<PlayerBladeAttack>();
+            if (bladeAttack == null && GameManager.Instance?.playerTransform != null)
+                bladeAttack = GameManager.Instance.playerTransform.GetComponentInChildren<PlayerBladeAttack>();
+
+            if (bladeAttack != null)
+            {
+                // 根据另一把武器的 weaponID 决定模式
+                string otherID = otherWeapon.StatBlock?.weaponID ?? "";
+                BladeMode targetMode = BladeMode.Normal;
+
+                if (otherID.Contains("Hurricane"))
+                    targetMode = BladeMode.WindBlade;
+                else if (otherID.Contains("ChainLightning"))
+                    targetMode = BladeMode.Thunder;
+                else if (otherID.Contains("Fireball"))
+                    targetMode = BladeMode.Fire;
+
+                if (targetMode != BladeMode.Normal)
+                {
+                    bladeAttack.SetBladeMode(targetMode);
+                    Debug.Log($"<color=yellow>[连携技] 剑士融合！斩击切换为 {targetMode} 模式</color>");
+
+                    // === 根据模式附加10秒BUFF效果 ===
+                    float buffDuration = 10f;
+                    if (PlayerStats.Instance != null)
+                    {
+                        switch (targetMode)
+                        {
+                            case BladeMode.Fire:
+                                // 火：攻击范围 +50% 持续10秒
+                                StartCoroutine(BladeFusionBuff_AreaBoost(0.5f, buffDuration));
+                                break;
+                            case BladeMode.Thunder:
+                                // 雷：暴击率 +50% 持续10秒
+                                StartCoroutine(BladeFusionBuff_CritBoost(0.5f, buffDuration));
+                                break;
+                            case BladeMode.WindBlade:
+                                // 风：移速 +30% + 攻速 +100% 持续10秒
+                                StartCoroutine(BladeFusionBuff_SpeedBoost(0.3f, 1.0f, buffDuration));
+                                break;
+                        }
+                    }
+
+                    // 消耗两个武器的能量
+                    weaponA.ConsumeAllEnergy();
+                    weaponB.ConsumeAllEnergy();
+
+                    // 从HUD队列移除
+                    if (UltimateHUD.Instance != null)
+                    {
+                        UltimateHUD.Instance.RemoveFromQueue(weaponA);
+                        UltimateHUD.Instance.RemoveFromQueue(weaponB);
+                    }
+
+                    // 通知UI
+                    OnUltimateReleased?.Invoke(combo.comboName);
+                    return; // 剑士融合不走通用特效生成逻辑
+                }
+            }
+        }
+        // === 【剑士融合大招】结束 ===
+
         // 生成连携技效果
         Vector3 spawnPos = GameManager.Instance?.playerTransform?.position ?? transform.position;
         Transform playerT = GameManager.Instance?.playerTransform;
@@ -668,6 +823,7 @@ public class UltimateManager : MonoBehaviour
                 if (tornado != null)
                 {
                     tornado.Setup(combo.comboDamage, weaponA);
+                    tornado.isComboUltimate = true; // 标记为融合大招，阻止能量增加
                     Debug.Log($"<color=green>[连携技] 初始化龙卷风: 伤害={combo.comboDamage}, 来源={weaponA.StatBlock.weaponName}</color>");
                 }
             }
@@ -836,6 +992,160 @@ public class UltimateManager : MonoBehaviour
 
         PlayerStats.Instance.moveSpeedMultiplier -= bonus;
         Debug.Log($"<color=green>[风暴之怒] BUFF 结束，移速恢复为: {PlayerStats.Instance.moveSpeedMultiplier}</color>");
+    }
+
+    /// <summary>
+    /// 斩击大招吸血BUFF协程
+    /// </summary>
+    private System.Collections.IEnumerator BladeLifeStealBuff(float bonus, float duration)
+    {
+        PlayerStats.Instance.lifeStealPercent += bonus;
+        Debug.Log($"<color=red>[嗜血斩] 吸血 +{bonus * 100}%，当前吸血: {PlayerStats.Instance.lifeStealPercent * 100}%</color>");
+
+        yield return new WaitForSeconds(duration);
+
+        PlayerStats.Instance.lifeStealPercent -= bonus;
+        Debug.Log($"<color=red>[嗜血斩] BUFF 结束，吸血恢复为: {PlayerStats.Instance.lifeStealPercent * 100}%</color>");
+    }
+
+    /// <summary>
+    /// 剑士融合BUFF：烈焰 — 攻击范围增大 + 生成火海
+    /// </summary>
+    private System.Collections.IEnumerator BladeFusionBuff_AreaBoost(float bonus, float duration)
+    {
+        Transform player = GameManager.Instance?.playerTransform;
+        if (player == null) yield break;
+
+        // 释放特效
+        if (bladeFire_ReleaseVFX != null)
+            Instantiate(bladeFire_ReleaseVFX, player.position, Quaternion.identity);
+
+        // 释放音效
+        if (bladeFire_ReleaseSFX != null)
+            AudioSource.PlayClipAtPoint(bladeFire_ReleaseSFX, player.position);
+
+        // 生成火海
+        if (bladeFire_GroundHazardPrefab != null)
+        {
+            GameObject hazardGO = Instantiate(bladeFire_GroundHazardPrefab, player.position, Quaternion.identity);
+            GroundHazard hazard = hazardGO.GetComponent<GroundHazard>();
+            if (hazard != null)
+                hazard.Initialize(fireHazardDamagePerTick, fireHazardDuration, "斩击", player.gameObject);
+        }
+
+        // 挂载持续BUFF特效
+        GameObject buffVFXInstance = null;
+        if (bladeFire_BuffVFX != null)
+        {
+            buffVFXInstance = Instantiate(bladeFire_BuffVFX, player);
+            buffVFXInstance.transform.localPosition = Vector3.zero;
+        }
+
+        // 应用BUFF
+        PlayerStats.Instance.aoeRadiusMultiplier += bonus;
+
+        yield return new WaitForSeconds(duration);
+
+        PlayerStats.Instance.aoeRadiusMultiplier -= bonus;
+        if (buffVFXInstance != null) Destroy(buffVFXInstance);
+    }
+
+    /// <summary>
+    /// 剑士融合BUFF：雷震 — 暴击率提升 + 麻痹范围内敌人
+    /// </summary>
+    private System.Collections.IEnumerator BladeFusionBuff_CritBoost(float bonus, float duration)
+    {
+        Transform player = GameManager.Instance?.playerTransform;
+        if (player == null) yield break;
+
+        // 释放特效
+        if (bladeThunder_ReleaseVFX != null)
+            Instantiate(bladeThunder_ReleaseVFX, player.position, Quaternion.identity);
+
+        // 释放音效
+        if (bladeThunder_ReleaseSFX != null)
+            AudioSource.PlayClipAtPoint(bladeThunder_ReleaseSFX, player.position);
+
+        // 麻痹范围内敌人
+        Collider[] enemies = Physics.OverlapSphere(player.position, thunderParalyzeRadius, damageableLayers);
+        foreach (var col in enemies)
+        {
+            StatusEffectReceiver receiver = col.GetComponentInParent<StatusEffectReceiver>();
+            if (receiver != null)
+                receiver.ApplyParalyze(thunderParalyzeDuration);
+        }
+
+        // 挂载持续BUFF特效
+        GameObject buffVFXInstance = null;
+        if (bladeThunder_BuffVFX != null)
+        {
+            buffVFXInstance = Instantiate(bladeThunder_BuffVFX, player);
+            buffVFXInstance.transform.localPosition = Vector3.zero;
+        }
+
+        // 应用BUFF
+        PlayerStats.Instance.critRate += bonus;
+
+        yield return new WaitForSeconds(duration);
+
+        PlayerStats.Instance.critRate -= bonus;
+        if (buffVFXInstance != null) Destroy(buffVFXInstance);
+    }
+
+    /// <summary>
+    /// 剑士融合BUFF：风暴 — 移速+攻速提升 + 吹飞周围敌人
+    /// </summary>
+    private System.Collections.IEnumerator BladeFusionBuff_SpeedBoost(float moveBonus, float fireRateBonus, float duration)
+    {
+        Transform player = GameManager.Instance?.playerTransform;
+        if (player == null) yield break;
+
+        // 释放特效
+        if (bladeWind_ReleaseVFX != null)
+            Instantiate(bladeWind_ReleaseVFX, player.position, Quaternion.identity);
+
+        // 释放音效
+        if (bladeWind_ReleaseSFX != null)
+            AudioSource.PlayClipAtPoint(bladeWind_ReleaseSFX, player.position);
+
+        // 吹飞周围敌人
+        Collider[] enemies = Physics.OverlapSphere(player.position, windBlowRadius, damageableLayers);
+        foreach (var col in enemies)
+        {
+            Health h = col.GetComponentInParent<Health>();
+            if (h == null || h.IsDead) continue;
+
+            // 计算吹飞方向（从玩家指向敌人）
+            Vector3 pushDir = (h.transform.position - player.position);
+            pushDir.y = 0f;
+            if (pushDir.sqrMagnitude < 0.01f) pushDir = Vector3.forward;
+            pushDir.Normalize();
+
+            // 用 StatusEffectReceiver 的 ApplyKnockback 或平滑推
+            StatusEffectReceiver receiver = col.GetComponentInParent<StatusEffectReceiver>();
+            if (receiver != null)
+                receiver.ApplyKnockback(pushDir, windBlowForce, 0.4f);
+            else
+                h.StartCoroutine(Projectile.SmoothKnockback(h.transform, pushDir, windBlowForce, 0.4f));
+        }
+
+        // 挂载持续BUFF特效
+        GameObject buffVFXInstance = null;
+        if (bladeWind_BuffVFX != null)
+        {
+            buffVFXInstance = Instantiate(bladeWind_BuffVFX, player);
+            buffVFXInstance.transform.localPosition = Vector3.zero;
+        }
+
+        // 应用BUFF
+        PlayerStats.Instance.moveSpeedMultiplier += moveBonus;
+        PlayerStats.Instance.fireRateMultiplier += fireRateBonus;
+
+        yield return new WaitForSeconds(duration);
+
+        PlayerStats.Instance.moveSpeedMultiplier -= moveBonus;
+        PlayerStats.Instance.fireRateMultiplier -= fireRateBonus;
+        if (buffVFXInstance != null) Destroy(buffVFXInstance);
     }
 
     /// <summary>

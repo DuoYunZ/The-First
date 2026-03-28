@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -21,7 +21,13 @@ public class WeaponStatusSlot : MonoBehaviour
         if (boundWeapon.StatBlock != null)
         {
             if (iconImage != null) iconImage.sprite = boundWeapon.StatBlock.weaponIcon;
-            if (nameText != null) nameText.text = boundWeapon.StatBlock.weaponName;
+            if (nameText != null)
+            {
+                string wid = boundWeapon.StatBlock.weaponID;
+                nameText.text = !string.IsNullOrEmpty(wid)
+                    ? LocalizationManager.T("weapon." + wid)
+                    : boundWeapon.StatBlock.weaponName;
+            }
         }
 
         // 2. 订阅事件 (核心！)

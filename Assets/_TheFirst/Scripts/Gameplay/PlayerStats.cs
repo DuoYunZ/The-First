@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -42,6 +42,11 @@ public class PlayerStats : MonoBehaviour
     public int bonusSlashCount = 0;   // 刀光数量
     public int bonusOrbitalCount = 0;
     public float armor = 0f;
+
+    [Header("角色技能树属性")]
+    public float cooldownReduction = 0f;     // 全局冷却缩减（如 0.1 = 减少10%冷却）
+    public float energyGainMultiplier = 1f;  // 能量获取倍率
+    public float lifeStealPercent = 0f;      // 伤害吸血百分比
 
     // --- 【新增】基础值备份 (用于重算) ---
     private float _baseDamageMultiplier;
@@ -95,6 +100,13 @@ public class PlayerStats : MonoBehaviour
         RecalculateStats();
     }
 
+    void OnDestroy()
+    {
+        // 角色切换时，旧角色被销毁，需要清除单例引用
+        // 否则新角色 Instantiate 时 Awake() 检测到 Instance 仍存在，会自毁
+        if (Instance == this) Instance = null;
+    }
+
     private void InitializeBaseStats()
     {
         _baseDamageMultiplier = damageMultiplier;
@@ -115,17 +127,41 @@ public class PlayerStats : MonoBehaviour
         _baseDurationMultiplier = 1f;
         _baseCritRate = critRate;
         _baseCritDamage = critDamage;
+        _baseCooldownReduction = 0f;
+        _baseEnergyGainMultiplier = 1f;
+        _baseLifeStealPercent = 0f;
     }
+
+    // 角色技能树属性备份
+    private float _baseCooldownReduction;
+    private float _baseEnergyGainMultiplier;
+    private float _baseLifeStealPercent;
 
     private void ApplyPermanentUpgrades()
     {
         if (PlayerProgressManager.Instance == null) return;
+        var ppm = PlayerProgressManager.Instance;
 
         Debug.Log("<color=cyan>正在从 PlayerProgressManager 应用永久属性加成...</color>");
 
-        _baseFlatDamage += PlayerProgressManager.Instance.permanentFlatDamageBonus;
-        _baseDamageMultiplier += PlayerProgressManager.Instance.permanentDamagePercentBonus;
-        _baseFireRateMultiplier -= PlayerProgressManager.Instance.permanentFireRateBonus;
+        // --- 武器技能树属性 ---
+        _baseFlatDamage += ppm.permanentFlatDamageBonus;
+        _baseDamageMultiplier += ppm.permanentDamagePercentBonus;
+        _baseFireRateMultiplier -= ppm.permanentFireRateBonus;
+
+        // --- 角色技能树属性 ---
+        _baseMaxHealth += ppm.permanentMaxHealthBonus;
+        armor += ppm.permanentArmorBonus;
+        _baseMoveSpeedMultiplier += ppm.permanentMoveSpeedBonus;
+        // 冷却缩减直接作用于开火间隔（如 0.1 = 开火间隔变为90%）
+        _baseCooldownReduction += ppm.permanentCooldownReduction;
+        _baseFireRateMultiplier *= (1f - _baseCooldownReduction);
+        _baseEnergyGainMultiplier += ppm.permanentEnergyGainBonus;
+        _baseLifeStealPercent += ppm.permanentLifeStealPercent;
+
+        Debug.Log($"<color=cyan>[属性加成] 生命+{ppm.permanentMaxHealthBonus} 护甲+{ppm.permanentArmorBonus} " +
+                  $"移速+{ppm.permanentMoveSpeedBonus * 100}% 冷却-{ppm.permanentCooldownReduction * 100}% " +
+                  $"能量+{ppm.permanentEnergyGainBonus * 100}% 吸血+{ppm.permanentLifeStealPercent * 100}%</color>");
     }
 
     public void EquipOrUpgradePassiveItem(PassiveItemData itemData)
@@ -179,7 +215,10 @@ public class PlayerStats : MonoBehaviour
         critRate = _baseCritRate;
         critDamage = _baseCritDamage;
 
-        armor = 0; // 如果你也想通过升级卡加护甲，记得也给它加个 _baseArmor
+        armor = 0;
+        cooldownReduction = _baseCooldownReduction;
+        energyGainMultiplier = _baseEnergyGainMultiplier;
+        lifeStealPercent = _baseLifeStealPercent;
 
         // 2. 遍历所有被动道具并叠加
         foreach (var item in activePassiveItems)

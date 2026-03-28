@@ -1,4 +1,4 @@
-﻿// CombatSceneInitializer.cs (最终概念统一版)
+// CombatSceneInitializer.cs (最终概念统一版)
 using Cinemachine;
 using System.Collections.Generic;
 using UnityEngine;
@@ -73,7 +73,18 @@ public class CombatSceneInitializer : MonoBehaviour
         {
             foreach (WeaponStatBlock weaponStat in characterData.initialWeapons)
             {
-                if (weaponStat != null) weaponController.AddNewWeapon(weaponStat);
+                if (weaponStat == null) continue;
+
+                // 跳过预制件已自带的内置武器，防止重复添加
+                if (weaponController.builtInBladeWeapon != null &&
+                    weaponController.builtInBladeWeapon.StatBlock != null &&
+                    weaponController.builtInBladeWeapon.StatBlock.weaponName == weaponStat.weaponName)
+                {
+                    Debug.Log($"[CombatInit] 跳过内置武器: {weaponStat.weaponName}（预制件已自带）");
+                    continue;
+                }
+
+                weaponController.AddNewWeapon(weaponStat);
             }
         }
 

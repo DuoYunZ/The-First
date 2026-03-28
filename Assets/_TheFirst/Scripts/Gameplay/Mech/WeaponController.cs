@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -50,6 +50,12 @@ public class WeaponController : MonoBehaviour
         {
             weaponMountPoint = transform;
         }
+    }
+
+    void OnDestroy()
+    {
+        // 角色切换时清除单例引用，防止新角色自毁
+        if (Instance == this) Instance = null;
     }
 
     private void OnEnable() => playerControls.Player.Enable();

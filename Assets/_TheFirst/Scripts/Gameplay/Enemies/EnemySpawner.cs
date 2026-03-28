@@ -1,4 +1,4 @@
-﻿// --- EnemySpawner.cs (最终完整版 - 解决了预警等待问题) ---
+// --- EnemySpawner.cs (最终完整版 - 解决了预警等待问题) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,6 +28,12 @@ public class EnemySpawner : MonoBehaviour
     public int maxFallbackAnnulusAttempts = 25;
     public float fallbackAnnulusMinRadius = 3f;
     public float fallbackAnnulusMaxRadius = 25f;
+
+    [Header("地图边界限制")]
+    [Tooltip("地图中心点（世界坐标，通常是场景圆形区域的中心）")]
+    public Transform mapCenter;
+    [Tooltip("地图的有效半径（怪物不会生成到这个圆之外）")]
+    public float mapRadius = 25f;
 
     [Header("地面检测设置")]
     public float raycastStartYOffset = 50f;
@@ -367,6 +373,10 @@ public class EnemySpawner : MonoBehaviour
             Vector3 spawnDirection = new Vector3(Mathf.Sin(randomAngleRadians), 0, Mathf.Cos(randomAngleRadians));
             float randomDistance = Random.Range(minRadius, maxRadius);
             Vector3 potentialSpawnPointXZ = center + spawnDirection * randomDistance;
+
+            // 将生成点钳制到地图圆形边界内
+            potentialSpawnPointXZ = ClampToMapBounds(potentialSpawnPointXZ);
+
             Vector3 rayOrigin = new Vector3(potentialSpawnPointXZ.x, playerTransform.position.y + raycastStartYOffset, potentialSpawnPointXZ.z);
             RaycastHit hitInfo;
             if (Physics.Raycast(rayOrigin, Vector3.down, out hitInfo, maxRaycastDistance, groundLayerMask))
@@ -397,6 +407,28 @@ public class EnemySpawner : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// 将坐标点钳制到地图圆形边界内（忽略Y轴）
+    /// </summary>
+    Vector3 ClampToMapBounds(Vector3 point)
+    {
+        if (mapCenter == null) return point; // 未设置中心则不限制
+
+        Vector3 center = mapCenter.position;
+        // 只在XZ平面上计算距离
+        Vector3 offset = new Vector3(point.x - center.x, 0, point.z - center.z);
+        float distFromCenter = offset.magnitude;
+
+        if (distFromCenter > mapRadius)
+        {
+            // 超出边界，将点拉回到圆的边缘内侧（留1单位余量避免贴边）
+            Vector3 clampedOffset = offset.normalized * (mapRadius - 1f);
+            point = new Vector3(center.x + clampedOffset.x, point.y, center.z + clampedOffset.z);
+        }
+
+        return point;
     }
 
     public void StopAndClearSpawning()

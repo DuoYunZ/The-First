@@ -1,8 +1,19 @@
-﻿// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
+// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
 using UnityEngine;
+
+/// <summary>
+/// 斩击攻击模式 — 融合大招切换
+/// </summary>
+public enum BladeMode
+{
+    Normal,     // 默认斩击
+    WindBlade,  // 风刃模式（斩击+飓风）：每次攻击额外发射风刃子弹
+    Thunder,    // 雷霆模式（斩击+闪电链）：三连刺快攻
+    Fire        // 烈焰模式（斩击+火球）：范围增大+附带点燃
+}
 
 public class PlayerBladeAttack : MonoBehaviour
 {
@@ -55,7 +66,43 @@ public class PlayerBladeAttack : MonoBehaviour
     public List<SlashPattern> slashesLevel2;
     public List<SlashPattern> slashesLevel3;
     public List<SlashPattern> slashesLevel4;
-    public List<SlashPattern> slashesLevel5; // 【新增】5级模式列表
+    public List<SlashPattern> slashesLevel5; // 5级模式列表
+
+    [Header("融合大招模式")]
+    [Tooltip("当前攻击模式（由融合大招切换）")]
+    public BladeMode currentMode = BladeMode.Normal;
+
+    [Header("风刃模式配置")]
+    [Tooltip("风刃子弹预制件")]
+    public GameObject windBladeProjectilePrefab;
+    [Tooltip("风刃子弹速度")]
+    public float windBladeSpeed = 15f;
+
+    [Header("雷霆模式配置")]
+    [Tooltip("雷霆三连刺的单次刀光模式")]
+    public List<SlashPattern> thunderThrustPatterns;
+    [Tooltip("雷霆特效预制件（叠加在刀光上）")]
+    public GameObject thunderVfxOverride;
+    [Tooltip("雷霆三连刺每次间隔（秒）")]
+    public float thunderThrustInterval = 0.2f;
+    [Tooltip("雷霆三连刺次数")]
+    public int thunderThrustCount = 3;
+
+    [Header("烈焰模式配置")]
+    [Tooltip("烈焰模式刀光范围额外倍率")]
+    public float fireScaleMultiplier = 1.5f;
+    [Tooltip("烈焰模式刀光特效覆盖（可选，带火焰效果的VFX）")]
+    public GameObject fireSlashVfxOverride;
+
+    [Header("背部武器模型（融合切换时替换）")]
+    [Tooltip("普通模式的背部武器预制件")]
+    public GameObject normalWeaponModel;
+    [Tooltip("风刃模式的背部武器预制件")]
+    public GameObject windWeaponModel;
+    [Tooltip("雷霆模式的背部武器预制件")]
+    public GameObject thunderWeaponModel;
+    [Tooltip("烈焰模式的背部武器预制件")]
+    public GameObject fireWeaponModel;
 
     private float cooldownTimer;
     private bool isAttacking = false;
@@ -106,6 +153,12 @@ public class PlayerBladeAttack : MonoBehaviour
         // 限制最高射速 (防止冷却变成 0 或负数)
         if (fireRateMult < 0.1f) fireRateMult = 0.1f;
 
+        // 风刃模式：攻速加倍（冷却减半）
+        if (currentMode == BladeMode.WindBlade)
+        {
+            fireRateMult *= 0.5f;
+        }
+
         // 重新计算当前帧的冷却速度
         if (attackData != null && attackData.baseFireRate > 0)
         {
@@ -126,7 +179,13 @@ public class PlayerBladeAttack : MonoBehaviour
     IEnumerator AttackSequence()
     {
         isAttacking = true;
-        weaponCooldownMaterial?.StartCooldown(cooldownDuration);
+
+        // Unity 销毁的对象不是 C# null，必须用 == 而非 ?.
+        if (weaponCooldownMaterial != null)
+        {
+            try { weaponCooldownMaterial.StartCooldown(cooldownDuration); }
+            catch (System.Exception) { weaponCooldownMaterial = null; }
+        }
 
         if (floatingWeapon != null) floatingWeapon.HideWeapon();
 
@@ -162,10 +221,29 @@ public class PlayerBladeAttack : MonoBehaviour
         bool hasImprovedFrequency = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.IsNodeUnlocked(improveFrequencyNode);
         bool hasUnlockedProjectile = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.IsNodeUnlocked(unlockProjectileNode);
 
+        // === 计算刀光数量加成（所有模式共用） ===
+        int slashBonus = 0;
+        if (PlayerStats.Instance != null)
+            slashBonus += PlayerStats.Instance.bonusSlashCount;
+        if (myWeaponPart != null)
+            slashBonus += myWeaponPart.localSlashCountBonus;
+
+        // === 雷霆模式：使用三连刺替代普通刀光（0.2s间隔） ===
+        if (currentMode == BladeMode.Thunder)
+        {
+            StartCoroutine(ThunderThrustSequence(slashBonus));
+            return; // 雷霆模式跳过普通刀光
+        }
+
+        // === 风刃模式：替换斩击为发射风刃子弹（不再生成刀光） ===
+        if (currentMode == BladeMode.WindBlade && windBladeProjectilePrefab != null)
+        {
+            StartCoroutine(WindBladeSequence(1 + slashBonus));
+            return; // 风刃模式跳过普通刀光
+        }
+
         if (attackData.slashEffectPrefab != null)
         {
-            // --- 【核心修复 3】 ---
-
             // 1. 基础数量
             int baseCount = attackData.multiHitCount;
 
@@ -180,10 +258,8 @@ public class PlayerBladeAttack : MonoBehaviour
             int localBonus = 0;
             if (myWeaponPart != null)
             {
-                // 读取我们刚刚加的变量
                 localBonus = myWeaponPart.localSlashCountBonus;
 
-                // 如果有能量石加成，也在这里读
                 if (myWeaponPart.currentStone != null)
                 {
                     // localBonus += myWeaponPart.currentStone.slashCountModifier; 
@@ -193,12 +269,10 @@ public class PlayerBladeAttack : MonoBehaviour
             // 4. 计算总数
             int totalSlashCount = baseCount + globalBonus + localBonus;
 
-            // --- 调试日志 ---
             if (localBonus > 0)
             {
                 Debug.Log($"[BladeAttack] 发起攻击: 基础{baseCount} + 全局{globalBonus} + 局部{localBonus} = 总计 {totalSlashCount} 道刀光");
             }
-            // ----------------
 
             // 5. 生成刀光
             List<SlashPattern> currentPattern = GetCurrentSlashPattern(totalSlashCount);
@@ -213,6 +287,46 @@ public class PlayerBladeAttack : MonoBehaviour
         if (hasUnlockedProjectile && !hasImprovedFrequency && attackCounter % 3 == 0)
         {
             FireBladeEnergyProjectile(0);
+        }
+    }
+
+    /// <summary>
+    /// 雷霆三连刺协程：每0.2秒释放一道刀光，次数受刀光数量升级影响
+    /// </summary>
+    private System.Collections.IEnumerator ThunderThrustSequence(int slashBonus)
+    {
+        List<SlashPattern> patterns = thunderThrustPatterns != null && thunderThrustPatterns.Count > 0
+            ? thunderThrustPatterns
+            : slashesLevel1; // 回退到基础模式
+
+        int totalThrusts = thunderThrustCount + slashBonus; // 刀光数量升级增加连刺次数
+
+        for (int i = 0; i < totalThrusts; i++)
+        {
+            // 每次使用一个模式（循环使用）
+            SlashPattern pattern = patterns[i % patterns.Count];
+            SpawnSlashVFX(pattern.positionOffset, pattern.angleOffset);
+
+            // 播放音效
+            PlaySlashSound();
+
+            if (i < totalThrusts - 1)
+                yield return new WaitForSeconds(thunderThrustInterval);
+        }
+    }
+
+    /// <summary>
+    /// 风刃连射协程：发射多道风刃，间隔0.3秒
+    /// </summary>
+    private System.Collections.IEnumerator WindBladeSequence(int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            FireWindBladeProjectile();
+            PlaySlashSound();
+
+            if (i < count - 1)
+                yield return new WaitForSeconds(0.3f);
         }
     }
 
@@ -319,7 +433,14 @@ public class PlayerBladeAttack : MonoBehaviour
         Vector3 worldPositionOffset = visualsTransform.TransformDirection(localPositionOffset);
         Vector3 finalPosition = spawnPoint.position + worldPositionOffset;
 
-        GameObject slashVFX = Instantiate(attackData.slashEffectPrefab, finalPosition, finalRotation);
+        // 选择VFX预制件：雷霆模式可用覆盖特效，烈焰模式可用覆盖特效
+        GameObject vfxPrefab = attackData.slashEffectPrefab;
+        if (currentMode == BladeMode.Thunder && thunderVfxOverride != null)
+            vfxPrefab = thunderVfxOverride;
+        else if (currentMode == BladeMode.Fire && fireSlashVfxOverride != null)
+            vfxPrefab = fireSlashVfxOverride;
+
+        GameObject slashVFX = Instantiate(vfxPrefab, finalPosition, finalRotation);
 
         // --- 应用范围/大小加成 (Scale) ---
         float scaleMultiplier = 1f;
@@ -328,17 +449,23 @@ public class PlayerBladeAttack : MonoBehaviour
             scaleMultiplier = PlayerStats.Instance.aoeRadiusMultiplier;
         }
 
-        // 【新增】应用局部范围加成
+        // 应用局部范围加成
         if (myWeaponPart != null)
         {
             scaleMultiplier += myWeaponPart.localAreaBonus;
 
-            // 叠加能量石
             if (myWeaponPart.currentStone != null)
             {
                 scaleMultiplier += myWeaponPart.currentStone.scaleModifier;
             }
         }
+
+        // 烈焰模式：额外放大范围
+        if (currentMode == BladeMode.Fire)
+        {
+            scaleMultiplier *= fireScaleMultiplier;
+        }
+
         slashVFX.transform.localScale *= scaleMultiplier;
 
         // --- 应用伤害加成 ---
@@ -349,7 +476,7 @@ public class PlayerBladeAttack : MonoBehaviour
             int permanentBonus = (PlayerProgressManager.Instance != null) ? PlayerProgressManager.Instance.permanentMeleeAoeFlatDamageBonus : 0;
 
             float damageMult = 1f;
-            float localDmgBonus = 0f; // 【新增】
+            float localDmgBonus = 0f;
             float stoneDmgMod = 0f;
 
             if (PlayerStats.Instance != null)
@@ -357,7 +484,6 @@ public class PlayerBladeAttack : MonoBehaviour
                 damageMult = PlayerStats.Instance.damageMultiplier;
             }
 
-            // 【新增】读取局部变量
             if (myWeaponPart != null)
             {
                 localDmgBonus = myWeaponPart.localDamageBonus;
@@ -367,17 +493,23 @@ public class PlayerBladeAttack : MonoBehaviour
                 }
             }
 
-            // 基础计算：(基础 + 永久) * (玩家加成 + 局部加成 + 石头加成)
             float calculatedDamage = (baseDamage + permanentBonus) * (damageMult + localDmgBonus + stoneDmgMod);
             int damageInput = Mathf.RoundToInt(calculatedDamage);
 
-            // 初始化控制器
             damageController.Initialize(
                 damageInput,
                 attackData.hitEffectPrefab,
                 this.gameObject,
                 myWeaponPart
             );
+
+            // 烈焰模式：强制附带点燃效果
+            if (currentMode == BladeMode.Fire)
+            {
+                damageController.forceBurn = true;
+                damageController.forceBurnDamage = Mathf.RoundToInt(damageInput * 0.15f); // 15%伤害/跳
+                damageController.forceBurnDuration = 3f;
+            }
         }
     }
 
@@ -426,6 +558,121 @@ public class PlayerBladeAttack : MonoBehaviour
             Vector3 finalPosition = (spawnPoint != null ? spawnPoint.position : transform.position) + worldPositionOffset;
             Gizmos.DrawSphere(finalPosition, 0.2f);
             Gizmos.DrawRay(finalPosition, finalRotation * Vector3.forward * 2f);
+        }
+    }
+
+    // =============================================
+    // 融合大招：模式切换
+    // =============================================
+
+    /// <summary>
+    /// 设置斩击模式（由 UltimateManager 在释放融合大招时调用）
+    /// 互斥替换：新模式会覆盖旧模式
+    /// </summary>
+    public void SetBladeMode(BladeMode newMode)
+    {
+        if (currentMode == newMode)
+        {
+            Debug.Log($"<color=cyan>[斩击模式] 已经是 {newMode} 模式，无需切换</color>");
+            return;
+        }
+
+        BladeMode oldMode = currentMode;
+        currentMode = newMode;
+
+        // 切换背部武器模型
+        if (floatingWeapon != null)
+        {
+            GameObject targetModel = null;
+            switch (newMode)
+            {
+                case BladeMode.Normal:   targetModel = normalWeaponModel; break;
+                case BladeMode.WindBlade: targetModel = windWeaponModel; break;
+                case BladeMode.Thunder:  targetModel = thunderWeaponModel; break;
+                case BladeMode.Fire:     targetModel = fireWeaponModel; break;
+            }
+            if (targetModel != null)
+            {
+                floatingWeapon.SwapModel(targetModel);
+                Debug.Log($"<color=cyan>[斩击模式] 背部武器切换为: {targetModel.name}</color>");
+            }
+        }
+
+        Debug.Log($"<color=yellow>[斩击模式] {oldMode} → {newMode}</color>");
+    }
+
+    /// <summary>
+    /// 风刃模式：发射风刃子弹
+    /// </summary>
+    private void FireWindBladeProjectile()
+    {
+        if (windBladeProjectilePrefab == null) return;
+
+        Transform spawnPoint = bladeEnergySpawnPoint != null ? bladeEnergySpawnPoint : this.transform;
+        Vector3 spawnPos = spawnPoint.position;
+
+        // === 自动瞄准：寻找最近敌人 ===
+        Vector3 fireDir = visualsTransform.rotation * Vector3.forward; // 默认朝玩家面向
+        float aimRange = 20f;
+        Collider[] enemies = Physics.OverlapSphere(spawnPos, aimRange, LayerMask.GetMask("Enemies"));
+        float closestDist = float.MaxValue;
+        Transform closestEnemy = null;
+
+        foreach (var col in enemies)
+        {
+            Health h = col.GetComponentInParent<Health>();
+            if (h == null || h.IsDead) continue;
+            float dist = Vector3.Distance(spawnPos, h.transform.position);
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closestEnemy = h.transform;
+            }
+        }
+
+        if (closestEnemy != null)
+        {
+            Vector3 targetDir = (closestEnemy.position - spawnPos);
+            targetDir.y = 0f; // 保持水平
+            if (targetDir.sqrMagnitude > 0.01f)
+                fireDir = targetDir.normalized;
+        }
+
+        Quaternion fireRot = Quaternion.LookRotation(fireDir);
+
+        GameObject projectileGO = Instantiate(windBladeProjectilePrefab, spawnPos, fireRot);
+        Projectile proj = projectileGO.GetComponent<Projectile>();
+
+        if (proj != null)
+        {
+            // 计算伤害 — 与斩击共享 baseAoeDamage
+            int baseDmg = attackData.baseAoeDamage;
+            float damageMult = 1f;
+            if (PlayerStats.Instance != null) damageMult = PlayerStats.Instance.damageMultiplier;
+            if (myWeaponPart != null) damageMult += myWeaponPart.localDamageBonus;
+            int windDmg = Mathf.Max(1, Mathf.RoundToInt(baseDmg * damageMult));
+
+            float lifeTime = 2f;
+
+            proj.InitializeAsStraight(
+                fireDir, windBladeSpeed, windDmg, false,
+                999, lifeTime, // 穿透999（无限穿透）
+                null, attackData.hitEffectPrefab,
+                0, 0, 0, 0, 0,
+                AttackType.Standard, myWeaponPart
+            );
+
+            // 设置击退力度
+            proj.knockbackForce = 1.5f;
+
+            // 应用范围/缩放加成（与斩击刀光一致）
+            float scaleMultiplier = 1f;
+            if (PlayerStats.Instance != null)
+                scaleMultiplier = PlayerStats.Instance.aoeRadiusMultiplier;
+            if (myWeaponPart != null)
+                scaleMultiplier += myWeaponPart.localAreaBonus;
+            if (scaleMultiplier != 1f)
+                projectileGO.transform.localScale *= scaleMultiplier;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -42,6 +42,12 @@ public class PlayerShield : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    void OnDestroy()
+    {
+        // 角色切换时清除单例引用，防止新角色自毁
+        if (Instance == this) Instance = null;
     }
 
     void Update()

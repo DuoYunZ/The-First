@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.AI;
 
@@ -8,6 +8,7 @@ public class TornadoController : MonoBehaviour
     [Header("龙卷风属性")]
     public float pullForce = 15f; // 吸力（移动速度）
     public float damageInterval = 0.2f; // 伤害间隔 (0.2s = 1秒5跳)
+    [HideInInspector] public bool isComboUltimate = false; // 标识是否来自融合大招（阻止能量增加）
 
     private int damagePerTick;
     private WeaponPart launcher;

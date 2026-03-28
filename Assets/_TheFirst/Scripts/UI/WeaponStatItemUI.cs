@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -91,13 +91,13 @@ public class WeaponStatItemUI : MonoBehaviour
 
             damageBarFill.fillAmount = Mathf.Lerp(0f, targetPercent, ease);
             int currentDmg = Mathf.RoundToInt(Mathf.Lerp(0, targetDamage, ease));
-            damageText.text = $"伤害: {currentDmg:N0}";
+            damageText.text = LocalizationManager.T("ui.damage", currentDmg);
 
             yield return null;
         }
 
         // 最终定格
         damageBarFill.fillAmount = targetPercent;
-        damageText.text = $"伤害: {targetDamage:N0}";
+        damageText.text = LocalizationManager.T("ui.damage", targetDamage);
     }
 }

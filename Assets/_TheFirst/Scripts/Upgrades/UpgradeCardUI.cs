@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
@@ -57,10 +57,12 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         }
 
         iconImage.sprite = sourceNode.skillIcon;
-        nameText.text = sourceNode.skillName;
+        nameText.text = (sourceNode.associatedWeapon != null && !string.IsNullOrEmpty(sourceNode.associatedWeapon.weaponID))
+            ? LocalizationManager.T("weapon." + sourceNode.associatedWeapon.weaponID)
+            : sourceNode.skillName;
 
         // --- 核心：生成预览文本 ---
-        string finalDesc = displayedOption.description;
+        string finalDesc = displayedOption.LocalizedDescription;
         string previewText = GeneratePreviewText(node, option);
         if (!string.IsNullOrEmpty(previewText))
         {
@@ -233,7 +235,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 // 未来 = 基础 * (全局 + 局部 + 新增)
                 int futDmg = Mathf.RoundToInt(baseDmg * (stats.damageMultiplier + currentLocalDmg + addPercent) + stats.flatDamageBonus);
 
-                return FormatChange("攻击", curDmg, futDmg);
+                return FormatChange(LocalizationManager.T("stat.attack"), curDmg, futDmg);
 
             case UpgradeType.WeaponFireRate:
                 // 【核心修复】读取局部冷却缩减
@@ -247,7 +249,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 float curCool = (1f / weapon.baseFireRate) * curCoolMultiplier;
                 float futCool = (1f / weapon.baseFireRate) * futCoolMultiplier;
 
-                if (Mathf.Abs(curCool - futCool) > 0.01f) return FormatChange("冷却", curCool, futCool, true, "s");
+                if (Mathf.Abs(curCool - futCool) > 0.01f) return FormatChange(LocalizationManager.T("stat.cooldown"), curCool, futCool, true, "s");
                 break;
 
             case UpgradeType.AoeRadius:
@@ -256,7 +258,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 float curRad = weapon.baseAoeRadius * (stats.aoeRadiusMultiplier + currentLocalArea);
                 float futRad = weapon.baseAoeRadius * (stats.aoeRadiusMultiplier + currentLocalArea + addPercent);
 
-                if (Mathf.Abs(curRad - futRad) > 0.01f) return FormatChange("范围", curRad, futRad, false, "m");
+                if (Mathf.Abs(curRad - futRad) > 0.01f) return FormatChange(LocalizationManager.T("stat.range"), curRad, futRad, false, "m");
                 break;
 
             case UpgradeType.OrbitalSpeed:
@@ -268,7 +270,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 float futSpdVal = baseSpd * (1f + currentLocalSpeed + addPercent);
 
                 string unit = (effect.statToModify == UpgradeType.OrbitalSpeed) ? "°/s" : "m/s";
-                return FormatChange("速度", curSpdVal, futSpdVal, false, unit);
+                return FormatChange(LocalizationManager.T("stat.speed"), curSpdVal, futSpdVal, false, unit);
 
             case UpgradeType.WeaponDuration:
                 float baseDur = GetBaseDuration(weapon);
@@ -280,7 +282,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
                 if (Mathf.Abs(curDur - futDur) > 0.01f || (baseDur == 0 && futDur > 0))
                 {
-                    return FormatChange("持续", curDur, futDur, false, "s");
+                    return FormatChange(LocalizationManager.T("stat.duration"), curDur, futDur, false, "s");
                 }
                 break;
 
@@ -290,7 +292,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
                 float curCrit = totalCritRate * 100f;
                 float futCrit = curCrit + effect.value;
-                return FormatChange("暴击率", curCrit, futCrit, false, "%");
+                return FormatChange(LocalizationManager.T("stat.crit_rate"), curCrit, futCrit, false, "%");
 
             case UpgradeType.CritDamage:
                 float currentLocalCritDmg = (activePart != null) ? activePart.localCritDamageBonus : 0f;
@@ -298,12 +300,12 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
                 float curCD = totalCritDmg * 100f;
                 float futCD = curCD + effect.value;
-                return FormatChange("暴伤", curCD, futCD, false, "%");
+                return FormatChange(LocalizationManager.T("stat.crit_dmg"), curCD, futCD, false, "%");
 
             case UpgradeType.PierceCount:
                 int curP = weapon.basePierceCount + stats.bonusPierceCount;
                 int futP = curP + Mathf.RoundToInt(effect.value);
-                if (curP != futP) return FormatChange("穿透", curP, futP);
+                if (curP != futP) return FormatChange(LocalizationManager.T("stat.pierce"), curP, futP);
                 break;
 
             case UpgradeType.OrbitalCount:
@@ -321,7 +323,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
                 int curCountVal = baseCount + globalCount + localCount;
                 int futCountVal = curCountVal + Mathf.RoundToInt(effect.value);
-                return FormatChange("数量", curCountVal, futCountVal);
+                return FormatChange(LocalizationManager.T("stat.count"), curCountVal, futCountVal);
         }
         return "";
     }
@@ -339,7 +341,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             // --- 整数显示类 ---
             case UpgradeType.Armor:
-                return FormatChange("护甲", stats.armor, stats.armor + val);
+                return FormatChange(LocalizationManager.T("stat.armor"), stats.armor, stats.armor + val);
 
             case UpgradeType.MaxHealth:
                 int currentHP = 0;
@@ -355,15 +357,15 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                     // 如果找不到 Health 组件，保底显示 Bonus
                     currentHP = stats.bonusMaxHealth;
                 }
-                return FormatChange("生命上限", currentHP, currentHP + (int)val);
+                return FormatChange(LocalizationManager.T("stat.max_hp"), currentHP, currentHP + (int)val);
             case UpgradeType.Revival:
-                return FormatChange("复活次数", stats.revivalCount, stats.revivalCount + (int)val);
+                return FormatChange(LocalizationManager.T("stat.revival"), stats.revivalCount, stats.revivalCount + (int)val);
 
             // --- 百分比显示类 (10% -> 20%) ---
             case UpgradeType.WeaponDamage: // 对应被动：菠菜 (Might)
                 float curDmg = (stats.damageMultiplier - 1f) * 100f;
                 float nextDmg = curDmg + val;
-                return FormatChange("伤害增幅", curDmg, nextDmg, false, "%");
+                return FormatChange(LocalizationManager.T("stat.dmg_bonus"), curDmg, nextDmg, false, "%");
 
             case UpgradeType.WeaponFireRate: // 对应被动：时光曲奇 (Cooldown)
                 // 1. 计算当前冷却增幅 (例如 0.8 -> -20%)
@@ -378,28 +380,28 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 // 当前 -20%，再缩减 10%，应该是 -30%
                 float nextRate = curRate - effectiveVal;
 
-                return FormatChange("冷却时间", curRate, nextRate, true, "%");
+                return FormatChange(LocalizationManager.T("stat.cooldown_time"), curRate, nextRate, true, "%");
 
             case UpgradeType.AoeRadius: // 对应被动：烛台 (Area)
                 float curArea = (stats.aoeRadiusMultiplier - 1f) * 100f;
                 float nextArea = curArea + val;
-                return FormatChange("攻击范围", curArea, nextArea, false, "%");
+                return FormatChange(LocalizationManager.T("stat.aoe_range"), curArea, nextArea, false, "%");
 
             case UpgradeType.MoveSpeed:
                 float curSpd = (stats.moveSpeedMultiplier - 1f) * 100f;
-                return FormatChange("移速", curSpd, curSpd + val, false, "%");
+                return FormatChange(LocalizationManager.T("stat.move_speed"), curSpd, curSpd + val, false, "%");
 
             case UpgradeType.CritRate:
                 float curCrit = stats.critRate * 100f;
-                return FormatChange("暴击率", curCrit, curCrit + val, false, "%");
+                return FormatChange(LocalizationManager.T("stat.crit_rate"), curCrit, curCrit + val, false, "%");
 
             case UpgradeType.CritDamage:
                 float curCD = stats.critDamage * 100f;
-                return FormatChange("暴伤", curCD, curCD + val, false, "%");
+                return FormatChange(LocalizationManager.T("stat.crit_dmg"), curCD, curCD + val, false, "%");
 
             case UpgradeType.WeaponDuration:
                 float curDurMul = (stats.durationMultiplier - 1f) * 100f; // 修正：显示增幅部分
-                return FormatChange("持续时间", curDurMul, curDurMul + val, false, "%");
+                return FormatChange(LocalizationManager.T("stat.duration_time"), curDurMul, curDurMul + val, false, "%");
 
             // --- 小数/数值显示类 ---
             case UpgradeType.PickupRadius:
@@ -410,10 +412,10 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 float nextPick = basePick * (stats.pickupRadiusMultiplier + (effect.modType == ModifierType.Percentage ? val / 100f : 0f));
                 // 如果是直接加数值，则 nextPick = curPick + val; (看你配置习惯，这里按百分比处理)
 
-                return FormatChange("拾取范围", curPick, nextPick, false, "m");
+                return FormatChange(LocalizationManager.T("stat.pickup"), curPick, nextPick, false, "m");
 
             case UpgradeType.Luck:
-                return FormatChange("幸运值", stats.luck, stats.luck + (effect.modType == ModifierType.Percentage ? val / 100f : val));
+                return FormatChange(LocalizationManager.T("stat.luck"), stats.luck, stats.luck + (effect.modType == ModifierType.Percentage ? val / 100f : val));
         }
         return "";
     }

@@ -93,6 +93,33 @@ public class StatusEffectReceiver : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 检查该怪物是否免疫指定的减益效果
+    /// 同时检查本地字段和 EnemyType SO 数据（任一勾选即生效）
+    /// </summary>
+    [Header("状态效果免疫 (可直接在预制件上勾选)")]
+    [Tooltip("勾选此项，该怪物将免疫所有减速效果")]
+    public bool immuneToSlow = false;
+    [Tooltip("勾选此项，该怪物将免疫冰冻效果")]
+    public bool immuneToFreeze = false;
+
+    private bool IsImmuneToSlow()
+    {
+        // 本地字段 或 EnemyType SO 中任一勾选即免疫
+        if (immuneToSlow) return true;
+        if (enemyHealth != null && enemyHealth.EnemyTypeData != null)
+            return enemyHealth.EnemyTypeData.immuneToSlow;
+        return false;
+    }
+
+    private bool IsImmuneToFreeze()
+    {
+        if (immuneToFreeze) return true;
+        if (enemyHealth != null && enemyHealth.EnemyTypeData != null)
+            return enemyHealth.EnemyTypeData.immuneToFreeze;
+        return false;
+    }
+
     void Update()
     {
         HandleShockState();
@@ -182,12 +209,14 @@ public class StatusEffectReceiver : MonoBehaviour
     // --- 新增：应用减速效果的方法 ---
     public void ApplySlow(float slowPercentage, float duration)
     {
+        if (IsImmuneToSlow()) return; // 免疫减速
         Color defaultSlowColor = Color.cyan;
         ApplySlow(slowPercentage, duration, defaultSlowColor);
     }
 
     public void ApplySlow(float slowPercentage, float duration, Color newColor)
     {
+        if (IsImmuneToSlow()) return; // 免疫减速
         if (activeStatusCoroutines.ContainsKey(DebuffType.Slow))
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.Slow]);
@@ -198,6 +227,7 @@ public class StatusEffectReceiver : MonoBehaviour
 
     public void ApplyFreeze(float duration, GameObject vfxOverride = null, bool applyFrostBite = false)
     {
+        if (IsImmuneToFreeze()) return; // 免疫冰冻
         // 1. 打断攻击
         if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
         if (projectileAttackScript != null) projectileAttackScript.InterruptAttack();
@@ -328,6 +358,7 @@ public class StatusEffectReceiver : MonoBehaviour
 
     public void ApplyPersistentSlow(object source, float percentage, Color color)
     {
+        if (IsImmuneToSlow()) return; // 免疫减速
         if (persistentSlowSources.Add(source))
         {
             activePersistentSlowColor = color; // [!] 存储颜色
@@ -827,6 +858,7 @@ public class StatusEffectReceiver : MonoBehaviour
     /// </summary>
     public void ApplyAuraSlow(float slowPercentage, float duration)
     {
+        if (IsImmuneToSlow()) return; // 免疫减速
         if (activeStatusCoroutines.ContainsKey(DebuffType.AuraSlow))
         {
             StopCoroutine(activeStatusCoroutines[DebuffType.AuraSlow]);

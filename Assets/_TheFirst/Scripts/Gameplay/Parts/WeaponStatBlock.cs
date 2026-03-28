@@ -414,4 +414,21 @@ public class WeaponStatBlock : ScriptableObject
     public float ultimateRadius = 5f;
     [Tooltip("大招图标 (能量满时显示)")]
     public Sprite ultimateIcon;
+
+    // =========================================================
+    // 【新增】音效设置 (Sound Effects)
+    // =========================================================
+    [Header("音效设置 (Sound Effects)")]
+    [Tooltip("技能释放/开火时的音效（支持多个随机播放）")]
+    public AudioClip[] fireSounds;
+
+    [Tooltip("命中敌人时的音效")]
+    public AudioClip hitSound;
+
+    [Tooltip("特殊音效（爆炸、冰冻、雷击落地等）")]
+    public AudioClip specialSound;
+
+    [Tooltip("开火音效的音量缩放 (默认1.0)")]
+    [Range(0f, 2f)]
+    public float fireSoundVolume = 1.0f;
 }

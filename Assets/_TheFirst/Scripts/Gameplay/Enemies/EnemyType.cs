@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public enum AIType
 {
@@ -89,4 +89,10 @@ public class EnemyType : ScriptableObject
 
     [Tooltip("准备自爆期间的预警特效预制件")]
     public GameObject armingWarningPrefab;
+
+    [Header("状态效果免疫 (Status Immunity)")]
+    [Tooltip("勾选此项，该怪物将免疫所有减速效果")]
+    public bool immuneToSlow = false;
+    [Tooltip("勾选此项，该怪物将免疫冰冻效果")]
+    public bool immuneToFreeze = false;
 }

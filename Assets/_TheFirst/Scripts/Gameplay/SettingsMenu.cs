@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 using UnityEngine.Audio;
@@ -22,6 +22,10 @@ public class SettingsMenu : MonoBehaviour
     public TMP_Dropdown resolutionDropdown;
     public Toggle fullscreenToggle;
 
+    [Header("语言设置")]
+    [Tooltip("语言选择下拉框")]
+    public TMP_Dropdown languageDropdown;
+
     private Resolution[] resolutions;
 
 
@@ -42,6 +46,9 @@ public class SettingsMenu : MonoBehaviour
 
         // 初始化分辨率设置
         InitResolutionSettings();
+
+        // 初始化语言设置
+        InitLanguageSettings();
     }
 
     private void InitResolutionSettings()
@@ -141,5 +148,33 @@ public class SettingsMenu : MonoBehaviour
     private void OnDisable()
     {
         PlayerPrefs.Save();
+    }
+
+    // ===== 语言设置 =====
+
+    private void InitLanguageSettings()
+    {
+        if (languageDropdown == null) return;
+
+        languageDropdown.ClearOptions();
+
+        // 使用各语言的原生名称作为显示文本
+        var options = new List<string> { "中文", "English" };
+        languageDropdown.AddOptions(options);
+
+        // 设置为当前语言
+        languageDropdown.value = LocalizationManager.GetCurrentLanguageIndex();
+        languageDropdown.RefreshShownValue();
+
+        // 添加监听器
+        languageDropdown.onValueChanged.AddListener(SetLanguage);
+    }
+
+    /// <summary>
+    /// 语言下拉框值改变时调用
+    /// </summary>
+    public void SetLanguage(int index)
+    {
+        LocalizationManager.SetLanguageByIndex(index);
     }
 }

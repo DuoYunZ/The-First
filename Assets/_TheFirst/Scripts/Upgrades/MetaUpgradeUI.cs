@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 
 public class MetaUpgradeUI : MonoBehaviour
@@ -61,17 +61,17 @@ public class MetaUpgradeUI : MonoBehaviour
         string desc = data.description + "\n";
         if (isMax)
         {
-            desc += $"<color=yellow>已满级 (加成: {curBonus:F1})</color>";
+            desc += $"<color=yellow>{LocalizationManager.T("ui.max_level", curBonus)}</color>";
             if (tooltipCost) tooltipCost.text = "---";
         }
         else
         {
-            desc += $"当前: {curBonus:F1} <color=green>-> 下一级: {nextBonus:F1}</color>";
+            desc += $"{LocalizationManager.T("ui.current_next", curBonus, nextBonus)}";
             if (tooltipCost)
             {
                 int playerGold = MetaUpgradeManager.Instance.GetPlayerGold();
                 string color = playerGold >= cost ? "white" : "red";
-                tooltipCost.text = $"费用: <color={color}>{cost}</color>";
+                tooltipCost.text = $"<color={color}>{LocalizationManager.T("ui.cost", cost)}</color>";
             }
         }
 

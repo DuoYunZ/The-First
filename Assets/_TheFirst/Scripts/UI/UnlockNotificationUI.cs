@@ -83,7 +83,7 @@ public class UnlockNotificationUI : MonoBehaviour
         if (notificationPanel == null) return;
 
         notificationPanel.SetActive(true);
-        if (itemNameText != null) itemNameText.text = $"已解锁: {itemName}";
+        if (itemNameText != null) itemNameText.text = LocalizationManager.T("ui.unlocked", itemName);
 
         // 如果有图标逻辑，可以在这里更新
         // if (itemDatabase != null) itemIconImage.sprite = itemDatabase.GetIcon(itemName);

@@ -1,4 +1,4 @@
-﻿// --- VFXDamageController.cs (调试版) ---
+// --- VFXDamageController.cs (调试版) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +12,11 @@ public class VFXDamageController : MonoBehaviour
     public WeaponPart sourceWeapon;
     private List<Health> hitTargets = new List<Health>();
     private GameObject hitEffectPrefab;
+
+    // 烈焰模式：强制点燃
+    [HideInInspector] public bool forceBurn = false;
+    [HideInInspector] public float forceBurnDamage = 5f;
+    [HideInInspector] public float forceBurnDuration = 3f;
 
     [Header("生命周期与伤害窗口")]
     public float totalLifetime = 2f;
@@ -178,6 +183,13 @@ public class VFXDamageController : MonoBehaviour
             if (stats.nativeCorrode)
             {
                 receiver.ApplyCorrode(stats.nativeCorrodeMultiplier, 5f, stats.nativeCorrodeColor, weaponName);
+            }
+            // 烈焰模式强制点燃（由 PlayerBladeAttack 设置）
+            if (forceBurn && !receiver.IsBurning)
+            {
+                int burnDmg = Mathf.RoundToInt(forceBurnDamage);
+                if (burnDmg < 1) burnDmg = 1;
+                receiver.ApplyBurn(burnDmg, forceBurnDuration, 1f, weaponName);
             }
         }
     }

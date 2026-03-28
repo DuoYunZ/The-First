@@ -12,7 +12,15 @@ public enum PermanentUpgradeType
     MeleeAoeFlatDamage,         // 近战范围固定伤害 (为您的刀光量身定做)
     UnlockBladeEnergyProjectile,     // 解锁“刃气弹”机制
     ImproveBladeEnergyFrequency,   // 提升“刃气弹”触发频率
-    ImproveBladeEnergyRange        // 提升“刃气弹”距离/速度
+    ImproveBladeEnergyRange,       // 提升“刃气弹”距离/速度
+
+    // --- 角色技能树专用 ---
+    MaxHealthFlat,              // 最大生命值（固定值）
+    ArmorFlat,                  // 护甲（固定值）
+    MoveSpeedPercent,           // 移动速度（百分比）
+    CooldownReductionPercent,   // 全局冷却缩减（百分比）
+    EnergyGainPercent,          // 能量获取效率（百分比）
+    LifeStealPercent            // 伤害吸血（百分比）
 }
 
 // 这个结构体定义了单次升级的具体效果

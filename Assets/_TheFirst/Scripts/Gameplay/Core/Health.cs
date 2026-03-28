@@ -15,7 +15,7 @@ public class Health : MonoBehaviour
 
     private int _baseMaxHealth = 0;
 
-    private EnemyType enemyTypeData;
+    public EnemyType EnemyTypeData { get; private set; }
 
     [System.Serializable]
     public class HealthChangedEvent : UnityEvent<int, int> { }
@@ -153,7 +153,7 @@ public class Health : MonoBehaviour
     {
         maxHealth = initialMaxHealth;
         currentHealth = maxHealth;
-        this.enemyTypeData = typeData;
+        this.EnemyTypeData = typeData;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
     public void InitializeHealth(int initialMaxHealth)
@@ -280,37 +280,50 @@ public class Health : MonoBehaviour
             {
                 isUltimateHit = true;
             }
-
-            if (sourcePart == null)
+            // 检查龙卷风是否来自融合大招（火焰风暴等），阻止能量增加
+            if (!isUltimateHit && attacker != null)
             {
-                
-            }
-            else
-            {
-                
-
-                if (sourcePart.StatBlock == null) ;
-                else if (!sourcePart.StatBlock.usesProficiency) ;
-                else if (sourcePart.StatBlock.xpSource != WeaponXpSource.DamageDealt);
+                TornadoController tornado = attacker.GetComponent<TornadoController>();
+                if (tornado != null && tornado.isComboUltimate)
+                    isUltimateHit = true;
             }
 
-            // --- 【核心新增】造成伤害获得经验 ---
+
+
+            // --- 造成伤害获得经验/能量 ---
             if (!isUltimateHit && sourcePart != null && sourcePart.StatBlock != null &&
                 sourcePart.StatBlock.xpSource == WeaponXpSource.DamageDealt)
             {
                 float xp = remainingDamage * sourcePart.StatBlock.xpGainFactor;               
                 sourcePart.GainProficiencyXP(xp);
                 
-                // --- 【新增】触发XP粒子飞向技能图标 ---
+                // 触发XP粒子飞向技能图标
                 if (WeaponUI.Instance != null)
                 {
                     WeaponUI.Instance.SpawnXpParticlesToWeapon(sourcePart, hitPosition);
                 }
             }
+
             // ------------------------------------
 
             if (!string.IsNullOrEmpty(sourceWeaponName) && !isPlayerHealth && BattleStatisticsManager.Instance != null)
                 BattleStatisticsManager.Instance.AddDamage(sourceWeaponName, remainingDamage);
+
+            // --- 吸血处理：玩家对敌人造成伤害时回血 ---
+            if (!isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.lifeStealPercent > 0f)
+            {
+                int healAmount = Mathf.Max(1, Mathf.RoundToInt(remainingDamage * PlayerStats.Instance.lifeStealPercent));
+                // 找到玩家的 Health 组件
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    Health playerHealth = player.GetComponent<Health>();
+                    if (playerHealth != null && !playerHealth.IsDead)
+                    {
+                        playerHealth.Heal(healAmount);
+                    }
+                }
+            }
 
             // 跳字逻辑
             if (damagePopupPrefab != null)
@@ -324,8 +337,26 @@ public class Health : MonoBehaviour
 
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
-            if (impactSounds != null && impactSounds.Length > 0)
+            // 受击音效：优先使用攻击来源武器SO的hitSound，回退到Health自身的impactSounds
+            AudioClip hitClip = null;
+            if (sourcePart != null && sourcePart.StatBlock != null && sourcePart.StatBlock.hitSound != null)
+            {
+                hitClip = sourcePart.StatBlock.hitSound;
+            }
+
+            if (hitClip != null)
+            {
+                // 使用武器SO配置的命中音效
+                if (AudioManager.Instance != null)
+                    AudioManager.Instance.PlaySoundEffect(hitClip, sourcePart.StatBlock.fireSoundVolume);
+                else if (audioSource != null)
+                    audioSource.PlayOneShot(hitClip);
+            }
+            else if (impactSounds != null && impactSounds.Length > 0)
+            {
+                // 回退到旧的受击音效
                 audioSource.PlayOneShot(impactSounds[Random.Range(0, impactSounds.Length)]);
+            }
 
             if (isPlayerHealth && !IsDead) StartCoroutine(InvincibilitySequence());
 
@@ -438,10 +469,10 @@ public class Health : MonoBehaviour
         var enemyAI = GetComponent<EnemyAI>();
 
        
-        if (enemyTypeData != null && enemyTypeData.deathVfxPrefab != null)
+        if (EnemyTypeData != null && EnemyTypeData.deathVfxPrefab != null)
         {
             // 在当前物体的位置生成死亡特效
-            Instantiate(enemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
+            Instantiate(EnemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
         }
 
         if (destroyImmediately)
@@ -468,13 +499,13 @@ public class Health : MonoBehaviour
 
         // 3. (新逻辑) 掉落能量石
         // 检查: (是否可以掉落?)
-        if (GameManager.Instance == null || enemyTypeData == null) return; //
+        if (GameManager.Instance == null || EnemyTypeData == null) return; //
 
         List<EnergyStoneSO> lootTable = GameManager.Instance.energyStoneLootTable; //
         if (lootTable == null || lootTable.Count == 0) return; //
 
         // A. 掷骰子
-        float dropChance = enemyTypeData.energyStoneDropChance; //
+        float dropChance = EnemyTypeData.energyStoneDropChance; //
         if (Random.value <= dropChance)
         {
             // B. 随机选择一个石头 *数据*

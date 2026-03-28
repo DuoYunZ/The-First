@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI; // 引入UI命名空间
 using System.Collections; // <--- 添加这一行 (Add this line)
 using TMPro; // <--- 确保有这一行
@@ -28,6 +28,12 @@ public class UIManager : MonoBehaviour
 
     public Transform weaponUiContainer; // 拖入 Canvas 里的一个 Layout Group
     public GameObject weaponSlotPrefab; // 拖入上面做好的 Prefab
+
+    // 【新增】缓存战斗 UI 数据，用于语言切换时刷新
+    private int _cachedWaveNum;
+    private string _cachedWaveName = "";
+    private float _cachedNextWaveTime;
+    private int _cachedEnemiesRemaining;
     void Start()
     {
         if (PlayerProgressManager.Instance != null)
@@ -56,6 +62,26 @@ public class UIManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    void OnEnable()
+    {
+        LocalizationManager.OnLanguageChanged += RefreshAllText;
+    }
+
+    void OnDisable()
+    {
+        LocalizationManager.OnLanguageChanged -= RefreshAllText;
+    }
+
+    /// <summary>
+    /// 语言切换时调用，立即刷新所有当前显示的战斗 UI 文本
+    /// </summary>
+    private void RefreshAllText()
+    {
+        UpdateWaveNumber(_cachedWaveNum, _cachedWaveName);
+        UpdateNextWaveTimer(_cachedNextWaveTime);
+        UpdateEnemiesRemaining(_cachedEnemiesRemaining);
     }
 
     public void InitializeCombatUIReferences()
@@ -116,18 +142,24 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateWaveNumber(int waveNum, string waveName = "", WaveType type = WaveType.Normal)
     {
-        if (waveNumberText != null) waveNumberText.text = $"波次: {waveNum}" + (string.IsNullOrEmpty(waveName) ? "" : $" - {waveName}");
+        _cachedWaveNum = waveNum;
+        _cachedWaveName = waveName;
+        if (waveNumberText != null)
+            waveNumberText.text = string.IsNullOrEmpty(waveName)
+                ? LocalizationManager.T("ui.wave", waveNum)
+                : LocalizationManager.T("ui.wave_named", waveNum, waveName);
         // 可以根据 WaveType 改变UI风格等
     }
 
     public void UpdateNextWaveTimer(float time)
     {
+        _cachedNextWaveTime = time;
         if (nextWaveTimerText != null)
         {
             if (time > 0)
             {
                 nextWaveTimerText.gameObject.SetActive(true);
-                nextWaveTimerText.text = $"下一波: {Mathf.CeilToInt(time)}s";
+                nextWaveTimerText.text = LocalizationManager.T("ui.next_wave", Mathf.CeilToInt(time));
             }
             else
             {
@@ -138,12 +170,13 @@ public class UIManager : MonoBehaviour
 
     public void UpdateEnemiesRemaining(int count)
     {
+        _cachedEnemiesRemaining = count;
         if (enemiesRemainingText != null)
         {
             if (count > 0)
             {
                 enemiesRemainingText.gameObject.SetActive(true);
-                enemiesRemainingText.text = $"剩余敌人: {count}";
+                enemiesRemainingText.text = LocalizationManager.T("ui.enemies_remaining", count);
             }
             else
             {

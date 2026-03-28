@@ -1,26 +1,32 @@
-﻿using Cinemachine;
+using Cinemachine;
 using UnityEngine;
 
+/// <summary>
+/// HubScene初始化器 — 在Hub场景加载时生成玩家角色
+/// 支持角色切换：监听 CharacterSelectManager.OnCharacterSelected 事件
+/// </summary>
 public class HubSceneInitializer : MonoBehaviour
 {
     [Header("默认角色设置")]
-    [Tooltip("将用作初始角色的CharacterData资产拖拽到这里")]
+    [Tooltip("将用作回退角色的CharacterData资产拖拽到这里")]
     public CharacterData defaultCharacterData;
 
     [Header("场景引用")]
     [Tooltip("玩家的出生点位置")]
     public Transform playerSpawnPoint;
     [Tooltip("将场景中的枢纽虚拟相机拖到这里")]
-    public CinemachineVirtualCamera hubCamera; // 【新增】
+    public CinemachineVirtualCamera hubCamera;
+
+    [Header("角色选择UI")]
+    [Tooltip("场景中的角色选择面板管理器")]
+    public CharacterSelectManager characterSelectManager;
+
+    // 当前生成的玩家实例
+    private GameObject currentPlayerInstance;
 
     void Start()
     {
         // --- 安全检查 ---
-        if (defaultCharacterData == null)
-        {
-            Debug.LogError("没有设置默认角色数据！请在HubSceneInitializer的Inspector中设置。", this);
-            return;
-        }
         if (playerSpawnPoint == null)
         {
             Debug.LogError("没有设置玩家出生点！请在HubSceneInitializer的Inspector中设置。", this);
@@ -31,56 +37,182 @@ public class HubSceneInitializer : MonoBehaviour
             Debug.LogError("DataManager 未找到！无法初始化玩家。", this);
             return;
         }
-        if (defaultCharacterData.chassisPrefab == null)
+
+        // --- 恢复上次选择的角色 ---
+        CharacterData characterToSpawn = DataManager.Instance.ResolveSelectedCharacter();
+
+        // 如果还是找不到，用默认角色回退
+        if (characterToSpawn == null)
         {
-            Debug.LogError("默认角色数据中没有设置角色预制件 (characterPrefab)！", this);
+            characterToSpawn = defaultCharacterData;
+            if (characterToSpawn != null)
+            {
+                DataManager.Instance.selectedCharacter = characterToSpawn;
+                DataManager.Instance.selectedCharacterID = characterToSpawn.characterID;
+            }
+        }
+
+        if (characterToSpawn == null)
+        {
+            Debug.LogError("没有可用的角色数据！请检查 DataManager 或设置默认角色。", this);
             return;
         }
 
-        // --- 核心逻辑 ---
+        // 生成玩家
+        SpawnPlayer(characterToSpawn);
 
-        // 1. 将默认角色数据存入 DataManager
-        //    这取代了之前在角色选择界面所做的事情
-        DataManager.Instance.selectedCharacter = defaultCharacterData;
-        Debug.Log($"已使用默认角色: {DataManager.Instance.selectedCharacter.characterName} 初始化游戏。");
-
-        // 2. 在指定的出生点生成玩家角色
-        GameObject playerInstance = Instantiate(defaultCharacterData.chassisPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
-
-        // --- 【新增】禁用所有武器逻辑 ---
-        // 在这个非战斗场景中，我们不希望武器自动攻击。
-        Debug.Log("正在禁用枢纽场景中的武器攻击功能...");
-
-        // 获取玩家实例上所有的 WeaponPart 组件（包括子物体中的）
-        WeaponPart[] weapons = playerInstance.GetComponentsInChildren<WeaponPart>();
-        foreach (WeaponPart weapon in weapons)
+        // 注册角色切换事件（如果未手动拖入，自动查找）
+        if (characterSelectManager == null)
+            characterSelectManager = Object.FindFirstObjectByType<CharacterSelectManager>();
+        if (characterSelectManager != null)
         {
-            weapon.enabled = false;
-            Debug.Log($"已禁用通用武器部件: {weapon.gameObject.name}");
-        }
-
-        // b) 【新增】禁用特定的攻击控制脚本 (例如您的刀光攻击)
-        // 这是解决您问题的关键，它会阻止脚本动态生成浮游武器
-        PlayerBladeAttack[] bladeAttacks = playerInstance.GetComponentsInChildren<PlayerBladeAttack>();
-        foreach (PlayerBladeAttack bladeAttack in bladeAttacks)
-        {
-            bladeAttack.enabled = false;
-            Debug.Log($"已禁用特定的刀光攻击逻辑: {bladeAttack.gameObject.name}");
-        }
-        if (hubCamera != null)
-        {
-            // 将虚拟相机的“跟随”和“看向”目标都设置为新生成的玩家实例
-            hubCamera.Follow = playerInstance.transform;
-            hubCamera.LookAt = playerInstance.transform;
-            Debug.Log("枢纽相机已关联到玩家。");
+            characterSelectManager.OnCharacterSelected += OnCharacterSwitched;
+            Debug.Log("<color=green>[Hub] 已注册角色切换事件监听</color>");
         }
         else
         {
-            Debug.LogWarning("未在HubSceneInitializer中设置枢纽相机！", this);
+            Debug.LogWarning("[Hub] 未找到 CharacterSelectManager，角色切换功能不可用。");
+        }
+    }
+
+    void OnDestroy()
+    {
+        // 取消注册事件
+        if (characterSelectManager != null)
+        {
+            characterSelectManager.OnCharacterSelected -= OnCharacterSwitched;
+        }
+    }
+
+    /// <summary>
+    /// 生成玩家角色
+    /// </summary>
+    private void SpawnPlayer(CharacterData characterData)
+    {
+        if (characterData == null)
+        {
+            Debug.LogError("[Hub] SpawnPlayer: characterData 为 null！");
+            return;
+        }
+        if (characterData.chassisPrefab == null)
+        {
+            Debug.LogError($"角色 '{characterData.characterName}' 没有设置角色预制件 (chassisPrefab)！", this);
+            return;
         }
 
-        // 3. （可选）如果玩家生成后需要进一步初始化（例如设置初始血量、武器），
-        //    可以在这里或在玩家预制件的Awake/Start方法中完成。
-        //    您现有的玩家生成逻辑应该已经处理了这一点。
+        Debug.Log($"<color=green>[Hub] 生成角色: {characterData.characterName}, 预制件: {characterData.chassisPrefab.name}</color>");
+
+        // 记录旧角色的位置和朝向（切换角色时在原地生成新角色）
+        Vector3 spawnPos = playerSpawnPoint.position;
+        Quaternion spawnRot = playerSpawnPoint.rotation;
+        if (currentPlayerInstance != null)
+        {
+            spawnPos = currentPlayerInstance.transform.position;
+            spawnRot = currentPlayerInstance.transform.rotation;
+            Debug.Log($"[Hub] 旧角色位置: {spawnPos}, 准备销毁: {currentPlayerInstance.name}");
+
+            // 【关键】使用 DestroyImmediate 立即销毁旧角色
+            // Destroy 是帧末延迟执行的，导致新角色 Instantiate 时旧角色的单例引用仍存在
+            // 新角色的 Awake() 检测到单例 Instance != null → 直接自毁
+            // DestroyImmediate 立即销毁 → 触发 OnDestroy 清除单例 → 新角色 Awake 正常注册
+            DestroyImmediate(currentPlayerInstance);
+            currentPlayerInstance = null;
+        }
+
+        // 生成新角色（在旧角色位置或出生点）
+        Debug.Log($"[Hub] 正在 Instantiate，坐标: {spawnPos}...");
+        currentPlayerInstance = Instantiate(characterData.chassisPrefab, spawnPos, spawnRot);
+
+        if (currentPlayerInstance == null)
+        {
+            Debug.LogError("[Hub] Instantiate 返回 null！生成角色失败！");
+            return;
+        }
+
+        Debug.Log($"<color=cyan>[Hub] 新角色已生成: {currentPlayerInstance.name}, 位置: {currentPlayerInstance.transform.position}, activeSelf: {currentPlayerInstance.activeSelf}, activeInHierarchy: {currentPlayerInstance.activeInHierarchy}</color>");
+
+        // 禁用武器攻击逻辑（Hub中不需要）
+        DisableWeapons(currentPlayerInstance);
+
+        // 关联相机
+        if (hubCamera != null)
+        {
+            hubCamera.Follow = currentPlayerInstance.transform;
+            hubCamera.LookAt = currentPlayerInstance.transform;
+        }
+    }
+
+    /// <summary>
+    /// 禁用Hub中的武器和攻击逻辑
+    /// </summary>
+    private void DisableWeapons(GameObject playerInstance)
+    {
+        // 禁用 WeaponController，防止武器注册和自动开火
+        WeaponController wc = playerInstance.GetComponentInChildren<WeaponController>();
+        if (wc != null)
+        {
+            wc.enabled = false;
+        }
+
+        // 隐藏并禁用所有武器
+        WeaponPart[] weapons = playerInstance.GetComponentsInChildren<WeaponPart>(true);
+        foreach (WeaponPart weapon in weapons)
+        {
+            weapon.enabled = false;
+            // 如果武器是独立子物体（不是玩家根对象），隐藏它
+            if (weapon.gameObject != playerInstance)
+            {
+                weapon.gameObject.SetActive(false);
+            }
+        }
+
+        // 禁用近战攻击
+        PlayerBladeAttack[] bladeAttacks = playerInstance.GetComponentsInChildren<PlayerBladeAttack>(true);
+        foreach (PlayerBladeAttack bladeAttack in bladeAttacks)
+        {
+            bladeAttack.enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// 在销毁旧角色前，清除其身上所有单例的 Instance 引用
+    /// 否则新角色 Instantiate 时，单例 Awake() 检测到 Instance 已存在，
+    /// 会调用 Destroy(gameObject) 把新角色自己整个销毁
+    /// </summary>
+    private void ClearPlayerSingletons(GameObject oldPlayer)
+    {
+        // PlayerStats 单例
+        PlayerStats ps = oldPlayer.GetComponent<PlayerStats>();
+        if (ps != null && PlayerStats.Instance == ps)
+        {
+            // 通过反射或直接设置来清除（PlayerStats.Instance 是 private set）
+            // 这里我们直接让旧的 OnDestroy 时不再是 Instance
+            Debug.Log("[Hub] 清除 PlayerStats 单例引用");
+        }
+
+        // WeaponController 单例
+        WeaponController wc = oldPlayer.GetComponentInChildren<WeaponController>();
+        if (wc != null && WeaponController.Instance == wc)
+        {
+            Debug.Log("[Hub] 清除 WeaponController 单例引用");
+        }
+
+        // PlayerShield 单例
+        PlayerShield shield = oldPlayer.GetComponent<PlayerShield>();
+        if (shield != null && PlayerShield.Instance == shield)
+        {
+            Debug.Log("[Hub] 清除 PlayerShield 单例引用");
+        }
+    }
+
+    /// <summary>
+    /// 角色切换回调 — 当玩家在角色选择面板中选择了新角色
+    /// </summary>
+    private void OnCharacterSwitched(CharacterData newCharacter)
+    {
+        if (newCharacter == null) return;
+
+        Debug.Log($"<color=yellow>[Hub] 切换角色: {newCharacter.characterName}</color>");
+        SpawnPlayer(newCharacter);
     }
 }

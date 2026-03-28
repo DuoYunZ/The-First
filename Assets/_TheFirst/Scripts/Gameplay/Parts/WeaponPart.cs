@@ -261,8 +261,7 @@ public class WeaponPart : MonoBehaviour
             SetupOrbiters();
         }
         else if (StatBlock.behavior == WeaponBehaviorType.SummonDrone)
-        {
-            Debug.Log("[Activate检查] 检测到 SummonDrone，准备调用 SetupDrones..."); // <--- 这里的日志出了吗？
+        {           
             SetupDrones();
         }
         else if (StatBlock.behavior == WeaponBehaviorType.FlyingDagger) // <--- 【新增】
@@ -315,8 +314,7 @@ public class WeaponPart : MonoBehaviour
         currentStage = WeaponStage.Base;
         hasBranched = false;
         currentProficiencyXP = 0f;
-        CalculateNextLevelXP();
-        Debug.Log($"[武器激活] {StatBlock?.weaponName} 阶段:{currentStage} hasBranched:{hasBranched} 经验需求:{xpToNextLevel}");
+        CalculateNextLevelXP();        
 
         // --- 6. 自动注册分支选择事件 ---
         if (WeaponBranchManager.Instance != null)
@@ -337,8 +335,7 @@ public class WeaponPart : MonoBehaviour
         auraCollider = GetComponent<SphereCollider>();
         if (StatBlock == null) return;
 
-        Debug.Log($"[武器检查] 名字: {StatBlock.weaponName}, ID: '{StatBlock.weaponID}'");
-        // 【修改】只判断 ID，不再关心名字叫中文还是英文
+       
         if (StatBlock.weaponID == "Fireball" && IsMetaUnlocked("Fireball_Meta_StartEvolved"))
         {
             if (StatBlock.evolutionTarget != null)
@@ -350,7 +347,7 @@ public class WeaponPart : MonoBehaviour
         {
             if (StatBlock.evolutionTarget != null)
             {
-                Debug.Log("【局外加成】雷击初始进化生效！变身为闪电链");
+               
                 StatBlock = StatBlock.evolutionTarget;
             }
         }
@@ -359,7 +356,7 @@ public class WeaponPart : MonoBehaviour
             if (StatBlock.evolutionTarget != null)
             {
                 StatBlock = StatBlock.evolutionTarget;
-                Debug.Log("[WeaponPart] 冰锥术初始进化生效！");
+               
             }
         }
     }
@@ -384,7 +381,7 @@ public class WeaponPart : MonoBehaviour
         {
             if (StatBlock.evolutionTarget != null)
             {
-                Debug.Log("【局外加成】火球术初始进化生效！");
+               
                 StatBlock = StatBlock.evolutionTarget; // 直接替换数据蓝图
             }
         }
@@ -442,7 +439,7 @@ public class WeaponPart : MonoBehaviour
             // 原来是 localDamageBonus += 0.3f;
             // 现在改为加暴击率 (例如 +10% 或 +20%)
             localCritRateBonus += 0.2f;
-            Debug.Log("[Lightning] 暴击率升级生效 (+20%)");
+            
         }
 
         // 2. 麻痹概率 +10% (假设这是 Lv3 或 Lv5 节点)
@@ -450,7 +447,7 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Lightning_Meta_Stun"))
         {
             localCritRateBonus += 0.3f; 
-            Debug.Log("[Lightning] 进阶暴击/麻痹升级生效 (+30%)");
+            
         }
 
         // 如果还有其他升级(如范围、频率)，按同样方式写
@@ -462,14 +459,14 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Ice_Meta_Pierce"))
         {
             localPierceCountBonus += 1; // 假设你有这个变量，如果没有，请定义它
-            Debug.Log("[IceShard] 穿透升级生效 (+1)");
+           
         }
 
         // 2. 增加冰冻概率 (Lv3)
         if (IsMetaUnlocked("Ice_Meta_Freeze"))
         {
             localFreezeChanceBonus += 0.15f; // +15% 概率
-            Debug.Log("[IceShard] 冰冻概率升级生效 (+15%)");
+            
         }
     }
     private void ApplyMolotovMetaUpgrades()
@@ -479,7 +476,7 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Molotov_Meta_Damage"))
         {
             localDamageBonus += 0.5f;
-            Debug.Log("[Molotov] 局外伤害升级生效!");
+           
         }
 
         // 2. 冷却/攻速 (Cooldown / FireRate)
@@ -487,7 +484,7 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Molotov_Meta_Cooldown"))
         {
             localFireRateBonus += 0.5f;
-            Debug.Log("[Molotov] 局外冷却升级生效!");
+            
         }
 
         // 3. 范围 (Area)
@@ -495,7 +492,7 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Molotov_Meta_Area"))
         {
             localAreaBonus += 1f;
-            Debug.Log("[Molotov] 局外范围升级生效!");
+           
         }
 
         // 4. 持续时间 (Duration)
@@ -503,7 +500,7 @@ public class WeaponPart : MonoBehaviour
         if (IsMetaUnlocked("Molotov_Meta_Duration"))
         {
             localDurationBonus += 1f;
-            Debug.Log("[Molotov] 局外持续时间升级生效!");
+           
         }
     }
 
@@ -549,6 +546,9 @@ public class WeaponPart : MonoBehaviour
         if (isUltimateBuffActive) return; // BUFF型大招期间不积累能量
 
         float energyGain = damageAmount * StatBlock.energyGainPerDamage;
+        // 应用角色技能树的能量获取倍率
+        if (PlayerStats.Instance != null)
+            energyGain *= PlayerStats.Instance.energyGainMultiplier;
         currentEnergy = Mathf.Min(currentEnergy + energyGain, StatBlock.maxEnergy);
 
         // 通知 UI 更新
@@ -558,7 +558,7 @@ public class WeaponPart : MonoBehaviour
         if (IsEnergyFull)
         {
             OnEnergyFull?.Invoke(this);
-            Debug.Log($"<color=yellow>[能量满] {StatBlock.weaponName} 能量已满！可以释放大招！</color>");
+            
         }
     }
 
@@ -575,14 +575,13 @@ public class WeaponPart : MonoBehaviour
     private void HandleXpFull()
     {
         // [已弃用] 改为使用 LevelUpWeapon + UpgradeManager
-        Debug.LogWarning("[HandleXpFull] 此方法已弃用，请检查调用堆栈");
+       
     }
 
     // 外部调用：玩家选择分支后
     public void ApplyBranch(WeaponStatBlock branchStatBlock)
     {
-        Debug.Log($"<color=cyan>选择分支: {StatBlock.weaponName} → {branchStatBlock.weaponName}</color>");
-        
+               
         // 【新增】清理已存在的飞刀实例（进化/融合时需要重新生成新类型的飞刀）
         ClearActiveFlyingDaggers();
         
@@ -610,7 +609,7 @@ public class WeaponPart : MonoBehaviour
             if (dagger != null) Destroy(dagger);
         }
         activeFlyingDaggers.Clear();
-        Debug.Log("<color=yellow>[融合/进化] 清理了所有现存飞刀实例</color>");
+        
     }
     
     /// <summary>
@@ -622,7 +621,7 @@ public class WeaponPart : MonoBehaviour
         {
             Destroy(orbitalPivot.gameObject);
             orbitalPivot = null;
-            Debug.Log("<color=yellow>[融合/进化] 清理了光环实例</color>");
+           
         }
     }
 
@@ -678,7 +677,7 @@ public class WeaponPart : MonoBehaviour
         }
         */
 
-        Debug.Log($"<color=cyan>武器升级! {StatBlock.weaponName} Lv.{currentProficiencyLevel}</color>");
+       
         OnWeaponLevelUp?.Invoke(currentProficiencyLevel);
 
         // 【新增】武器升级时触发技能树卡片选择
@@ -695,7 +694,7 @@ public class WeaponPart : MonoBehaviour
 
     private void EvolveWeapon(WeaponStatBlock newBlock)
     {
-        Debug.Log($"<color=orange>武器进化！{StatBlock.weaponName} -> {newBlock.weaponName}</color>");
+        
 
         // 1. 替换数据
         StatBlock = newBlock;
@@ -731,7 +730,7 @@ public class WeaponPart : MonoBehaviour
                 xpToNextLevel = float.MaxValue; // 已进化，不需要更多经验
                 break;
         }
-        Debug.Log($"[经验需求计算] {StatBlock?.weaponName} 阶段:{currentStage} 经验需求:{xpToNextLevel}");
+       
     }
     void Update()
     {
@@ -795,8 +794,7 @@ public class WeaponPart : MonoBehaviour
         return baseCount + localBonus + globalBonus;
     }
     private void SetupAura()
-    {
-        Debug.Log($"<color=cyan>[SetupAura] 尝试生成光环: {StatBlock?.weaponName}</color>");
+    {       
 
         // === 详细调试日志 ===
         if (StatBlock == null) 
@@ -1752,10 +1750,25 @@ public class WeaponPart : MonoBehaviour
     #region Private Helper Methods
     private void PlayFireSound()
     {
-        if (fireSounds != null && fireSounds.Length > 0 && audioSource != null)
+        // 优先从 SO 读取音效（进化/分支后自动跟随新数据）
+        AudioClip[] clips = (StatBlock != null && StatBlock.fireSounds != null && StatBlock.fireSounds.Length > 0)
+            ? StatBlock.fireSounds
+            : fireSounds; // 回退到预制件上的旧字段
+
+        if (clips != null && clips.Length > 0)
         {
-            AudioClip clipToPlay = fireSounds[Random.Range(0, fireSounds.Length)];
-            audioSource.PlayOneShot(clipToPlay);
+            AudioClip clipToPlay = clips[Random.Range(0, clips.Length)];
+            float volume = (StatBlock != null) ? StatBlock.fireSoundVolume : 1.0f;
+
+            // 优先使用全局 AudioManager（2D音效），回退到本地 AudioSource（3D音效）
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySoundEffect(clipToPlay, volume);
+            }
+            else if (audioSource != null)
+            {
+                audioSource.PlayOneShot(clipToPlay, volume);
+            }
         }
     }
 
@@ -1784,8 +1797,7 @@ public class WeaponPart : MonoBehaviour
 
             // 基础穿透 + 玩家全局穿透 + 能量石穿透 + 局外升级穿透(localPierceCountBonus)
             int finalPierceCount = StatBlock.basePierceCount + PlayerStats.Instance.bonusPierceCount + stonePierceBonus + localPierceCountBonus; // <--- 加上 localPierceCountBonus
-            Debug.Log($"<color=orange>[穿透调试-发射] {StatBlock.weaponName} finalPierceCount={finalPierceCount} (base:{StatBlock.basePierceCount} + global:{PlayerStats.Instance.bonusPierceCount} + stone:{stonePierceBonus} + local:{localPierceCountBonus})</color>");
-
+           
             // 特殊逻辑：极寒冰锥 (进化后) 无限穿透
             // 可以判断 ID (ExtremeIceShard) 或者名字
             if (StatBlock.weaponID == "ExtremeIceShard")
@@ -3106,7 +3118,6 @@ public class WeaponPart : MonoBehaviour
 
     public void RefreshWeaponStateFromStone()
     {
-        Debug.Log($"<color=cyan>[WeaponPart] RefreshWeaponStateFromStone 被调用, behavior={StatBlock.behavior}, weapon={StatBlock.weaponName}, daggerExtraCount={daggerExtraCount}, daggerCountDmgPenalty={daggerCountDmgPenalty}</color>");
         if (StatBlock.behavior == WeaponBehaviorType.Aura) RefreshAura();
         if (StatBlock.behavior == WeaponBehaviorType.Orbital) RefreshOrbiters();
 

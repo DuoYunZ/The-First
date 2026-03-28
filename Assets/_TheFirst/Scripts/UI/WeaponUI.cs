@@ -1,4 +1,4 @@
-﻿// WeaponUI.cs
+// WeaponUI.cs
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -74,6 +74,22 @@ public class WeaponUI : MonoBehaviour
     void Start()
     {
         InitializeSlots();
+        // 延迟刷新，等待 WeaponController 就绪
+        StartCoroutine(DelayedUpdateIcons());
+    }
+
+    /// <summary>
+    /// 等待 WeaponController 初始化完成后再刷新图标
+    /// </summary>
+    private System.Collections.IEnumerator DelayedUpdateIcons()
+    {
+        // 最多等 3 秒
+        float timeout = 3f;
+        while (WeaponController.Instance == null && timeout > 0f)
+        {
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
         UpdateWeaponIcons();
     }
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic; // 用于 List
+using System.Collections.Generic; // 用于 List
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI; // 用于 UI 元素
@@ -47,6 +47,25 @@ public class FusionUIManager : MonoBehaviour
             fuseButton.onClick.AddListener(OnFuseClicked);
 
         fusionPanel.SetActive(false); // 默认隐藏
+    }
+
+    void OnEnable()
+    {
+        LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    void OnDisable()
+    {
+        LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    // 语言切换时，如果融合面板正在显示，立即刷新文本
+    private void OnLanguageChanged()
+    {
+        if (fusionPanel != null && fusionPanel.activeSelf)
+        {
+            UpdateWeaponDisplay();
+        }
     }
 
     /// <summary>
@@ -103,7 +122,7 @@ public class FusionUIManager : MonoBehaviour
         if (availableWeapons.Count == 0)
         {
             // (处理没有武器的罕见情况)
-            weaponNameText.text = "没有武器";
+            weaponNameText.text = LocalizationManager.T("ui.no_weapon");
             weaponSlotText.text = "";
             weaponIcon.sprite = null; // (或一个默认的 'X' 图标)
             fuseButton.interactable = false; // 禁用融合按钮
@@ -117,17 +136,20 @@ public class FusionUIManager : MonoBehaviour
         if (selectedWeapon == null || selectedWeapon.StatBlock == null) return; //
 
         // 更新UI
-        weaponNameText.text = selectedWeapon.StatBlock.weaponName; //                                                         
+        string wid = selectedWeapon.StatBlock.weaponID;
+        weaponNameText.text = !string.IsNullOrEmpty(wid)
+            ? LocalizationManager.T("weapon." + wid)
+            : selectedWeapon.StatBlock.weaponName;
                                                                  
         weaponIcon.sprite = selectedWeapon.StatBlock.weaponIcon; 
 
         if (selectedWeapon.currentStone != null) //
         {
-            weaponSlotText.text = $"[已镶嵌: {selectedWeapon.currentStone.stoneName}]"; //
+            weaponSlotText.text = LocalizationManager.T("ui.socketed", selectedWeapon.currentStone.stoneName);
         }
         else
         {
-            weaponSlotText.text = "[ 空插槽 ]"; //
+            weaponSlotText.text = LocalizationManager.T("ui.empty_slot");
         }
     }
 

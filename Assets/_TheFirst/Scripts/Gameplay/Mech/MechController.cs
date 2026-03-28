@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 
@@ -10,14 +10,21 @@ public class MechController : MonoBehaviour
     [Header("旋转设置")]
     public float rotationSpeed = 15f;
 
-    [Header("冲刺设置")] // <--- NEW SECTION
+    [Header("冲刺设置")]
     public float dashForce = 20f;
     public float dashDuration = 0.2f;
+    [Tooltip("每格能量的充能时间（秒）")]
     public float dashCooldown = 2f;
+    [Tooltip("最大冲刺充能格数（不同角色可设为1~3）")]
+    public int maxDashCharges = 2;
     [Tooltip("无敌时间，应小于或等于冲刺持续时间")]
     public float invincibilityDuration = 0.2f;
-    public AudioClip[] dashSfx; // <--- 新增: 冲刺音效数组
-    public GameObject dashVfxPrefab; // <--- 新增: 冲刺特效预制件
+    public AudioClip[] dashSfx; // 冲刺音效数组
+    public GameObject dashVfxPrefab; // 冲刺特效预制件
+
+    [Header("跑步烟尘特效")]
+    [Tooltip("挂在角色脚底的烟尘粒子系统")]
+    public ParticleSystem runDustVfx;
 
     [Header("音效设置")]
     [Tooltip("走路音效剪辑数组，可以放多个以增加随机性")]
@@ -34,7 +41,33 @@ public class MechController : MonoBehaviour
     private PlayerControls playerControls;
 
     private bool isDashing = false;
-    private float lastDashTime = -999f;
+
+    // 冲刺充能格系统
+    private int currentCharges;
+    private float[] chargeTimers; // 每格独立的充能计时器
+
+    /// <summary>
+    /// 当前可用的冲刺充能格数
+    /// </summary>
+    public int CurrentDashCharges => currentCharges;
+    /// <summary>
+    /// 最大冲刺充能格数
+    /// </summary>
+    public int MaxDashCharges => maxDashCharges;
+    /// <summary>
+    /// 获取指定格子的充能进度 (0~1)，1 = 已充满
+    /// </summary>
+    public float GetChargeProgress(int index)
+    {
+        if (index < 0 || index >= maxDashCharges) return 0;
+        if (index < currentCharges) return 1f; // 已充满
+        if (index == currentCharges && chargeTimers != null && index < chargeTimers.Length)
+        {
+            // 正在充能的那一格
+            return chargeTimers[index] / dashCooldown;
+        }
+        return 0f; // 还没轮到充能
+    }
 
     void Awake()
     {
@@ -68,6 +101,10 @@ public class MechController : MonoBehaviour
         {
             Debug.LogError("在玩家身上找不到AudioSource组件!", this);
         }
+
+        // 初始化充能格
+        currentCharges = maxDashCharges;
+        chargeTimers = new float[maxDashCharges];
     }
 
     private void OnEnable()
@@ -115,6 +152,28 @@ public class MechController : MonoBehaviour
 
         // 【新增】每帧更新动画参数
         UpdateAnimation();
+
+        // 冲刺充能恢复
+        UpdateDashCharges();
+    }
+
+    /// <summary>
+    /// 每帧更新冲刺充能格，按顺序一格一格充
+    /// </summary>
+    void UpdateDashCharges()
+    {
+        if (currentCharges >= maxDashCharges) return; // 已满，无需充能
+
+        // 当前正在充能的格子索引 = currentCharges
+        int chargingIndex = currentCharges;
+        chargeTimers[chargingIndex] += Time.deltaTime;
+
+        if (chargeTimers[chargingIndex] >= dashCooldown)
+        {
+            // 这一格充满了
+            chargeTimers[chargingIndex] = 0f;
+            currentCharges++;
+        }
     }
 
     void FixedUpdate()
@@ -126,9 +185,15 @@ public class MechController : MonoBehaviour
     }
     private void PerformDash(InputAction.CallbackContext context)
     {
-        // 检查冷却时间和是否已在冲刺
-        if (!isDashing && Time.time >= lastDashTime + dashCooldown)
+        // 检查是否有可用充能格且未在冲刺中
+        if (!isDashing && currentCharges > 0)
         {
+            currentCharges--;
+            // 重置当前及所有更高索引的计时器（防止残留进度导致瞬间充满）
+            for (int i = currentCharges; i < maxDashCharges; i++)
+            {
+                chargeTimers[i] = 0f;
+            }
             StartCoroutine(DashCoroutine());
         }
     }
@@ -136,7 +201,6 @@ public class MechController : MonoBehaviour
     {
         // 1. 设置状态
         isDashing = true;
-        lastDashTime = Time.time;
 
         // 启用无敌状态（先开始）
         if (PlayerStats.Instance != null)
@@ -238,6 +302,19 @@ public class MechController : MonoBehaviour
 
         // 将移动状态传递给 Animator 的 "isMoving" 参数
         animator.SetBool("isMoving", isMoving);
+
+        // 控制跑步烟尘特效
+        if (runDustVfx != null)
+        {
+            if (isMoving && !runDustVfx.isPlaying)
+            {
+                runDustVfx.Play();
+            }
+            else if (!isMoving && runDustVfx.isPlaying)
+            {
+                runDustVfx.Stop();
+            }
+        }
     }
     public void PlayFootstepSound()
     {
