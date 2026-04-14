@@ -27,7 +27,6 @@ public class GrassInteractionManager : MonoBehaviour
 
     void Awake() // 使用 Awake 确保在任何 Start 和第一帧 Update 之前执行
     {
-        Debug.Log("GrassInteractionManager: Awake - Initializing global shader variables for grass interaction to safe defaults.");
         // 设置一个明确的“无交互”状态
         Shader.SetGlobalFloat(InteractorCountID, 0.0f);
 
@@ -91,7 +90,6 @@ public class GrassInteractionManager : MonoBehaviour
     // 在不需要交互时（例如切换场景或游戏结束），可能需要清除这些全局变量
     void OnDisable()
     {
-        Debug.Log("GrassInteractionManager: OnDisable - Resetting global shader variables for grass interaction.");
         Shader.SetGlobalFloat(InteractorCountID, 0.0f);
         Vector4 inactiveInteractorData = new Vector4(0, -10000, 0, 0);
         Shader.SetGlobalVector(InteractorPosRadius0ID, inactiveInteractorData);

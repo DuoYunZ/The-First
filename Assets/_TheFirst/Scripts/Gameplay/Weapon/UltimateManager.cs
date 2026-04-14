@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -81,7 +81,6 @@ public class UltimateManager : MonoBehaviour
 
         if (queue.Count == 0)
         {
-            Debug.Log("[大招] 队列为空，无法释放");
             return;
         }
 
@@ -116,7 +115,6 @@ public class UltimateManager : MonoBehaviour
         // 循环
         selectedWeaponIndex = ((selectedWeaponIndex % fullyChargedWeapons.Count) + fullyChargedWeapons.Count) % fullyChargedWeapons.Count;
 
-        Debug.Log($"[大招] 切换主武器: {fullyChargedWeapons[selectedWeaponIndex].StatBlock.weaponName}");
     }
 
     // --- 内部方法 ---
@@ -165,8 +163,6 @@ public class UltimateManager : MonoBehaviour
 
     private void ReleaseSingleUltimate(WeaponPart weapon)
     {
-        Debug.Log($"<color=orange>[大招] 释放 {weapon.StatBlock.weaponName} 的大招！</color>");
-
         // 生成大招效果
         if (weapon.StatBlock.ultimateEffectPrefab != null)
         {
@@ -259,7 +255,6 @@ public class UltimateManager : MonoBehaviour
                         StartCoroutine(BladeLifeStealBuff(lifeStealBonus, bladeBuffDuration));
                     }
 
-                    Debug.Log($"<color=red>[大招] 嗜血斩！吸血 +{lifeStealBonus * 100}%，持续 {bladeBuffDuration} 秒</color>");
                 }
                 else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Hurricane"))
                 {
@@ -310,7 +305,6 @@ public class UltimateManager : MonoBehaviour
                         StartCoroutine(HurricaneSpeedBuff(moveSpeedBonus, hurricaneBuffDuration));
                     }
 
-                    Debug.Log($"<color=green>[大招] 风暴之怒！推开 {enemies.Length} 个敌人，移速 +{moveSpeedBonus:P0}，持续 {hurricaneBuffDuration} 秒</color>");
                 }
                 else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("Grenade"))
                 {
@@ -342,7 +336,6 @@ public class UltimateManager : MonoBehaviour
                         DealAreaDamage(targetPos, ultRadius, ultDamage, 0f);
                     }
 
-                    Debug.Log($"<color=orange>[大招] 毁灭轰炸！目标距离: {closestDist:F1}，伤害: {ultDamage}，半径: {ultRadius}</color>");
                 }
                 else if (weapon.StatBlock.weaponID != null && weapon.StatBlock.weaponID.Contains("ChainLightning"))
                 {
@@ -370,7 +363,6 @@ public class UltimateManager : MonoBehaviour
 
                     if (ultimateGo != null) Destroy(ultimateGo, 3f);
 
-                    Debug.Log($"<color=cyan>[大招] 雷神之怒！弹射{ultChainCount}次，伤害: {ultChainDamage}</color>");
                 }
                 else if (weapon.StatBlock.behavior == WeaponBehaviorType.Aura)
                 {
@@ -404,7 +396,6 @@ public class UltimateManager : MonoBehaviour
                         weapon.isUltimateBuffActive = true;
                         StartCoroutine(ClearUltimateBuffFlag(weapon, buffDuration));
 
-                        Debug.Log($"<color=yellow>[大招] 雷霆之力！暴击率 +{buffCritBonus:P0}，持续 {buffDuration} 秒</color>");
                     }
                     else if (supportAura != null)
                     {
@@ -433,7 +424,6 @@ public class UltimateManager : MonoBehaviour
                         weapon.isUltimateBuffActive = true;
                         StartCoroutine(ClearUltimateBuffFlag(weapon, lifeSiphonDuration));
 
-                        Debug.Log($"<color=green>[大招] 生命汲取！持续 {lifeSiphonDuration} 秒，范围x1.5 + 光环内击杀恢复1%最大HP</color>");
                     }
                     else
                     {
@@ -473,7 +463,6 @@ public class UltimateManager : MonoBehaviour
 
                     StartCoroutine(OrbiterSpeedBuff(weapon, activeOrbiters, speedMultiplier, buffDuration));
 
-                    Debug.Log($"<color=white>[大招] 涡轮驱动！旋转速度x{speedMultiplier}，持续 {buffDuration} 秒</color>");
                 }
                 else if (weapon.StatBlock.behavior == WeaponBehaviorType.FlyingDagger)
                 {
@@ -517,7 +506,6 @@ public class UltimateManager : MonoBehaviour
                     weapon.isUltimateBuffActive = true;
                     StartCoroutine(ClearUltimateBuffFlag(weapon, daggerBuffDuration));
 
-                    Debug.Log($"<color=red>[大招] 灵刃风暴！激活{activatedCount}把飞刀，{daggerBuffDuration}秒内速度x3 + 伤害x2 + 体积x2</color>");
                 }
                 else if (weapon.StatBlock.behavior == WeaponBehaviorType.FrostNova)
                 {
@@ -551,7 +539,6 @@ public class UltimateManager : MonoBehaviour
                         // 碰撞体使用预制体自带的 Collider，不再代码中添加
                     }
 
-                    Debug.Log($"<color=cyan>[大招] 冰爽之星！前方{spawnDistance}米处生成，冰冻半径{weapon.StatBlock.ultimateRadius}，伤害{weapon.StatBlock.ultimateDamage}</color>");
                 }
                 else
                 {
@@ -593,7 +580,6 @@ public class UltimateManager : MonoBehaviour
                 {
                     weapon.StartCoroutine(weapon.UltimateChainLightning(chainTarget, ultChainCount, ultChainDamage, ultChainRange));
                 }
-                Debug.Log($"<color=cyan>[大招] 雷神之怒！弹射{ultChainCount}次，伤害: {ultChainDamage}</color>");
             }
             else if (weapon.StatBlock.behavior == WeaponBehaviorType.Orbital)
             {
@@ -611,7 +597,6 @@ public class UltimateManager : MonoBehaviour
                     orb.selfRotationSpeed *= speedMultiplier;
                 }
                 StartCoroutine(OrbiterSpeedBuff(weapon, activeOrbiters, speedMultiplier, buffDuration));
-                Debug.Log($"<color=white>[大招] 涡轮驱动！旋转速度x{speedMultiplier}，持续 {buffDuration} 秒（无特效）</color>");
             }
             else if (weapon.StatBlock.behavior == WeaponBehaviorType.Landmine)
             {
@@ -647,7 +632,6 @@ public class UltimateManager : MonoBehaviour
                         }
                     }
                 }
-                Debug.Log($"<color=red>[大招] 矩阵雷区！布置了 {mineCount} 颗高爆地雷</color>");
             }
             else
             {
@@ -676,8 +660,6 @@ public class UltimateManager : MonoBehaviour
 
     private void ReleaseComboUltimate(SO_ComboUltimate combo, WeaponPart weaponA, WeaponPart weaponB)
     {
-        Debug.Log($"<color=red>[连携技] 释放 {combo.comboName}！</color>");
-
         // === 【剑士融合大招】检测是否有斩击武器参与 ===
         WeaponController controller = WeaponController.Instance;
         bool isBladeCombo = false;
@@ -723,8 +705,6 @@ public class UltimateManager : MonoBehaviour
                 if (targetMode != BladeMode.Normal)
                 {
                     bladeAttack.SetBladeMode(targetMode);
-                    Debug.Log($"<color=yellow>[连携技] 剑士融合！斩击切换为 {targetMode} 模式</color>");
-
                     // === 根据模式附加10秒BUFF效果 ===
                     float buffDuration = 10f;
                     if (PlayerStats.Instance != null)
@@ -810,7 +790,6 @@ public class UltimateManager : MonoBehaviour
                         );
                     }
                 }
-                Debug.Log($"<color=red>[连携技] 烈焰炮台阵！生成了 {turretCount} 个喷火塔</color>");
             }
             else
             {
@@ -824,7 +803,6 @@ public class UltimateManager : MonoBehaviour
                 {
                     tornado.Setup(combo.comboDamage, weaponA);
                     tornado.isComboUltimate = true; // 标记为融合大招，阻止能量增加
-                    Debug.Log($"<color=green>[连携技] 初始化龙卷风: 伤害={combo.comboDamage}, 来源={weaponA.StatBlock.weaponName}</color>");
                 }
             }
         }
@@ -844,7 +822,6 @@ public class UltimateManager : MonoBehaviour
                 supportAura.isRadiusBoostActive = true;
                 supportAura.isLifeSiphonActive = true;
                 StartCoroutine(AuraPushBuff(supportAura, comboDuration));
-                Debug.Log($"<color=red>[连携技] 光环风暴！{comboDuration}秒内推开敌人 + 范围x1.5 + 击杀恢复</color>");
             }
 
             // 阻止 Aura 武器能量积累
@@ -888,7 +865,6 @@ public class UltimateManager : MonoBehaviour
             daggerWeapon.isUltimateBuffActive = true;
             StartCoroutine(ClearUltimateBuffFlag(daggerWeapon, comboDuration));
 
-            Debug.Log($"<color=orange>[连携技] 炎刃流星！{comboDuration}秒内火焰伤害x3 + 速度x3 + 体积x2</color>");
         }
 
         // === 检查是否有 Orbital+ChainLightning 参与连携 → 雷暴漩涡 ===
@@ -933,7 +909,6 @@ public class UltimateManager : MonoBehaviour
             StartCoroutine(ClearUltimateBuffFlag(orbitalWeapon, comboDuration));
             StartCoroutine(ClearUltimateBuffFlag(lightningWeapon, comboDuration));
 
-            Debug.Log($"<color=yellow>[连携技] 雷暴漩涡！{comboDuration}秒内 环绕替换为大招Orbit x{speedMultiplier} + 吸附 + 闪电链</color>");
         }
 
         // 一次性范围伤害（初始爆发）
@@ -977,7 +952,6 @@ public class UltimateManager : MonoBehaviour
                 }
             }
         }
-        Debug.Log($"[大招伤害] 范围{radius} 伤害{damage} 冰冻{freezeDuration}s 命中{hits.Length}个目标");
     }
 
     /// <summary>
@@ -986,12 +960,9 @@ public class UltimateManager : MonoBehaviour
     private System.Collections.IEnumerator HurricaneSpeedBuff(float bonus, float duration)
     {
         PlayerStats.Instance.moveSpeedMultiplier += bonus;
-        Debug.Log($"<color=green>[风暴之怒] 移速 +{bonus:P0}，当前倍率: {PlayerStats.Instance.moveSpeedMultiplier}</color>");
-
         yield return new WaitForSeconds(duration);
 
         PlayerStats.Instance.moveSpeedMultiplier -= bonus;
-        Debug.Log($"<color=green>[风暴之怒] BUFF 结束，移速恢复为: {PlayerStats.Instance.moveSpeedMultiplier}</color>");
     }
 
     /// <summary>
@@ -1000,12 +971,9 @@ public class UltimateManager : MonoBehaviour
     private System.Collections.IEnumerator BladeLifeStealBuff(float bonus, float duration)
     {
         PlayerStats.Instance.lifeStealPercent += bonus;
-        Debug.Log($"<color=red>[嗜血斩] 吸血 +{bonus * 100}%，当前吸血: {PlayerStats.Instance.lifeStealPercent * 100}%</color>");
-
         yield return new WaitForSeconds(duration);
 
         PlayerStats.Instance.lifeStealPercent -= bonus;
-        Debug.Log($"<color=red>[嗜血斩] BUFF 结束，吸血恢复为: {PlayerStats.Instance.lifeStealPercent * 100}%</color>");
     }
 
     /// <summary>
@@ -1218,7 +1186,6 @@ public class UltimateManager : MonoBehaviour
                 AttackType.Standard, null, null, weapon.StatBlock.weaponName);
         }
 
-        Debug.Log($"<color=orange>[毁灭轰炸] 爆炸！命中 {hits.Length} 个敌人，伤害 {damage}</color>");
     }
 
     /// <summary>
@@ -1247,7 +1214,6 @@ public class UltimateManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"<color=white>[大招] 涡轮驱动BUFF结束，旋转速度已恢复</color>");
     }
 
     /// <summary>
@@ -1260,7 +1226,6 @@ public class UltimateManager : MonoBehaviour
         {
             aura.isLifeSiphonActive = false;
             aura.isRadiusBoostActive = false;
-            Debug.Log("<color=green>[大招] 生命汲取效果结束（范围恢复正常）</color>");
         }
     }
 
@@ -1275,7 +1240,6 @@ public class UltimateManager : MonoBehaviour
             aura.isPushActive = false;
             aura.isRadiusBoostActive = false;
             aura.isLifeSiphonActive = false;
-            Debug.Log("<color=green>[连携技] 光环风暴效果结束</color>");
         }
     }
 
@@ -1294,7 +1258,6 @@ public class UltimateManager : MonoBehaviour
                 dagger.RemoveUltimateVfx(); // 移除大招特效
             }
         }
-        Debug.Log("<color=red>[大招] 灵刃风暴效果结束</color>");
     }
 
     /// <summary>
@@ -1313,7 +1276,6 @@ public class UltimateManager : MonoBehaviour
                 dagger.RemoveUltimateVfx(); // 移除大招特效
             }
         }
-        Debug.Log("<color=orange>[连携技] 炎刃流星效果结束</color>");
     }
 
     /// <summary>
@@ -1325,7 +1287,6 @@ public class UltimateManager : MonoBehaviour
         if (weapon != null)
         {
             weapon.isUltimateBuffActive = false;
-            Debug.Log($"<color=white>[大招] {weapon.StatBlock?.weaponName} BUFF结束，恢复能量积累</color>");
         }
     }
 }

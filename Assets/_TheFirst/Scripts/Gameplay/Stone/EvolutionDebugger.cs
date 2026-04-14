@@ -15,8 +15,6 @@ public class EvolutionDebugger : MonoBehaviour
         {
             if (WeaponController.Instance != null)
             {
-                Debug.Log($"<color=yellow>[测试] 按下T键 -> 强行提升所有武器等级...</color>");
-
                 // 遍历所有持有的武器数据 (OwnedWeapon)
                 foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
                 {
@@ -35,7 +33,6 @@ public class EvolutionDebugger : MonoBehaviour
                     {
                         // 强制把 WeaponPart 里的等级也同步了
                         part.currentLevel = ownedWrapper.currentLevel;
-                        Debug.Log($"[测试] {part.StatBlock.weaponName} 已强制升级到 Lv.{part.currentLevel}");
                     }
                 }
 
@@ -49,8 +46,6 @@ public class EvolutionDebugger : MonoBehaviour
         {
             if (WeaponController.Instance != null && stoneToGive != null)
             {
-                Debug.Log($"<color=cyan>[测试] 按下Y键 -> 给所有武器插入 {stoneToGive.stoneName}</color>");
-
                 foreach (var ownedWrapper in WeaponController.Instance.ownedWeapons)
                 {
                     // 【关键修复】通过 assignedPart 找到实体，调用融合方法

@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.Audio;
 
 public class AudioManager : MonoBehaviour
 {
@@ -15,6 +17,18 @@ public class AudioManager : MonoBehaviour
     public float bgmVolume = 0.5f;
     [Tooltip("BGM 切换时的淡入淡出时长（秒）")]
     public float bgmFadeDuration = 1.0f;
+
+    [Header("音效防爆设置")]
+    [Tooltip("同一音效的最小播放间隔（秒），防止大量拾取时音频通道饱和")]
+    public float sfxCooldown = 0.05f;
+    [Tooltip("每帧最多播放的音效数量")]
+    public int maxSfxPerFrame = 8;
+
+    [Header("音频混合器组")]
+    [Tooltip("BGM 输出混合器组（对应 AudioMixer 中的 BGM 通道）")]
+    public AudioMixerGroup bgmMixerGroup;
+    [Tooltip("SFX 输出混合器组（对应 AudioMixer 中的 SFX 通道）")]
+    public AudioMixerGroup sfxMixerGroup;
 
     [Header("场景 BGM 映射")]
     [Tooltip("配置每个场景对应的 BGM")]
@@ -34,6 +48,11 @@ public class AudioManager : MonoBehaviour
 
     // 用于快速查找的字典
     private Dictionary<string, SceneBgmEntry> bgmLookup = new Dictionary<string, SceneBgmEntry>();
+
+    // 音效冷却追踪
+    private Dictionary<AudioClip, float> sfxLastPlayTime = new Dictionary<AudioClip, float>();
+    private int sfxPlayedThisFrame = 0;
+    private int lastSfxFrame = -1;
     private Coroutine fadeCoroutine;
 
     void Awake()
@@ -48,12 +67,14 @@ public class AudioManager : MonoBehaviour
             // 音效音源
             sfxSource = gameObject.AddComponent<AudioSource>();
             sfxSource.spatialBlend = 0; // 确保是2D音效
+            if (sfxMixerGroup != null) sfxSource.outputAudioMixerGroup = sfxMixerGroup;
 
             // BGM 音源
             bgmSource = gameObject.AddComponent<AudioSource>();
             bgmSource.spatialBlend = 0;
             bgmSource.loop = true;
             bgmSource.volume = bgmVolume;
+            if (bgmMixerGroup != null) bgmSource.outputAudioMixerGroup = bgmMixerGroup;
 
             // 构建查找字典
             BuildBgmLookup();
@@ -185,14 +206,30 @@ public class AudioManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 播放一次性音效（2D）
+    /// 播放一次性音效（2D），带冷却防爆机制
     /// </summary>
     public void PlaySoundEffect(AudioClip clip, float volumeScale = 1.0f)
     {
-        if (clip != null && sfxSource != null)
+        if (clip == null || sfxSource == null) return;
+
+        // 每帧播放数量限制
+        if (Time.frameCount != lastSfxFrame)
         {
-            sfxSource.PlayOneShot(clip, volumeScale);
+            lastSfxFrame = Time.frameCount;
+            sfxPlayedThisFrame = 0;
         }
+        if (sfxPlayedThisFrame >= maxSfxPerFrame) return;
+
+        // 同一音效冷却检查
+        float now = Time.unscaledTime;
+        if (sfxLastPlayTime.TryGetValue(clip, out float lastTime))
+        {
+            if (now - lastTime < sfxCooldown) return;
+        }
+
+        sfxLastPlayTime[clip] = now;
+        sfxPlayedThisFrame++;
+        sfxSource.PlayOneShot(clip, volumeScale);
     }
 
     /// <summary>

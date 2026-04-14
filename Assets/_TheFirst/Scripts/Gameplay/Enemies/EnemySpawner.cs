@@ -220,8 +220,9 @@ public class EnemySpawner : MonoBehaviour
         }
         float baseHealth, baseDamage, baseSpeed;
         Vector3 scale = Vector3.one;
+        bool spawnAsElite = false; // 追踪是否为精英怪
         if (group.overrideStats) { baseHealth = type.baseHealth * group.statOverrides.healthMultiplier; baseDamage = type.baseDamage * group.statOverrides.damageMultiplier; baseSpeed = type.baseSpeed * group.statOverrides.speedMultiplier; scale = group.statOverrides.scale; }
-        else if (group.isElite && type.canBeElite) { baseHealth = type.baseHealth * type.eliteHealthMultiplier; baseDamage = type.baseDamage * type.eliteDamageMultiplier; baseSpeed = type.baseSpeed * type.eliteSpeedMultiplier; scale = type.eliteScale; }
+        else if (group.isElite && type.canBeElite) { baseHealth = type.baseHealth * type.eliteHealthMultiplier; baseDamage = type.baseDamage * type.eliteDamageMultiplier; baseSpeed = type.baseSpeed * type.eliteSpeedMultiplier; scale = type.eliteScale; spawnAsElite = true; }
         else { baseHealth = type.baseHealth; baseDamage = type.baseDamage; baseSpeed = type.baseSpeed; }
         float finalHealth = baseHealth * (1f + (waveNum - 1) * healthG);
         float finalDamage = baseDamage * (1f + (waveNum - 1) * damageG);
@@ -238,7 +239,7 @@ public class EnemySpawner : MonoBehaviour
                 StraightMoverAI moverAI = enemyGO.GetComponent<StraightMoverAI>();
                 if (moverAI != null) { moverAI.Initialize(finalSpeed, type.lifetime, moveDirection, Mathf.RoundToInt(finalDamage)); }
                 else { Debug.LogWarning($"怪物 {type.name} 被标记为 StraightLineStampede 但缺少 StraightMoverAI 脚本！", enemyGO); }
-                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type);
+                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type, spawnAsElite);
                 break;
 
             case AIType.Pinball: //
@@ -253,13 +254,13 @@ public class EnemySpawner : MonoBehaviour
                     Debug.LogError($"怪物预制件 {enemyGO.name} 缺少 PinballAI 脚本！"); //
                 }
                 // [!] 修复：Pinball 怪物也需要初始化 Health
-                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type); //
+                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type, spawnAsElite); //
                 break;
 
             case AIType.Chasing:
             default:
                 if (type.isSuicideBomber) { enemyGO.GetComponent<EnemyExplosionAttack>()?.Initialize(type); }
-                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type);
+                enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type, spawnAsElite);
                 enemyGO.GetComponent<EnemyAI>()?.InitializeEnemy(finalSpeed, Mathf.RoundToInt(finalDamage));
                 if (type.isBoss && enemyGO.GetComponent<Health>() != null) { /* WaveManager.Instance?.RegisterBossInstance(enemyGO.GetComponent<Health>()); */ }
                 break;
@@ -329,7 +330,7 @@ public class EnemySpawner : MonoBehaviour
         }
         else { minR = spawnRadiusMin; maxR = spawnRadiusMax; }
 
-        if (TryFindValidSpawnPointInAnnulus(playerTransform.position, minR, maxR, maxPrimarySpawnAttempts, out position, out rotation, minAngle, maxAngle) ||
+        if (TryFindValidSpawnPointInAnnulus(playerTransform.position, minR, maxR, maxPrimarySpawnAttempts, out position, out rotation, minAngle, maxAngle, useStampedeRadius) ||
             (_lastSuccessfulSpawnPosition.HasValue && IsSpawnPointStillValid(_lastSuccessfulSpawnPosition.Value, playerTransform.position, out position, out rotation)) ||
             TryFindValidSpawnPointInAnnulus(playerTransform.position, fallbackAnnulusMinRadius, fallbackAnnulusMaxRadius, maxFallbackAnnulusAttempts, out position, out rotation) ||
             TryFindWithPredefinedPoints(out position, out rotation))
@@ -358,7 +359,8 @@ public class EnemySpawner : MonoBehaviour
 
     bool TryFindValidSpawnPointInAnnulus(Vector3 center, float minRadius, float maxRadius, int attempts,
                                      out Vector3 foundPosition, out Quaternion foundRotation,
-                                     float minAngleDegrees = 0f, float maxAngleDegrees = 360f)
+                                     float minAngleDegrees = 0f, float maxAngleDegrees = 360f,
+                                     bool ignoreMapBounds = false)
     {
         foundPosition = Vector3.zero; foundRotation = Quaternion.identity;
         if (playerTransform == null) { AcquirePlayerReference(); if (playerTransform == null) { return false; } }
@@ -374,8 +376,11 @@ public class EnemySpawner : MonoBehaviour
             float randomDistance = Random.Range(minRadius, maxRadius);
             Vector3 potentialSpawnPointXZ = center + spawnDirection * randomDistance;
 
-            // 将生成点钳制到地图圆形边界内
-            potentialSpawnPointXZ = ClampToMapBounds(potentialSpawnPointXZ);
+            // 特殊机制怪物（如奔袭、弹球）不受地图边界限制
+            if (!ignoreMapBounds)
+            {
+                potentialSpawnPointXZ = ClampToMapBounds(potentialSpawnPointXZ);
+            }
 
             Vector3 rayOrigin = new Vector3(potentialSpawnPointXZ.x, playerTransform.position.y + raycastStartYOffset, potentialSpawnPointXZ.z);
             RaycastHit hitInfo;
@@ -439,7 +444,6 @@ public class EnemySpawner : MonoBehaviour
             _currentSpawnRoutine = null;
         }
         StopAllCoroutines();
-        Debug.Log("EnemySpawner: 生成已停止并清理。");
     }
 
     public void Debug_SpawnSingleEnemy(EnemyType enemyTypeToSpawn)
@@ -485,7 +489,7 @@ public class EnemySpawner : MonoBehaviour
             enemyGO.GetComponent<EnemyExplosionAttack>()?.Initialize(enemyTypeToSpawn);
         }
 
-        enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(baseHealth));
+        enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(baseHealth), enemyTypeToSpawn, enemyTypeToSpawn.canBeElite);
         enemyGO.GetComponent<EnemyAI>()?.InitializeEnemy(baseSpeed, Mathf.RoundToInt(baseDamage));
 
         WaveManager.Instance?.RegisterDebugEnemy();

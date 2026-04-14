@@ -1,4 +1,4 @@
-// WeaponUI.cs
+﻿// WeaponUI.cs
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -132,7 +132,6 @@ public class WeaponUI : MonoBehaviour
                 });
 
                 // 调试日志
-                Debug.Log($"[WeaponUI] 槽位{i} 初始化 - XpBar找到: {xpBar != null}");
             }
             else
             {
@@ -145,19 +144,14 @@ public class WeaponUI : MonoBehaviour
     private Image FindXpBar(Transform parent)
     {
         // 打印所有子节点帮助调试
-        Debug.Log($"[WeaponUI] 查找XpBar - 父节点: {parent.name}, 子节点数: {parent.childCount}");
-        
         // 使用GetComponentsInChildren查找所有Image
         Image[] allImages = parent.GetComponentsInChildren<Image>(true);
         foreach (Image img in allImages)
         {
-            Debug.Log($"[WeaponUI] 发现Image: {img.gameObject.name}");
-            
             // 检查名字是否包含xp或exp
             string lowerName = img.gameObject.name.ToLower();
             if (lowerName.Contains("xp") || lowerName.Contains("exp") || lowerName.Contains("bar"))
             {
-                Debug.Log($"[WeaponUI] 找到经验条: {img.gameObject.name}");
                 return img;
             }
         }

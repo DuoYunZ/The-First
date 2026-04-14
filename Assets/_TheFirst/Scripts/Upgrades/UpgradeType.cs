@@ -110,5 +110,23 @@ public enum UpgradeType
     DaggerClone,               // 刃影分身（1%生成分身，半径-50%）
     DaggerIgnite,              // 灵能烙印（飞刀点燃，需火球Ignite前置）
     DaggerLifeSteal,           // 灵魂收割（击杀回2%最大HP）
-    DaggerChainExplosion       // 连锁灵刃（命中点燃敌人爆破）
+    DaggerChainExplosion,      // 连锁灵刃（命中点燃敌人爆破）
+
+    // ============================================================
+    // 被动道具 — 触发机制型
+    // ============================================================
+    BerserkerHeart,            // 狂战士之心（生命值低于50%时增伤）
+    FlameTrail,                // 燃烧轨迹（移动时留下火焰区域）
+    ThornsDamage,              // 荆棘护甲（受伤时反弹伤害给攻击者）
+    KillHeal,                  // 灵魂汲取（击杀敌人回血）
+    GlobalFreezeChance,        // 冰霜之触（所有攻击附加冰冻概率）
+    ThunderWill,               // 雷霆意志（击杀时有概率在原地召唤雷击AOE）
+    LifeStealPassive,          // 吸血之牙（造成伤害吸血，与角色技能树吸血叠加）
+    DashExplosion,             // 冲刺余烬（冲刺结束后释放冲击波）
+
+    // 被动道具 — 职业联动型
+    SwordmasterSoul,           // 剑圣之魂（斩击命中多个敌人后短暂攻速提升）
+    ArcaneMastery,             // 奥术精通（射弹命中时有概率产生小型爆炸）
+    ElementalResonance,        // 元素共鸣（拥有多种元素武器时全局增伤）
+    MechanicalResonance        // 机械共鸣（部署类武器数量+1、冷却缩减）
 }

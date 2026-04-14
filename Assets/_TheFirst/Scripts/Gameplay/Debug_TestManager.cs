@@ -65,7 +65,6 @@ public class Debug_TestManager : MonoBehaviour
         // 直接命令 EnemySpawner 使用我们选择的 EnemyType 来生成敌人
         enemySpawner.Debug_SpawnSingleEnemy(enemyTypes[enemyIndex]);
 
-        Debug.Log($"已请求 EnemySpawner 生成敌人: {enemyTypes[enemyIndex].name}");
     }
 
     /// <summary>
@@ -76,7 +75,6 @@ public class Debug_TestManager : MonoBehaviour
         if (PlayerLevelManager.Instance != null)
         {
             PlayerLevelManager.Instance.AddExperience(xpToAdd);
-            Debug.Log($"已为玩家增加 {xpToAdd} 点经验值。");
         }
         else
         {
@@ -116,8 +114,6 @@ public class Debug_TestManager : MonoBehaviour
         {
             // 直接调用 PlayerStats 的装备方法
             PlayerStats.Instance.EquipOrUpgradePassiveItem(passiveItems[itemIndex]);
-            Debug.Log($"调试指令：已给予玩家被动道具 {passiveItems[itemIndex].itemName}");
-
             // 顺便刷新一下UI，确保图标立刻出现
             if (PassiveItemsUI.Instance != null)
             {
@@ -161,7 +157,6 @@ public class Debug_TestManager : MonoBehaviour
                     Debug_UpgradeStats.Instance.LogRarity(chosenOption.rarity); // 同时计入概率统计
                 }
 
-                Debug.Log($"已强制为玩家应用升级: {nodeToGrant.skillName}, 品质: {chosenOption.rarity}, 效果: {chosenOption.description}");
             }
             else
             {
@@ -199,11 +194,9 @@ public class Debug_TestManager : MonoBehaviour
             if (recipe != null)
             {
                 WeaponController.Instance.PerformFusion(recipe);
-                Debug.Log("融合测试成功！");
             }
             else
             {
-                Debug.Log("当前没有满足条件的融合配方（需要两把满级武器）。");
             }
         }
     }

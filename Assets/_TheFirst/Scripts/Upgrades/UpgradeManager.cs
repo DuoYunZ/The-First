@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class UpgradeManager : MonoBehaviour
@@ -22,15 +21,28 @@ public class UpgradeManager : MonoBehaviour
     [Header("升级数据库")]
     public UpgradeDatabase upgradeDatabase;
 
-    [Header("动画设置")] // 【新增】
+    [Header("动画设置")]
     [Tooltip("每张卡片出现的间隔时间（秒）")]
-    public float delayBetweenCards = 0.2f; // 【新增】
+    public float delayBetweenCards = 0.2f;
+    [Tooltip("升级特效播放时间（秒，特效播完后才弹出卡片）")]
+    public float levelUpVfxDelay = 1.0f;
+    [Tooltip("升级特效期间的慢动作倍率")]
+    public float levelUpSlowMotion = 0.0f;
+
+    [Header("宝石镶嵌系统")]
+    [Tooltip("宝石镶嵌动画覆盖层")]
+    public GemEmbedOverlay gemEmbedOverlay;
     // 记录玩家已拥有的技能节点及其当前等级
     private Dictionary<SkillTreeNodeData, int> ownedUpgrades = new Dictionary<SkillTreeNodeData, int>();
 
     // 用于存储本次为玩家提供的三个“升级机会”
     private List<SkillTreeNodeData> offeredUpgrades = new List<SkillTreeNodeData>();
-    private List<UpgradeCardUI> activeCardUIs = new List<UpgradeCardUI>(); // 【新增】用于存储当前卡片实例
+    private List<UpgradeCardUI> activeCardUIs = new List<UpgradeCardUI>();
+
+    // === 宝石镶嵌追踪 ===
+    private Dictionary<WeaponStatBlock, int> weaponGemCounts = new Dictionary<WeaponStatBlock, int>();
+    private List<WeaponStatBlock> pendingUltimateUnlocks = new List<WeaponStatBlock>();
+    public const int GEM_SLOT_COUNT = 5;
 
     void Awake()
     {
@@ -57,8 +69,33 @@ public class UpgradeManager : MonoBehaviour
 
     private void HandlePlayerLevelUp(int newLevel)
     {
+        // 启动协程：先播放升级特效，再显示卡片
+        StartCoroutine(LevelUpSequence(newLevel));
+    }
+
+    /// <summary>
+    /// 升级流程协程：慢动作 + 特效播放 + 卡片选择
+    /// </summary>
+    private IEnumerator LevelUpSequence(int newLevel)
+    {
+        // 1. 进入慢动作（让特效看起来更华丽）
+        Time.timeScale = levelUpSlowMotion;
+
+        // 2. 等待特效播放（使用 unscaledTime 确保不受慢动作影响）
+        yield return new WaitForSecondsRealtime(levelUpVfxDelay);
+
+        // 3. 完全暂停，开始显示卡片
         Time.timeScale = 0f;
         offeredUpgrades.Clear();
+
+        // 0. 【宝石系统】优先检查是否有武器需要注入大招解锁卡
+        if (pendingUltimateUnlocks.Count > 0)
+        {
+            WeaponStatBlock ultimateWeapon = pendingUltimateUnlocks[0];
+            pendingUltimateUnlocks.RemoveAt(0);
+            SkillTreeNodeData ultimateNode = CreateUltimateUnlockNode(ultimateWeapon);
+            offeredUpgrades.Add(ultimateNode);
+        }
 
         // 1. 优先检查融合 (宝箱逻辑通常不在这里，升级界面通常不直接给超武，除非你的设计允许)
         // (保持你原有的逻辑，如果这是你想保留的“升级直接送超武”机制)
@@ -74,9 +111,12 @@ public class UpgradeManager : MonoBehaviour
             offeredUpgrades.Add(evoNode);
             Debug.Log($"[UpgradeManager] 发现融合配方: {fusionRecipe.resultWeapon.weaponName}");
         }
-        else
+
+        // --- 【三轨道系统】混合卡池抽卡逻辑（补足至3张） ---
+        // 大招卡/融合卡已经占用了一些位置，只需补足剩余
+        int slotsToFill = 3 - offeredUpgrades.Count;
+        if (slotsToFill > 0)
         {
-            // --- 【三轨道系统】混合卡池抽卡逻辑 ---
             // 武器解锁轨道：解锁新武器
             // 被动轨道：被动道具、精通卡、天赋、消耗品
             // 武器技能轨道：已拥有武器的技能树节点（按链路依次解锁）
@@ -99,7 +139,7 @@ public class UpgradeManager : MonoBehaviour
                 }
             }
 
-            // C. 【新增】获取所有已拥有武器的可用技能树节点
+            // C. 获取所有已拥有武器的可用技能树节点
             List<SkillTreeNodeData> validWeaponSkills = new List<SkillTreeNodeData>();
             if (WeaponController.Instance != null)
             {
@@ -118,9 +158,9 @@ public class UpgradeManager : MonoBehaviour
             var shuffledPassives = validPassives.OrderBy(a => Random.value).ToList();
             var shuffledSkills = validWeaponSkills.OrderBy(a => Random.value).ToList();
 
-            // D. 抽取 3 张卡（三轨道混合）
-            int slotsToFill = 3;
+            Debug.Log($"[UpgradeManager] 卡池状态 - 武器解锁:{shuffledWeapons.Count} 被动:{shuffledPassives.Count} 武器技能:{shuffledSkills.Count} 需补:{slotsToFill}张");
 
+            // D. 抽取剩余张数的卡（确保不重复）
             for (int i = 0; i < slotsToFill; i++)
             {
                 // 权重：40% 武器技能树、30% 武器解锁、30% 被动
@@ -164,9 +204,28 @@ public class UpgradeManager : MonoBehaviour
                     shuffledPassives.RemoveAt(0);
                 }
 
-                if (pickedNode != null)
+                // 去重检查：避免同一张卡出现多次
+                if (pickedNode != null && !offeredUpgrades.Contains(pickedNode))
                 {
                     offeredUpgrades.Add(pickedNode);
+                    Debug.Log($"[UpgradeManager] 第{i+1}张卡: {pickedNode.skillName} (roll={roll:F2})");
+                }
+                else if (pickedNode != null)
+                {
+                    Debug.Log($"[UpgradeManager] 第{i+1}张卡重复跳过: {pickedNode.skillName}，尝试从其他池补充");
+                    // 重复了，尝试从其他池子补一张不重复的
+                    SkillTreeNodeData fallback = null;
+                    fallback = fallback ?? shuffledPassives.FirstOrDefault(n => !offeredUpgrades.Contains(n));
+                    fallback = fallback ?? shuffledWeapons.FirstOrDefault(n => !offeredUpgrades.Contains(n));
+                    fallback = fallback ?? shuffledSkills.FirstOrDefault(n => !offeredUpgrades.Contains(n));
+                    if (fallback != null)
+                    {
+                        offeredUpgrades.Add(fallback);
+                        shuffledPassives.Remove(fallback);
+                        shuffledWeapons.Remove(fallback);
+                        shuffledSkills.Remove(fallback);
+                        Debug.Log($"[UpgradeManager] 补发: {fallback.skillName}");
+                    }
                 }
             }
         }
@@ -175,7 +234,7 @@ public class UpgradeManager : MonoBehaviour
         if (offeredUpgrades.Count == 0)
         {
             Time.timeScale = 1f;
-            return;
+            yield break;
         }
 
         foreach (Transform child in cardContainer) Destroy(child.gameObject);
@@ -938,6 +997,23 @@ public class UpgradeManager : MonoBehaviour
                     }
                 }
             }
+            // 【宝石系统】处理大招解锁效果
+            else if (effect.actionType == EffectActionType.UnlockUltimate)
+            {
+                if (effect.weaponToUnlock != null && WeaponController.Instance != null)
+                {
+                    var targetWrapper = WeaponController.Instance.ownedWeapons
+                        .FirstOrDefault(w => w.stats == effect.weaponToUnlock);
+                    if (targetWrapper != null && targetWrapper.weaponPartInstance != null)
+                    {
+                        WeaponPart part = targetWrapper.weaponPartInstance;
+                        part.isUltimateUnlocked = true;
+                        part.currentEnergy = part.StatBlock.maxEnergy;
+                        part.OnEnergyChanged?.Invoke(part.currentEnergy, part.StatBlock.maxEnergy);
+                        part.OnEnergyFull?.Invoke(part);
+                    }
+                }
+            }
         }
 
         // --- 2. 只有当【不是】解锁操作时，才去增加武器等级 ---
@@ -975,9 +1051,37 @@ public class UpgradeManager : MonoBehaviour
         if (ownedUpgrades.ContainsKey(sourceNode)) { ownedUpgrades[sourceNode]++; }
         else { ownedUpgrades.Add(sourceNode, 1); }
 
-        // 4. 刷新状态并关闭面板
+        // 4. 刷新状态
         if (WeaponController.Instance != null) { WeaponController.Instance.RefreshAllWeaponStates(); }
         if (PassiveItemsUI.Instance != null) { PassiveItemsUI.Instance.UpdateIcons(); }
+
+        // === 5. 【宝石系统】追踪选择的武器技能 ===
+        // 宝石飞入动画已集成到卡片UI中（UpgradeCardUI.PlayGemEmbedThenDismiss），
+        // 这里只负责数据层的宝石计数和大招解锁检测
+        WeaponStatBlock gemWeapon = sourceNode.associatedWeapon;
+        if (gemWeapon != null)
+        {
+            if (!weaponGemCounts.ContainsKey(gemWeapon))
+                weaponGemCounts[gemWeapon] = 0;
+            weaponGemCounts[gemWeapon]++;
+
+            int totalGems = weaponGemCounts[gemWeapon];
+
+            // 检查是否达到5颗 → 解锁大招
+            if (totalGems >= GEM_SLOT_COUNT)
+            {
+                var weaponWrapper = WeaponController.Instance != null
+                    ? WeaponController.Instance.ownedWeapons.FirstOrDefault(w => w.stats == gemWeapon)
+                    : null;
+                bool alreadyUnlocked = weaponWrapper?.weaponPartInstance?.isUltimateUnlocked ?? false;
+                if (!alreadyUnlocked && !pendingUltimateUnlocks.Contains(gemWeapon))
+                {
+                    pendingUltimateUnlocks.Add(gemWeapon);
+                }
+            }
+        }
+
+        // 6. 关闭面板恢复游戏
         if (upgradePanel != null) upgradePanel.SetActive(false);
         Time.timeScale = 1f;
     }
@@ -1001,108 +1105,172 @@ public class UpgradeManager : MonoBehaviour
         }
     }
 
-    // ========================================================================================
-    //                        【新增】武器技能树系统 (Weapon Skill Tree)
-    // ========================================================================================
-    #region 武器技能树
 
-    // 当前正在升级的武器引用
-    private WeaponPart currentUpgradingWeapon;
+    // ========================================================================
+    //                    武器技能树 + 宝石镶嵌系统
+    // ========================================================================
+    #region 武器技能树与宝石系统
 
     /// <summary>
-    /// 当武器经验满升级时调用。暂停游戏，弹出该武器的技能树卡片3选1。
-    /// </summary>
-    public void HandleWeaponLevelUp(WeaponPart weapon)
-    {
-        if (weapon == null || upgradeDatabase == null) return;
-
-        currentUpgradingWeapon = weapon;
-
-        // 1. 获取该武器可用的技能树节点
-        List<SkillTreeNodeData> availableNodes = GetAvailableWeaponSkillNodes(weapon.StatBlock);
-
-        if (availableNodes.Count == 0)
-        {
-            Debug.Log($"<color=yellow>[技能树] {weapon.StatBlock.weaponName} 没有可用的技能树卡片，跳过选择。</color>");
-            currentUpgradingWeapon = null;
-            return;
-        }
-
-        // 2. 暂停游戏
-        Time.timeScale = 0f;
-
-        // 3. 从可用节点中随机抽取最多3个
-        var shuffled = availableNodes.OrderBy(a => Random.value).ToList();
-        offeredUpgrades.Clear();
-        for (int i = 0; i < Mathf.Min(3, shuffled.Count); i++)
-        {
-            offeredUpgrades.Add(shuffled[i]);
-        }
-
-        // 4. 展示卡片UI
-        foreach (Transform child in cardContainer) Destroy(child.gameObject);
-        activeCardUIs.Clear();
-        upgradePanel.SetActive(true);
-        StartCoroutine(ShowCardsSequentially());
-
-        Debug.Log($"<color=cyan>[技能树] {weapon.StatBlock.weaponName} 升级！展示 {offeredUpgrades.Count} 张技能卡片。</color>");
-    }
-
-    /// <summary>
-    /// 获取指定武器当前可用的技能树节点（已筛选前置/互斥/唯一性）。
+    /// 获取指定武器当前可用的技能树节点
     /// </summary>
     public List<SkillTreeNodeData> GetAvailableWeaponSkillNodes(WeaponStatBlock weaponStats)
     {
         List<SkillTreeNodeData> result = new List<SkillTreeNodeData>();
-
         if (upgradeDatabase.weaponSkillNodes == null) return result;
 
         foreach (var node in upgradeDatabase.weaponSkillNodes)
         {
             if (node == null) continue;
-
-            // A. 必须是该武器的节点
             if (node.associatedWeapon != weaponStats) continue;
+            if (ownedUpgrades.ContainsKey(node) && ownedUpgrades[node] >= node.maxLevel) continue;
 
-            // B. 唯一性检查：已拥有则跳过（maxLevel通常为1）
-            if (ownedUpgrades.ContainsKey(node) && ownedUpgrades[node] >= node.maxLevel)
-                continue;
-
-            // C. 前置检查：所有前置节点必须已拥有 (AND 逻辑)
             if (node.prerequisites != null && node.prerequisites.Count > 0)
             {
-                bool allPrereqMet = node.prerequisites.All(p => p != null && ownedUpgrades.ContainsKey(p));
-                if (!allPrereqMet) continue;
+                if (!node.prerequisites.All(p => p != null && ownedUpgrades.ContainsKey(p))) continue;
             }
-
-            // D. 互斥检查：如果玩家已拥有列表中任一节点，则剔除
             if (node.mutuallyExclusive != null && node.mutuallyExclusive.Count > 0)
             {
-                bool hasConflict = node.mutuallyExclusive.Any(m => m != null && ownedUpgrades.ContainsKey(m));
-                if (hasConflict) continue;
+                if (node.mutuallyExclusive.Any(m => m != null && ownedUpgrades.ContainsKey(m))) continue;
             }
-
-            // E. 必需武器检查：必须拥有这些武器（融合技能等）
             if (node.requiredWeapons != null && node.requiredWeapons.Count > 0)
             {
-                bool hasAllWeapons = node.requiredWeapons.All(rw => 
-                    rw != null && WeaponController.Instance.ownedWeapons.Any(ow => ow.stats == rw)
-                );
-                if (!hasAllWeapons) continue;
+                if (!node.requiredWeapons.All(rw => rw != null && WeaponController.Instance.ownedWeapons.Any(ow => ow.stats == rw))) continue;
             }
-
             result.Add(node);
         }
-
         return result;
     }
 
-    /// <summary>
-    /// 检查玩家是否已拥有某个技能节点
-    /// </summary>
     public bool HasSkillNode(SkillTreeNodeData node)
     {
         return node != null && ownedUpgrades.ContainsKey(node);
+    }
+
+    // === 宝石系统辅助方法 ===
+
+    public int GetGemCountForWeapon(WeaponStatBlock weapon)
+    {
+        if (weapon == null) return 0;
+        return weaponGemCounts.ContainsKey(weapon) ? weaponGemCounts[weapon] : 0;
+    }
+
+    /// <summary>
+    /// 创建大招解锁卡片节点
+    /// </summary>
+    private SkillTreeNodeData CreateUltimateUnlockNode(WeaponStatBlock weapon)
+    {
+        SkillTreeNodeData node = ScriptableObject.CreateInstance<SkillTreeNodeData>();
+        string weaponName = !string.IsNullOrEmpty(weapon.weaponID)
+            ? LocalizationManager.T("weapon." + weapon.weaponID)
+            : weapon.weaponName;
+
+        node.skillName = weaponName;
+        node.skillIcon = weapon.weaponIcon;
+        node.associatedWeapon = weapon;
+
+        UpgradeOption option = new UpgradeOption();
+        option.description = !string.IsNullOrEmpty(weapon.ultimateDescription)
+            ? weapon.ultimateDescription : weaponName;
+        option.rarity = Rarity.Epic;
+
+        UpgradeEffect effect = new UpgradeEffect();
+        effect.actionType = EffectActionType.UnlockUltimate;
+        effect.weaponToUnlock = weapon;
+
+        option.effects = new List<UpgradeEffect> { effect };
+        node.possibleOptions = new List<UpgradeOption> { option };
+        return node;
+    }
+
+    /// <summary>
+    /// 获取补充卡片
+    /// </summary>
+    private List<SkillTreeNodeData> GetFillerCards(int count)
+    {
+        List<SkillTreeNodeData> pool = new List<SkillTreeNodeData>();
+        if (upgradeDatabase.passiveUpgrades != null)
+        {
+            foreach (var node in upgradeDatabase.passiveUpgrades)
+            {
+                bool ok = (node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p)));
+                bool notMax = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
+                if (ok && notMax) pool.Add(node);
+            }
+        }
+        if (WeaponController.Instance != null)
+        {
+            foreach (var owned in WeaponController.Instance.ownedWeapons)
+            {
+                if (owned.weaponPartInstance != null && owned.stats != null)
+                    pool.AddRange(GetAvailableWeaponSkillNodes(owned.stats));
+            }
+        }
+        var shuffled = pool.OrderBy(a => Random.value).ToList();
+        return shuffled.Take(count).ToList();
+    }
+    // ============================================================
+    // 宝箱系统：仅被动道具的升级选卡
+    // ============================================================
+
+    /// <summary>
+    /// 外部触发一次仅包含被动道具的升级选卡（宝箱拾取使用）
+    /// </summary>
+    public void TriggerPassiveOnlyUpgrade()
+    {
+        StartCoroutine(PassiveOnlyUpgradeSequence());
+    }
+
+    /// <summary>
+    /// 仅被动道具的升级选卡流程
+    /// </summary>
+    private IEnumerator PassiveOnlyUpgradeSequence()
+    {
+        // 1. 进入慢动作
+        Time.timeScale = levelUpSlowMotion;
+
+        // 2. 等待特效
+        yield return new WaitForSecondsRealtime(levelUpVfxDelay);
+
+        // 3. 完全暂停
+        Time.timeScale = 0f;
+        offeredUpgrades.Clear();
+
+        // 4. 仅从被动道具池中抽取3张卡
+        List<SkillTreeNodeData> validPassives = new List<SkillTreeNodeData>();
+        if (upgradeDatabase.passiveUpgrades != null)
+        {
+            foreach (var node in upgradeDatabase.passiveUpgrades)
+            {
+                bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
+                bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
+                if (prerequisitesMet && notMaxed) validPassives.Add(node);
+            }
+        }
+
+        // 打乱并取前3个
+        var shuffledPassives = validPassives.OrderBy(a => Random.value).ToList();
+        int slotsToFill = Mathf.Min(3, shuffledPassives.Count);
+        for (int i = 0; i < slotsToFill; i++)
+        {
+            offeredUpgrades.Add(shuffledPassives[i]);
+        }
+
+        Debug.Log($"[UpgradeManager] 宝箱选卡 - 可用被动道具:{validPassives.Count}张, 提供:{offeredUpgrades.Count}张");
+
+        // 5. 如果没有可用的被动道具，直接恢复游戏
+        if (offeredUpgrades.Count == 0)
+        {
+            Debug.LogWarning("[UpgradeManager] 宝箱选卡：没有可用的被动道具！");
+            Time.timeScale = 1f;
+            yield break;
+        }
+
+        // 6. 显示卡片UI
+        foreach (Transform child in cardContainer) Destroy(child.gameObject);
+        activeCardUIs.Clear();
+        upgradePanel.SetActive(true);
+        StartCoroutine(ShowCardsSequentially());
     }
 
     #endregion

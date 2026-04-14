@@ -56,8 +56,6 @@ public class ParticleBeamController : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.forward, out hit, maxDistance, hitLayers, QueryTriggerInteraction.Collide))
         {
             // 【新增】如果击中，在Console窗口打印出击中对象的名字
-            Debug.Log($"[ParticleBeamController] 射线击中了: {hit.collider.name}");
-
             impactEffectInstance.SetActive(true);
             impactEffectInstance.transform.position = hit.point;
             impactEffectInstance.transform.rotation = Quaternion.LookRotation(hit.normal);

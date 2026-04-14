@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class NPCInteraction : MonoBehaviour
@@ -17,6 +17,7 @@ public class NPCInteraction : MonoBehaviour
     void Awake()
     {
         playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
     }
 
     private void OnEnable()
@@ -38,8 +39,6 @@ public class NPCInteraction : MonoBehaviour
     {
         if (playerIsInRange && playerControls.Player.Interact.WasPressedThisFrame())
         {
-            Debug.Log("--- E键按下，准备处理技能树界面 ---");
-
             if (UIManager.Instance != null && UIManager.Instance.skillTreeUIManager != null)
             {
                 // 【关键修改】检查技能树界面是否已经打开
@@ -47,13 +46,11 @@ public class NPCInteraction : MonoBehaviour
                 {
                     // 如果界面已经打开，则关闭它
                     UIManager.Instance.skillTreeUIManager.ClosePanel();
-                    Debug.Log("--- 技能树界面已关闭 ---");
                 }
                 else
                 {
                     // 如果界面没有打开，则打开它
                     UIManager.Instance.skillTreeUIManager.OpenPanel();
-                    Debug.Log("--- 技能树界面已打开 ---");
                 }
             }
             else
@@ -86,7 +83,6 @@ public class NPCInteraction : MonoBehaviour
                 UIManager.Instance.skillTreeUIManager.IsPanelOpen())
             {
                 UIManager.Instance.skillTreeUIManager.ClosePanel();
-                Debug.Log("--- 玩家离开NPC范围，技能树界面已关闭 ---");
             }
         }
     }

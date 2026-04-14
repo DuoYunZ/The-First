@@ -54,6 +54,7 @@ public class GameTimelineManager : MonoBehaviour
     private int aliveEnemyCount = 0;     // 当前存活的敌人数量
     private int waveSpawnedTotal = 0;    // 当前波生成的总敌人数
     private bool isAdvancing = false;    // 是否正在提前推进
+    private bool allWavesFired = false;  // 所有波次是否已全部触发
 
     void Awake()
     {
@@ -80,6 +81,7 @@ public class GameTimelineManager : MonoBehaviour
         currentWaveIndex = 0;
         gameFinished = false;
         isAdvancing = false;
+        allWavesFired = false;
 
         // 准备所有待处理事件
         foreach (var evt in timelineConfig.timelineEvents)
@@ -103,7 +105,11 @@ public class GameTimelineManager : MonoBehaviour
         pendingEvents = pendingEvents.OrderBy(e => e.triggerTime).ToList();
         totalWaveCount = pendingEvents.Count;
 
-        Debug.Log($"时间轴已初始化，总计 {totalWaveCount} 个事件已排序。");
+        // 设置 GameTimer 的倒计时总时长
+        if (gameTimer != null)
+        {
+            gameTimer.SetTotalDuration(timelineConfig.totalGameDuration);
+        }
     }
 
     void Update()
@@ -112,17 +118,17 @@ public class GameTimelineManager : MonoBehaviour
 
         float elapsedTime = gameTimer.GetElapsedTime();
 
-        // 1. 检查是否触发了下一个事件（按时间）
+        // 检查是否触发了下一个事件（按时间）
         if (pendingEvents.Count > 0 && elapsedTime >= pendingEvents[0].triggerTime)
         {
             FireEvent(pendingEvents[0]);
             pendingEvents.RemoveAt(0);
-        }
 
-        // 2. 检查游戏是否胜利 (时间到)
-        if (elapsedTime >= timelineConfig.totalGameDuration)
-        {
-            GameWin();
+            // 标记所有波次是否已全部触发
+            if (pendingEvents.Count == 0)
+            {
+                allWavesFired = true;
+            }
         }
     }
 
@@ -134,8 +140,6 @@ public class GameTimelineManager : MonoBehaviour
         currentWaveName = evt.waveConfig.waveName;
         waveSpawnedTotal = evt.waveConfig.GetTotalEnemiesInWave();
         aliveEnemyCount += waveSpawnedTotal; // 累加（可能上一波还没打完）
-
-        Debug.Log($"<color=cyan>时间轴事件触发: [{currentWaveIndex}/{totalWaveCount}] {currentWaveName} (时间: {gameTimer.GetElapsedTime():F1}s, 本波敌人: {waveSpawnedTotal}, 场上总存活: {aliveEnemyCount})</color>");
 
         // --- 动态计算属性成长 ---
         int effectiveWaveNumber = 1 + (int)(gameTimer.GetElapsedTime() / 60f);
@@ -158,8 +162,6 @@ public class GameTimelineManager : MonoBehaviour
         if (pendingEvents.Count == 0 || gameFinished || isAdvancing) return;
 
         isAdvancing = true;
-        Debug.Log($"<color=yellow>波次提前完成！{advanceDelay}秒后进入下一波...</color>");
-
         // 延迟一小段时间再推进，给玩家喘息
         StartCoroutine(AdvanceDelayRoutine());
     }
@@ -179,12 +181,14 @@ public class GameTimelineManager : MonoBehaviour
     void GameWin()
     {
         gameFinished = true;
-        Debug.Log("<color=green>游戏胜利！时间已到！</color>");
-
         // 停止所有刷怪
         enemySpawner.StopAndClearSpawning();
 
-        // (在这里添加您的胜利逻辑，例如显示胜利UI，保存数据，返回Hub)
+        // 触发胜利结算界面
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.HandleVictory();
+        }
     }
 
 
@@ -194,6 +198,13 @@ public class GameTimelineManager : MonoBehaviour
     {
         totalKills++;
         aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
+
+        // 胜利判定：所有波次已触发 + 场上敌人全部被消灭 = 胜利
+        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        {
+            GameWin();
+            return;
+        }
 
         // 当场上敌人全部被消灭，且还有后续波次，立即推进
         if (advanceWaveOnClear && aliveEnemyCount <= 0 && pendingEvents.Count > 0 && !isAdvancing)

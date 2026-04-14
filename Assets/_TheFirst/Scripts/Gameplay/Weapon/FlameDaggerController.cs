@@ -157,16 +157,6 @@ public class FlameDaggerController : MonoBehaviour
         // （分身效果仅触发分身生成，不影响本体环绕行为）
 
         // === 调试日志 ===
-        Debug.Log($"<color=yellow>[飞刀升级] 基础伤害={baseDmg} → 最终伤害={damageAmount} " +
-            $"| 伤害加成={sourceWeapon.daggerDamageBoost}% 速度惩罚={sourceWeapon.daggerSpeedPenalty}% " +
-            $"| 额外飞刀={sourceWeapon.daggerExtraCount} 伤害惩罚={sourceWeapon.daggerCountDmgPenalty}% " +
-            $"| 速度={effectiveOrbitFrequency:F2}(基础{orbitFrequency}) " +
-            $"| 间隔={effectiveDamageInterval:F2}(基础{damageInterval}) " +
-            $"| 半径={effectiveOrbitRadius:F2}(基础{orbitRadius}) " +
-            $"| 索敌={effectiveSearchRange:F1} 锁定={effectiveLockDuration:F1}s " +
-            $"| 锁魂={sourceWeapon.daggerHomingUpgrade} 分身={sourceWeapon.daggerCloneUpgrade} " +
-            $"| 烙印={sourceWeapon.daggerIgniteUpgrade} 吸血={sourceWeapon.daggerLifeStealUpgrade} 爆破={sourceWeapon.daggerChainExplosion}" +
-            $"</color>");
     }
 
     void Update()
@@ -418,7 +408,9 @@ public class FlameDaggerController : MonoBehaviour
             // 记录击杀前HP（用于判断是否击杀）
             int hpBefore = h.GetCurrentHealth();
 
-            h.TakeDamage(finalDmg, transform.position, this.gameObject);
+            // 【修复】传递武器名称，确保伤害统计正确记录
+            string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "FlameDagger";
+            h.TakeDamage(finalDmg, transform.position, this.gameObject, AttackType.Standard, null, null, weaponName);
             hitCooldowns[id] = Time.time + effectiveDamageInterval;
 
             // 积累能量
@@ -447,8 +439,7 @@ public class FlameDaggerController : MonoBehaviour
                     if (status == null) status = other.GetComponentInParent<StatusEffectReceiver>();
                     if (status != null && Random.value < 0.2f)
                     {
-                        string weaponName = (sourceWeapon.StatBlock != null) 
-                            ? sourceWeapon.StatBlock.weaponName : "FlameDagger";
+                        // 复用外层已声明的 weaponName 变量
                         status.ApplyBurn(Mathf.RoundToInt(finalDmg * 0.3f), 6f, 1f, weaponName);
                     }
                 }
@@ -486,7 +477,6 @@ public class FlameDaggerController : MonoBehaviour
                             int maxHp = playerHealth.GetMaxHealth();
                             int heal = Mathf.Max(1, Mathf.RoundToInt(maxHp * 0.02f));
                             playerHealth.Heal(heal);
-                            Debug.Log($"<color=green>[灵魂收割] 恢复 {heal} HP</color>");
                         }
                     }
                 }
@@ -515,7 +505,9 @@ public class FlameDaggerController : MonoBehaviour
             if (h == null) h = col.GetComponentInParent<Health>();
             if (h != null && !h.IsDead)
             {
-                h.TakeDamage(explosionDmg, center, this.gameObject);
+                // 【修复】传递武器名称，确保连锁爆炸伤害也被统计
+                string chainWeaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "FlameDagger";
+                h.TakeDamage(explosionDmg, center, this.gameObject, AttackType.Standard, null, null, chainWeaponName);
             }
         }
     }
@@ -558,7 +550,6 @@ public class FlameDaggerController : MonoBehaviour
         }
 
         Destroy(cloneObj, 10f);
-        Debug.Log("<color=magenta>[刃影分身] 生成了一个分身飞刀！</color>");
     }
 
     void CleanupCooldowns()

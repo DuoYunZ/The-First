@@ -212,6 +212,10 @@ public class WeaponPart : MonoBehaviour
     public WeaponStage currentStage = WeaponStage.Base; // 当前阶段
     public bool hasBranched = false; // 是否已选择分支
 
+    [Header("大招解锁状态")]
+    [Tooltip("是否已解锁大招（需要先集齐5颗宝石才能积累能量）")]
+    public bool isUltimateUnlocked = false;
+
     // 事件：当武器升级时触发 (用于播放特效、UI更新)
     public System.Action<int> OnWeaponLevelUp;
     // 事件：当经验变化时 (用于UI条)
@@ -542,6 +546,7 @@ public class WeaponPart : MonoBehaviour
     public void GainEnergy(float damageAmount)
     {
         if (StatBlock == null || !StatBlock.usesEnergy) return;
+        if (!isUltimateUnlocked) return; // 大招未解锁前不积累能量
         if (IsEnergyFull) return; // 已满，不再累加
         if (isUltimateBuffActive) return; // BUFF型大招期间不积累能量
 
@@ -680,11 +685,11 @@ public class WeaponPart : MonoBehaviour
        
         OnWeaponLevelUp?.Invoke(currentProficiencyLevel);
 
-        // 【新增】武器升级时触发技能树卡片选择
-        if (UpgradeManager.Instance != null)
-        {
-            UpgradeManager.Instance.HandleWeaponLevelUp(this);
-        }
+        // 武器技能树已整合到通用升级池，不再需要单独触发
+        // if (UpgradeManager.Instance != null)
+        // {
+        //     UpgradeManager.Instance.HandleWeaponLevelUp(this);
+        // }
 
         CalculateNextLevelXP();
 
@@ -822,16 +827,12 @@ public class WeaponPart : MonoBehaviour
 
         // 2. 找到挂载点
         Transform anchor = FindStableAnchor();
-        Debug.Log($"[SetupAura] 使用挂载点: {anchor?.name}");
-
         // 3. 生成光环
         GameObject auraGO = Instantiate(StatBlock.orbitalPrefab, anchor);
         auraGO.transform.localPosition = Vector3.zero;
         auraGO.transform.localRotation = Quaternion.identity;
 
         orbitalPivot = auraGO.transform;
-        Debug.Log($"<color=green>[SetupAura] 光环已生成: {auraGO.name}</color>");
-
         // 4. 初始化脚本
         MagneticStormAura auraScript = auraGO.GetComponent<MagneticStormAura>();
         if (auraScript != null)
@@ -847,8 +848,6 @@ public class WeaponPart : MonoBehaviour
             // 【核心修改】计算麻痹概率 (基础概率 + 局部加成)
             // 你可以在 SO 里加一个 baseStunChance，或者默认 0
             float finalCritRate = PlayerStats.Instance.critRate + localCritRateBonus;
-            Debug.Log($"<color=yellow>[SetupAura] 雷击初始化: 伤害={finalBaseDamage}, 范围倍率={rangeMult}, 数量={finalCount}, 暴击率={finalCritRate:P0}</color>");
-
             // 传入 finalCritRate
             auraScript.Initialize(finalBaseDamage, rangeMult, this, finalCount, finalCritRate);
         }
@@ -866,7 +865,6 @@ public class WeaponPart : MonoBehaviour
                 if (finalBaseDamage <= 0) finalBaseDamage = 10;
                 float rangeMult = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
                 
-                Debug.Log($"<color=green>[SetupAura] 辅助光环初始化: 伤害={finalBaseDamage}, 范围倍率={rangeMult}, 回血={auraHealAmount}, 减速={auraSlowPercent}%, 增伤={auraFragilePercent}%</color>");
                 supportAuraScript.Initialize(finalBaseDamage, rangeMult, this);
             }
             else
@@ -1366,7 +1364,6 @@ public class WeaponPart : MonoBehaviour
             return;
         }
 
-        Debug.Log($"<color=green>Knockback Fire: OverlapSphere found {hits.Length} colliders. Checking them...</color>");
         int knockbackStoneCount = PlayerStats.Instance.GetStoneCount(EnergyStoneEffectType.ApplyKnockback); //
 
         float finalKnockbackForce;
@@ -1389,7 +1386,6 @@ public class WeaponPart : MonoBehaviour
             // 强制检查 Tag
             if (!hit.CompareTag("Enemy"))
             {
-                Debug.Log($"Knockback Check: Ignored collider '{hit.name}' (Tag is not 'Enemy').");
                 continue;
             }
             // --- ^^^ [ 核心修复 ] ^^^ ---
@@ -1697,7 +1693,6 @@ public class WeaponPart : MonoBehaviour
         if (PlayerStats.Instance.boomerangMaxCatchStacks > 0)
         {
             PlayerStats.Instance.boomerangCatchStacks = Mathf.Min(PlayerStats.Instance.boomerangCatchStacks + 1, PlayerStats.Instance.boomerangMaxCatchStacks);
-            Debug.Log($"Boomerang caught! PlayerStats Stacks increased to {PlayerStats.Instance.boomerangCatchStacks}/{PlayerStats.Instance.boomerangMaxCatchStacks}");
         }
 
         // --- 核心修改结束 ---
@@ -1719,7 +1714,6 @@ public class WeaponPart : MonoBehaviour
             else
                 nextDirection = transform.forward; // Fallback
         }
-        Debug.Log($"[OnBoomerangCaught] Triggering re-throw towards {nextDirection}");
         StartCoroutine(FireRoutine(nextDirection.normalized));
     }
 
@@ -1735,7 +1729,6 @@ public class WeaponPart : MonoBehaviour
             if (PlayerStats.Instance != null && PlayerStats.Instance.boomerangCatchStacks > 0)
             {
                 PlayerStats.Instance.boomerangCatchStacks = 0;
-                Debug.Log("PlayerStats catch stacks reset to 0.");
             }
             // --- 【核心修改结束】 ---
         }
@@ -1990,14 +1983,11 @@ public class WeaponPart : MonoBehaviour
         }
 
         // --- [排查 2] 检查 Raycast 地面检测 ---
-        Debug.Log($"[排查] 初始生成点: {spawnPos}。正在尝试 Raycast 找地面...");
-
         RaycastHit hit;
         // 尝试从玩家头顶 (y+2) 向下射线检测
         if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground", "Default", "Terrain")))
         {
             spawnPos = hit.point;
-            Debug.Log($"[排查] 成功找到地面: {spawnPos}, 击中物体: {hit.collider.name}");
         }
         else
         {
@@ -2014,7 +2004,6 @@ public class WeaponPart : MonoBehaviour
             Debug.LogError("[排查] 致命错误: Instantiate 返回了 null！");
             return;
         }
-        Debug.Log($"[排查] 已生成物体: '{obj.name}'，世界坐标: {obj.transform.position}，Active状态: {obj.activeSelf}");
         // -----------------------------------
 
         // 3. 应用缩放
@@ -2027,7 +2016,6 @@ public class WeaponPart : MonoBehaviour
 
         Vector3 targetScale = Vector3.one * (configScale * finalScale);
         obj.transform.localScale = targetScale;
-        Debug.Log($"[排查] 应用缩放: {targetScale} (配置值: {configScale}, 动态值: {finalScale})");
         // ---------------------------
 
         // 4. 组件初始化逻辑
@@ -2047,8 +2035,6 @@ public class WeaponPart : MonoBehaviour
             float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
             float finalRange = StatBlock.baseAoeRadius * (PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus);
             float finalInterval = StatBlock.dotTickInterval;
-
-            Debug.Log($"[排查] 找到 FlamethrowerTurret 组件，正在初始化... 存活时间: {finalLifetime}");
 
             turret.Initialize(
                 finalDamage,
@@ -2177,7 +2163,6 @@ public class WeaponPart : MonoBehaviour
                 }
             }
 
-            Debug.Log($"<color=#88DDFF>[冰霜新星] 第{cast + 1}次释放，命中 {hits.Length} 目标，半径: {baseRadius:F1}，冻结: {freezeDuration}秒</color>");
         }
 
         // === 冰晶碎裂：新星结束后从被冻结敌人处发射小冰锥 ===
@@ -2215,7 +2200,6 @@ public class WeaponPart : MonoBehaviour
                     }
                 }
 
-                Debug.Log($"<color=#88DDFF>[冰晶碎裂] 从 {h.name} 发射 {localIceCrystalShatter} 个冰锥</color>");
             }
         }
     }
@@ -2314,7 +2298,6 @@ public class WeaponPart : MonoBehaviour
             if (crossTarget == null) yield break;
 
             StartCoroutine(ChainDamageRoutine(crossTarget, chainCount, damage, chainRange));
-            Debug.Log($"<color=cyan>[交叉闪电] 第{i + 1}条额外闪电链发射</color>");
         }
     }
 
@@ -2415,7 +2398,6 @@ public class WeaponPart : MonoBehaviour
 
         // 立即生成新的环绕武器
         SetupOrbiters();
-        Debug.Log($"<color=yellow>[大招] 强制召唤环绕武器！</color>");
     }
 
     /// <summary>
@@ -2475,8 +2457,6 @@ public class WeaponPart : MonoBehaviour
         // 融合大招持续时间由外部控制，设置当前持续时间
         currentOrbitalDuration = duration;
         StartCoroutine(OrbitalLifetimeRoutine(duration));
-
-        Debug.Log($"<color=yellow>[连携技] 用自定义预制件替换环绕武器！数量={finalOrbitalCount} 持续={duration}s</color>");
 
         return orbitalPivot;
     }
@@ -2801,8 +2781,6 @@ public class WeaponPart : MonoBehaviour
     }
     private void SetupDrones()
     {
-        Debug.Log("[SetupDrones] 开始尝试生成无人机...");
-
         if (StatBlock == null)
         {
             Debug.LogError("[SetupDrones] 失败: StatBlock 是空的！");
@@ -2832,8 +2810,6 @@ public class WeaponPart : MonoBehaviour
 
         // 方法 B: 如果你没加那个方法，就手动加上变量：
         // int count = StatBlock.baseOrbitalCount + PlayerStats.Instance.bonusProjectileCount + localOrbitalCountBonus;
-
-        Debug.Log($"[SetupDrones] 计划生成数量: {count} (基础:{StatBlock.baseOrbitalCount} + 全局:{PlayerStats.Instance.bonusProjectileCount} + 局部:{localOrbitalCountBonus})");
 
         // =========================================================
 
@@ -3071,7 +3047,7 @@ public class WeaponPart : MonoBehaviour
             return;
         }
 
-        Debug.Log($"<color=lime>[FuseEnergyStone] 1. 开始融合: {newStone.stoneName}</color>"); //
+
 
         EnergyStoneSO oldStone = this.currentStone; // (获取旧石头，用于 PlayerStats)
 
@@ -3081,7 +3057,6 @@ public class WeaponPart : MonoBehaviour
         // 3. 立即检查
         if (this.currentStone != null)
         {
-            Debug.Log($"<color=lime>[FuseEnergyStone] 2. 变量已设置! this.currentStone 现在是: {this.currentStone.stoneName}</color>");
         }
         else
         {
@@ -3384,8 +3359,6 @@ public class WeaponPart : MonoBehaviour
         int finalDamage = Mathf.RoundToInt(StatBlock.baseDirectDamage * damageMult + 
             (PlayerStats.Instance != null ? PlayerStats.Instance.flatDamageBonus : 0));
         float knockback = StatBlock.baseKnockbackForce;
-
-        Debug.Log($"<color=cyan>[SetupFlyingDaggers] desiredCount={desiredCount}, currentCount={currentCount}, finalDamage={finalDamage}, daggerExtraCount={daggerExtraCount}, daggerCountDmgPenalty={daggerCountDmgPenalty}</color>");
 
         // 情况1：数量不足，补充生成
         if (currentCount < desiredCount)

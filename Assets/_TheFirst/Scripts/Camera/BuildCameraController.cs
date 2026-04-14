@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem; // 【新增】
 
 public class BuildCameraController : MonoBehaviour
@@ -42,6 +42,7 @@ public class BuildCameraController : MonoBehaviour
     void Awake()
     {
         playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
     }
     void OnEnable()
     {

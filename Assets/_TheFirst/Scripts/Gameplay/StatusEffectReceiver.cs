@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -311,7 +311,6 @@ public class StatusEffectReceiver : MonoBehaviour
                         int dmg = Mathf.Max(1, Mathf.RoundToInt(health.maxHealth * 0.01f));
                         // 传入空 source 避免再次触发层级伤害特效，也可以传 transform.gameObject
                         health.TakeDamage(dmg, transform.position, null);
-                        Debug.Log($"<color=#88DDFF>[刺骨寒霜] 对 {gameObject.name} 造成 {dmg} 点冰冻扣血！</color>");
                     }
                 }
             }

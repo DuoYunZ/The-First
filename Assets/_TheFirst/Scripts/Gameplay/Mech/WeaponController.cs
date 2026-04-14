@@ -44,6 +44,7 @@ public class WeaponController : MonoBehaviour
         else { Destroy(gameObject); return; }
 
         playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
 
         weaponMountPoint = transform.Find("WeaponMounts");
         if (weaponMountPoint == null)
@@ -58,8 +59,24 @@ public class WeaponController : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    private void OnEnable() => playerControls.Player.Enable();
-    private void OnDisable() => playerControls.Player.Disable();
+    private void OnEnable()
+    {
+        playerControls.Player.Enable();
+        if (KeyBindingManager.Instance != null)
+            KeyBindingManager.Instance.OnBindingChanged += OnBindingChanged;
+    }
+
+    private void OnDisable()
+    {
+        playerControls.Player.Disable();
+        if (KeyBindingManager.Instance != null)
+            KeyBindingManager.Instance.OnBindingChanged -= OnBindingChanged;
+    }
+
+    private void OnBindingChanged(string actionName, int bindingIndex)
+    {
+        KeyBindingManager.ApplyOverrides(playerControls);
+    }
 
     void Start()
     {
@@ -100,12 +117,10 @@ public class WeaponController : MonoBehaviour
         {
             targetPart.currentLevel++;
             targetWeaponData.currentLevel++;
-            Debug.Log($"普通升级完成: {weaponName} -> Lv.{targetPart.currentLevel}");
         }
         else
         {
             // 可以在这里给予金币或回血作为满级补偿
-            Debug.Log($"{weaponName} 已满级!");
         }
     }
 
@@ -133,7 +148,6 @@ public class WeaponController : MonoBehaviour
 
                 if (isAMaxed && isBMaxed)
                 {
-                    Debug.Log($"<color=cyan>发现可融合配方: {recipe.weaponA.weaponName} + {recipe.weaponB.weaponName} -> {recipe.resultWeapon.weaponName}</color>");
                     return recipe;
                 }
             }
@@ -147,8 +161,6 @@ public class WeaponController : MonoBehaviour
     public void PerformFusion(FusionRecipeSO recipe)
     {
         if (recipe == null) return;
-
-        Debug.Log($"<color=yellow>开始执行融合: {recipe.resultWeapon.weaponName}</color>");
 
         // 1. 查找并移除旧武器
         OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
@@ -178,8 +190,6 @@ public class WeaponController : MonoBehaviour
 
         if (oldWeaponWrapper != null)
         {
-            Debug.Log($"[WeaponController] 执行进化: {baseStats.weaponName} -> {targetStats.weaponName}");
-
             // 2. 彻底销毁旧武器的物体
             // 这一点至关重要！因为闪电链的 Prefab 和雷击的 Prefab 结构完全不同
             if (oldWeaponWrapper.weaponPartInstance != null)
@@ -200,7 +210,6 @@ public class WeaponController : MonoBehaviour
                 string newID = targetStats.weaponID;
                 if (!string.IsNullOrEmpty(newID) && !PlayerProgressManager.Instance.unlockedItems.Contains(newID))
                 {
-                    Debug.Log($"[系统] 进化解锁新图鉴: {targetStats.weaponName}");
                     PlayerProgressManager.Instance.UnlockItem(newID);
                 }
 
@@ -273,7 +282,6 @@ public class WeaponController : MonoBehaviour
         
         if (toRemove != null)
         {
-            Debug.Log($"[融合] 移除武器: {statBlock.weaponName}");
             RemoveWeapon(toRemove);
         }
     }
@@ -301,7 +309,6 @@ public class WeaponController : MonoBehaviour
                 weaponPartInstance = part
             });
 
-            Debug.Log($"[WeaponController] 装备新武器: '{weaponData.weaponName}'。当前持有数量: {ownedWeapons.Count}");
         }
 
         if (WeaponUI.Instance != null)

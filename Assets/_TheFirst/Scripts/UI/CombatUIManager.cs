@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem; // <-- 1. 引入新的 Input System 命名空间
 
@@ -52,6 +52,24 @@ public class CombatUIManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 当游戏窗口失去/获得焦点时调用（Alt+Tab、切换应用等）
+    /// </summary>
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus && !isPaused)
+        {
+            // 失去焦点时自动暂停
+            PauseGame();
+        }
+        else if (hasFocus && isPaused)
+        {
+            // 获得焦点时，即使仍在暂停状态也要防止物理追赶
+            // 通过临时极低的 maximumDeltaTime 防止 FixedUpdate 积压
+            Time.maximumDeltaTime = Time.fixedDeltaTime;
+        }
+    }
+
     void Update()
     {
         // 6. 使用新的方式检测按键
@@ -82,6 +100,8 @@ public class CombatUIManager : MonoBehaviour
         isPaused = true;
         pausePanel.SetActive(true);
         Time.timeScale = 0f;
+        // 暂停物理模拟，防止恢复时大量 FixedUpdate 追赶
+        Physics.simulationMode = SimulationMode.Script;
 
         var selectable = pausePanel.GetComponentInChildren<UnityEngine.UI.Selectable>(false);
         if (selectable != null && UnityEngine.EventSystems.EventSystem.current != null)
@@ -99,7 +119,24 @@ public class CombatUIManager : MonoBehaviour
         isSettingsOpen = false;
         pausePanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        // 恢复物理模拟
+        Physics.simulationMode = SimulationMode.FixedUpdate;
+        // 限制第一帧的 deltaTime，防止所有系统一次性处理大量累积时间
+        Time.maximumDeltaTime = Time.fixedDeltaTime;
         Time.timeScale = 1f;
+
+        // 下一帧恢复正常的 maximumDeltaTime
+        StartCoroutine(RestoreMaxDeltaTime());
+    }
+
+    /// <summary>
+    /// 延迟一帧后恢复 maximumDeltaTime 到正常值
+    /// </summary>
+    private System.Collections.IEnumerator RestoreMaxDeltaTime()
+    {
+        yield return null; // 等一帧
+        Time.maximumDeltaTime = 0.3333333f; // Unity 默认值
     }
 
     // 打开设置面板
@@ -138,8 +175,6 @@ public class CombatUIManager : MonoBehaviour
     // 返回枢纽场景
     public void ReturnToHub()
     {
-        Debug.Log("正在返回枢纽...");
-
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.SaveGame();
@@ -150,6 +185,8 @@ public class CombatUIManager : MonoBehaviour
         }
 
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 恢复物理模拟
+        isPaused = false;
         var transitioner = Object.FindFirstObjectByType<Transitioner>();
         if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("HubScene");
         else SceneManager.LoadScene("HubScene");
@@ -158,14 +195,14 @@ public class CombatUIManager : MonoBehaviour
     // 返回主菜单
     public void ReturnToMainMenu()
     {
-        Debug.Log("正在返回主菜单...");
-
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.SaveGame();
         }
 
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 恢复物理模拟
+        isPaused = false;
         var transitioner = Object.FindFirstObjectByType<Transitioner>();
         if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("MainMenu");
         else SceneManager.LoadScene("MainMenu");
@@ -174,8 +211,6 @@ public class CombatUIManager : MonoBehaviour
     // 退出游戏
     public void QuitGame()
     {
-        Debug.Log("正在退出游戏...");
-
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.SaveGame();

@@ -23,6 +23,7 @@ public class CharacterStatueNPC : MonoBehaviour
     void Awake()
     {
         playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
     }
 
     private void OnEnable() => playerControls.Player.Enable();

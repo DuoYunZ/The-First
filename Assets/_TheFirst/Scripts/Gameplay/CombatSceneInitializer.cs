@@ -43,6 +43,12 @@ public class CombatSceneInitializer : MonoBehaviour
 
     private void InitializeCombatScene(CharacterData characterData)
     {
+        // 【核心新增】根据当前角色重新计算技能树加成，确保不会使用其他角色的属性
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.RecalculateCharacterBonuses(characterData);
+        }
+
         if (characterData.chassisPrefab == null)
         {
             Debug.LogError($"CharacterData '{characterData.name}' is missing its Prefab!");
@@ -51,8 +57,6 @@ public class CombatSceneInitializer : MonoBehaviour
 
         GameObject playerInstance = Instantiate(characterData.chassisPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
         playerInstance.name = characterData.characterName + "_RuntimeInstance";
-        Debug.Log($"已生成角色: {playerInstance.name}");
-
         // --- 核心集成代码：在这里关联UI和玩家状态 ---
         Health playerHealth = playerInstance.GetComponent<Health>();
         PlayerShield playerShield = playerInstance.GetComponent<PlayerShield>();
@@ -60,7 +64,6 @@ public class CombatSceneInitializer : MonoBehaviour
         if (playerHealthUI != null && playerHealth != null && playerShield != null)
         {
             playerHealthUI.Initialize(playerHealth, playerShield);
-            Debug.Log("PlayerHealthUI 已成功与玩家实例关联。");
         }
         else
         {
@@ -80,7 +83,6 @@ public class CombatSceneInitializer : MonoBehaviour
                     weaponController.builtInBladeWeapon.StatBlock != null &&
                     weaponController.builtInBladeWeapon.StatBlock.weaponName == weaponStat.weaponName)
                 {
-                    Debug.Log($"[CombatInit] 跳过内置武器: {weaponStat.weaponName}（预制件已自带）");
                     continue;
                 }
 
@@ -99,7 +101,6 @@ public class CombatSceneInitializer : MonoBehaviour
         if (waveManager != null) waveManager.enabled = true;
         if (GameManager.Instance != null) GameManager.Instance.PlayerMechReadyInCombatScene(playerInstance);
 
-        Debug.Log("CombatSceneInitializer: 所有战斗系统初始化完毕。");
     }
     private void PreloadAssets()
     {
@@ -111,7 +112,6 @@ public class CombatSceneInitializer : MonoBehaviour
         // 定义一个远离主摄像机的预加载位置
         Vector3 preloadPosition = new Vector3(0, -1000, 0);
 
-        Debug.Log($"开始预加载 {prefabsToPreload.Count} 个资源...");
         foreach (GameObject prefab in prefabsToPreload)
         {
             if (prefab != null)
@@ -122,6 +122,5 @@ public class CombatSceneInitializer : MonoBehaviour
                 Destroy(instance);
             }
         }
-        Debug.Log("资源预加载完毕。");
     }
 }

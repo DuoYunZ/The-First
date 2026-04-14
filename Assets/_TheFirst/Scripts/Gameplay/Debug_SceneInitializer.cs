@@ -35,7 +35,6 @@ public class Debug_SceneInitializer : MonoBehaviour
         if (playerHealth != null && playerShield != null)
         {
             playerHealthUI.Initialize(playerHealth, playerShield);
-            Debug.Log("PlayerHealthUI 已成功与调试玩家实例关联。");
         }
         else
         {
@@ -60,7 +59,6 @@ public class Debug_SceneInitializer : MonoBehaviour
         virtualCamera.LookAt = playerInstance.transform;
         virtualCamera.enabled = true;
 
-        Debug.Log("--- 调试场景初始化完毕 ---");
     }
     private void PreloadAssets()
     {
@@ -72,7 +70,6 @@ public class Debug_SceneInitializer : MonoBehaviour
         // 定义一个远离主摄像机的预加载位置
         Vector3 preloadPosition = new Vector3(0, -1000, 0);
 
-        Debug.Log($"开始预加载 {prefabsToPreload.Count} 个资源...");
         foreach (GameObject prefab in prefabsToPreload)
         {
             if (prefab != null)
@@ -83,6 +80,5 @@ public class Debug_SceneInitializer : MonoBehaviour
                 Destroy(instance);
             }
         }
-        Debug.Log("资源预加载完毕。");
     }
 }

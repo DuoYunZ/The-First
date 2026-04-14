@@ -151,8 +151,6 @@ public class EnemyProjectileAttack : MonoBehaviour
     {
         if (!isAttacking) return; // 没有在攻击，不打断
 
-        Debug.Log($"<color=yellow>[{gameObject.name}] Projectile Attack INTERRUPTED!</color>");
-
         if (attackCoroutine != null)
         {
             StopCoroutine(attackCoroutine); // [!] 停止攻击协程

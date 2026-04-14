@@ -25,7 +25,6 @@ public class PlayerXPUI : MonoBehaviour // 建议将此脚本挂载在 CombatUIC
                 levelManager = GameManager.Instance.playerTransform.GetComponent<PlayerLevelManager>();
                 if (levelManager != null)
                 {
-                    Debug.Log("PlayerXPUI found PlayerLevelManager via GameManager.");
                 }
             }
             // 或者全局查找 (效率较低)

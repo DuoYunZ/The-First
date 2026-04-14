@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -36,8 +36,6 @@ public class FrostNovaUltimate : MonoBehaviour
     {
         // 支持 Enemy 和 Enemies 两种 layer 命名
         enemyLayer = LayerMask.GetMask("Enemy") | LayerMask.GetMask("Enemies");
-        Debug.Log($"<color=cyan>[冰爽之星] 初始化位置={transform.position}, enemyLayer={enemyLayer.value}, freezeRadius={freezeRadius}, damage={damage}</color>");
-
         // 设置层为 Default，确保和 Enemy 层碰撞生效
         gameObject.layer = LayerMask.NameToLayer("Default");
         // 子物体也设置为 Default
@@ -142,7 +140,6 @@ public class FrostNovaUltimate : MonoBehaviour
             }
         }
 
-        Debug.Log($"<color=cyan>[大招] 冰爽之星爆发！半径{freezeRadius} 伤害{damage} 冰冻{freezeDuration}s 命中{hitCount}个目标</color>");
     }
 
     // 后续只靠 NavMeshObstacle 阻挡移动，不再持续冰冻

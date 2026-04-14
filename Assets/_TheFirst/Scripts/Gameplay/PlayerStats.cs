@@ -48,6 +48,18 @@ public class PlayerStats : MonoBehaviour
     public float energyGainMultiplier = 1f;  // 能量获取倍率
     public float lifeStealPercent = 0f;      // 伤害吸血百分比
 
+    [Header("触发型被动属性")]
+    public float berserkerDamagePerLevel = 0f;  // 狂战士之心：每级的增伤比例（实际增伤在RecalcStats中根据血量动态计算）
+    public int berserkerLevel = 0;              // 狂战士之心等级
+    public float thornsReflectPercent = 0f;     // 荆棘护甲反弹比例
+    public int killHealAmount = 0;              // 击杀回血值
+    public float globalFreezeChance = 0f;       // 全局冰冻概率
+    public float thunderWillChance = 0f;        // 雷霆意志触发概率
+    public float thunderWillDamageBonus = 0f;   // 雷霆意志伤害加成
+    public int flameTrailLevel = 0;             // 燃烧轨迹等级
+    public int dashExplosionLevel = 0;          // 冲刺余烬等级
+    public float experienceGainMultiplier = 1f; // 经验获取倍率
+
     // --- 【新增】基础值备份 (用于重算) ---
     private float _baseDamageMultiplier;
     private float _baseAoeDamageMultiplier;
@@ -67,6 +79,15 @@ public class PlayerStats : MonoBehaviour
     private int _baseBonusSlashCount;
     private int _baseBonusOrbitalCount;
     private int _baseBonusProjectileCount;
+
+    // 触发型被动备份
+    private float _baseThornsReflect;
+    private int _baseKillHeal;
+    private float _baseGlobalFreezeChance;
+    private float _baseThunderWillChance;
+    private float _baseThunderWillDmgBonus;
+    private float _baseLifeStealPercent_fromPassive;
+    private float _baseExperienceGainMultiplier;
 
     [Header("武器特效加成")]
     public float parabolicAoeStunChance = 0f;
@@ -130,6 +151,15 @@ public class PlayerStats : MonoBehaviour
         _baseCooldownReduction = 0f;
         _baseEnergyGainMultiplier = 1f;
         _baseLifeStealPercent = 0f;
+
+        // 触发型被动初始化
+        _baseThornsReflect = 0f;
+        _baseKillHeal = 0;
+        _baseGlobalFreezeChance = 0f;
+        _baseThunderWillChance = 0f;
+        _baseThunderWillDmgBonus = 0f;
+        _baseLifeStealPercent_fromPassive = 0f;
+        _baseExperienceGainMultiplier = 1f;
     }
 
     // 角色技能树属性备份
@@ -142,14 +172,13 @@ public class PlayerStats : MonoBehaviour
         if (PlayerProgressManager.Instance == null) return;
         var ppm = PlayerProgressManager.Instance;
 
-        Debug.Log("<color=cyan>正在从 PlayerProgressManager 应用永久属性加成...</color>");
-
         // --- 武器技能树属性 ---
         _baseFlatDamage += ppm.permanentFlatDamageBonus;
         _baseDamageMultiplier += ppm.permanentDamagePercentBonus;
         _baseFireRateMultiplier -= ppm.permanentFireRateBonus;
 
         // --- 角色技能树属性 ---
+        _baseDamageMultiplier += ppm.permanentCharDamagePercentBonus; // 角色技能树的攻击力加成
         _baseMaxHealth += ppm.permanentMaxHealthBonus;
         armor += ppm.permanentArmorBonus;
         _baseMoveSpeedMultiplier += ppm.permanentMoveSpeedBonus;
@@ -159,9 +188,6 @@ public class PlayerStats : MonoBehaviour
         _baseEnergyGainMultiplier += ppm.permanentEnergyGainBonus;
         _baseLifeStealPercent += ppm.permanentLifeStealPercent;
 
-        Debug.Log($"<color=cyan>[属性加成] 生命+{ppm.permanentMaxHealthBonus} 护甲+{ppm.permanentArmorBonus} " +
-                  $"移速+{ppm.permanentMoveSpeedBonus * 100}% 冷却-{ppm.permanentCooldownReduction * 100}% " +
-                  $"能量+{ppm.permanentEnergyGainBonus * 100}% 吸血+{ppm.permanentLifeStealPercent * 100}%</color>");
     }
 
     public void EquipOrUpgradePassiveItem(PassiveItemData itemData)
@@ -174,7 +200,6 @@ public class PlayerStats : MonoBehaviour
             if (existingItem.currentLevel < itemData.maxLevel)
             {
                 existingItem.currentLevel++;
-                Debug.Log($"升级被动道具: {itemData.itemName} -> Lv.{existingItem.currentLevel}");
             }
         }
         else
@@ -182,7 +207,6 @@ public class PlayerStats : MonoBehaviour
             if (activePassiveItems.Count < 6)
             {
                 activePassiveItems.Add(new RuntimePassiveItem { data = itemData, currentLevel = 1 });
-                Debug.Log($"获得被动道具: {itemData.itemName}");
             }
             else
             {
@@ -220,17 +244,65 @@ public class PlayerStats : MonoBehaviour
         energyGainMultiplier = _baseEnergyGainMultiplier;
         lifeStealPercent = _baseLifeStealPercent;
 
+        // 触发型被动重置
+        berserkerLevel = 0;
+        berserkerDamagePerLevel = 0f;
+        thornsReflectPercent = _baseThornsReflect;
+        killHealAmount = _baseKillHeal;
+        globalFreezeChance = _baseGlobalFreezeChance;
+        thunderWillChance = _baseThunderWillChance;
+        thunderWillDamageBonus = _baseThunderWillDmgBonus;
+        flameTrailLevel = 0;
+        dashExplosionLevel = 0;
+        experienceGainMultiplier = _baseExperienceGainMultiplier;
+
         // 2. 遍历所有被动道具并叠加
         foreach (var item in activePassiveItems)
         {
             ApplyPassiveItemStat(item.data, item.currentLevel);
         }
 
-        // 3. 通知其他组件
+        // 3. 条件型加成（狂战士之心）—— 每次重算都检查血量
+        ApplyBerserkerBonus();
+
+        // 4. 通知其他组件
         UpdateDependentComponents();
 
-        Debug.Log($"属性重算完成。当前额外刀光: {bonusSlashCount}");
-        Debug.Log($"属性重算完成。持续时间倍率: {durationMultiplier}");
+    }
+
+    /// <summary>
+    /// 狂战士之心：生命值低于50%时叠加增伤
+    /// 每次 RecalculateStats 后自动调用，也可由 Health 变化时外部触发
+    /// </summary>
+    private void ApplyBerserkerBonus()
+    {
+        if (berserkerLevel <= 0) return;
+
+        // 查找玩家 Health 组件
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
+
+        Health playerHealth = player.GetComponent<Health>();
+        if (playerHealth == null) return;
+
+        // 血量低于50%时激活增伤
+        if (playerHealth.GetHealthPercentage() < 0.5f)
+        {
+            float bonus = berserkerDamagePerLevel * berserkerLevel;
+            damageMultiplier += bonus;
+        }
+    }
+
+    /// <summary>
+    /// 外部调用：当玩家血量变化时重新检查条件型被动效果
+    /// 由 Health.OnHealthChanged 事件触发
+    /// </summary>
+    public void OnPlayerHealthChanged()
+    {
+        if (berserkerLevel > 0)
+        {
+            RecalculateStats();
+        }
     }
 
     private void ApplyPassiveItemStat(PassiveItemData data, int level)
@@ -260,6 +332,38 @@ public class PlayerStats : MonoBehaviour
             case UpgradeType.CritDamage: critDamage += totalValue; break;
             case UpgradeType.Revival:
                 revivalCount += Mathf.RoundToInt(totalValue);
+                break;
+
+            // === 触发型被动道具 ===
+            case UpgradeType.BerserkerHeart:
+                berserkerLevel = level;
+                berserkerDamagePerLevel = data.valuePerLevel;
+                break;
+            case UpgradeType.FlameTrail:
+                flameTrailLevel = level;
+                break;
+            case UpgradeType.ThornsDamage:
+                thornsReflectPercent += totalValue;
+                break;
+            case UpgradeType.KillHeal:
+                killHealAmount += Mathf.RoundToInt(totalValue);
+                break;
+            case UpgradeType.GlobalFreezeChance:
+                globalFreezeChance += totalValue;
+                break;
+            case UpgradeType.ThunderWill:
+                // valuePerLevel 同时控制概率和伤害: 概率 = level * 0.08, 伤害加成 = level * 0.15
+                thunderWillChance = level * 0.08f;
+                thunderWillDamageBonus = level * 0.15f;
+                break;
+            case UpgradeType.LifeStealPassive:
+                lifeStealPercent += totalValue;
+                break;
+            case UpgradeType.DashExplosion:
+                dashExplosionLevel = level;
+                break;
+            case UpgradeType.ExperienceGain:
+                experienceGainMultiplier += totalValue;
                 break;
         }
     }
@@ -312,7 +416,6 @@ public class PlayerStats : MonoBehaviour
                         break;
                 }
                 boomerangCatchStacks = 0;
-                Debug.Log($"回旋镖规则更新到 Level {targetLevel}");
             }
             else
             {

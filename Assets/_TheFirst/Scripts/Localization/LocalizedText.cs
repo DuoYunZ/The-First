@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 
 /// <summary>
@@ -143,6 +143,5 @@ public class LocalizedText : MonoBehaviour
         if (_text != null) englishFontSize = _text.fontSize;
         useEnglishOverrides = true;
 
-        Debug.Log($"[LocalizedText] 已复制当前布局到英文覆盖: pos={englishPosition}, size={englishSizeDelta}, fontSize={englishFontSize}");
     }
 }

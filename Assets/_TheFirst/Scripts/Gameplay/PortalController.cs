@@ -28,7 +28,6 @@ public class PortalController : MonoBehaviour
         }
 
         // 检查进入的是否是玩家（需要确保您的玩家预制件的Tag被设置为了"Player"）
-        Debug.Log("玩家已进入传送门，准备传送...");
         isActivated = true; // 标记为已激活
 
         // 开始传送流程
@@ -47,7 +46,6 @@ public class PortalController : MonoBehaviour
 
         // 3. 核心：加载战斗场景
         // 在加载前，DataManager中已经保存了我们在HubScene中初始化的角色数据
-        Debug.Log($"正在加载场景: {sceneToLoad}...");
         SceneManager.LoadScene(sceneToLoad);
     }
 }

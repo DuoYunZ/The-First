@@ -1,4 +1,4 @@
-// Landmine.cs
+﻿// Landmine.cs
 using UnityEngine;
 using System.Collections;
 
@@ -112,7 +112,6 @@ public class Landmine : MonoBehaviour
                     if (Random.value <= 0.15f)
                     {
                         launcher.GainEnergy(damage * 2f); // 给予双倍伤害值的能量
-                        Debug.Log("<color=green>[地雷] 能量回收触发！</color>");
                     }
                 }
             }
@@ -126,7 +125,6 @@ public class Landmine : MonoBehaviour
             {
                 bhField.Initialize(7f, 2.5f); // 拉扯速度7，持续2.5秒
             }
-            Debug.Log("<color=magenta>[地雷] 引力黑洞已生成！</color>");
         }
 
         // 【凝固汽油弹】爆炸后原地生成燃烧区域
@@ -141,7 +139,6 @@ public class Landmine : MonoBehaviour
                 hazard.hazardTypeTag = "NapalmHazard"; // 区分其他火海
                 hazard.Initialize(napalmDmg, 4f, wName, attacker);
             }
-            Debug.Log("<color=orange>[地雷] 凝固汽油弹燃烧区域已生成！</color>");
         }
 
         // 销毁地雷自身

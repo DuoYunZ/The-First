@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 
@@ -73,7 +73,6 @@ public class StormOrbiterUltimate : MonoBehaviour
 
         // 生命周期由 orbitalPivot 管理，枢轴销毁时本组件一起销毁
 
-        Debug.Log($"<color=yellow>[连携技] 雷暴漩涡初始化！伤害={damagePerHit} 持续={duration}s 吸附半径={pullRadius} 链数={chainTargets}</color>");
     }
 
     void Update()

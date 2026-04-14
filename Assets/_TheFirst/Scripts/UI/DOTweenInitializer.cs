@@ -11,6 +11,5 @@ public class DOTweenInitializer : MonoBehaviour
         // 这是一个非常安全的操作。
         DOTween.Init();
 
-        Debug.Log("DOTween Initialized via Code.");
     }
 }

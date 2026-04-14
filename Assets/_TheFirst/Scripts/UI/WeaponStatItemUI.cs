@@ -28,7 +28,9 @@ public class WeaponStatItemUI : MonoBehaviour
             iconImage.transform.localScale = Vector3.zero; // 初始缩小，准备做弹出动画
         }
 
-        nameText.text = $"{name} <size=80%>Lv.{level}</size>";
+        // 通过中文武器名反查英文翻译
+        string localizedName = LanguageTable.LocalizeWeaponName(name, LocalizationManager.CurrentLanguage);
+        nameText.text = localizedName;
         nameText.alpha = 0f; // 初始隐形
 
         damageBarFill.fillAmount = 0f;

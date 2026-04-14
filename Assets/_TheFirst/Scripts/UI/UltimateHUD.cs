@@ -107,9 +107,12 @@ public class UltimateHUD : MonoBehaviour
 
         go.SetActive(true);
 
-        // --- 【新增】自动附加拖拽组件 ---
+        // --- 自动附加拖拽组件（同时支持 Tooltip 悬停） ---
         UltimateIconDraggable draggable = go.GetComponent<UltimateIconDraggable>();
         if (draggable == null) draggable = go.AddComponent<UltimateIconDraggable>();
+
+        // 传入武器引用，用于 Tooltip 显示大招描述
+        draggable.weapon = weapon;
 
         iconQueue.Add(new QueueEntry
         {
@@ -120,7 +123,6 @@ public class UltimateHUD : MonoBehaviour
         // 更新索引
         draggable.queueIndex = iconQueue.Count - 1;
 
-        Debug.Log($"<color=cyan>[大招队列] 添加: {weapon.StatBlock.weaponName}</color>");
     }
 
     // 连线管理
@@ -330,12 +332,19 @@ public class UltimateHUD : MonoBehaviour
 }
 
 /// <summary>
-/// 大招图标可拖拽组件 - 拖拽交换队列位置
+/// 大招图标可拖拽组件 - 拖拽交换队列位置 + 鼠标悬停 Tooltip
 /// 动态挂载到生成的大招图标预制件上
 /// </summary>
-public class UltimateIconDraggable : MonoBehaviour, UnityEngine.EventSystems.IBeginDragHandler, UnityEngine.EventSystems.IDragHandler, UnityEngine.EventSystems.IEndDragHandler
+public class UltimateIconDraggable : MonoBehaviour,
+    UnityEngine.EventSystems.IBeginDragHandler,
+    UnityEngine.EventSystems.IDragHandler,
+    UnityEngine.EventSystems.IEndDragHandler,
+    UnityEngine.EventSystems.IPointerEnterHandler,
+    UnityEngine.EventSystems.IPointerExitHandler
 {
     [HideInInspector] public int queueIndex; // 在队列中的索引
+    [HideInInspector] public WeaponPart weapon; // 对应的武器引用（用于读取大招描述）
+
     private Canvas canvas;
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
@@ -353,10 +362,89 @@ public class UltimateIconDraggable : MonoBehaviour, UnityEngine.EventSystems.IBe
         canvas = GetComponentInParent<Canvas>();
     }
 
+    // ===== 鼠标悬停 Tooltip =====
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        if (TooltipUI.Instance == null || weapon == null || weapon.StatBlock == null) return;
+
+        string desc = null;
+
+        // 优先检测连携：如果队列前两个能组成连携，且当前图标是其中之一，则显示连携描述
+        if (UltimateHUD.Instance != null && UltimateManager.Instance != null)
+        {
+            var queue = UltimateHUD.Instance.GetQueue();
+            if (queue.Count >= 2 && (weapon == queue[0] || weapon == queue[1]))
+            {
+                // 检查是否能组成连携
+                foreach (var combo in UltimateManager.Instance.comboUltimates)
+                {
+                    if (combo != null && combo.MatchesWeapons(queue[0].StatBlock, queue[1].StatBlock))
+                    {
+                        // 找到连携，使用连携描述
+                        desc = combo.comboDescription;
+                        if (LocalizationManager.CurrentLanguage == SystemLanguage.English
+                            && !string.IsNullOrEmpty(combo.comboDescriptionEN))
+                        {
+                            desc = combo.comboDescriptionEN;
+                        }
+                        // 在描述前附加连携名称
+                        if (!string.IsNullOrEmpty(desc))
+                        {
+                            string comboTitle = combo.comboName;
+                            desc = $"<b>{comboTitle}</b>\n{desc}";
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 没有连携描述时，回退到单体大招描述
+        if (string.IsNullOrEmpty(desc))
+        {
+            desc = weapon.StatBlock.ultimateDescription;
+            if (LocalizationManager.CurrentLanguage == SystemLanguage.English
+                && !string.IsNullOrEmpty(weapon.StatBlock.ultimateDescriptionEN))
+            {
+                desc = weapon.StatBlock.ultimateDescriptionEN;
+            }
+        }
+
+        if (string.IsNullOrEmpty(desc)) return;
+
+        // 使用图标顶部中心作为气泡锚点（固定位置，不随鼠标变化）
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners);
+        Vector2 topCenter = new Vector2(
+            (corners[1].x + corners[2].x) * 0.5f,
+            corners[1].y);
+        TooltipUI.Instance.Show(desc, topCenter);
+    }
+
+    public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        if (TooltipUI.Instance != null)
+            TooltipUI.Instance.Hide();
+    }
+
+    void OnDestroy()
+    {
+        // 图标被销毁时（释放大招后），确保隐藏残留的气泡
+        if (TooltipUI.Instance != null)
+            TooltipUI.Instance.Hide();
+    }
+
+    // ===== 拖拽逻辑 =====
+
     public void OnBeginDrag(UnityEngine.EventSystems.PointerEventData eventData)
     {
         // 只响应左键拖拽
         if (eventData.button != UnityEngine.EventSystems.PointerEventData.InputButton.Left) return;
+
+        // 拖拽开始时隐藏 Tooltip
+        if (TooltipUI.Instance != null)
+            TooltipUI.Instance.Hide();
 
         originalPosition = rectTransform.position;
         originalParent = transform.parent;

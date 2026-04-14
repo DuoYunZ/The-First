@@ -68,6 +68,15 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 尝试获取翻译，找不到时返回 false（不打印警告）
+    /// </summary>
+    public static bool TryGet(string key, out string result)
+    {
+        result = LanguageTable.TryGet(key, _currentLanguage);
+        return result != null;
+    }
+
+    /// <summary>
     /// 切换语言并保存偏好
     /// </summary>
     public static void SetLanguage(SystemLanguage language)
@@ -78,7 +87,6 @@ public class LocalizationManager : MonoBehaviour
         PlayerPrefs.SetString(LANGUAGE_PREF_KEY, language.ToString());
         PlayerPrefs.Save();
 
-        Debug.Log($"[本地化] 语言已切换为: {language}");
         OnLanguageChanged?.Invoke();
     }
 

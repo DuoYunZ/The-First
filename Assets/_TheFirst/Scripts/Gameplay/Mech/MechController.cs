@@ -41,6 +41,8 @@ public class MechController : MonoBehaviour
     private PlayerControls playerControls;
 
     private bool isDashing = false;
+    private bool isKnockedBack = false; // 是否处于受击退状态
+    private float knockbackTimer = 0f;  // 击退剩余时间
 
     // 冲刺充能格系统
     private int currentCharges;
@@ -79,6 +81,8 @@ public class MechController : MonoBehaviour
         }
 
         playerControls = new PlayerControls();
+        // 应用已保存的自定义键位
+        KeyBindingManager.ApplyOverrides(playerControls);
 
         // 自动查找视觉模型和动画控制器
         visualsTransform = transform.Find("Visuals");
@@ -112,6 +116,11 @@ public class MechController : MonoBehaviour
         playerControls.Player.Enable();
 
         playerControls.Player.Dash.performed += PerformDash;
+        playerControls.Player.Ultimate.performed += PerformUltimate;
+
+        // 订阅改键事件，运行时改键后立即刷新绑定
+        if (KeyBindingManager.Instance != null)
+            KeyBindingManager.Instance.OnBindingChanged += OnBindingChanged;
     }
 
     private void OnDisable()
@@ -119,6 +128,18 @@ public class MechController : MonoBehaviour
         playerControls.Player.Disable();
 
         playerControls.Player.Dash.performed -= PerformDash;
+        playerControls.Player.Ultimate.performed -= PerformUltimate;
+
+        if (KeyBindingManager.Instance != null)
+            KeyBindingManager.Instance.OnBindingChanged -= OnBindingChanged;
+    }
+
+    /// <summary>
+    /// 运行时改键后重新应用覆盖到当前 PlayerControls 实例
+    /// </summary>
+    private void OnBindingChanged(string actionName, int bindingIndex)
+    {
+        KeyBindingManager.ApplyOverrides(playerControls);
     }
 
     // 我们不再需要 Initialize 方法，因为 Awake 已经可以完成所有工作
@@ -131,30 +152,42 @@ public class MechController : MonoBehaviour
             moveInput = playerControls.Player.Move.ReadValue<Vector2>();
         }
 
-        // 【新增】大招释放（Space键）
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        // 滚轮切换大招主武器（通过 Input System Action 读取）
+        float scroll = playerControls.Player.ScrollWeapon.ReadValue<float>();
+        if (Mathf.Abs(scroll) > 0.1f && UltimateManager.Instance != null)
         {
-            if (UltimateManager.Instance != null)
-            {
-                UltimateManager.Instance.TryReleaseUltimate();
-            }
+            UltimateManager.Instance.ScrollSelectWeapon(scroll);
         }
 
-        // 【新增】滚轮切换大招主武器
-        if (Mouse.current != null)
-        {
-            float scroll = Mouse.current.scroll.ReadValue().y;
-            if (Mathf.Abs(scroll) > 0.1f && UltimateManager.Instance != null)
-            {
-                UltimateManager.Instance.ScrollSelectWeapon(scroll);
-            }
-        }
-
-        // 【新增】每帧更新动画参数
+        // 每帧更新动画参数
         UpdateAnimation();
 
         // 冲刺充能恢复
         UpdateDashCharges();
+
+        // 更新击退计时器
+        if (isKnockedBack)
+        {
+            knockbackTimer -= Time.deltaTime;
+            if (knockbackTimer <= 0f)
+            {
+                isKnockedBack = false;
+            }
+        }
+
+        // --- 【被动道具】燃烧轨迹：移动时留下火焰区域 ---
+        UpdateFlameTrail();
+    }
+
+    /// <summary>
+    /// 大招释放（通过 Input System Action 触发，支持改键）
+    /// </summary>
+    private void PerformUltimate(InputAction.CallbackContext context)
+    {
+        if (UltimateManager.Instance != null)
+        {
+            UltimateManager.Instance.TryReleaseUltimate();
+        }
     }
 
     /// <summary>
@@ -178,7 +211,7 @@ public class MechController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!isDashing)
+        if (!isDashing && !isKnockedBack)
         {
             Move();
         }
@@ -249,7 +282,11 @@ public class MechController : MonoBehaviour
         isDashing = false;
         rb.velocity = Vector3.zero; // 停止冲刺移动
 
-        Debug.Log($"冲刺移动结束，但无敌状态还将持续 {invincibilityDuration - dashDuration} 秒");
+        // --- 【被动道具】冲刺余烬：冲刺结束后释放冲击波 ---
+        if (PlayerStats.Instance != null && PlayerStats.Instance.dashExplosionLevel > 0)
+        {
+            TriggerDashExplosion(transform.position);
+        }
 
         // 5. 计算剩余的无敌时间并继续等待
         float remainingInvincibility = invincibilityDuration - dashDuration;
@@ -265,7 +302,6 @@ public class MechController : MonoBehaviour
         }       
         
 
-        Debug.Log("无敌状态结束");
     }
     void Move()
     {
@@ -288,6 +324,27 @@ public class MechController : MonoBehaviour
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             visualsTransform.rotation = Quaternion.Slerp(visualsTransform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
         }
+    }
+
+    /// <summary>
+    /// 【新增】外部调用：施加击退力
+    /// </summary>
+    /// <param name="direction">击退方向（会自动归一化）</param>
+    /// <param name="force">击退力度</param>
+    /// <param name="duration">击退持续时间（期间不更新移动）</param>
+    public void ApplyKnockback(Vector3 direction, float force, float duration = 0.15f)
+    {
+        if (isDashing) return; // 冲刺中不被击退
+
+        direction.y = 0f;
+        direction = direction.normalized;
+
+        isKnockedBack = true;
+        knockbackTimer = duration;
+
+        // 清零当前速度后施加击退冲击
+        rb.velocity = Vector3.zero;
+        rb.AddForce(direction * force, ForceMode.Impulse);
     }
 
     /// <summary>
@@ -325,6 +382,154 @@ public class MechController : MonoBehaviour
         if (footstepAudioSource != null)
         {
             footstepAudioSource.PlayOneShot(clip);
+        }
+    }
+
+    // ============================================================
+    // 冲刺余烬 — 冲刺结束后的AOE冲击波
+    // ============================================================
+
+    [Header("冲刺余烬（被动道具）")]
+    [Tooltip("冲击波VFX预制件（可选，没有也能造成伤害）")]
+    public GameObject dashExplosionPrefab;
+    [Tooltip("冲击波基础伤害")]
+    public int dashExplosionBaseDamage = 50;
+    [Tooltip("冲击波基础半径")]
+    public float dashExplosionBaseRadius = 8f;
+
+    /// <summary>
+    /// 冲刺结束后在指定位置释放冲击波AOE
+    /// </summary>
+    private void TriggerDashExplosion(Vector3 position)
+    {
+        int level = PlayerStats.Instance.dashExplosionLevel;
+        float damageMultiplier = 1f + (level * 0.25f); // 每级+25%伤害
+        float radiusMultiplier = 1f + (level * 0.10f); // 每级+10%范围
+
+        int finalDamage = Mathf.RoundToInt(dashExplosionBaseDamage * damageMultiplier * PlayerStats.Instance.damageMultiplier);
+        float finalRadius = dashExplosionBaseRadius * radiusMultiplier;
+
+        // 生成冲击波VFX
+        if (dashExplosionPrefab != null)
+        {
+            GameObject vfx = Instantiate(dashExplosionPrefab, position, Quaternion.identity);
+            vfx.transform.localScale = Vector3.one * radiusMultiplier;
+            Destroy(vfx, 2f); // 2秒后自动清理
+        }
+
+        // 对范围内敌人造成伤害和击退
+        Collider[] hits = Physics.OverlapSphere(position, finalRadius, LayerMask.GetMask("Enemies"));
+        foreach (var hit in hits)
+        {
+            Health targetHealth = hit.GetComponent<Health>();
+            if (targetHealth != null && !targetHealth.IsDead)
+            {
+                targetHealth.TakeDamage(finalDamage, position, gameObject, AttackType.Standard, null, null, "冲刺余烬");
+
+                // 施加击退
+                StatusEffectReceiver receiver = hit.GetComponent<StatusEffectReceiver>();
+                if (receiver != null)
+                {
+                    Vector3 knockDir = (hit.transform.position - position).normalized;
+                    receiver.ApplyKnockback(knockDir, 8f, 0.3f);
+                }
+            }
+        }
+
+        Debug.Log($"<color=orange>[冲刺余烬] Lv{level} 触发！伤害={finalDamage}, 半径={finalRadius:F1}, 命中={hits.Length}</color>");
+    }
+
+    // ============================================================
+    // 燃烧轨迹 — 移动时在地面留下火焰区域
+    // ============================================================
+
+    [Header("燃烧轨迹（被动道具）")]
+    [Tooltip("燃烧区域VFX预制件（可选，没有也能造成伤害）")]
+    public GameObject flameZonePrefab;
+    [Tooltip("满级时的留痕间距（米）")]
+    public float flameTrailMinInterval = 1.5f;
+    [Tooltip("1级时的留痕间距（米）")]
+    public float flameTrailMaxInterval = 3.0f;
+    [Tooltip("燃烧区域存在时间（秒）")]
+    public float flameZoneDuration = 3f;
+    [Tooltip("燃烧区域半径")]
+    public float flameZoneRadius = 1.5f;
+    [Tooltip("每跳伤害基础值")]
+    public int flameBaseDamagePerTick = 3;
+    [Tooltip("每跳间隔（秒）")]
+    public float flameTickInterval = 0.5f;
+
+    private Vector3 lastFlameDropPosition;
+    private bool flameTrailInitialized = false;
+
+    /// <summary>
+    /// 每帧检查是否需要放置燃烧区域
+    /// </summary>
+    private void UpdateFlameTrail()
+    {
+        if (PlayerStats.Instance == null) return;
+        int level = PlayerStats.Instance.flameTrailLevel;
+        if (level <= 0) return;
+
+        // 首次激活时初始化位置
+        if (!flameTrailInitialized)
+        {
+            lastFlameDropPosition = transform.position;
+            flameTrailInitialized = true;
+            return;
+        }
+
+        // 根据等级插值计算掉落间距（等级越高间距越小，火焰越密集）
+        float dropInterval = Mathf.Lerp(flameTrailMaxInterval, flameTrailMinInterval, (float)(level - 1) / 4f);
+
+        float distance = Vector3.Distance(transform.position, lastFlameDropPosition);
+        if (distance >= dropInterval)
+        {
+            DropFlameZone(level);
+            lastFlameDropPosition = transform.position;
+        }
+    }
+
+    /// <summary>
+    /// 在当前位置放下一个燃烧区域
+    /// </summary>
+    private void DropFlameZone(int level)
+    {
+        // 计算伤害（每级+20%）
+        float dmgMultiplier = 1f + (level - 1) * 0.2f;
+        int finalDamage = Mathf.RoundToInt(flameBaseDamagePerTick * dmgMultiplier);
+
+        // 应用玩家全局伤害加成
+        if (PlayerStats.Instance != null)
+        {
+            finalDamage = Mathf.RoundToInt(finalDamage * PlayerStats.Instance.damageMultiplier);
+        }
+
+        Vector3 spawnPos = new Vector3(transform.position.x, 0.05f, transform.position.z);
+
+        // 生成燃烧区域
+        if (flameZonePrefab != null)
+        {
+            GameObject zone = Instantiate(flameZonePrefab, spawnPos, Quaternion.identity);
+            FlameTrailZone flameZone = zone.GetComponent<FlameTrailZone>();
+            if (flameZone != null)
+            {
+                flameZone.Initialize(finalDamage, flameZoneDuration, flameZoneRadius, flameTickInterval);
+            }
+            else
+            {
+                // 预制件上没有FlameTrailZone脚本，自动添加
+                flameZone = zone.AddComponent<FlameTrailZone>();
+                flameZone.Initialize(finalDamage, flameZoneDuration, flameZoneRadius, flameTickInterval);
+            }
+        }
+        else
+        {
+            // 没有预制件也能工作：程序化创建简易燃烧区域
+            GameObject zone = new GameObject("FlameTrailZone");
+            zone.transform.position = spawnPos;
+            FlameTrailZone flameZone = zone.AddComponent<FlameTrailZone>();
+            flameZone.Initialize(finalDamage, flameZoneDuration, flameZoneRadius, flameTickInterval);
         }
     }
 }

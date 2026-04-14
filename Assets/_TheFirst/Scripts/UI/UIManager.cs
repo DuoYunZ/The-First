@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI; // 引入UI命名空间
 using System.Collections; // <--- 添加这一行 (Add this line)
 using TMPro; // <--- 确保有这一行
@@ -86,8 +86,6 @@ public class UIManager : MonoBehaviour
 
     public void InitializeCombatUIReferences()
     {
-        Debug.Log("[UIManager] 正在初始化战斗UI引用...");
-
         // 1. 寻找战斗UI的根容器
         // 注意：这里的名字必须和您场景Hierarchy中的完全一致
         GameObject combatUI_Container_GO = GameObject.Find("---Combat UI Container---");
@@ -137,8 +135,6 @@ public class UIManager : MonoBehaviour
 
         // 6. 初始化完成后，确保战斗UI是可见的
         ShowCombatUI();
-        Debug.Log("[UIManager] 战斗UI引用初始化成功，并已显示。");
-       
     }
     public void UpdateWaveNumber(int waveNum, string waveName = "", WaveType type = WaveType.Normal)
     {

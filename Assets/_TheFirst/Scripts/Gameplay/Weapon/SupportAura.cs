@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -75,9 +75,6 @@ public class SupportAura : MonoBehaviour
             currentVfx.transform.localPosition = Vector3.zero;
             currentVfx.transform.localScale = Vector3.one;
         }
-
-        Debug.Log($"[SupportAura] 初始化: 伤害={damagePerTick}, 半径={radius}, 频率={dotInterval:F2}s, " +
-                  $"回血={healAmount}, 减速={slowPercent}%, 增伤={fragilePercent}%");
 
         // 确保所有粒子系统使用 Hierarchy 缩放模式（这样 transform.localScale 能正确传播）
         foreach (var ps in GetComponentsInChildren<ParticleSystem>(true))
@@ -184,7 +181,6 @@ public class SupportAura : MonoBehaviour
 
         int heal = Mathf.RoundToInt(healAmount);
         playerHealth.Heal(heal);
-        Debug.Log($"<color=green>[生命脉动] 恢复 {heal} 点生命值</color>");
     }
 
     // === 生命汲取大招：敌人在光环内死亡时回血（由 UltimateManager 开启） ===
@@ -216,7 +212,6 @@ public class SupportAura : MonoBehaviour
             int maxHp = playerHealth.GetMaxHealth();
             int heal = Mathf.Max(1, Mathf.RoundToInt(maxHp * 0.01f));
             playerHealth.Heal(heal);
-            Debug.Log($"<color=green>[生命汲取] 恢复 {heal} 点 (1%最大HP)</color>");
         }
     }
     /// <summary>

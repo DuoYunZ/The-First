@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections;
 
 // 挂载在 MechRoot 上
 public class PlayerLevelManager : MonoBehaviour
@@ -41,6 +42,17 @@ public class PlayerLevelManager : MonoBehaviour
 
     public event Action<int> OnLevelUp;
 
+    [Header("升级特效")]
+    [Tooltip("升级时在角色身上生成的VFX预制件")]
+    public GameObject levelUpVfxPrefab;
+    [Tooltip("升级音效")]
+    public AudioClip levelUpSound;
+    [Tooltip("升级音效音量")]
+    [Range(0f, 1f)]
+    public float levelUpSoundVolume = 1f;
+    [Tooltip("升级特效持续时间（秒，之后自动销毁）")]
+    public float vfxDuration = 2f;
+
     [Header("经验曲线配置")]
     [Tooltip("选择经验增长的计算公式")]
     public LevelingScheme levelingScheme = LevelingScheme.Quadratic;
@@ -72,8 +84,6 @@ public class PlayerLevelManager : MonoBehaviour
     public void AddExperience(int amount)
     {
         currentExperience += amount;
-        Debug.Log($"获得 {amount} XP. 当前: {currentExperience} / {experienceToNextLevel}");
-
         // 检查是否升级
         while (currentExperience >= experienceToNextLevel) // 使用 while 以处理一次获得很多经验连升多级的情况
         {
@@ -89,21 +99,43 @@ public class PlayerLevelManager : MonoBehaviour
     /// </summary>
     private void LevelUp()
     {
-        // --- 日志 1 ---
-        Debug.Log("<color=lime>-- CHECKPOINT 1: LevelUp() method in PlayerLevelManager was called! --</color>");
-
         currentLevel++;
-        currentExperience -= experienceToNextLevel; // 减去当前等级所需的经验
+        currentExperience -= experienceToNextLevel;
 
-        // 计算升到再下一级所需的经验 (这里用一个简单的示例公式)
+        // 计算升到再下一级所需的经验
         experienceToNextLevel = CalculateNextLevelXP(currentLevel);
 
-        Debug.Log($"--- LEVEL UP! --- 达到等级 {currentLevel}. 下一级需要 {experienceToNextLevel} XP.");
+        // --- 升级特效与音效 ---
+        PlayLevelUpEffects();
 
-        // 触发升级事件
-        OnLevelUp?.Invoke(currentLevel); // 触发升级事件，通知 UpgradeManager
+        // 触发升级事件，通知 UpgradeManager
+        OnLevelUp?.Invoke(currentLevel);
+    }
 
-        // (可选) 可以在这里添加升级特效、音效等
+    /// <summary>
+    /// 播放升级特效和音效
+    /// </summary>
+    private void PlayLevelUpEffects()
+    {
+        // 生成VFX
+        if (levelUpVfxPrefab != null)
+        {
+            GameObject vfx = Instantiate(levelUpVfxPrefab, transform.position, Quaternion.identity, transform);
+            Destroy(vfx, vfxDuration);
+        }
+
+        // 播放音效
+        if (levelUpSound != null)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySoundEffect(levelUpSound, levelUpSoundVolume);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(levelUpSound, transform.position, levelUpSoundVolume);
+            }
+        }
     }
 
     /// <summary>

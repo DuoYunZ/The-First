@@ -77,7 +77,6 @@ public class PlayerShield : MonoBehaviour
         isUnlocked = true;
 
         equippedShieldData = data;
-        Debug.Log($"已装备护盾: {data.shieldName}");
         RegenerateShield();
     }
 
@@ -132,8 +131,6 @@ public class PlayerShield : MonoBehaviour
             // --- 子弹反弹逻辑 ---
             if (projectile != null)
             {
-                Debug.Log("护盾在承受伤害后，【反弹】了一枚子弹！");
-
                 Vector3 incomingDirection = projectile.transform.forward;
                 Vector3 flattenedNormal = (transform.position - projectile.transform.position);
                 flattenedNormal.y = 0;
@@ -172,7 +169,6 @@ public class PlayerShield : MonoBehaviour
 
         if (reflectedBeamController != null)
         {
-            Debug.Log("护盾触发反击光束！");
             // 【修改】使用新脚本的初始化方法，并传入原始光束的实例
             reflectedBeamController.Initialize(
                 originalBeam.attackData, // <-- 这里需要让 EnemyBeamController 暴露它的 attackData
@@ -189,8 +185,6 @@ public class PlayerShield : MonoBehaviour
         Transform nearestEnemy = null;
 
         // 【新增日志 A】显示搜索范围和排除目标
-        Debug.Log($"--- 开始为反弹索敌 (排除: {excludeEnemy.name}) ---");
-
         Collider[] colliders = Physics.OverlapSphere(transform.position, 50f, LayerMask.GetMask("Enemies"));
 
         foreach (Collider hitCollider in colliders)
@@ -203,24 +197,18 @@ public class PlayerShield : MonoBehaviour
                 float dSqrToTarget = (transform.position - hitCollider.transform.position).sqrMagnitude;
 
                 // 【新增日志 B】打印出每一个被考虑的目标和它的距离
-                Debug.Log($"正在考虑目标: {hitCollider.name}, 距离平方: {dSqrToTarget.ToString("F2")}");
-
                 if (dSqrToTarget < closestDistanceSqr)
                 {
                     closestDistanceSqr = dSqrToTarget;
                     nearestEnemy = enemyHealth.transform;
 
                     // 【新增日志 C】打印出何时更新了最近目标
-                    Debug.Log($"<color=lime>更新最近目标为: {nearestEnemy.name}</color>");
                 }
             }
         }
 
-        // 【新增日志 D】报告最终的索敌结果
-        if (nearestEnemy != null)
-            Debug.Log($"--- 索敌结束, 最终选择: {nearestEnemy.name} ---");
-        else
-            Debug.LogWarning($"--- 索敌结束, 未找到有效目标 ---");
+
+
 
         return nearestEnemy;
     }
@@ -233,7 +221,6 @@ public class PlayerShield : MonoBehaviour
         {
             Destroy(currentVisualInstance);
         }
-        Debug.Log("护盾已击破！进入冷却...");
     }
 
     private void RegenerateShield()
@@ -268,7 +255,6 @@ public class PlayerShield : MonoBehaviour
             if (joint != null && playerRb != null)
             {
                 joint.connectedBody = playerRb;
-                Debug.Log("成功将护盾关节连接到玩家刚体。");
             }
             else
             {
@@ -276,7 +262,6 @@ public class PlayerShield : MonoBehaviour
             }
             // --- 修改结束 ---
         }
-        Debug.Log("护盾已再生！");
     }
     public void UnlockShield()
     {

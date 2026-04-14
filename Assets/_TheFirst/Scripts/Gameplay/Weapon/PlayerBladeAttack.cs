@@ -1,4 +1,4 @@
-// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
+﻿// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
@@ -180,13 +180,6 @@ public class PlayerBladeAttack : MonoBehaviour
     {
         isAttacking = true;
 
-        // Unity 销毁的对象不是 C# null，必须用 == 而非 ?.
-        if (weaponCooldownMaterial != null)
-        {
-            try { weaponCooldownMaterial.StartCooldown(cooldownDuration); }
-            catch (System.Exception) { weaponCooldownMaterial = null; }
-        }
-
         if (floatingWeapon != null) floatingWeapon.HideWeapon();
 
         Transform effectTransform = floatingWeapon != null ? floatingWeapon.transform :
@@ -212,6 +205,22 @@ public class PlayerBladeAttack : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         if (floatingWeapon != null) floatingWeapon.ShowWeapon();
         isAttacking = false;
+
+        // 攻击动画结束后才启动冷却视觉，确保充满 = 可以攻击
+        if (weaponCooldownMaterial != null)
+        {
+            float remainingCooldown = cooldownTimer; // 剩余冷却时间
+            if (remainingCooldown > 0.05f)
+            {
+                try { weaponCooldownMaterial.StartCooldown(remainingCooldown); }
+                catch (System.Exception) { weaponCooldownMaterial = null; }
+            }
+            else
+            {
+                try { weaponCooldownMaterial.SetChargedEffect(); }
+                catch (System.Exception) { weaponCooldownMaterial = null; }
+            }
+        }
     }
     private void GenerateSlashVFX()
     {
@@ -271,7 +280,6 @@ public class PlayerBladeAttack : MonoBehaviour
 
             if (localBonus > 0)
             {
-                Debug.Log($"[BladeAttack] 发起攻击: 基础{baseCount} + 全局{globalBonus} + 局部{localBonus} = 总计 {totalSlashCount} 道刀光");
             }
 
             // 5. 生成刀光
@@ -384,7 +392,6 @@ public class PlayerBladeAttack : MonoBehaviour
             float finalLifetime = baseLife * durationMult;
 
             // --- 打印日志 (请在控制台查看这个) ---
-            Debug.Log($"[BladeAttack调试] 基础时间:{baseLife} * (全局:{globalMult} + 局部:{localBonus}) = 最终:{finalLifetime} | WeaponPart存在? {myWeaponPart != null}");
             // =========================================================
 
             projectileScript.InitializeAsStraight(
@@ -522,15 +529,10 @@ public class PlayerBladeAttack : MonoBehaviour
 #if UNITY_EDITOR
         if (!Application.isPlaying)
         {
-            Debug.Log("Gizmos 预览: Level 1");
             DrawGizmosForPattern(slashesLevel1);
-            Debug.Log("Gizmos 预览: Level 2");
             DrawGizmosForPattern(slashesLevel2);
-            Debug.Log("Gizmos 预览: Level 3");
             DrawGizmosForPattern(slashesLevel3);
-            Debug.Log("Gizmos 预览: Level 4");
             DrawGizmosForPattern(slashesLevel4);
-            Debug.Log("Gizmos 预览: Level 6");
             DrawGizmosForPattern(slashesLevel5);
             return;
         }
@@ -573,7 +575,6 @@ public class PlayerBladeAttack : MonoBehaviour
     {
         if (currentMode == newMode)
         {
-            Debug.Log($"<color=cyan>[斩击模式] 已经是 {newMode} 模式，无需切换</color>");
             return;
         }
 
@@ -594,11 +595,9 @@ public class PlayerBladeAttack : MonoBehaviour
             if (targetModel != null)
             {
                 floatingWeapon.SwapModel(targetModel);
-                Debug.Log($"<color=cyan>[斩击模式] 背部武器切换为: {targetModel.name}</color>");
             }
         }
 
-        Debug.Log($"<color=yellow>[斩击模式] {oldMode} → {newMode}</color>");
     }
 
     /// <summary>

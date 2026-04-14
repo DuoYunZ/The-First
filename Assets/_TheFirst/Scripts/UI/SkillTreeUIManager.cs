@@ -149,8 +149,6 @@ public class SkillTreeUIManager : MonoBehaviour
     private void GenerateUnlockedSkillsList()
     {
         // [调试] 打印日志看看有没有运行到这里
-        Debug.Log($"开始生成技能列表。当前武器: {currentSelectedTree?.name}");
-
         // 1. 检查容器
         if (skillDescriptionContainer == null)
         {

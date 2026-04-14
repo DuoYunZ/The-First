@@ -36,6 +36,10 @@ public class SettlementUI : MonoBehaviour
     public GameObject panelRoot;
     public TextMeshProUGUI mainTitleText;
     public GameObject buttonsPanel;
+    [Tooltip("重新开始按钮文字")]
+    public TextMeshProUGUI restartButtonText;
+    [Tooltip("返回按钮文字")]
+    public TextMeshProUGUI returnButtonText;
 
     [Header("武器列表")]
     public Transform weaponStatContainer;
@@ -73,6 +77,13 @@ public class SettlementUI : MonoBehaviour
 
         mainTitleText.text = isVictory ? LocalizationManager.T("ui.mission_complete") : LocalizationManager.T("ui.mission_failed");
         mainTitleText.color = isVictory ? Color.yellow : Color.white;
+
+        // 设置统计标题文本和按钮的本地化
+        if (timeStat.title != null) timeStat.title.text = LocalizationManager.T("ui.survival_time");
+        if (killStat.title != null) killStat.title.text = LocalizationManager.T("ui.kill_count");
+        if (restartButtonText != null) restartButtonText.text = LocalizationManager.T("ui.restart");
+        if (returnButtonText != null) returnButtonText.text = LocalizationManager.T("ui.return");
+        if (goldStat.title != null) goldStat.title.text = LocalizationManager.T("ui.gold_earned");
 
         if (buttonsPanel) buttonsPanel.SetActive(false);
 
@@ -250,12 +261,14 @@ public class SettlementUI : MonoBehaviour
     public void OnRestartClicked()
     {
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 确保物理模拟恢复
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void OnReturnToHubClicked()
     {
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 确保物理模拟恢复
         PlayerProgressManager.Instance?.SaveGame();
         SceneManager.LoadScene(1);
     }

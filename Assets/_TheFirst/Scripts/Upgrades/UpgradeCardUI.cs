@@ -5,6 +5,7 @@ using DG.Tweening;
 using UnityEngine.EventSystems;
 using System.Text;
 using System.Linq;
+using System;
 
 public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
@@ -16,6 +17,34 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     [Header("数值颜色配置")]
     public Color betterStatColor = Color.green;
     public Color worseStatColor = Color.red;
+
+    [Header("宝石插槽显示")]
+    [Tooltip("5个宝石插槽Image（卡片底部，需要在预制件中创建）")]
+    public Image[] gemSlotImages;
+    [Tooltip("空插槽Sprite")]
+    public Sprite emptyGemSprite;
+    [Tooltip("已填充宝石Sprite（第一轮）")]
+    public Sprite filledGemSprite;
+    [Tooltip("已填充宝石Sprite（第二轮）")]
+    public Sprite filledGemSpriteTier1;
+
+    [Header("大招宝石（图标下方的红宝石位置）")]
+    [Tooltip("大招宝石插槽Image（卡片顶部图标下方）")]
+    public Image ultimateGemSlot;
+    [Tooltip("大招宝石Sprite（已解锁状态）")]
+    public Sprite ultimateGemSprite;
+
+    [Header("宝石飞入动画")]
+    [Tooltip("飞行宝石预制件（一个带Image的RectTransform）")]
+    public GameObject flyingGemPrefab;
+    [Tooltip("飞行宝石起始位置偏移（相对于卡片中心）")]
+    public Vector2 flyingGemStartOffset = new Vector2(0, 400f);
+    [Tooltip("宝石飞行时间")]
+    public float gemFlyDuration = 0.45f;
+    [Tooltip("宝石镶嵌后的展示停留时间")]
+    public float gemShowDelay = 0.0f;
+    [Tooltip("插槽发光Image（可选）")]
+    public Image gemGlowEffect;
 
     // 内部变量
     private CanvasGroup canvasGroup;
@@ -75,6 +104,9 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         Canvas.ForceUpdateCanvases();
         initialScale = transform.localScale;
         initialAnchorPos = rectTransform.anchoredPosition;
+
+        // 刷新宝石插槽显示
+        RefreshGemSlots();
     }
 
     // 分支选择专用的Setup重载
@@ -120,24 +152,272 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         rectTransform.DOKill();
         transform.DOKill();
-        if (animator != null) animator.SetTrigger("Select");
 
+        // 【关键】禁用Animator，防止和DOTween抢占Transform控制权
+        if (animator != null) animator.enabled = false;
+
+        // 【关键】禁用父容器的布局组件，防止其他卡片消失后剩余卡片跳位
+        Transform container = transform.parent;
+        if (container != null)
+        {
+            var layoutGroup = container.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            if (layoutGroup != null) layoutGroup.enabled = false;
+            var contentFitter = container.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+            if (contentFitter != null) contentFitter.enabled = false;
+        }
+
+        // 通知其他卡片淡出消失
+        NotifyOtherCardsDismiss();
+
+        // 判断是否需要播放宝石飞入动画（武器相关的卡片才播放）
+        bool isWeaponCard = sourceNode != null && sourceNode.associatedWeapon != null;
+        bool hasGemSlots = (gemSlotImages != null && gemSlotImages.Length > 0) || ultimateGemSlot != null;
+
+        if (isWeaponCard && hasGemSlots && UpgradeManager.Instance != null)
+        {
+            // 先播放宝石镶嵌动画，再消失
+            PlayGemEmbedThenDismiss();
+        }
+        else
+        {
+            // 非武器卡 / 没有宝石插槽：直接消失
+            PlayDismissAnimation();
+        }
+    }
+
+    /// <summary>
+    /// 通知同一批次的其他卡片淡出消失
+    /// </summary>
+    private void NotifyOtherCardsDismiss()
+    {
+        if (UpgradeManager.Instance == null) return;
+        // 获取同一容器下的所有卡片
+        Transform container = transform.parent;
+        if (container == null) return;
+
+        foreach (Transform child in container)
+        {
+            if (child == this.transform) continue; // 跳过自己
+            var otherCard = child.GetComponent<UpgradeCardUI>();
+            if (otherCard != null && !otherCard.isSelected)
+            {
+                otherCard.FadeOutPassive();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 被动淡出（被其他卡片选中时调用）
+    /// </summary>
+    public void FadeOutPassive()
+    {
+        isSelected = true; // 防止再次点击
+        rectTransform.DOKill();
+        transform.DOKill();
+
+        // 【关键】禁用Animator，防止和DOTween抢占Transform控制权
+        if (animator != null) animator.enabled = false;
+
+        // 原地缩小+淡出
+        DG.Tweening.Sequence fadeSeq = DOTween.Sequence();
+        fadeSeq.Append(transform.DOScale(initialScale * 0.8f, 0.25f).SetEase(Ease.InBack));
+        fadeSeq.Join(canvasGroup.DOFade(0f, 0.25f));
+        fadeSeq.SetUpdate(true);
+        fadeSeq.OnComplete(() =>
+        {
+            gameObject.SetActive(false);
+        });
+    }
+
+    /// <summary>
+    /// 播放宝石飞入插槽动画，完成后再消失
+    /// 大招卡：飞入顶部红宝石位置
+    /// 普通武器卡：飞入底部技能宝石位置
+    /// </summary>
+    private void PlayGemEmbedThenDismiss()
+    {
+        // 判断是否是大招解锁卡
+        bool isUltimateCard = displayedOption != null &&
+            displayedOption.effects != null &&
+            displayedOption.effects.Exists(e => e.actionType == EffectActionType.UnlockUltimate);
+
+        if (isUltimateCard)
+        {
+            // 大招卡：宝石飞入顶部红宝石位置
+            PlayUltimateGemEmbed();
+        }
+        else
+        {
+            // 普通武器卡：宝石飞入底部技能插槽
+            PlaySkillGemEmbed();
+        }
+    }
+
+    /// <summary>
+    /// 大招卡的宝石飞入动画（飞入顶部红宝石位置）
+    /// </summary>
+    private void PlayUltimateGemEmbed()
+    {
+        if (ultimateGemSlot == null || ultimateGemSprite == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        Image targetSlot = ultimateGemSlot;
+        Sprite gemSprite = ultimateGemSprite;
+
+        // 激活并设为透明
+        targetSlot.gameObject.SetActive(true);
+        targetSlot.sprite = gemSprite;
+        targetSlot.color = new Color(1f, 1f, 1f, 0f);
+
+        // 播放飞入动画
+        PlayGemFlyAnimation(targetSlot, gemSprite);
+    }
+
+    /// <summary>
+    /// 普通武器卡的宝石飞入动画（飞入底部技能插槽）
+    /// </summary>
+    private void PlaySkillGemEmbed()
+    {
+        // 计算宝石信息
+        int totalGemsBefore = UpgradeManager.Instance.GetGemCountForWeapon(sourceNode.associatedWeapon);
+        int gemIndex = totalGemsBefore % UpgradeManager.GEM_SLOT_COUNT;
+        int gemTier = totalGemsBefore / UpgradeManager.GEM_SLOT_COUNT;
+
+        // 确保目标插槽有效
+        if (gemIndex < 0 || gemIndex >= gemSlotImages.Length || gemSlotImages[gemIndex] == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        Image targetSlot = gemSlotImages[gemIndex];
+        Sprite gemSprite = gemTier > 0 ? filledGemSpriteTier1 : filledGemSprite;
+        if (gemSprite == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        // 激活目标插槽并设为透明
+        targetSlot.gameObject.SetActive(true);
+        targetSlot.sprite = gemSprite;
+        targetSlot.color = new Color(1f, 1f, 1f, 0f);
+
+        // 播放飞入动画
+        PlayGemFlyAnimation(targetSlot, gemSprite);
+    }
+
+    /// <summary>
+    /// 统一的宝石飞入动画（从卡片上方飞到目标插槽）
+    /// </summary>
+    private void PlayGemFlyAnimation(Image targetSlot, Sprite gemSprite)
+    {
+        if (flyingGemPrefab != null)
+        {
+            // 在卡片内创建飞行宝石
+            GameObject flyingGem = Instantiate(flyingGemPrefab, transform);
+            RectTransform flyRT = flyingGem.GetComponent<RectTransform>();
+            Image flyImage = flyingGem.GetComponent<Image>();
+            if (flyImage != null) flyImage.sprite = gemSprite;
+
+            // 起始位置：卡片上方
+            flyRT.anchoredPosition = flyingGemStartOffset;
+            flyRT.localScale = Vector3.one * 0.5f;
+
+            // 目标位置
+            Vector3 targetPos = targetSlot.transform.position;
+
+            // 全部动画在同一个Sequence中，消除帧间延迟
+            DG.Tweening.Sequence seq = DOTween.Sequence();
+
+            // 1. 宝石飞向插槽
+            seq.Append(flyRT.DOMove(targetPos, gemFlyDuration).SetEase(Ease.InBack));
+            seq.Join(flyRT.DOScale(1f, gemFlyDuration).SetEase(Ease.OutQuad));
+
+            // 2. 到达后：点亮插槽，销毁飞行宝石
+            seq.AppendCallback(() =>
+            {
+                Destroy(flyingGem);
+                targetSlot.sprite = gemSprite;
+                targetSlot.color = Color.white;
+            });
+
+            // 3. 插槽弹跳缩放
+            seq.Append(targetSlot.transform.DOScale(1.4f, 0.1f).SetEase(Ease.OutQuad));
+            seq.Append(targetSlot.transform.DOScale(1f, 0.1f).SetEase(Ease.InOutBounce));
+
+            // 4. 发光特效（可选）
+            if (gemGlowEffect != null)
+            {
+                gemGlowEffect.transform.position = targetPos;
+                gemGlowEffect.gameObject.SetActive(true);
+                gemGlowEffect.color = new Color(1f, 0.9f, 0.4f, 0f);
+                seq.Append(gemGlowEffect.DOFade(0.8f, 0.1f));
+                seq.Append(gemGlowEffect.DOFade(0f, 0.1f));
+                seq.AppendCallback(() => gemGlowEffect.gameObject.SetActive(false));
+            }
+
+            // 5. 可选停留
+            if (gemShowDelay > 0f)
+                seq.AppendInterval(gemShowDelay);
+
+            // 6. 卡片缩小淡出（在同一Sequence中，无帧间延迟）
+            seq.Append(transform.DOScale(initialScale * 0.7f, 0.25f).SetEase(Ease.InBack));
+            seq.Join(canvasGroup.DOFade(0f, 0.25f));
+
+            // 7. 完成后通知
+            seq.OnComplete(() =>
+            {
+                RestoreLayoutGroup();
+                if (onBranchSelected != null)
+                    onBranchSelected.Invoke();
+                else if (UpgradeManager.Instance != null)
+                    UpgradeManager.Instance.OnUpgradeOptionSelected(sourceNode, displayedOption);
+            });
+
+            seq.SetUpdate(true);
+        }
+        else
+        {
+            // 没有飞行宝石预制件：直接点亮插槽然后消失
+            targetSlot.sprite = gemSprite;
+            targetSlot.color = Color.white;
+            PlayDismissAnimation();
+        }
+    }
+
+    /// <summary>
+    /// 卡片消失动画（非宝石路径使用）
+    /// </summary>
+    private void PlayDismissAnimation()
+    {
         DG.Tweening.Sequence clickSequence = DOTween.Sequence();
-        clickSequence.AppendInterval(0.1f);
-        clickSequence.Append(rectTransform.DOAnchorPosY(initialAnchorPos.y + 200f, 0.4f).SetEase(Ease.InBack));
-        clickSequence.Join(canvasGroup.DOFade(0f, 0.3f).SetDelay(0.1f));
+        clickSequence.Append(transform.DOScale(initialScale * 0.7f, 0.2f).SetEase(Ease.InQuad));
+        clickSequence.Join(canvasGroup.DOFade(0f, 0.2f));
         clickSequence.SetUpdate(true);
         clickSequence.OnComplete(() => {
-            // 如果是分支选择模式，调用分支回调
+            RestoreLayoutGroup();
             if (onBranchSelected != null)
-            {
                 onBranchSelected.Invoke();
-            }
             else if (UpgradeManager.Instance != null)
-            {
                 UpgradeManager.Instance.OnUpgradeOptionSelected(sourceNode, displayedOption);
-            }
         });
+    }
+
+    /// <summary>
+    /// 恢复父容器的布局组件
+    /// </summary>
+    private void RestoreLayoutGroup()
+    {
+        Transform container = transform.parent;
+        if (container == null) return;
+        var layoutGroup = container.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+        if (layoutGroup != null) layoutGroup.enabled = true;
+        var contentFitter = container.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+        if (contentFitter != null) contentFitter.enabled = true;
     }
 
     public void Show() { if (animator != null) animator.SetTrigger("Show"); }
@@ -416,6 +696,49 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
             case UpgradeType.Luck:
                 return FormatChange(LocalizationManager.T("stat.luck"), stats.luck, stats.luck + (effect.modType == ModifierType.Percentage ? val / 100f : val));
+
+            // === 被动道具 — 触发机制型 ===
+            case UpgradeType.BerserkerHeart:
+                float curBerserker = stats.berserkerDamagePerLevel * stats.berserkerLevel * 100f;
+                float nextBerserker = effect.value * (stats.berserkerLevel + 1) * 100f;
+                return FormatChange("低血增伤", curBerserker, nextBerserker, false, "%");
+
+            case UpgradeType.FlameTrail:
+                return FormatChange("燃烧轨迹", stats.flameTrailLevel, stats.flameTrailLevel + 1);
+
+            case UpgradeType.ThornsDamage:
+                float curThorns = stats.thornsReflectPercent * 100f;
+                float nextThorns = (stats.thornsReflectPercent + effect.value) * 100f;
+                return FormatChange("伤害反弹", curThorns, nextThorns, false, "%");
+
+            case UpgradeType.KillHeal:
+                int curKillHeal = stats.killHealAmount;
+                int nextKillHeal = curKillHeal + Mathf.RoundToInt(effect.value);
+                return FormatChange("击杀回血", curKillHeal, nextKillHeal);
+
+            case UpgradeType.GlobalFreezeChance:
+                float curFreeze = stats.globalFreezeChance * 100f;
+                float nextFreeze = (stats.globalFreezeChance + effect.value) * 100f;
+                return FormatChange("冰冻概率", curFreeze, nextFreeze, false, "%");
+
+            case UpgradeType.ThunderWill:
+                float curThunderChance = stats.thunderWillChance * 100f;
+                int curThunderLevel = Mathf.RoundToInt(stats.thunderWillChance / 0.08f);
+                float nextThunderChance = (curThunderLevel + 1) * 8f; // 每级+8%
+                return FormatChange("雷击概率", curThunderChance, nextThunderChance, false, "%");
+
+            case UpgradeType.LifeStealPassive:
+                float curSteal = stats.lifeStealPercent * 100f;
+                float nextSteal = (stats.lifeStealPercent + effect.value) * 100f;
+                return FormatChange("伤害吸血", curSteal, nextSteal, false, "%");
+
+            case UpgradeType.DashExplosion:
+                return FormatChange("冲刺余烬", stats.dashExplosionLevel, stats.dashExplosionLevel + 1);
+
+            case UpgradeType.ExperienceGain:
+                float curXP = stats.experienceGainMultiplier * 100f;
+                float nextXP = (stats.experienceGainMultiplier + effect.value) * 100f;
+                return FormatChange("经验获取", curXP, nextXP, false, "%");
         }
         return "";
     }
@@ -447,6 +770,106 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         bool isBetter = future > current;
         string colorHex = ColorUtility.ToHtmlStringRGB(isBetter ? betterStatColor : worseStatColor);
         return $"{label}: {current} -> <color=#{colorHex}>{future}</color>";
+    }
+
+    #endregion
+
+    #region 宝石插槽
+
+    /// <summary>
+    /// 刷新卡片上的宝石插槽显示
+    /// 根据该武器在UpgradeManager中记录的宝石数量更新UI
+    /// </summary>
+    private void RefreshGemSlots()
+    {
+        // 获取关联的武器（大招卡使用 associatedWeapon）
+        WeaponStatBlock weapon = (sourceNode != null) ? sourceNode.associatedWeapon : null;
+
+        // --- 刷新底部5个技能宝石插槽 ---
+        if (gemSlotImages != null && gemSlotImages.Length > 0)
+        {
+            if (weapon == null)
+            {
+                // 非武器卡片，隐藏所有插槽
+                foreach (var slot in gemSlotImages)
+                {
+                    if (slot != null) slot.gameObject.SetActive(false);
+                }
+            }
+            else
+            {
+                // 从UpgradeManager获取当前宝石数
+                int totalGems = 0;
+                if (UpgradeManager.Instance != null)
+                {
+                    totalGems = UpgradeManager.Instance.GetGemCountForWeapon(weapon);
+                }
+
+                int filledCount = totalGems % UpgradeManager.GEM_SLOT_COUNT;
+                int gemTier = totalGems / UpgradeManager.GEM_SLOT_COUNT;
+
+                for (int i = 0; i < gemSlotImages.Length; i++)
+                {
+                    if (gemSlotImages[i] == null) continue;
+
+                    if (i < filledCount)
+                    {
+                        // 当前轮次的新宝石（覆盖上一轮）
+                        gemSlotImages[i].gameObject.SetActive(true);
+                        gemSlotImages[i].sprite = gemTier > 0 ? filledGemSpriteTier1 : filledGemSprite;
+                        gemSlotImages[i].color = Color.white;
+                    }
+                    else if (gemTier > 0)
+                    {
+                        // 上一轮的宝石仍然保留显示（宝石永不消耗）
+                        gemSlotImages[i].gameObject.SetActive(true);
+                        gemSlotImages[i].sprite = (gemTier > 1) ? filledGemSpriteTier1 : filledGemSprite;
+                        gemSlotImages[i].color = Color.white;
+                    }
+                    else
+                    {
+                        // 真正的空插槽：隐藏
+                        gemSlotImages[i].gameObject.SetActive(false);
+                    }
+                }
+            }
+        }
+
+        // --- 刷新大招宝石（顶部红宝石位置） ---
+        if (ultimateGemSlot != null)
+        {
+            if (weapon == null)
+            {
+                ultimateGemSlot.gameObject.SetActive(false);
+            }
+            else
+            {
+                // 检查该武器是否已解锁大招
+                bool ultimateUnlocked = false;
+                if (WeaponController.Instance != null)
+                {
+                    var wrapper = WeaponController.Instance.ownedWeapons
+                        .FirstOrDefault(w => w.stats == weapon);
+                    if (wrapper != null && wrapper.weaponPartInstance != null)
+                    {
+                        ultimateUnlocked = wrapper.weaponPartInstance.isUltimateUnlocked;
+                    }
+                }
+
+                if (ultimateUnlocked && ultimateGemSprite != null)
+                {
+                    // 大招已解锁：显示红宝石
+                    ultimateGemSlot.gameObject.SetActive(true);
+                    ultimateGemSlot.sprite = ultimateGemSprite;
+                    ultimateGemSlot.color = Color.white;
+                }
+                else
+                {
+                    // 大招未解锁：隐藏
+                    ultimateGemSlot.gameObject.SetActive(false);
+                }
+            }
+        }
     }
 
     #endregion

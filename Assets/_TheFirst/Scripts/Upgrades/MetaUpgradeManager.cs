@@ -45,7 +45,6 @@ public class MetaUpgradeManager : MonoBehaviour
                 ApplyStatToPlayer(upgrade.statType, bonus);
             }
         }
-        Debug.Log("所有局外成长属性已应用！");
     }
 
     private void ApplyStatToPlayer(UpgradeType type, float value)

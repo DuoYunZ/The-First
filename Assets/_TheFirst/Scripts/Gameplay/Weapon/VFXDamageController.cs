@@ -1,4 +1,4 @@
-// --- VFXDamageController.cs (调试版) ---
+﻿// --- VFXDamageController.cs (调试版) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -101,7 +101,6 @@ public class VFXDamageController : MonoBehaviour
             {
                 isCurrentHitCrit = true;
                 finalRealDamage = Mathf.RoundToInt(baseDamage * totalCritDmgMult);
-                Debug.Log($"[VFX] 暴击! {weaponName} -> {targetHealth.name}, 伤害: {finalRealDamage}");
             }
             // =========================================================
 

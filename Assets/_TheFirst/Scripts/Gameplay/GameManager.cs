@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -57,7 +57,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[GameManager] 玩家機甲 '{playerInstance.name}' 已準備就緒。遊戲進入戰鬥狀態。");
         currentState = GameState.Combat;
         Time.timeScale = 1f; // 確保遊戲時間正常流動
 
@@ -82,7 +81,6 @@ public class GameManager : MonoBehaviour
         {
             playerHealthComponent.OnDeath.RemoveListener(HandleGameOver); // 先移除，防止重複訂閱
             playerHealthComponent.OnDeath.AddListener(HandleGameOver);
-            Debug.Log("[GameManager] 已成功訂閱玩家的 OnDeath 事件。");
         }
         else
         {
@@ -105,8 +103,6 @@ public class GameManager : MonoBehaviour
 
         currentState = GameState.GameOver;
         Time.timeScale = 0f; // 凍結遊戲時間
-        Debug.Log("[GameManager] 遊戲結束！時間已暫停。");
-
         if (UIManager.Instance != null)
         {
             UIManager.Instance.HideCombatUI();
@@ -136,8 +132,6 @@ public class GameManager : MonoBehaviour
 
         currentState = GameState.Victory;
         Time.timeScale = 0f;
-        Debug.Log("[GameManager] 任務完成！勝利！");
-
         // 1. 隱藏戰鬥UI
         if (UIManager.Instance != null)
         {
@@ -155,8 +149,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void RestartCombat()
     {
-        Debug.Log("[GameManager] 正在重新開始戰鬥...");
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 确保物理模拟恢复
         // 重新載入當前場景。DataManager 中的機甲配置仍然存在，
         // 所以 CombatSceneInitializer 會用同樣的配置重建機甲。
         if (settlementUI != null) settlementUI.gameObject.SetActive(false);
@@ -168,8 +162,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void ReturnToCharacterSelect()
     {
-        Debug.Log($"[GameManager] 正在返回角色选择场景: {characterSelectSceneName}");
         Time.timeScale = 1f;
+        Physics.simulationMode = SimulationMode.FixedUpdate; // 确保物理模拟恢复
         if (settlementUI != null) settlementUI.gameObject.SetActive(false);
 
         // 清理当前选择的角色数据，以便重新开始

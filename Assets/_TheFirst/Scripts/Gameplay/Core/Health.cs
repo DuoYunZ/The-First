@@ -38,9 +38,23 @@ public class Health : MonoBehaviour
     [ColorUsage(true, true)] // 允许在Inspector里调节HDR亮度
     public Color damageEmissionColor = new Color(1f, 0f, 0f, 1f) * 3f; // 默认红光，强度3
 
+    [Header("受击反馈")]
+    [Tooltip("玩家受击时的击退力度（0 = 不击退）")]
+    public float knockbackForce = 8f;
+    [Tooltip("受击震屏强度（0 = 不震屏）")]
+    public float hitShakeIntensity = 3f;
+    [Tooltip("受击震屏持续时间（秒）")]
+    public float hitShakeDuration = 0.15f;
+    [Tooltip("玩家受击时播放的音效（随机选一个）")]
+    public AudioClip[] playerHitSounds;
+    [Tooltip("受击音效音量")]
+    [Range(0f, 1f)]
+    public float playerHitSoundVolume = 0.8f;
+
     private bool isPostHitInvincible = false; // 是否处于受击后的短暂无敌状态
-    private Renderer modelRenderer;
-    private Color originalEmissionColor; // 记录原始发光颜色
+    private Renderer[] modelRenderers; // 角色模型渲染器数组
+    private Color[] originalEmissionColors; // 每个 Renderer 的原始发光颜色
+    private Rigidbody playerRigidbody; // 缓存玩家刚体引用
 
 
     [Header("掉落设置 (可选)")]
@@ -57,6 +71,15 @@ public class Health : MonoBehaviour
     [Tooltip("掉落血包的几率 (0到1)")]
     [Range(0f, 1f)]
     public float healthDropChance = 0.005f; // <--- 新增 (默认10%)
+
+    [Tooltip("死亡时掉落的宝箱预设")]
+    public GameObject treasureChestPrefab;
+
+    /// <summary>
+    /// 标记该敌人是否为精英怪（由 EnemySpawner 在生成时设置）
+    /// </summary>
+    [HideInInspector]
+    public bool isElite = false;
 
     [Header("视觉效果 (可选)")]
     [Tooltip("受到伤害时生成的跳字预制件")]
@@ -83,24 +106,42 @@ public class Health : MonoBehaviour
         _baseMaxHealth = maxHealth; // 记录初始值
         currentHealth = maxHealth;
 
+        // 缓存刚体引用（用于击退）
+        if (isPlayerHealth)
+        {
+            playerRigidbody = GetComponent<Rigidbody>();
+        }
+
         audioSource = GetComponent<AudioSource>();
         statusReceiver = GetComponent<StatusEffectReceiver>();
 
-        modelRenderer = GetComponentInChildren<Renderer>();
-        if (modelRenderer != null)
+        // 获取角色模型的渲染器（优先查找 Visuals 子对象下的 SkinnedMeshRenderer/MeshRenderer）
+        Transform visualsRoot = transform.Find("Visuals");
+        if (visualsRoot != null)
         {
-            // 1. 确保启用 Emission 关键字 (如果是 Standard/URP Lit Shader)
-            modelRenderer.material.EnableKeyword("_EMISSION");
+            // 只获取角色模型的渲染器，排除粒子特效等
+            modelRenderers = visualsRoot.GetComponentsInChildren<SkinnedMeshRenderer>();
+            if (modelRenderers.Length == 0)
+            {
+                modelRenderers = visualsRoot.GetComponentsInChildren<MeshRenderer>();
+            }
+        }
+        else
+        {
+            // 没有 Visuals 层级，回退为获取第一个 Renderer
+            var r = GetComponentInChildren<Renderer>();
+            modelRenderers = r != null ? new Renderer[] { r } : new Renderer[0];
+        }
 
-            // 2. 记录原始 Emission 颜色 (有些材质默认为黑)
-            if (modelRenderer.material.HasProperty("_EmissionColor"))
-            {
-                originalEmissionColor = modelRenderer.material.GetColor("_EmissionColor");
-            }
-            else
-            {
-                originalEmissionColor = Color.black;
-            }
+        // 初始化发光颜色备份
+        originalEmissionColors = new Color[modelRenderers.Length];
+        for (int i = 0; i < modelRenderers.Length; i++)
+        {
+            var mat = modelRenderers[i].material;
+            mat.EnableKeyword("_EMISSION");
+            originalEmissionColors[i] = mat.HasProperty("_EmissionColor")
+                ? mat.GetColor("_EmissionColor")
+                : Color.black;
         }
         if (audioSource == null)
         {
@@ -149,11 +190,12 @@ public class Health : MonoBehaviour
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth);       
     }
-    public void InitializeHealth(int initialMaxHealth, EnemyType typeData)
+    public void InitializeHealth(int initialMaxHealth, EnemyType typeData, bool elite = false)
     {
         maxHealth = initialMaxHealth;
         currentHealth = maxHealth;
         this.EnemyTypeData = typeData;
+        this.isElite = elite;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
     public void InitializeHealth(int initialMaxHealth)
@@ -297,8 +339,8 @@ public class Health : MonoBehaviour
                 float xp = remainingDamage * sourcePart.StatBlock.xpGainFactor;               
                 sourcePart.GainProficiencyXP(xp);
                 
-                // 触发XP粒子飞向技能图标
-                if (WeaponUI.Instance != null)
+                // 触发XP粒子飞向技能图标（仅在大招已解锁时显示能量吸收特效）
+                if (WeaponUI.Instance != null && sourcePart.isUltimateUnlocked)
                 {
                     WeaponUI.Instance.SpawnXpParticlesToWeapon(sourcePart, hitPosition);
                 }
@@ -325,17 +367,53 @@ public class Health : MonoBehaviour
                 }
             }
 
+            // 【提前播放】玩家受击音效 — 确保第一时间有声音反馈
+            if (isPlayerHealth && !IsDead && playerHitSounds != null && playerHitSounds.Length > 0)
+            {
+                AudioClip clip = playerHitSounds[Random.Range(0, playerHitSounds.Length)];
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySoundEffect(clip, playerHitSoundVolume);
+                }
+                else if (audioSource != null)
+                {
+                    audioSource.PlayOneShot(clip, playerHitSoundVolume);
+                }
+            }
+
             // 跳字逻辑
             if (damagePopupPrefab != null)
             {
+                // 根据怪物实际高度计算跳字位置（避免被大体积怪物遮挡）
+                float topY = GetEntityTopY();
                 float randomX = Random.Range(-0.5f, 0.5f);
-                float randomY = Random.Range(0f, 0.5f);
-                GameObject popupGO = Instantiate(damagePopupPrefab, transform.position + Vector3.up * 1.5f + new Vector3(randomX, randomY, 0), Quaternion.identity);
+                float randomY = Random.Range(0.2f, 0.7f);
+                Vector3 popupPos = new Vector3(transform.position.x + randomX, topY + randomY, transform.position.z);
+                GameObject popupGO = Instantiate(damagePopupPrefab, popupPos, Quaternion.identity);
                 DamagePopup damagePopup = popupGO.GetComponent<DamagePopup>();
                 if (damagePopup != null) damagePopup.InitPopup(remainingDamage, isCritical);
             }
 
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+            // --- 【被动道具】玩家血量变化时通知 PlayerStats 重算条件型被动 ---
+            if (isPlayerHealth && PlayerStats.Instance != null)
+            {
+                PlayerStats.Instance.OnPlayerHealthChanged();
+            }
+
+            // --- 【被动道具】冰霜之触：全局冰冻概率（仅对敌人生效）---
+            if (!isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.globalFreezeChance > 0f)
+            {
+                if (Random.value < PlayerStats.Instance.globalFreezeChance)
+                {
+                    StatusEffectReceiver freezeReceiver = GetComponent<StatusEffectReceiver>();
+                    if (freezeReceiver != null && !freezeReceiver.IsFrozen)
+                    {
+                        freezeReceiver.ApplyFreeze(1.5f); // 冰冻1.5秒
+                    }
+                }
+            }
 
             // 受击音效：优先使用攻击来源武器SO的hitSound，回退到Health自身的impactSounds
             AudioClip hitClip = null;
@@ -358,7 +436,38 @@ public class Health : MonoBehaviour
                 audioSource.PlayOneShot(impactSounds[Random.Range(0, impactSounds.Length)]);
             }
 
-            if (isPlayerHealth && !IsDead) StartCoroutine(InvincibilitySequence());
+            if (isPlayerHealth && !IsDead)
+            {
+                StartCoroutine(InvincibilitySequence());
+
+                // --- 受击反馈：击退 ---
+                if (knockbackForce > 0f && attacker != null)
+                {
+                    MechController mechCtrl = GetComponent<MechController>();
+                    if (mechCtrl != null)
+                    {
+                        Vector3 knockbackDir = transform.position - attacker.transform.position;
+                        mechCtrl.ApplyKnockback(knockbackDir, knockbackForce);
+                    }
+                }
+
+                // --- 受击反馈：震屏 ---
+                if (hitShakeIntensity > 0f && CameraShakeManager.Instance != null)
+                {
+                    CameraShakeManager.Instance.Shake(hitShakeIntensity, hitShakeDuration);
+                }
+
+                // --- 【被动道具】荆棘护甲：受伤时反弹伤害给攻击者 ---
+                if (PlayerStats.Instance != null && PlayerStats.Instance.thornsReflectPercent > 0f && attacker != null)
+                {
+                    Health attackerHealth = attacker.GetComponent<Health>();
+                    if (attackerHealth != null && !attackerHealth.IsDead)
+                    {
+                        int thornsDamage = Mathf.Max(1, Mathf.RoundToInt(remainingDamage * PlayerStats.Instance.thornsReflectPercent));
+                        attackerHealth.TakeDamage(thornsDamage, attacker.transform.position, gameObject, AttackType.Standard, null, null, "荆棘护甲");
+                    }
+                }
+            }
 
             // 6. 死亡处理
             if (currentHealth <= 0)
@@ -395,7 +504,12 @@ public class Health : MonoBehaviour
 
         if (currentHealth != oldHealth)
         {
-            OnHealthChanged?.Invoke(currentHealth, maxHealth);           
+            OnHealthChanged?.Invoke(currentHealth, maxHealth);
+            // 血量回升可能影响条件型被动（如狂战士之心）
+            if (isPlayerHealth && PlayerStats.Instance != null)
+            {
+                PlayerStats.Instance.OnPlayerHealthChanged();
+            }
             return true;
         }
         return false;
@@ -405,39 +519,174 @@ public class Health : MonoBehaviour
         // 1. 开启无敌标记
         isPostHitInvincible = true;
 
-        // 2. 设置 Emission 为高亮红 (只闪一次)
-        if (modelRenderer != null)
+        // 2. 设置所有模型 Renderer 的 Emission 为高亮红
+        if (modelRenderers != null)
         {
-            modelRenderer.material.SetColor("_EmissionColor", damageEmissionColor);
-            // 强制刷新一下 Global Illumination (有时需要)
-            DynamicGI.UpdateEnvironment();
+            for (int i = 0; i < modelRenderers.Length; i++)
+            {
+                if (modelRenderers[i] != null)
+                {
+                    modelRenderers[i].material.SetColor("_EmissionColor", damageEmissionColor);
+                }
+            }
         }
 
-        // 3. 等待闪烁时间 (例如 0.15秒)
+        // 3. 等待闪红时间
         yield return new WaitForSeconds(flashDuration);
 
         // 4. 恢复 Emission 颜色
-        if (modelRenderer != null)
+        if (modelRenderers != null)
         {
-            modelRenderer.material.SetColor("_EmissionColor", originalEmissionColor);
-            DynamicGI.UpdateEnvironment();
+            for (int i = 0; i < modelRenderers.Length; i++)
+            {
+                if (modelRenderers[i] != null)
+                {
+                    modelRenderers[i].material.SetColor("_EmissionColor", originalEmissionColors[i]);
+                }
+            }
         }
 
-        // 5. 计算剩余的无敌时间
+        // 5. 剩余无敌时间：半透闪烁
         float remainingInvincibility = invincibilityDuration - flashDuration;
-        if (remainingInvincibility > 0)
+        if (remainingInvincibility > 0 && modelRenderers != null)
         {
-            yield return new WaitForSeconds(remainingInvincibility);
+            float flickerInterval = 0.08f; // 闪烁间隔（秒）
+            float elapsed = 0f;
+            bool isTransparent = false;
+
+            // 备份原始颜色
+            Color[] originalBaseColors = new Color[modelRenderers.Length];
+            for (int i = 0; i < modelRenderers.Length; i++)
+            {
+                if (modelRenderers[i] != null && modelRenderers[i].material.HasProperty("_BaseColor"))
+                {
+                    originalBaseColors[i] = modelRenderers[i].material.GetColor("_BaseColor");
+                }
+                else if (modelRenderers[i] != null && modelRenderers[i].material.HasProperty("_Color"))
+                {
+                    originalBaseColors[i] = modelRenderers[i].material.GetColor("_Color");
+                }
+                else
+                {
+                    originalBaseColors[i] = Color.white;
+                }
+            }
+
+            while (elapsed < remainingInvincibility)
+            {
+                isTransparent = !isTransparent;
+
+                for (int i = 0; i < modelRenderers.Length; i++)
+                {
+                    if (modelRenderers[i] == null) continue;
+
+                    if (isTransparent)
+                    {
+                        // 半透明灰色效果
+                        Color fadedColor = originalBaseColors[i] * 0.4f;
+                        fadedColor.a = 0.3f;
+                        SetRendererColor(modelRenderers[i], fadedColor);
+                    }
+                    else
+                    {
+                        // 恢复正常
+                        SetRendererColor(modelRenderers[i], originalBaseColors[i]);
+                    }
+                }
+
+                yield return new WaitForSeconds(flickerInterval);
+                elapsed += flickerInterval;
+            }
+
+            // 确保恢复为完全正常
+            for (int i = 0; i < modelRenderers.Length; i++)
+            {
+                if (modelRenderers[i] != null)
+                {
+                    SetRendererColor(modelRenderers[i], originalBaseColors[i]);
+                }
+            }
         }
 
         // 6. 结束无敌
         isPostHitInvincible = false;
     }
 
+    /// <summary>
+    /// 辅助方法：设置 Renderer 的基础颜色（兼容 URP _BaseColor 和 Standard _Color）
+    /// </summary>
+    private void SetRendererColor(Renderer renderer, Color color)
+    {
+        Material mat = renderer.material;
+        if (mat.HasProperty("_BaseColor"))
+        {
+            mat.SetColor("_BaseColor", color);
+        }
+        else if (mat.HasProperty("_Color"))
+        {
+            mat.SetColor("_Color", color);
+        }
+    }
+
+    // 缓存实体高度（避免每次受伤都重新计算）
+    private float cachedEntityTopOffset = -1f;
+
+    /// <summary>
+    /// 获取实体顶部的世界Y坐标（基于Collider或Renderer的包围盒）
+    /// </summary>
+    private float GetEntityTopY()
+    {
+        // 首次调用时计算并缓存偏移量
+        if (cachedEntityTopOffset < 0f)
+        {
+            cachedEntityTopOffset = 1.5f; // 默认回退值
+
+            // 优先使用 Collider 的包围盒
+            Collider col = GetComponent<Collider>();
+            if (col != null)
+            {
+                cachedEntityTopOffset = col.bounds.max.y - transform.position.y + 0.3f;
+            }
+            else
+            {
+                // 回退：使用所有 Renderer 的合并包围盒
+                Renderer[] renderers = GetComponentsInChildren<Renderer>();
+                if (renderers.Length > 0)
+                {
+                    Bounds combinedBounds = renderers[0].bounds;
+                    for (int i = 1; i < renderers.Length; i++)
+                    {
+                        combinedBounds.Encapsulate(renderers[i].bounds);
+                    }
+                    cachedEntityTopOffset = combinedBounds.max.y - transform.position.y + 0.3f;
+                }
+            }
+        }
+
+        return transform.position.y + cachedEntityTopOffset;
+    }
 
     public void Die(bool destroyImmediately = true)
     {
         if (IsDead) return;
+
+        // --- 【被动道具】不死鸟的羽毛：复活检查 ---
+        if (isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.revivalCount > 0)
+        {
+            // 消耗一次复活
+            PlayerStats.Instance.revivalCount--;
+
+            // 恢复50%血量
+            currentHealth = Mathf.Max(1, maxHealth / 2);
+            OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+            // 触发短暂无敌
+            StartCoroutine(InvincibilitySequence());
+
+            Debug.Log($"<color=green>[不死鸟的羽毛] 复活触发！剩余复活次数={PlayerStats.Instance.revivalCount}，恢复血量至{currentHealth}/{maxHealth}</color>");
+            return; // 不执行死亡逻辑
+        }
+
         IsDead = true;
 
         currentHealth = 0;
@@ -447,7 +696,6 @@ public class Health : MonoBehaviour
         /*StatusEffectReceiver receiver = GetComponent<StatusEffectReceiver>();
         if (receiver != null && receiver.IsBurning)
         {
-            Debug.Log($"{gameObject.name} 在燃燒中死亡，觸發爆炸！");
             ExplodeOnDeath();
         }*/
         // --- 整合结束 ---
@@ -498,51 +746,75 @@ public class Health : MonoBehaviour
         }
 
         // 3. (新逻辑) 掉落能量石
-        // 检查: (是否可以掉落?)
-        if (GameManager.Instance == null || EnemyTypeData == null) return; //
-
-        List<EnergyStoneSO> lootTable = GameManager.Instance.energyStoneLootTable; //
-        if (lootTable == null || lootTable.Count == 0) return; //
-
-        // A. 掷骰子
-        float dropChance = EnemyTypeData.energyStoneDropChance; //
-        if (Random.value <= dropChance)
+        // 【修复】用 if 嵌套代替 return，防止阻断后续的血包和宝箱掉落
+        if (GameManager.Instance != null && EnemyTypeData != null)
         {
-            // B. 随机选择一个石头 *数据*
-            EnergyStoneSO chosenStone = lootTable[Random.Range(0, lootTable.Count)]; //
-            if (chosenStone == null) return;
-
-            // C. [新] 从石头 *数据* 中获取它专属的 *预制件*
-            GameObject prefabToDrop = chosenStone.pickupPrefab; //
-
-            if (prefabToDrop != null)
+            List<EnergyStoneSO> lootTable = GameManager.Instance.energyStoneLootTable;
+            if (lootTable != null && lootTable.Count > 0)
             {
-                // D. 实例化专属预制件
-                GameObject stoneGO = Instantiate(prefabToDrop, transform.position, Quaternion.identity); //
+                // A. 掷骰子
+                float dropChance = EnemyTypeData.energyStoneDropChance;
+                if (Random.value <= dropChance)
+                {
+                    // B. 随机选择一个石头 *数据*
+                    EnergyStoneSO chosenStone = lootTable[Random.Range(0, lootTable.Count)];
 
-                // E. 将石头数据 赋给掉落物
-                EnergyStonePickup pickupScript = stoneGO.GetComponent<EnergyStonePickup>(); //
-                if (pickupScript != null)
-                {
-                    pickupScript.stoneData = chosenStone; //
+                    if (chosenStone != null)
+                    {
+                        // C. 从石头 *数据* 中获取它专属的 *预制件*
+                        GameObject prefabToDrop = chosenStone.pickupPrefab;
+
+                        if (prefabToDrop != null)
+                        {
+                            // D. 实例化专属预制件
+                            GameObject stoneGO = Instantiate(prefabToDrop, transform.position, Quaternion.identity);
+
+                            // E. 将石头数据 赋给掉落物
+                            EnergyStonePickup pickupScript = stoneGO.GetComponent<EnergyStonePickup>();
+                            if (pickupScript != null)
+                            {
+                                pickupScript.stoneData = chosenStone;
+                            }
+                            else
+                            {
+                                Debug.LogError($"能量石掉落失败: 预制件 '{prefabToDrop.name}' 缺少 'EnergyStonePickup' 脚本!", prefabToDrop);
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"能量石掉落失败: 'EnergyStoneSO' 资产 '{chosenStone.stoneName}' 没有分配 'Pickup Prefab' 字段。", chosenStone);
+                        }
+                    }
                 }
-                else
-                {
-                    Debug.LogError($"能量石掉落失败: 预制件 '{prefabToDrop.name}' 缺少 'EnergyStonePickup' 脚本!", prefabToDrop);
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"能量石掉落失败: 'EnergyStoneSO' 资产 '{chosenStone.stoneName}' 没有分配 'Pickup Prefab' 字段。", chosenStone);
             }
         }
+
+        // 4. 掉落血包
         if (healthPickupPrefab != null)
         {
-            // 你也可以乘上幸运值: healthDropChance * PlayerStats.Instance.luck
             if (Random.value <= healthDropChance)
             {
                 Instantiate(healthPickupPrefab, transform.position, Quaternion.identity);
             }
+        }
+
+        // 5. 掉落宝箱（按 EnemyType 的掉率判定）
+        if (treasureChestPrefab != null && EnemyTypeData != null)
+        {
+            float chestChance = EnemyTypeData.treasureChestDropChance;
+            if (Random.value <= chestChance)
+            {
+                Instantiate(treasureChestPrefab, transform.position, Quaternion.identity);
+                Debug.Log($"<color=yellow>[宝箱掉落] 在 {transform.position} 生成了宝箱！掉率={chestChance}</color>");
+            }
+        }
+        else
+        {
+            // 调试日志：帮助排查为什么没掉宝箱
+            if (treasureChestPrefab == null)
+                Debug.Log("<color=red>[宝箱掉落] treasureChestPrefab 未设置！请在怪物预制件的 Health 组件上设置。</color>");
+            if (EnemyTypeData == null)
+                Debug.Log("<color=red>[宝箱掉落] EnemyTypeData 为 null！怪物可能未正确初始化。</color>");
         }
     }
 

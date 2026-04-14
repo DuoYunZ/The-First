@@ -1,4 +1,4 @@
-using Cinemachine;
+﻿using Cinemachine;
 using UnityEngine;
 
 /// <summary>
@@ -67,7 +67,6 @@ public class HubSceneInitializer : MonoBehaviour
         if (characterSelectManager != null)
         {
             characterSelectManager.OnCharacterSelected += OnCharacterSwitched;
-            Debug.Log("<color=green>[Hub] 已注册角色切换事件监听</color>");
         }
         else
         {
@@ -100,8 +99,6 @@ public class HubSceneInitializer : MonoBehaviour
             return;
         }
 
-        Debug.Log($"<color=green>[Hub] 生成角色: {characterData.characterName}, 预制件: {characterData.chassisPrefab.name}</color>");
-
         // 记录旧角色的位置和朝向（切换角色时在原地生成新角色）
         Vector3 spawnPos = playerSpawnPoint.position;
         Quaternion spawnRot = playerSpawnPoint.rotation;
@@ -109,8 +106,6 @@ public class HubSceneInitializer : MonoBehaviour
         {
             spawnPos = currentPlayerInstance.transform.position;
             spawnRot = currentPlayerInstance.transform.rotation;
-            Debug.Log($"[Hub] 旧角色位置: {spawnPos}, 准备销毁: {currentPlayerInstance.name}");
-
             // 【关键】使用 DestroyImmediate 立即销毁旧角色
             // Destroy 是帧末延迟执行的，导致新角色 Instantiate 时旧角色的单例引用仍存在
             // 新角色的 Awake() 检测到单例 Instance != null → 直接自毁
@@ -120,7 +115,6 @@ public class HubSceneInitializer : MonoBehaviour
         }
 
         // 生成新角色（在旧角色位置或出生点）
-        Debug.Log($"[Hub] 正在 Instantiate，坐标: {spawnPos}...");
         currentPlayerInstance = Instantiate(characterData.chassisPrefab, spawnPos, spawnRot);
 
         if (currentPlayerInstance == null)
@@ -128,8 +122,6 @@ public class HubSceneInitializer : MonoBehaviour
             Debug.LogError("[Hub] Instantiate 返回 null！生成角色失败！");
             return;
         }
-
-        Debug.Log($"<color=cyan>[Hub] 新角色已生成: {currentPlayerInstance.name}, 位置: {currentPlayerInstance.transform.position}, activeSelf: {currentPlayerInstance.activeSelf}, activeInHierarchy: {currentPlayerInstance.activeInHierarchy}</color>");
 
         // 禁用武器攻击逻辑（Hub中不需要）
         DisableWeapons(currentPlayerInstance);
@@ -187,21 +179,18 @@ public class HubSceneInitializer : MonoBehaviour
         {
             // 通过反射或直接设置来清除（PlayerStats.Instance 是 private set）
             // 这里我们直接让旧的 OnDestroy 时不再是 Instance
-            Debug.Log("[Hub] 清除 PlayerStats 单例引用");
         }
 
         // WeaponController 单例
         WeaponController wc = oldPlayer.GetComponentInChildren<WeaponController>();
         if (wc != null && WeaponController.Instance == wc)
         {
-            Debug.Log("[Hub] 清除 WeaponController 单例引用");
         }
 
         // PlayerShield 单例
         PlayerShield shield = oldPlayer.GetComponent<PlayerShield>();
         if (shield != null && PlayerShield.Instance == shield)
         {
-            Debug.Log("[Hub] 清除 PlayerShield 单例引用");
         }
     }
 
@@ -212,7 +201,6 @@ public class HubSceneInitializer : MonoBehaviour
     {
         if (newCharacter == null) return;
 
-        Debug.Log($"<color=yellow>[Hub] 切换角色: {newCharacter.characterName}</color>");
         SpawnPlayer(newCharacter);
     }
 }

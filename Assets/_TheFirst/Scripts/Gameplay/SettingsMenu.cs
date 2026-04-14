@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-
 using UnityEngine.Audio;
-using TMPro; // 引入 TextMeshPro 命名空间
+using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,10 +11,25 @@ public class SettingsMenu : MonoBehaviour
     [Tooltip("游戏的主音频混合器")]
     public AudioMixer mainMixer;
 
+    [Header("Tab 页切换")]
+    [Tooltip("常规设置面板（音量、分辨率、语言）")]
+    public GameObject generalSettingsPanel;
+    [Tooltip("键位设置面板")]
+    public GameObject keyBindingPanel;
+    [Tooltip("常规设置 Tab 按钮")]
+    public Button generalTabButton;
+    [Tooltip("键位设置 Tab 按钮")]
+    public Button keyBindingTabButton;
+
+    [Header("Tab 按钮样式")]
+    [Tooltip("选中状态的 Tab 按钮颜色")]
+    public Color tabActiveColor = new Color(1f, 1f, 1f, 1f);
+    [Tooltip("未选中状态的 Tab 按钮颜色")]
+    public Color tabInactiveColor = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+
     [Header("UI元素引用")]
     public Slider masterVolumeSlider;
     public Slider bgmVolumeSlider;
-
     public Slider sfxVolumeSlider;
 
     [Header("显示设置")]
@@ -27,7 +41,6 @@ public class SettingsMenu : MonoBehaviour
     public TMP_Dropdown languageDropdown;
 
     private Resolution[] resolutions;
-
 
     // PlayerPrefs 保存的键名
     private const string MASTER_VOL_KEY = "MasterVolume";
@@ -49,17 +62,77 @@ public class SettingsMenu : MonoBehaviour
 
         // 初始化语言设置
         InitLanguageSettings();
+
+        // 初始化 Tab 页切换
+        InitTabButtons();
+
+        // 默认显示常规设置 Tab
+        SwitchToTab(0);
     }
+
+    // ===== Tab 页切换 =====
+
+    private void InitTabButtons()
+    {
+        if (generalTabButton != null)
+        {
+            generalTabButton.onClick.AddListener(() => SwitchToTab(0));
+        }
+        if (keyBindingTabButton != null)
+        {
+            keyBindingTabButton.onClick.AddListener(() => SwitchToTab(1));
+        }
+    }
+
+    /// <summary>
+    /// 切换到指定 Tab 页
+    /// </summary>
+    /// <param name="tabIndex">0=常规设置, 1=键位设置</param>
+    public void SwitchToTab(int tabIndex)
+    {
+        // 切换面板显示
+        if (generalSettingsPanel != null)
+            generalSettingsPanel.SetActive(tabIndex == 0);
+        if (keyBindingPanel != null)
+            keyBindingPanel.SetActive(tabIndex == 1);
+
+        // 更新 Tab 按钮样式
+        UpdateTabButtonStyle(generalTabButton, tabIndex == 0);
+        UpdateTabButtonStyle(keyBindingTabButton, tabIndex == 1);
+    }
+
+    /// <summary>
+    /// 更新 Tab 按钮的视觉样式
+    /// </summary>
+    private void UpdateTabButtonStyle(Button button, bool isActive)
+    {
+        if (button == null) return;
+
+        // 更新按钮文字颜色
+        var text = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.color = isActive ? tabActiveColor : tabInactiveColor;
+        }
+
+        // 更新按钮图片透明度
+        var image = button.GetComponent<Image>();
+        if (image != null)
+        {
+            Color c = image.color;
+            c.a = isActive ? 1f : 0.3f;
+            image.color = c;
+        }
+    }
+
+    // ===== 分辨率设置 =====
 
     private void InitResolutionSettings()
     {
         resolutions = Screen.resolutions;
-        
-        // 过滤掉刷新率较低的分辨率（可选）并去重
-        // 这里简单处理，直接使用所有支持的分辨率
-        
+
         if (resolutionDropdown == null) return;
-        
+
         resolutionDropdown.ClearOptions();
 
         List<string> options = new List<string>();
@@ -80,11 +153,11 @@ public class SettingsMenu : MonoBehaviour
         resolutionDropdown.AddOptions(options);
         resolutionDropdown.value = currentResolutionIndex;
         resolutionDropdown.RefreshShownValue();
-        
+
         // 添加监听器
         resolutionDropdown.onValueChanged.AddListener(SetResolution);
 
-         // 初始化全屏 Toggle
+        // 初始化全屏 Toggle
         if (fullscreenToggle != null)
         {
             fullscreenToggle.isOn = Screen.fullScreen;
@@ -103,10 +176,11 @@ public class SettingsMenu : MonoBehaviour
         Screen.fullScreen = isFullscreen;
     }
 
+    // ===== 音量设置 =====
+
     public void SetMasterVolume(float value)
     {
         // UI滑块的值是线性的 (0-1)，而Mixer的音量是对数的 (dB)
-        // 我们需要转换一下。当value为0时，log10(0)是负无穷，所以我们给一个极小值来代表静音。
         float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
         mainMixer.SetFloat("MasterVolume", volumeInDb);
         PlayerPrefs.SetFloat(MASTER_VOL_KEY, value);

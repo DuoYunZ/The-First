@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
@@ -6,6 +6,12 @@ public class MainMenuManager : MonoBehaviour
     [Header("面板引用")]
     public GameObject settingsPanel;
     public GameObject mainPanel; // 添加对主面板的引用
+
+    [Header("社交链接")]
+    [Tooltip("Discord 服务器邀请链接")]
+    public string discordUrl = "https://discord.gg/你的邀请码";
+    [Tooltip("QQ群链接")]
+    public string qqGroupUrl = "https://qm.qq.com/q/你的群号";
 
     void Start()
     {
@@ -20,7 +26,6 @@ public class MainMenuManager : MonoBehaviour
     public void OnStartGameClicked()
     {
         // 现在这个按钮直接加载Hub场景，存档加载逻辑会在PlayerProgressManager中处理
-        Debug.Log("开始游戏，加载Hub场景...");
         var transitioner = Object.FindFirstObjectByType<Transitioner>();
         if (transitioner != null && transitioner.CanTransition()) transitioner.TransitionToScene("HubScene");
         else SceneManager.LoadScene("HubScene");
@@ -55,7 +60,6 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void OnQuitGameClicked()
     {
-        Debug.Log("退出游戏...");
         // 在退出前可以强制执行一次存档
         // PlayerProgressManager.Instance?.SaveGame(); 
         Application.Quit();
@@ -69,7 +73,6 @@ public class MainMenuManager : MonoBehaviour
         if (PlayerProgressManager.Instance != null)
         {
             PlayerProgressManager.Instance.ClearSaveData();
-            Debug.Log("存档已清除。");
         }
         else
         {
@@ -78,5 +81,27 @@ public class MainMenuManager : MonoBehaviour
 
         // （可选）清除存档后，可以重启游戏或重新加载主菜单来确保所有状态刷新
         // SceneManager.LoadScene("MainMenu");
+    }
+
+    /// <summary>
+    /// 打开 Discord 服务器链接
+    /// </summary>
+    public void OnDiscordClicked()
+    {
+        if (!string.IsNullOrEmpty(discordUrl))
+        {
+            Application.OpenURL(discordUrl);
+        }
+    }
+
+    /// <summary>
+    /// 打开 QQ群链接
+    /// </summary>
+    public void OnQQGroupClicked()
+    {
+        if (!string.IsNullOrEmpty(qqGroupUrl))
+        {
+            Application.OpenURL(qqGroupUrl);
+        }
     }
 }

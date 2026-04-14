@@ -1,4 +1,4 @@
-﻿// --- DashAttackAction.cs (最终版，支持动画事件) ---
+// --- DashAttackAction.cs (最终版，支持动画事件) ---
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -29,6 +29,12 @@ public class DashAttackAction : Node
     [Header("冷却设置")]
     public string attackName = "DashAttack";
     public float cooldownDuration = 8f;
+
+    [Header("障碍物碰撞检测")]
+    [Tooltip("冲刺时检测的障碍物层（防止穿墙）")]
+    public LayerMask obstacleLayer = 1; // 默认为Default层，用户需在Inspector设置为Ground/Building等
+    [Tooltip("碰撞检测射线的起点高度偏移")]
+    public float raycastHeightOffset = 0.5f;
 
     // 内部状态
     private enum ActionState { Ready, WindingUp, Dashing, Recovering, Completed }
@@ -104,6 +110,35 @@ public class DashAttackAction : Node
 
             case ActionState.Dashing:
                 timer += Time.deltaTime;
+
+                // 【新增】碰撞检测：如果前方有障碍物，提前终止冲刺
+                float checkDistance = dashSpeed * Time.deltaTime * 2f + 1f; // 前方检测距离
+                Vector3 rayOrigin = selfTransform.position + Vector3.up * raycastHeightOffset;
+                if (Physics.Raycast(rayOrigin, selfTransform.forward, checkDistance, obstacleLayer))
+                {
+                    // 撞到障碍物，提前终止冲刺进入恢复阶段
+                    currentState = ActionState.Recovering;
+                    timer = 0f;
+                    rb.velocity = Vector3.zero;
+                    rb.isKinematic = true;
+                    if (agent != null)
+                    {
+                        agent.enabled = true;
+                        agent.Warp(selfTransform.position);
+                        agent.isStopped = true;
+                    }
+                    if (animator != null && !string.IsNullOrEmpty(recoveryAnimationTrigger))
+                    {
+                        animator.SetTrigger(recoveryAnimationTrigger);
+                    }
+                    if (currentDashEffectInstance != null)
+                    {
+                        Destroy(currentDashEffectInstance);
+                        currentDashEffectInstance = null;
+                    }
+                    break;
+                }
+
                 // ... (侧边发射子弹的逻辑保持不变)
                 if (sideWeaponToFire != null && sideFirePoints != null && sideFirePoints.Length > 0)
                 {

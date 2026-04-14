@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
@@ -50,7 +50,6 @@ public class PipeTeleporter : MonoBehaviour
             return;
         }
 
-        Debug.Log("玩家进入管道触发器，开始吸入动画...");
         isActivated = true; 
         
         StartCoroutine(SuckInSequence(other.transform));
@@ -118,8 +117,6 @@ public class PipeTeleporter : MonoBehaviour
         yield return new WaitForSeconds(0.2f);
 
         // 4. 加载场景
-        Debug.Log($"管道动画结束，正在加载场景: {sceneToLoad}...");
-        
         // 恢复时间缩放以防万一
         Time.timeScale = 1f;
 

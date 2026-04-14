@@ -412,6 +412,12 @@ public class WeaponStatBlock : ScriptableObject
     public int ultimateDamage = 100;
     [Tooltip("大招范围")]
     public float ultimateRadius = 5f;
+    [Tooltip("大招技能描述（鼠标悬停图标时显示）")]
+    [TextArea(2, 4)]
+    public string ultimateDescription;
+    [Tooltip("大招技能描述（英文）")]
+    [TextArea(2, 4)]
+    public string ultimateDescriptionEN;
     [Tooltip("大招图标 (能量满时显示)")]
     public Sprite ultimateIcon;
 

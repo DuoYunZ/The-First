@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -155,8 +155,6 @@ public class WeaponBranchManager : MonoBehaviour
     {
         if (pendingWeapon == null) return;
 
-        Debug.Log($"[分支选择] 玩家选择: {selectedBranch.weaponName}");
-        
         pendingWeapon.ApplyBranch(selectedBranch);
         pendingWeapon = null;
 
@@ -172,8 +170,6 @@ public class WeaponBranchManager : MonoBehaviour
     public void OnFusionSelected(WeaponFusionRecipeSO recipe)
     {
         if (pendingWeapon == null || recipe == null) return;
-
-        Debug.Log($"[融合进化] 玩家选择: {recipe.recipeName}");
 
         // 根据融合类型执行不同逻辑
         switch (recipe.fusionType)
@@ -227,7 +223,6 @@ public class WeaponBranchManager : MonoBehaviour
         
         foreach (var id in weaponIds)
         {
-            Debug.Log($"[融合] 解锁武器到卡池: {id}");
             // TODO: 调用UpgradeSystem解锁武器
             // UpgradeSystem.Instance?.UnlockWeaponToPool(id);
         }

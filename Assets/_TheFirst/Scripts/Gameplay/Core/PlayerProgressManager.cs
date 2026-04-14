@@ -46,6 +46,7 @@ public class PlayerProgressManager : MonoBehaviour
     public float permanentCooldownReduction = 0f;
     public float permanentEnergyGainBonus = 0f;
     public float permanentLifeStealPercent = 0f;
+    public float permanentCharDamagePercentBonus = 0f; // 角色技能树的攻击力百分比加成（独立于武器技能树）
 
     [System.Serializable]
     private class SaveData
@@ -57,13 +58,8 @@ public class PlayerProgressManager : MonoBehaviour
         public float savedDamagePercentBonus;
         public float savedFireRateBonus;
 
-        // --- 角色技能树属性 ---
-        public int savedMaxHealthBonus;
-        public float savedArmorBonus;
-        public float savedMoveSpeedBonus;
-        public float savedCooldownReduction;
-        public float savedEnergyGainBonus;
-        public float savedLifeStealPercent;
+        // --- 【移除】角色技能树属性不再保存数值，改为从已解锁节点动态计算 ---
+        // 删除 savedMaxHealthBonus, savedArmorBonus 等字段
 
         // --- 【新增】保存物品解锁进度 ---
         public List<string> savedUnlockedItems;
@@ -81,7 +77,6 @@ public class PlayerProgressManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("<color=green>PlayerProgressManager AWAKE! Instance is now SET.</color>", this);
             DontDestroyOnLoad(gameObject);
 
             // --- [MODIFIED] ---
@@ -100,9 +95,6 @@ public class PlayerProgressManager : MonoBehaviour
         // 游戏一开始，就更新一次金币显示
 
         int currentIgnite = achievementStats.ContainsKey("Ignite_Count") ? achievementStats["Ignite_Count"] : 0;
-        Debug.Log($"[存档检查] 游戏启动。当前 Ignite_Count: {currentIgnite}");
-        Debug.Log($"[存档检查] 当前 unlockedItems 数量: {unlockedItems.Count}");
-
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateGoldDisplay(currentGold);
@@ -117,8 +109,6 @@ public class PlayerProgressManager : MonoBehaviour
     public void AddGold(int amount)
     {
         currentGold += amount;
-        Debug.Log($"获得了 {amount} 金币，当前总计: {currentGold}");
-
         // 【修改】在金币增加时，更新UI显示
         if (UIManager.Instance != null)
         {
@@ -149,8 +139,6 @@ public class PlayerProgressManager : MonoBehaviour
         if (node == null || IsNodeUnlocked(node)) return;
 
         unlockedNodeIDs.Add(node.name);
-        Debug.Log($"<color=yellow>已解锁新技能: {node.upgradeName}</color>");
-
         ApplyNodeEffects(node);
 
         // --- [MODIFIED] ---
@@ -162,36 +150,30 @@ public class PlayerProgressManager : MonoBehaviour
 
     private void ApplyNodeEffects(WeaponUpgradeNode node)
     {
-        Debug.Log($"正在应用节点 '{node.upgradeName}' 的永久效果...");
         foreach (var effect in node.effects)
         {
             switch (effect.upgradeType)
             {
                 case PermanentUpgradeType.FlatDamage:
                     permanentFlatDamageBonus += (int)effect.value;
-                    Debug.Log($"永久固定伤害加成增加: +{(int)effect.value}，当前总计: {permanentFlatDamageBonus}");
                     break;
 
                 case PermanentUpgradeType.MeleeAoeFlatDamage:
                     permanentMeleeAoeFlatDamageBonus += (int)effect.value;
-                    Debug.Log($"永久近战范围伤害加成增加: +{(int)effect.value}，当前总计: {permanentMeleeAoeFlatDamageBonus}");
                     break;
 
                 case PermanentUpgradeType.DamagePercent:
                     permanentDamagePercentBonus += effect.value;
-                    Debug.Log($"永久百分比伤害加成增加: +{effect.value * 100}%，当前总计: {permanentDamagePercentBonus * 100}%");
                     break;
 
                 case PermanentUpgradeType.FireRatePercent:
                     permanentFireRateBonus += effect.value;
-                    Debug.Log($"永久射速加成增加: +{effect.value * 100}%，当前总计: {permanentFireRateBonus * 100}%");
                     break;
 
                 // --- 在这里处理“刃气”等机制性解锁 ---
                 case PermanentUpgradeType.UnlockBladeEnergyProjectile:
                     // 这种“开关”型的解锁，我们已经在 PlayerProgressManager 中通过 IsNodeUnlocked(node) 记录了
                     // 战斗逻辑脚本可以直接查询 PlayerProgressManager.Instance.IsNodeUnlocked(...)
-                    Debug.Log("机制解锁：刃气斩！");
                     break;
 
                     // ... 其他 case ...
@@ -199,27 +181,21 @@ public class PlayerProgressManager : MonoBehaviour
                 // --- 角色技能树属性 ---
                 case PermanentUpgradeType.MaxHealthFlat:
                     permanentMaxHealthBonus += (int)effect.value;
-                    Debug.Log($"永久生命上限加成: +{(int)effect.value}，当前总计: {permanentMaxHealthBonus}");
                     break;
                 case PermanentUpgradeType.ArmorFlat:
                     permanentArmorBonus += effect.value;
-                    Debug.Log($"永久护甲加成: +{effect.value}，当前总计: {permanentArmorBonus}");
                     break;
                 case PermanentUpgradeType.MoveSpeedPercent:
                     permanentMoveSpeedBonus += effect.value;
-                    Debug.Log($"永久移速加成: +{effect.value * 100}%，当前总计: {permanentMoveSpeedBonus * 100}%");
                     break;
                 case PermanentUpgradeType.CooldownReductionPercent:
                     permanentCooldownReduction += effect.value;
-                    Debug.Log($"永久冷却缩减: +{effect.value * 100}%，当前总计: {permanentCooldownReduction * 100}%");
                     break;
                 case PermanentUpgradeType.EnergyGainPercent:
                     permanentEnergyGainBonus += effect.value;
-                    Debug.Log($"永久能量获取加成: +{effect.value * 100}%，当前总计: {permanentEnergyGainBonus * 100}%");
                     break;
                 case PermanentUpgradeType.LifeStealPercent:
                     permanentLifeStealPercent += effect.value;
-                    Debug.Log($"永久吸血加成: +{effect.value * 100}%，当前总计: {permanentLifeStealPercent * 100}%");
                     break;
             }
         }
@@ -244,13 +220,15 @@ public class PlayerProgressManager : MonoBehaviour
         if (node == null || IsCharacterNodeUnlocked(node)) return;
 
         unlockedNodeIDs.Add(node.name);
-        Debug.Log($"<color=cyan>已解锁角色技能: {node.nodeName}</color>");
-
-        // 应用效果
-        foreach (var effect in node.effects)
+        
+        // 【修改】不再直接累加效果，而是重新计算当前角色的全部加成
+        // 获取当前角色数据
+        CharacterData currentChar = null;
+        if (DataManager.Instance != null)
         {
-            ApplyCharacterNodeEffect(effect);
+            currentChar = DataManager.Instance.selectedCharacter;
         }
+        RecalculateCharacterBonuses(currentChar);
 
         SaveGame();
     }
@@ -260,7 +238,7 @@ public class PlayerProgressManager : MonoBehaviour
         switch (effect.upgradeType)
         {
             case PermanentUpgradeType.DamagePercent:
-                permanentDamagePercentBonus += effect.value;
+                permanentCharDamagePercentBonus += effect.value; // 累加到角色技能树专属字段
                 break;
             case PermanentUpgradeType.MaxHealthFlat:
                 permanentMaxHealthBonus += (int)effect.value;
@@ -280,6 +258,36 @@ public class PlayerProgressManager : MonoBehaviour
             case PermanentUpgradeType.LifeStealPercent:
                 permanentLifeStealPercent += effect.value;
                 break;
+        }
+    }
+
+    /// <summary>
+    /// 【核心新增】根据指定角色的已解锁节点重新计算角色技能树加成
+    /// 解决了不同角色共享同一组属性的问题
+    /// </summary>
+    public void RecalculateCharacterBonuses(CharacterData forCharacter)
+    {
+        // 清零角色技能树属性
+        permanentMaxHealthBonus = 0;
+        permanentArmorBonus = 0f;
+        permanentMoveSpeedBonus = 0f;
+        permanentCooldownReduction = 0f;
+        permanentEnergyGainBonus = 0f;
+        permanentLifeStealPercent = 0f;
+        permanentCharDamagePercentBonus = 0f; // 清零角色技能树攻击力加成
+
+        if (forCharacter == null || forCharacter.characterSkillNodes == null) return;
+
+        // 只累加当前角色已解锁节点的效果
+        foreach (var node in forCharacter.characterSkillNodes)
+        {
+            if (node != null && IsCharacterNodeUnlocked(node))
+            {
+                foreach (var effect in node.effects)
+                {
+                    ApplyCharacterNodeEffect(effect);
+                }
+            }
         }
     }
 
@@ -345,8 +353,6 @@ public class PlayerProgressManager : MonoBehaviour
         achievementStats[statKey] += amount;
 
         // 【关键调试】看看有没有真的在涨
-        Debug.Log($"[统计] {statKey}: {achievementStats[statKey]}");
-
         // 2. 【核心】检查是否达到解锁条件
         CheckUnlocks(statKey);
 
@@ -367,8 +373,6 @@ public class PlayerProgressManager : MonoBehaviour
         {
             achievementStats.Add(statKey, amount);
         }
-
-        Debug.Log($"[成就记录] {statKey} 进度增加! 当前总计: {achievementStats[statKey]}");
 
         // 2. 【关键】立即保存进度，确保解锁条件被写入磁盘
         SaveGame();
@@ -397,7 +401,6 @@ public class PlayerProgressManager : MonoBehaviour
 
                 if (currentVal >= tree.unlockThreshold)
                 {
-                    Debug.Log($"[成就达成] {tree.name} 条件满足！自动解锁: {id}");
                     UnlockItem(id);
                 }
             }
@@ -409,7 +412,6 @@ public class PlayerProgressManager : MonoBehaviour
         if (!unlockedItems.Contains(itemName))
         {
             unlockedItems.Add(itemName);
-            Debug.Log($"<color=yellow>新物品解锁: {itemName}!</color>");
             SaveGame(); // 记得保存！
 
             // 触发解锁事件
@@ -433,13 +435,7 @@ public class PlayerProgressManager : MonoBehaviour
         data.savedDamagePercentBonus = this.permanentDamagePercentBonus;
         data.savedFireRateBonus = this.permanentFireRateBonus;
 
-        // --- 角色技能树属性 ---
-        data.savedMaxHealthBonus = this.permanentMaxHealthBonus;
-        data.savedArmorBonus = this.permanentArmorBonus;
-        data.savedMoveSpeedBonus = this.permanentMoveSpeedBonus;
-        data.savedCooldownReduction = this.permanentCooldownReduction;
-        data.savedEnergyGainBonus = this.permanentEnergyGainBonus;
-        data.savedLifeStealPercent = this.permanentLifeStealPercent;
+        // --- 【修改】角色技能树属性不再保存数值，从已解锁节点动态计算 ---
 
         // --- 【新增】保存新数据 ---
         data.savedUnlockedItems = this.unlockedItems;
@@ -456,7 +452,6 @@ public class PlayerProgressManager : MonoBehaviour
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetSaveFilePath(), json);
 
-        Debug.Log("<color=green>游戏进度已保存到: " + GetSaveFilePath() + "</color>");
     }
 
     public void LoadGame()
@@ -474,13 +469,15 @@ public class PlayerProgressManager : MonoBehaviour
             this.permanentDamagePercentBonus = data.savedDamagePercentBonus;
             this.permanentFireRateBonus = data.savedFireRateBonus;
 
-            // --- 角色技能树属性 ---
-            this.permanentMaxHealthBonus = data.savedMaxHealthBonus;
-            this.permanentArmorBonus = data.savedArmorBonus;
-            this.permanentMoveSpeedBonus = data.savedMoveSpeedBonus;
-            this.permanentCooldownReduction = data.savedCooldownReduction;
-            this.permanentEnergyGainBonus = data.savedEnergyGainBonus;
-            this.permanentLifeStealPercent = data.savedLifeStealPercent;
+            // --- 【修改】角色技能树属性不从存档加载，改为动态计算 ---
+            // 先清零，后续由 RecalculateCharacterBonuses 根据当前角色重新计算
+            this.permanentMaxHealthBonus = 0;
+            this.permanentArmorBonus = 0f;
+            this.permanentMoveSpeedBonus = 0f;
+            this.permanentCooldownReduction = 0f;
+            this.permanentEnergyGainBonus = 0f;
+            this.permanentLifeStealPercent = 0f;
+            this.permanentCharDamagePercentBonus = 0f; // 角色技能树攻击力加成也动态计算
 
             // --- 【新增】读取物品解锁 ---
             if (data.savedUnlockedItems != null)
@@ -513,11 +510,9 @@ public class PlayerProgressManager : MonoBehaviour
                 DataManager.Instance.selectedCharacterID = data.savedSelectedCharacterID;
             }
 
-            Debug.Log("<color=yellow>游戏进度已从 " + path + " 加载。</color>");
         }
         else
         {
-            Debug.Log("未找到存档文件，将以初始状态开始游戏。");
             ResetProgressToDefault(); // 建议加上这个初始化调用
         }
         ValidateRetroactiveUnlocks();
@@ -538,6 +533,7 @@ public class PlayerProgressManager : MonoBehaviour
         permanentCooldownReduction = 0f;
         permanentEnergyGainBonus = 0f;
         permanentLifeStealPercent = 0f;
+        permanentCharDamagePercentBonus = 0f;
 
         // 【新增】清除角色解锁和成就数据
         unlockedItems.Clear();
@@ -548,8 +544,6 @@ public class PlayerProgressManager : MonoBehaviour
     private void ValidateRetroactiveUnlocks()
     {
         if (allSkillTrees == null) return;
-
-        Debug.Log("[存档体检] 开始根据 SkillTree 配置进行全量检查...");
 
         foreach (var tree in allSkillTrees)
         {
@@ -585,11 +579,9 @@ public class PlayerProgressManager : MonoBehaviour
         if (File.Exists(path))
         {
             File.Delete(path);
-            Debug.Log("<color=red>存档文件已删除: " + path + "</color>");
         }
         else
         {
-            Debug.Log("无需删除，存档文件不存在。");
         }
 
         // 删除文件后，立刻将内存中的数据也重置

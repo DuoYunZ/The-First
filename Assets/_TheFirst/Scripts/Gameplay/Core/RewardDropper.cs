@@ -9,7 +9,6 @@ public class RewardDropper : MonoBehaviour
     // 你需要在 Health 组件的 OnDeath 事件中，将这个方法关联上
     public void DropRewards()
     {
-        Debug.Log("宝箱被打开，掉落奖励！");
         if (experienceGemPrefab == null) return;
 
         for (int i = 0; i < gemsToDrop; i++)

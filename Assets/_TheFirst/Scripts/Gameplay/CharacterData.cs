@@ -11,6 +11,13 @@ public class CharacterData : ScriptableObject
     public Sprite characterIcon; // 用于UI选择界面
     public GameObject characterPreviewPrefab; // 用于UI选择界面的3D预览模型
 
+    [Header("英文本地化")]
+    [Tooltip("英文角色名称（留空则在英文模式下回退显示中文）")]
+    public string characterNameEN;
+    [Tooltip("英文描述（留空则在英文模式下回退显示中文）")]
+    [TextArea(3, 5)]
+    public string descriptionEN;
+
     [Header("战斗设置")]
     [Tooltip("这个角色在战斗中实际使用的机甲核心预制件")]
     public GameObject chassisPrefab;
@@ -29,4 +36,36 @@ public class CharacterData : ScriptableObject
     [Header("角色技能树")]
     [Tooltip("这个角色的所有技能树节点（按层级顺序排列）")]
     public List<CharacterSkillNode> characterSkillNodes;
+
+    /// <summary>
+    /// 获取本地化后的角色名称
+    /// </summary>
+    public string LocalizedName
+    {
+        get
+        {
+            if (LocalizationManager.CurrentLanguage == SystemLanguage.English
+                && !string.IsNullOrEmpty(characterNameEN))
+            {
+                return characterNameEN;
+            }
+            return characterName;
+        }
+    }
+
+    /// <summary>
+    /// 获取本地化后的角色描述
+    /// </summary>
+    public string LocalizedDescription
+    {
+        get
+        {
+            if (LocalizationManager.CurrentLanguage == SystemLanguage.English
+                && !string.IsNullOrEmpty(descriptionEN))
+            {
+                return descriptionEN;
+            }
+            return description;
+        }
+    }
 }

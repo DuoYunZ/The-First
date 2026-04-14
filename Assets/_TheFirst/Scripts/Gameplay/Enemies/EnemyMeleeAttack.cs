@@ -1,4 +1,4 @@
-// --- EnemyMeleeAttack.cs ---
+﻿// --- EnemyMeleeAttack.cs ---
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
@@ -157,8 +157,6 @@ public class EnemyMeleeAttack : MonoBehaviour
         {
             return; // 没有在攻击，什么也不做
         }
-
-        Debug.Log($"<color=yellow>[{gameObject.name}] Melee Attack INTERRUPTED!</color>");
 
         // 2. 停止正在运行的 MeleeSequence 协程
         //    (我们使用 StopAllCoroutines() 是最简单的方式，

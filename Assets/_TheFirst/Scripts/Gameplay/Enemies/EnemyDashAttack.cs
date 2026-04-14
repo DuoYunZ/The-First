@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using UnityEngine.AI; // 【新增】
 
@@ -85,8 +85,12 @@ public class EnemyDashAttack : MonoBehaviour
         isAttacking = true;
 
         // 1. 攻击前置动作：停止AI，面朝玩家
-        agent.isStopped = true;
-        agent.velocity = Vector3.zero;
+        // 【修复】必须检查 agent 是否在 NavMesh 上，否则会报错
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
         if (animator != null) animator.SetBool("isMoving", false);
 
         Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
@@ -156,7 +160,10 @@ public class EnemyDashAttack : MonoBehaviour
             Destroy(currentDashSpeedEffectInstance);
         }
         // 6. 攻击结束，恢复AI
-        agent.isStopped = false;
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
         isAttacking = false;
     }
 

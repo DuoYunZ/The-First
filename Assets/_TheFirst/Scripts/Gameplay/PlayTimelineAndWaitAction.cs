@@ -42,7 +42,6 @@ public class PlayTimelineAction : Node
     // 【核心新增】一个公开的方法，用于被信号接收器(Signal Receiver)调用
     public void OnAnimationEndSignal()
     {
-        Debug.Log("接收到动画结束信号，行为树将继续！");
         this.isSignalReceived = true;
     }
 }

@@ -88,7 +88,6 @@ public class ProceduralWFCLikeGenerator : MonoBehaviour
                 }
             }
         }
-        Debug.Log("地块生成完成 (或尝试完成)。");
     }
 
     bool CollapseCell(int x, int y)

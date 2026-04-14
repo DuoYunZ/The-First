@@ -33,6 +33,49 @@ public static class LanguageTable
     }
 
     /// <summary>
+    /// 尝试获取翻译文本，找不到时返回 null（不打印警告）
+    /// </summary>
+    public static string TryGet(string key, SystemLanguage language)
+    {
+        if (_table == null) InitTable();
+
+        if (_table.TryGetValue(key, out var translations))
+        {
+            if (translations.TryGetValue(language, out string text))
+                return text;
+
+            if (translations.TryGetValue(SystemLanguage.ChineseSimplified, out string fallback))
+                return fallback;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 通过中文武器名反查英文翻译
+    /// 遍历所有 weapon.* 条目，找到中文值匹配的条目后返回英文值
+    /// 找不到则返回原始名称
+    /// </summary>
+    public static string LocalizeWeaponName(string chineseName, SystemLanguage targetLang)
+    {
+        if (_table == null) InitTable();
+        if (targetLang == SystemLanguage.ChineseSimplified) return chineseName;
+
+        foreach (var kvp in _table)
+        {
+            if (!kvp.Key.StartsWith("weapon.")) continue;
+
+            if (kvp.Value.TryGetValue(SystemLanguage.ChineseSimplified, out string zhName)
+                && zhName == chineseName)
+            {
+                if (kvp.Value.TryGetValue(targetLang, out string translated))
+                    return translated;
+            }
+        }
+        return chineseName; // 找不到则回退原名
+    }
+
+    /// <summary>
     /// 初始化翻译表。所有翻译条目集中管理于此。
     /// 格式：Add("key", "中文文本", "English Text")
     /// 支持 string.Format 占位符：{0}, {1}, ...
@@ -50,6 +93,12 @@ public static class LanguageTable
         // ===== 结算界面 =====
         Add("ui.mission_complete",   "任务完成",                  "Mission Complete");
         Add("ui.mission_failed",     "任务失败",                  "Mission Failed");
+        Add("ui.battle_report",      "战报",                      "Battle Report");
+        Add("ui.survival_time",      "存活时间",                  "Survival Time");
+        Add("ui.kill_count",         "击杀数",                    "Kills");
+        Add("ui.gold_earned",        "获得金币",                  "Gold Earned");
+        Add("ui.restart",            "重新开始",                  "Restart");
+        Add("ui.return",             "返回",                      "Return");
 
         // ===== 融合 UI =====
         Add("ui.no_weapon",          "没有武器",                  "No Weapon");
@@ -86,18 +135,18 @@ public static class LanguageTable
         Add("ui.language",           "语言",                     "Lang");
         Add("ui.back",               "返回",                     "Back");
 
-        // ===== 武器名称 (key = weapon.{weaponID}) =====
-        Add("weapon.Fireball",       "火焰球",                   "Fireball");
+        // ===== 武器名称 (中文必须与 WeaponStatBlock.weaponName 完全一致) =====
+        Add("weapon.Fireball",       "火球术",                   "Fireball");
         Add("weapon.ChainLightning", "闪电链",                   "Chain Lightning");
         Add("weapon.SupportAura",    "光环",                     "Aura");
-        Add("weapon.Hurricane",      "小龙卷",                   "Tornado");
-        Add("weapon.Grenade",        "榴弹",                   "Grenade");
+        Add("weapon.Hurricane",      "旋风术",                   "Tornado");
+        Add("weapon.Grenade",        "Grenade",                  "Grenade");
         Add("weapon.Landmine",       "地雷",                     "Landmine");
         Add("weapon.Orbit",          "大地岩盾",                 "Rock Shield");
         Add("weapon.FlameDagger",    "灵能飞刃",                 "Flame Dagger");
         Add("weapon.IceShard",       "冰锥术",                   "Ice Shard");
-        Add("weapon.FrostNova",      "冰霜新星",                 "Frost Nova");
-        Add("weapon.LightningStrike","雷击",                     "Lightning");
+        Add("weapon.FrostNova",      "寒冰新星",                 "Frost Nova");
+        Add("weapon.LightningStrike","落雷",                     "Lightning Strike");
         Add("weapon.ExtremeIceShard","极寒冰锥",                 "Cryo Lance");
         Add("weapon.Blade",          "斩击",                     "Blade");
 

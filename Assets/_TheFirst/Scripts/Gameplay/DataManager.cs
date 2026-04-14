@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class DataManager : MonoBehaviour
@@ -32,7 +32,6 @@ public class DataManager : MonoBehaviour
                 !string.IsNullOrEmpty(PlayerProgressManager.Instance.savedSelectedCharacterID))
             {
                 selectedCharacterID = PlayerProgressManager.Instance.savedSelectedCharacterID;
-                Debug.Log($"[DataManager] 从存档恢复角色选择: {selectedCharacterID}");
             }
         }
         else

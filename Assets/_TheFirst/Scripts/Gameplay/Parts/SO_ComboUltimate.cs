@@ -20,6 +20,9 @@ public class SO_ComboUltimate : ScriptableObject
     [Tooltip("连携技描述")]
     [TextArea(2, 4)]
     public string comboDescription;
+    [Tooltip("连携技描述（英文）")]
+    [TextArea(2, 4)]
+    public string comboDescriptionEN;
 
     [Header("连携技效果")]
     [Tooltip("连携技效果预制件")]

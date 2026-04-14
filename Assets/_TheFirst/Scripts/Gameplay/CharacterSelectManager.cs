@@ -109,8 +109,8 @@ public class CharacterSelectManager : MonoBehaviour
 
         if (characterIconImage != null && data.characterIcon != null)
             characterIconImage.sprite = data.characterIcon;
-        if (nameText != null) nameText.text = data.characterName;
-        if (descriptionText != null) descriptionText.text = data.description;
+        if (nameText != null) nameText.text = data.LocalizedName;
+        if (descriptionText != null) descriptionText.text = data.LocalizedDescription;
 
         UpdatePreviewModel(data);
         RefreshUI(data);
@@ -321,8 +321,8 @@ public class CharacterSelectManager : MonoBehaviour
         currentPopupNode = nodeUI;
         var node = nodeUI.nodeData;
 
-        if (popupNodeName != null) popupNodeName.text = node.nodeName;
-        if (popupDescription != null) popupDescription.text = node.description;
+        if (popupNodeName != null) popupNodeName.text = node.LocalizedNodeName;
+        if (popupDescription != null) popupDescription.text = node.LocalizedDescription;
 
         RefreshPopupButton(nodeUI);
         PositionPopupNearNode(nodeUI);
@@ -424,8 +424,6 @@ public class CharacterSelectManager : MonoBehaviour
         PlayerProgressManager.Instance.SpendGold(node.cost);
         PlayerProgressManager.Instance.UnlockCharacterNode(node);
 
-        Debug.Log($"<color=cyan>[角色技能树] 已解锁: {node.nodeName}，花费 {node.cost} 金币</color>");
-
         RefreshAllSkillNodes();
 
         // 解锁成功，直接关闭弹窗
@@ -503,7 +501,6 @@ public class CharacterSelectManager : MonoBehaviour
             DataManager.Instance.selectedCharacter = currentCharacter;
             DataManager.Instance.selectedCharacterID = currentCharacter.characterID;
         }
-        Debug.Log($"<color=green>[角色选择] 已选择角色: {currentCharacter.characterName}</color>");
         OnCharacterSelected?.Invoke(currentCharacter);
         if (PlayerProgressManager.Instance != null)
             PlayerProgressManager.Instance.SaveGame();
@@ -515,12 +512,10 @@ public class CharacterSelectManager : MonoBehaviour
         if (currentCharacter == null || PlayerProgressManager.Instance == null) return;
         if (!PlayerProgressManager.Instance.CanAfford(currentCharacter.unlockCost))
         {
-            Debug.Log("[角色解锁] 金币不足！");
             return;
         }
         PlayerProgressManager.Instance.SpendGold(currentCharacter.unlockCost);
         PlayerProgressManager.Instance.UnlockItem(currentCharacter.characterID);
-        Debug.Log($"<color=yellow>[角色解锁] 已解锁角色: {currentCharacter.characterName}，花费 {currentCharacter.unlockCost} 金币</color>");
         RefreshUI(currentCharacter);
     }
 

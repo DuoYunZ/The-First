@@ -38,7 +38,6 @@ public class WaveManager : MonoBehaviour
         {
             if (_currentState != value)
             {
-                Debug.Log($"<color=yellow>WaveManager STATE CHANGE: From '{_currentState}' TO '{value}'</color>");
                 _currentState = value;
             }
         }
@@ -67,7 +66,6 @@ public class WaveManager : MonoBehaviour
 
         nextWaveCountdownTimer = 3f;
         currentState = WaveState.StartingGame;
-        Debug.Log("WaveManager 初始化，等待游戏开始波次序列。");
     }
 
     // vvv --- 【核心修正区域】 --- vvv
@@ -145,7 +143,6 @@ public class WaveManager : MonoBehaviour
 
             if (currentConfig.maxWaveDuration > 0 && currentWaveActiveTimer <= 0)
             {
-                Debug.Log($"<color=orange>波次 {currentWaveIndex + 1} 时间耗尽！强制进入下一波。</color>");
                 waveCleared = true;
             }
 
@@ -184,20 +181,17 @@ public class WaveManager : MonoBehaviour
         {
             if (enableEndlessMode)
             {
-                Debug.Log("<color=magenta>所有配置波次已完成！正在启动无尽模式...</color>");
                 isInEndlessMode = true;
                 StartEndlessWave();
             }
             else
             {
-                Debug.Log("所有配置的波次已完成! 游戏胜利！");
                 enabled = false;
             }
             return;
         }
 
         WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
-        Debug.Log($"开始波次: {currentWaveIndex + 1} ({currentConfig.waveName}) - 类型: {currentConfig.waveType}");
         bossInstanceHealth = null;
 
         currentState = WaveState.SpawningEnemies;
@@ -208,7 +202,6 @@ public class WaveManager : MonoBehaviour
         if (currentConfig.maxWaveDuration > 0)
         {
             currentWaveActiveTimer = currentConfig.maxWaveDuration;
-            Debug.Log($"Wave {currentWaveIndex + 1} has a max duration of {currentWaveActiveTimer} seconds.");
         }
         else
         {
@@ -227,17 +220,14 @@ public class WaveManager : MonoBehaviour
 
         if (currentConfig.waveType == WaveType.Boss)
         {
-            Debug.Log("这是一个Boss波次！准备战斗！");
         }
         else if (currentConfig.waveType == WaveType.Reward)
         {
-            Debug.Log("奖励波次！快打破宝箱！");
         }
     }
 
     public void NotifySpawnerFinishedCurrentWave()
     {
-        Debug.Log("接收到 EnemySpawner 的生成完毕通知。");
         waveIsCurrentlySpawning = false;
     }
 
@@ -259,14 +249,12 @@ public class WaveManager : MonoBehaviour
 
         if (isInEndlessMode)
         {
-            Debug.Log($"无尽波次 {endlessWaveCount} 已清除!");
             currentState = WaveState.WaveCooldown;
             nextWaveCountdownTimer = endlessModeTimeBetweenWaves;
         }
         else
         {
             WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
-            Debug.Log($"波次 {currentWaveIndex + 1} ({currentConfig.waveName}) 已清除!");
             currentState = WaveState.WaveCooldown;
             nextWaveCountdownTimer = currentConfig.customTimeUntilNextWave > 0 ? currentConfig.customTimeUntilNextWave : defaultTimeBetweenWaves;
         }
@@ -281,7 +269,6 @@ public class WaveManager : MonoBehaviour
             {
                 enemiesRemainingInWave = 0;
             }
-            Debug.Log($"[WaveManager] 一个敌人被击败。波次 {currentWaveIndex + 1} 剩余敌人: {enemiesRemainingInWave}");
             UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
         }
         else
@@ -301,7 +288,6 @@ public class WaveManager : MonoBehaviour
         currentState = WaveState.StartingGame;
         StopAllCoroutines();
         if (enemySpawner != null) enemySpawner.StopAndClearSpawning();
-        Debug.Log("WaveManager 已重置。");
     }
 
     public void RegisterBossInstance(Health bossHealth)
@@ -309,15 +295,12 @@ public class WaveManager : MonoBehaviour
         bossInstanceHealth = bossHealth;
         if (bossHealth != null)
         {
-            Debug.Log($"WaveManager 已注册Boss: {bossHealth.gameObject.name}");
         }
     }
 
     void StartEndlessWave()
     {
         endlessWaveCount++;
-        Debug.Log($"<color=yellow>开始无尽波次: {endlessWaveCount}</color>");
-
         WaveConfig endlessConfig = ScriptableObject.CreateInstance<WaveConfig>();
         endlessConfig.waveName = $"无尽波次 {endlessWaveCount}";
         endlessConfig.waveType = WaveType.Normal;
@@ -359,6 +342,5 @@ public class WaveManager : MonoBehaviour
     {
         enemiesRemainingInWave++;
         UIManager.Instance?.UpdateEnemiesRemaining(enemiesRemainingInWave);
-        Debug.Log($"[调试] 一个新的敌人已被注册到WaveManager，当前剩余敌人: {enemiesRemainingInWave}");
     }
 }

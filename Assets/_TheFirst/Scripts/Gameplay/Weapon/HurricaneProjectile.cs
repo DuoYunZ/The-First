@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// 飓风子弹辅助控制器，配合 Projectile 使用。
@@ -67,7 +67,6 @@ public class HurricaneProjectile : MonoBehaviour
         hasTurbulenceTriggered = true;
 
         SpawnSubHurricane(hitPoint, true);
-        Debug.Log($"<color=green>[乱流] 在命中点生成小飓风 (等级:{turbLevel})</color>");
     }
 
     /// <summary>
@@ -81,7 +80,6 @@ public class HurricaneProjectile : MonoBehaviour
 
         hasWindReturnTriggered = true;
         SpawnSubHurricane(transform.position, false);
-        Debug.Log($"<color=green>[风力回旋] 向随机方向再发一道飓风</color>");
     }
 
     /// <summary>

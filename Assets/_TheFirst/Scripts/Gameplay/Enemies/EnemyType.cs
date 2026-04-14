@@ -35,6 +35,10 @@ public class EnemyType : ScriptableObject
     [Range(0f, 1f)]
     public float energyStoneDropChance = 0.01f; // 默认 1%
 
+    [Tooltip("这个敌人掉落宝箱的几率 (0 = 不掉落, 1 = 必定掉落)")]
+    [Range(0f, 1f)]
+    public float treasureChestDropChance = 0f; // 默认 0%，精英怪可设为 1.0
+
     [Header("波次控制")]
     [Tooltip("该怪物最早在哪一波开始出现")]
     public int firstAppearanceWave = 1;

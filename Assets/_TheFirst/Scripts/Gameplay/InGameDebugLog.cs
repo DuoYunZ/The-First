@@ -59,8 +59,6 @@ public class InGameDebugLog : MonoBehaviour
         string formattedMessage = $"[{Time.time:F2}] {message}";
 
         // 同时输出到 Unity 的标准日志，方便在 Player.log 中也看到
-        Debug.Log(formattedMessage);
-
         // 将消息添加到队列
         if (logMessages.Count >= maxLines)
         {

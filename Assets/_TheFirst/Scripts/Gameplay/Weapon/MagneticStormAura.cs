@@ -82,7 +82,6 @@ public class MagneticStormAura : MonoBehaviour
             this.electricFieldDurationBonus = weapon.localElectricFieldDurationBonus;
         }
 
-        Debug.Log($"[光环初始化] 暴击率:{this.critRate:P0}, 连续雷击:{lightningRepeatCount}, 磁暴:{magneticStormEnabled}, 电磁场:{electricFieldEnabled}");
     }
 
     void Update()
@@ -101,13 +100,11 @@ public class MagneticStormAura : MonoBehaviour
         // 【调试】每秒输出一次计时状态
         if (Time.frameCount % 60 == 0)
         {
-            Debug.Log($"<color=magenta>[雷击Update] strikeTimer={strikeTimer:F1}/{lightningInterval}, ownerWeapon={(ownerWeapon != null ? ownerWeapon.name : "NULL")}</color>");
         }
         
         if (strikeTimer >= lightningInterval)
         {
             strikeTimer = 0f;
-            Debug.Log("<color=lime>[雷击] 触发落雷协程!</color>");
             // 【核心修改】启动协程，而不是直接调用函数
             StartCoroutine(TriggerLightningStrikeRoutine());
         }
@@ -120,8 +117,6 @@ public class MagneticStormAura : MonoBehaviour
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, enemyLayer);
         
         // 【调试】输出检测结果
-        Debug.Log($"<color=orange>[雷击检测] 位置:{transform.position}, 半径:{radius}, Layer:{enemyLayer.value}, 检测到碰撞体数量:{hits.Length}</color>");
-
         if (hits.Length == 0) yield break;
 
         // 2. 整理为唯一的 Health 列表 (防止一个敌人有多个碰撞体被算作多人)
@@ -279,7 +274,6 @@ public class MagneticStormAura : MonoBehaviour
     {
         thunderBuffCritBonus = critBonus;
         critRate += critBonus;
-        Debug.Log($"<color=yellow>[雷霆之力] 暴击率临时 +{critBonus:P0}，持续 {duration} 秒，当前暴击率: {critRate:P0}</color>");
         StartCoroutine(ThunderBuffRoutine(critBonus, duration));
     }
 
@@ -288,7 +282,6 @@ public class MagneticStormAura : MonoBehaviour
         yield return new WaitForSeconds(duration);
         critRate -= critBonus;
         thunderBuffCritBonus = 0f;
-        Debug.Log($"<color=yellow>[雷霆之力] BUFF 结束，暴击率恢复为: {critRate:P0}</color>");
     }
 
     // 辅助：随机获取一个存活敌人
