@@ -5,7 +5,7 @@ using UnityEngine;
 /// 挂在玩家根物体上，负责监听全局事件并驱动事件驱动型被动
 /// 
 /// 管理范围：
-/// - 灵魂汲取（击杀回血）
+/// - 灵魂汲取（击杀回血）— 累积100次击杀恢复5点HP
 /// - 雷霆意志（击杀触发雷击AOE）
 /// 
 /// 已迁移到其他组件：
@@ -28,6 +28,26 @@ public class PassiveEffectManager : MonoBehaviour
     [Tooltip("雷击AOE半径")]
     public float thunderStrikeRadius = 3f;
 
+    // ============================================================
+    // 累积阈值回血系统（每局重置）
+    // ============================================================
+
+    /// <summary>
+    /// 吸血伤害累积器（由 Health.TakeDamage 外部累加）
+    /// 每累积 1000 等效伤害恢复 1 点 HP
+    /// </summary>
+    public static float lifeStealDamageAccumulator = 0f;
+
+    /// <summary>
+    /// 击杀回血击杀次数累积器
+    /// 每累积 100 次击杀恢复 5 点 HP
+    /// </summary>
+    private int killHealKillAccumulator = 0;
+
+    // 击杀回血阈值配置
+    private const int KILL_HEAL_THRESHOLD = 100; // 每100次击杀
+    private const int KILL_HEAL_AMOUNT = 5;      // 恢复5点HP
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(this); return; }
@@ -42,6 +62,10 @@ public class PassiveEffectManager : MonoBehaviour
         {
             Debug.LogError("[PassiveEffectManager] 未找到 Health 组件！请确保挂在玩家根物体上。", this);
         }
+
+        // 每局开始时重置累积器
+        lifeStealDamageAccumulator = 0f;
+        killHealKillAccumulator = 0;
 
         // 订阅全局敌人死亡事件
         Health.OnEnemyDied += HandleEnemyDied;
@@ -65,12 +89,19 @@ public class PassiveEffectManager : MonoBehaviour
     {
         if (PlayerStats.Instance == null || playerHealth == null) return;
 
-        // --- 灵魂汲取：击杀回血 ---
+        // --- 灵魂汲取：击杀累积回血 ---
+        // 每累积 KILL_HEAL_THRESHOLD 次击杀恢复 KILL_HEAL_AMOUNT 点HP
         if (PlayerStats.Instance.killHealAmount > 0)
         {
-            if (!playerHealth.IsDead)
+            killHealKillAccumulator++;
+
+            if (killHealKillAccumulator >= KILL_HEAL_THRESHOLD)
             {
-                playerHealth.Heal(PlayerStats.Instance.killHealAmount);
+                killHealKillAccumulator -= KILL_HEAL_THRESHOLD;
+                if (!playerHealth.IsDead)
+                {
+                    playerHealth.Heal(KILL_HEAL_AMOUNT);
+                }
             }
         }
 
@@ -119,3 +150,4 @@ public class PassiveEffectManager : MonoBehaviour
         Debug.Log($"<color=yellow>[雷霆意志] 触发雷击！伤害={finalDamage}, 命中={hits.Length}</color>");
     }
 }
+

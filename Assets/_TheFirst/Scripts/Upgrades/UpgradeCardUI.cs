@@ -166,8 +166,13 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             if (contentFitter != null) contentFitter.enabled = false;
         }
 
-        // 通知其他卡片淡出消失
-        NotifyOtherCardsDismiss();
+        // 宝箱多选模式：选完一张后不消除其他卡片，让玩家继续选择
+        bool isMultiPick = UpgradeManager.Instance != null && UpgradeManager.Instance.HasRemainingTreasurePicks();
+        if (!isMultiPick)
+        {
+            // 通知其他卡片淡出消失
+            NotifyOtherCardsDismiss();
+        }
 
         // 判断是否需要播放宝石飞入动画（武器相关的卡片才播放）
         bool isWeaponCard = sourceNode != null && sourceNode.associatedWeapon != null;
@@ -412,6 +417,10 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     /// </summary>
     private void RestoreLayoutGroup()
     {
+        // 宝箱多选模式下，还有剩余选择次数时不恢复布局，防止卡片跳位
+        if (UpgradeManager.Instance != null && UpgradeManager.Instance.HasRemainingTreasurePicks())
+            return;
+
         Transform container = transform.parent;
         if (container == null) return;
         var layoutGroup = container.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
@@ -503,7 +512,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 {
                     baseDmg = weapon.baseAoeDamage > 0 ? weapon.baseAoeDamage : baseDmg;
                 }
-                else if (weapon.behavior == WeaponBehaviorType.Beam) baseDmg = weapon.beamDamagePerSecond;
+                else if (weapon.behavior == WeaponBehaviorType.Beam || weapon.behavior == WeaponBehaviorType.LaserCore) baseDmg = weapon.beamDamagePerSecond;
                 else if (weapon.behavior == WeaponBehaviorType.PersistentAOE) baseDmg = weapon.baseAreaDamagePerTick;
 
                 // 【核心修复】读取当前已有的局部加成
@@ -583,7 +592,8 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 return FormatChange(LocalizationManager.T("stat.crit_dmg"), curCD, futCD, false, "%");
 
             case UpgradeType.PierceCount:
-                int curP = weapon.basePierceCount + stats.bonusPierceCount;
+                int localPierceBonus = (activePart != null) ? activePart.localPierceCountBonus : 0;
+                int curP = weapon.basePierceCount + stats.bonusPierceCount + localPierceBonus;
                 int futP = curP + Mathf.RoundToInt(effect.value);
                 if (curP != futP) return FormatChange(LocalizationManager.T("stat.pierce"), curP, futP);
                 break;
@@ -712,9 +722,15 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 return FormatChange("伤害反弹", curThorns, nextThorns, false, "%");
 
             case UpgradeType.KillHeal:
-                int curKillHeal = stats.killHealAmount;
-                int nextKillHeal = curKillHeal + Mathf.RoundToInt(effect.value);
-                return FormatChange("击杀回血", curKillHeal, nextKillHeal);
+                // 击杀回血是阈值制：每100击杀回复5HP，killHealAmount > 0 仅为启用开关
+                if (stats.killHealAmount > 0)
+                {
+                    return "<color=#88FF88>已激活: 每100击杀恢复5HP</color>";
+                }
+                else
+                {
+                    return "<color=#88FF88>激活后: 每100击杀恢复5HP</color>";
+                }
 
             case UpgradeType.GlobalFreezeChance:
                 float curFreeze = stats.globalFreezeChance * 100f;
@@ -728,16 +744,33 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 return FormatChange("雷击概率", curThunderChance, nextThunderChance, false, "%");
 
             case UpgradeType.LifeStealPassive:
-                float curSteal = stats.lifeStealPercent * 100f;
-                float nextSteal = (stats.lifeStealPercent + effect.value) * 100f;
-                return FormatChange("伤害吸血", curSteal, nextSteal, false, "%");
+                // 吸血是阈值制：累积伤害 × lifeStealPercent，每满1000回复1HP
+                float curStealRate = stats.lifeStealPercent;
+                float nextStealRate = curStealRate + effect.value;
+                // 计算实际需要造成多少伤害才回1HP
+                if (nextStealRate > 0f)
+                {
+                    int dmgNeeded = Mathf.CeilToInt(1000f / nextStealRate);
+                    if (curStealRate > 0f)
+                    {
+                        int curDmgNeeded = Mathf.CeilToInt(1000f / curStealRate);
+                        return FormatChange("回复1HP所需伤害", curDmgNeeded, dmgNeeded, true);
+                    }
+                    else
+                    {
+                        return $"<color=#88FF88>激活后: 每{dmgNeeded}伤害恢复1HP</color>";
+                    }
+                }
+                return "";
 
             case UpgradeType.DashExplosion:
                 return FormatChange("冲刺余烬", stats.dashExplosionLevel, stats.dashExplosionLevel + 1);
 
             case UpgradeType.ExperienceGain:
                 float curXP = stats.experienceGainMultiplier * 100f;
-                float nextXP = (stats.experienceGainMultiplier + effect.value) * 100f;
+                // effect.value 是百分比数值（如15代表15%），需要除以100后加到乘数上
+                float xpIncrement = (effect.modType == ModifierType.Percentage) ? effect.value / 100f : effect.value;
+                float nextXP = (stats.experienceGainMultiplier + xpIncrement) * 100f;
                 return FormatChange("经验获取", curXP, nextXP, false, "%");
         }
         return "";
@@ -748,7 +781,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         if (weapon.behavior == WeaponBehaviorType.Orbital) return weapon.baseDuration;
         if (weapon.behavior == WeaponBehaviorType.SummonDrone) return weapon.summonDuration;
-        if (weapon.behavior == WeaponBehaviorType.Beam) return weapon.beamDuration;
+        if (weapon.behavior == WeaponBehaviorType.Beam || weapon.behavior == WeaponBehaviorType.LaserCore) return weapon.beamDuration;
         if (weapon.behavior == WeaponBehaviorType.PersistentAOE) return weapon.baseAreaDuration;
         if (weapon.behavior == WeaponBehaviorType.Landmine) return weapon.mineDuration;
         return weapon.baseProjectileLifetime;

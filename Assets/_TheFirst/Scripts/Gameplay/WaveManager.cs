@@ -1,4 +1,4 @@
-﻿// --- WaveManager.cs (最终完整修正版) ---
+// --- WaveManager.cs (最终完整修正版) ---
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -254,6 +254,21 @@ public class WaveManager : MonoBehaviour
         }
         else
         {
+            // 检查是否是最后一个预设波次
+            bool isLastWave = (currentWaveIndex >= allWaveConfigurations.Count - 1);
+
+            if (isLastWave && !enableEndlessMode)
+            {
+                // 所有预设波次已通关，触发胜利！
+                Debug.Log("<color=gold>[WaveManager] 所有波次已通关！触发胜利结算！</color>");
+                enabled = false;
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.HandleVictory();
+                }
+                return;
+            }
+
             WaveConfig currentConfig = allWaveConfigurations[currentWaveIndex];
             currentState = WaveState.WaveCooldown;
             nextWaveCountdownTimer = currentConfig.customTimeUntilNextWave > 0 ? currentConfig.customTimeUntilNextWave : defaultTimeBetweenWaves;

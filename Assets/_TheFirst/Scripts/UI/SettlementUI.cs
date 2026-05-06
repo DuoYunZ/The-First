@@ -50,12 +50,30 @@ public class SettlementUI : MonoBehaviour
     private int finalGold;
 
     // [新增] Awake 用于缓存位置
+    [Header("面板入场动画")]
+    [Tooltip("面板从上方滑入的动画时长（真实秒）")]
+    public float panelSlideDuration = 0.8f;
+
+    // 面板 RectTransform 缓存
+    private RectTransform panelRect;
+    private Vector2 panelOriginPos;
+
     void Awake()
     {
         // 提前缓存 RectTransform 和 原始位置
         CacheStatPos(timeStat);
         CacheStatPos(killStat);
         CacheStatPos(goldStat);
+
+        // 缓存面板本身的 RectTransform
+        if (panelRoot != null)
+        {
+            panelRect = panelRoot.GetComponent<RectTransform>();
+            if (panelRect != null)
+            {
+                panelOriginPos = panelRect.anchoredPosition;
+            }
+        }
     }
 
     private void CacheStatPos(StatUI stat)
@@ -74,6 +92,14 @@ public class SettlementUI : MonoBehaviour
     {
         panelRoot.SetActive(true);
         Time.timeScale = 0f;
+
+        // 面板从上方滑入：先移到屏幕上方
+        if (panelRect != null)
+        {
+            // 将面板移到屏幕上方（Y 偏移一个屏幕高度）
+            float slideOffset = Screen.height;
+            panelRect.anchoredPosition = panelOriginPos + new Vector2(0, slideOffset);
+        }
 
         mainTitleText.text = isVictory ? LocalizationManager.T("ui.mission_complete") : LocalizationManager.T("ui.mission_failed");
         mainTitleText.color = isVictory ? Color.yellow : Color.white;
@@ -120,6 +146,28 @@ public class SettlementUI : MonoBehaviour
 
     private IEnumerator FullSequence(Dictionary<string, int> damageStats)
     {
+        // --- 阶段 0: 面板从上方下滑入场 ---
+        if (panelRect != null)
+        {
+            Vector2 startPos = panelRect.anchoredPosition;
+            Vector2 endPos = panelOriginPos;
+            float timer = 0f;
+
+            while (timer < panelSlideDuration)
+            {
+                timer += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(timer / panelSlideDuration);
+                // BackOut 缓动：下滑时有一个过冲回弹效果
+                float easedT = 1f - Mathf.Pow(1f - t, 3f) * (1f + 2.7f * (1f - t));
+                easedT = Mathf.Clamp01(easedT); // 防止负值
+                panelRect.anchoredPosition = Vector2.LerpUnclamped(startPos, endPos, easedT);
+                yield return null;
+            }
+            panelRect.anchoredPosition = endPos;
+        }
+
+        yield return new WaitForSecondsRealtime(0.15f);
+
         // --- 阶段 A: 依次播放顶部三个数据 ---
         yield return StartCoroutine(AnimateSingleStat(timeStat, finalTime, true));
         yield return StartCoroutine(AnimateSingleStat(killStat, finalKills, false));

@@ -1,8 +1,9 @@
-﻿// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
+// --- PlayerBladeAttack.cs (最终诊断与健壮性修正版) ---
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 斩击攻击模式 — 融合大招切换
@@ -47,6 +48,41 @@ public class PlayerBladeAttack : MonoBehaviour
     public Transform slashSpawnPoint;
     public FloatingWeaponController floatingWeapon;
     public WeaponCooldownMaterial weaponCooldownMaterial;
+
+    [Header("机制分支设置")]
+    [Tooltip("精准斩击停顿时长（秒）")]
+    public float precisionPauseDuration = 0.4f;
+    [Tooltip("敏捷猎手身后刀伤害系数（0.7 = 70%主刀伤害）")]
+    public float agileBackSlashDamageRatio = 0.7f;
+    [Tooltip("身后刀位置偏移（相对角色本地坐标，Z负值=身后）")]
+    public Vector3 backSlashOffset = new Vector3(0, 0, -4f);
+    [Tooltip("侧方刀位置偏移（X正值=右侧，会根据左右自动取反）")]
+    public float sideSlashOffset = 2.5f;
+    [Tooltip("精准斩击命中后的移速加成持续时间（瞬身斩回）")]
+    public float flashStepDuration = 0.8f;
+    [Tooltip("精准斩击命中后的移速加成倍率")]
+    public float flashStepSpeedBoost = 0.6f;
+
+    [Header("高级天赋设置")]
+    [Tooltip("疾风之势 — 每次攻击叠加攻速百分比")]
+    public float windForceAtkSpeedPerStack = 0.05f;
+    [Tooltip("疾风之势 — 最大叠加层数")]
+    public int windForceMaxStacks = 10;
+    [Tooltip("疾风之势 — 不攻击后多久重置叠加（秒）")]
+    public float windForceDecayTime = 2f;
+    [Tooltip("剑圣之道 — 停顿期间受伤减免百分比")]
+    public float kenseiDamageReduction = 0.5f;
+    [Tooltip("疾影无踪 — 击杀时生成影分身的概率")]
+    public float shadowCloneChance = 0.15f;
+    [Tooltip("疾影无踪 — 影分身持续时间（秒）")]
+    public float shadowCloneDuration = 3f;
+    [Tooltip("疾影无踪 — 影分身预制件（可选，为空则使用角色模型）")]
+    public GameObject shadowClonePrefab;
+
+    // 运行时天赋状态
+    private int windForceStacks = 0;        // 疾风之势当前层数
+    private float windForceTimer = 0f;       // 疾风之势衰减计时
+    private bool isKenseiPausing = false;    // 剑圣之道 — 是否在停顿减伤状态
 
     [Header("音效设置")]
     [Tooltip("攻击时播放的挥舞音效，可以放多个")]
@@ -168,17 +204,57 @@ public class PlayerBladeAttack : MonoBehaviour
 
         cooldownTimer -= Time.deltaTime;
 
+        // === 疏风之势：攻速叠加衰减计时 ===
+        if (windForceStacks > 0)
+        {
+            windForceTimer -= Time.deltaTime;
+            if (windForceTimer <= 0)
+            {
+                // 超时未攻击，重置所有叠加层
+                windForceStacks = 0;
+            }
+        }
+
         if (cooldownTimer <= 0 && attackData != null && attackData.baseFireRate > 0)
         {
             StartCoroutine(AttackSequence());
-            // 重置计时器
-            cooldownTimer = cooldownDuration;
+            // 重置计时器（疏风之势加速会减少cooldownDuration）
+            cooldownTimer = cooldownDuration * (1f - windForceStacks * windForceAtkSpeedPerStack);
         }
     }
 
     IEnumerator AttackSequence()
     {
         isAttacking = true;
+
+        // 检查局内角色技能卡状态（抽到卡片才生效）
+        bool hasPrecision = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("PrecisionSlash");
+        bool hasAgile = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("AgileHunter");
+
+        // === 精准斩击：攻击前短暂停顿（蓄力感） ===
+        if (hasPrecision)
+        {
+            bool hasHeavySlash = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Prec_HeavySlash");
+            float pauseTime = hasHeavySlash ? 0.3f : precisionPauseDuration;
+
+            // 剑圣之道：停顿期间开启减伤
+            bool hasKensei = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Talent_Kensei");
+            if (hasKensei)
+            {
+                isKenseiPausing = true;
+                pauseTime += 0.05f;
+            }
+
+            // 停顿期间锁定移动（通过MechController标记，持续整个停顿）
+            MechController mech = GetComponentInParent<MechController>();
+            if (mech != null) mech.isMovementLocked = true;
+
+            yield return new WaitForSeconds(pauseTime);
+
+            // 停顿结束，解锁移动 + 关闭减伤
+            if (mech != null) mech.isMovementLocked = false;
+            isKenseiPausing = false;
+        }
 
         if (floatingWeapon != null) floatingWeapon.HideWeapon();
 
@@ -188,6 +264,16 @@ public class PlayerBladeAttack : MonoBehaviour
         if (flashEffectPrefab != null)
             Instantiate(flashEffectPrefab, effectTransform.position, effectTransform.rotation);
 
+        // === 精准斩击：覆盖角色朝向为鼠标方向 ===
+        if (hasPrecision && visualsTransform != null)
+        {
+            Vector3 mouseWorldDir = GetMouseWorldDirection();
+            if (mouseWorldDir.sqrMagnitude > 0.01f)
+            {
+                visualsTransform.rotation = Quaternion.LookRotation(mouseWorldDir);
+            }
+        }
+
         if (soundEffectDelay < 0)
         {
             PlaySlashSound();
@@ -195,6 +281,16 @@ public class PlayerBladeAttack : MonoBehaviour
         }
 
         GenerateSlashVFX();
+
+        // === 疾风之势：每次攻击叠加攻速 ===
+        if (hasAgile)
+        {
+            bool hasWindForce = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Agile_WindForce");
+            if (hasWindForce)
+            {
+                ApplyWindForceStack();
+            }
+        }
 
         if (soundEffectDelay >= 0)
         {
@@ -205,6 +301,16 @@ public class PlayerBladeAttack : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         if (floatingWeapon != null) floatingWeapon.ShowWeapon();
         isAttacking = false;
+
+        // === 精准斩击-瞬身斩回：命中后短暂加速 ===
+        if (hasPrecision)
+        {
+            bool hasFlashStep = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Prec_FlashStep");
+            if (hasFlashStep && PlayerStats.Instance != null)
+            {
+                StartCoroutine(FlashStepBoost());
+            }
+        }
 
         // 攻击动画结束后才启动冷却视觉，确保充满 = 可以攻击
         if (weaponCooldownMaterial != null)
@@ -221,6 +327,208 @@ public class PlayerBladeAttack : MonoBehaviour
                 catch (System.Exception) { weaponCooldownMaterial = null; }
             }
         }
+    }
+
+    /// <summary>
+    /// 精准斩击-瞬身斩回：攻击后短暂移速加成
+    /// </summary>
+    private IEnumerator FlashStepBoost()
+    {
+        if (PlayerStats.Instance == null) yield break;
+        // 同时修改temp（用于RecalculateStats恢复）和主字段（立刻生效）
+        PlayerStats.Instance.tempMoveSpeedBonus += flashStepSpeedBoost;
+        PlayerStats.Instance.moveSpeedMultiplier += flashStepSpeedBoost;
+        yield return new WaitForSeconds(flashStepDuration);
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.tempMoveSpeedBonus -= flashStepSpeedBoost;
+            PlayerStats.Instance.moveSpeedMultiplier -= flashStepSpeedBoost;
+        }
+    }
+
+    // =========================================================
+    //  高级天赋实现
+    // =========================================================
+
+    /// <summary>
+    /// 疏风之势：每次攻击叠加一层攻速加成
+    /// 最大叠加 windForceMaxStacks 层，超时不攻击则全部重置
+    /// </summary>
+    private void ApplyWindForceStack()
+    {
+        windForceStacks = Mathf.Min(windForceStacks + 1, windForceMaxStacks);
+        windForceTimer = windForceDecayTime; // 重置衰减计时
+    }
+
+    /// <summary>
+    /// 剑圣之道：查询当前是否在停顿减伤状态
+    /// 外部伤害系统调用此方法获取减伤倍率
+    /// 返回值：0~1，0=不减伤，0.5=减50%伤害
+    /// </summary>
+    public float GetKenseiDamageReduction()
+    {
+        if (isKenseiPausing)
+            return kenseiDamageReduction;
+        return 0f;
+    }
+
+    /// <summary>
+    /// 疑影无踪：击杀敌人时概率生成影分身
+    /// 由敌人死亡时调用（外部接入）
+    /// </summary>
+    public void TrySpawnShadowClone(Vector3 killPosition)
+    {
+        if (PlayerProgressManager.Instance == null) return;
+        if (UpgradeManager.Instance == null || !UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Talent_Shadow")) return;
+
+        // 概率判定
+        if (Random.value > shadowCloneChance) return;
+
+        StartCoroutine(ShadowCloneRoutine(killPosition));
+    }
+
+    /// <summary>
+    /// 影分身协程：生成 → 持续攻击 → 自动消失
+    /// </summary>
+    private IEnumerator ShadowCloneRoutine(Vector3 spawnPosition)
+    {
+        // 创建影分身
+        GameObject clone = null;
+        if (shadowClonePrefab != null)
+        {
+            clone = Instantiate(shadowClonePrefab, spawnPosition, transform.rotation);
+            // 移除预制件上不需要的组件（避免分身尝试控制角色）
+            CleanupCloneComponents(clone);
+        }
+        else if (visualsTransform != null)
+        {
+            // 没有专用预制件，复制角色模型作为影分身
+            clone = Instantiate(visualsTransform.gameObject, spawnPosition, transform.rotation);
+            // 移除不需要的组件（避免影分身操控角色）
+            CleanupCloneComponents(clone);
+        }
+
+        if (clone == null) yield break;
+
+        // 安全保底：无论协程是否异常，都确保分身到时间后被销毁
+        Destroy(clone, shadowCloneDuration + 0.5f);
+
+        // 半透明效果（影分身视觉）
+        var renderers = clone.GetComponentsInChildren<Renderer>();
+        foreach (var r in renderers)
+        {
+            foreach (var mat in r.materials)
+            {
+                Color c = mat.color;
+                c.a = 0.5f;
+                mat.color = c;
+            }
+        }
+
+        // 影分身持续攻击：根据攻速循环释放斩击，直到时间结束
+        float elapsed = 0f;
+        float attackInterval = (attackData != null && attackData.baseFireRate > 0)
+            ? (1f / attackData.baseFireRate) * 0.5f  // 影分身攻速是玩家的2倍
+            : 0.4f;
+        attackInterval = Mathf.Max(attackInterval, 0.2f); // 最小间隔0.2s
+
+        Debug.Log($"[影分身] 生成成功！位置={spawnPosition}, 持续={shadowCloneDuration}s, 攻击间隔={attackInterval}s");
+
+        while (elapsed < shadowCloneDuration)
+        {
+            // 在影分身位置生成斩击（70%伤害）
+            if (clone != null)
+            {
+                float randomAngle = Random.Range(-30f, 30f);
+                // 使用分身位置 + 高度修正（确保VFX在角色腰部而不是地面）
+                Vector3 vfxPos = clone.transform.position + Vector3.up * 0.8f;
+                SpawnSlashVFXAtPosition(vfxPos, clone.transform.rotation, randomAngle, 0.7f);
+                Debug.Log($"[影分身] 释放斩击 @ {vfxPos}");
+            }
+
+            yield return new WaitForSeconds(attackInterval);
+            elapsed += attackInterval;
+        }
+
+        Debug.Log("[影分身] 时间到，消失");
+        if (clone != null)
+            Destroy(clone);
+    }
+
+    /// <summary>
+    /// 清理分身上不需要的组件（保留 Animator 和 Renderer 用于视觉表现）
+    /// </summary>
+    private void CleanupCloneComponents(GameObject clone)
+    {
+        if (clone == null) return;
+
+        // 移除所有不需要的 MonoBehaviour（保留 Animator 用于播放动画）
+        var allBehaviours = clone.GetComponentsInChildren<MonoBehaviour>(true);
+        foreach (var behaviour in allBehaviours)
+        {
+            if (behaviour != null && !(behaviour is Animator))
+            {
+                Destroy(behaviour);
+            }
+        }
+
+        // 移除碰撞体（避免分身与敌人/玩家发生物理交互）
+        var colliders = clone.GetComponentsInChildren<Collider>(true);
+        foreach (var col in colliders)
+        {
+            Destroy(col);
+        }
+
+        // 移除 Rigidbody（避免物理运算）
+        var rigidbodies = clone.GetComponentsInChildren<Rigidbody>(true);
+        foreach (var rb in rigidbodies)
+        {
+            Destroy(rb);
+        }
+    }
+
+    /// <summary>
+    /// 在指定位置生成斩击VFX（用于影分身等脱离角色位置的情况）
+    /// </summary>
+    private void SpawnSlashVFXAtPosition(Vector3 worldPos, Quaternion baseRotation, float angleOffset, float damageRatio)
+    {
+        if (attackData == null || attackData.slashEffectPrefab == null) return;
+
+        Quaternion finalRotation = baseRotation * Quaternion.Euler(0, angleOffset, 0);
+        GameObject slashVFX = Instantiate(attackData.slashEffectPrefab, worldPos, finalRotation);
+
+        VFXDamageController damageController = slashVFX.GetComponent<VFXDamageController>();
+        if (damageController != null)
+        {
+            int baseDamage = attackData.baseAoeDamage;
+            float damageMult = PlayerStats.Instance != null ? PlayerStats.Instance.damageMultiplier : 1f;
+            int finalDamage = Mathf.RoundToInt(baseDamage * damageMult * damageRatio);
+            damageController.Initialize(finalDamage, attackData.hitEffectPrefab, this.gameObject, myWeaponPart);
+        }
+    }
+
+    /// <summary>
+    /// 获取鼠标在世界空间中相对于玩家的方向（Y轴归零）
+    /// </summary>
+    private Vector3 GetMouseWorldDirection()
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return Vector3.forward;
+
+        // 使用新版 Input System 获取鼠标位置
+        if (Mouse.current == null) return transform.forward;
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+
+        Ray ray = cam.ScreenPointToRay(mousePos);
+        Plane groundPlane = new Plane(Vector3.up, transform.position);
+        if (groundPlane.Raycast(ray, out float distance))
+        {
+            Vector3 hitPoint = ray.GetPoint(distance);
+            Vector3 dir = (hitPoint - transform.position);
+            dir.y = 0;
+            return dir.normalized;
+        }
+        return transform.forward;
     }
     private void GenerateSlashVFX()
     {
@@ -289,6 +597,26 @@ public class PlayerBladeAttack : MonoBehaviour
             {
                 SpawnSlashVFX(slash.positionOffset, slash.angleOffset);
                 if (hasImprovedFrequency) FireBladeEnergyProjectile(slash.angleOffset);
+            }
+
+            // === 敏捷猎手：在身后额外生成一道斩击（70%伤害）===
+            bool isAgileHunter = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("AgileHunter");
+            if (isAgileHunter)
+            {
+                // 身后刀：使用Inspector可配置的偏移量
+                SpawnSlashVFX(backSlashOffset, 180f, agileBackSlashDamageRatio);
+
+                // 残影连斩：35%概率额外触发一次侧方斩击
+                bool hasShadowSlash = UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Agile_ShadowSlash");
+                if (hasShadowSlash && Random.value < 0.35f)
+                {
+                    // 随机左或右，带侧向+后方位置偏移
+                    bool isLeft = Random.value < 0.5f;
+                    float sideAngle = isLeft ? 90f : 270f;
+                    float sideX = isLeft ? -sideSlashOffset : sideSlashOffset;
+                    // Z轴使用backSlashOffset.z的一半，让侧方刀也偏向身后
+                    SpawnSlashVFX(new Vector3(sideX, 0, backSlashOffset.z * 0.5f), sideAngle, agileBackSlashDamageRatio * 0.8f);
+                }
             }
         }
 
@@ -434,6 +762,15 @@ public class PlayerBladeAttack : MonoBehaviour
     // SpawnSlashVFX 和 OnDrawGizmosSelected 方法保持我们上一个版本即可
     void SpawnSlashVFX(Vector3 localPositionOffset, float angleOffset)
     {
+        // 默认伤害系数1.0（100%伤害）
+        SpawnSlashVFX(localPositionOffset, angleOffset, 1.0f);
+    }
+
+    /// <summary>
+    /// 生成斩击VFX（支持伤害系数，用于敏捷猎手身后刀等）
+    /// </summary>
+    void SpawnSlashVFX(Vector3 localPositionOffset, float angleOffset, float damageRatio)
+    {
         Transform spawnPoint = slashSpawnPoint != null ? slashSpawnPoint : transform;
         Quaternion baseRotation = visualsTransform.rotation;
         Quaternion finalRotation = baseRotation * Quaternion.Euler(0, angleOffset, 0);
@@ -473,6 +810,14 @@ public class PlayerBladeAttack : MonoBehaviour
             scaleMultiplier *= fireScaleMultiplier;
         }
 
+        // 蓄力重斩：额外放大范围40%
+        bool hasHeavySlash = PlayerProgressManager.Instance != null 
+            && UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Prec_HeavySlash");
+        if (hasHeavySlash && damageRatio >= 1.0f) // 只对主斩击生效，不对身后刀生效
+        {
+            scaleMultiplier *= 1.4f;
+        }
+
         slashVFX.transform.localScale *= scaleMultiplier;
 
         // --- 应用伤害加成 ---
@@ -501,7 +846,30 @@ public class PlayerBladeAttack : MonoBehaviour
             }
 
             float calculatedDamage = (baseDamage + permanentBonus) * (damageMult + localDmgBonus + stoneDmgMod);
+            
+            // 应用伤害系数（身后刀等减伤场景）
+            calculatedDamage *= damageRatio;
+            
+            // 破甲一击：主斩击额外增伤 + 忽略护甲
+            bool hasArmorBreak = PlayerProgressManager.Instance != null 
+                && UpgradeManager.Instance != null 
+                && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Prec_ArmorBreak");
+            if (hasArmorBreak && damageRatio >= 1.0f) // 只对主斩击生效
+            {
+                calculatedDamage *= 1.3f; // 破甲增伤30%伤害
+            }
+
             int damageInput = Mathf.RoundToInt(calculatedDamage);
+
+            // 剑圣之道：为VFX添加额外暴击率
+            float bonusCritRate = 0f;
+            bool hasKenseiCrit = PlayerProgressManager.Instance != null 
+                && UpgradeManager.Instance != null 
+                && UpgradeManager.Instance.HasActiveCharacterSkill("Sword_Talent_Kensei");
+            if (hasKenseiCrit)
+            {
+                bonusCritRate = 0.15f; // 剑圣之道额外+15%暴击率
+            }
 
             damageController.Initialize(
                 damageInput,
@@ -509,6 +877,18 @@ public class PlayerBladeAttack : MonoBehaviour
                 this.gameObject,
                 myWeaponPart
             );
+
+            // 设置额外暴击率（剑圣之道）
+            if (bonusCritRate > 0f)
+            {
+                damageController.bonusCritRate = bonusCritRate;
+            }
+
+            // 破甲一击：标记忽略护甲
+            if (hasArmorBreak && damageRatio >= 1.0f)
+            {
+                damageController.ignoreArmor = true;
+            }
 
             // 烈焰模式：强制附带点燃效果
             if (currentMode == BladeMode.Fire)

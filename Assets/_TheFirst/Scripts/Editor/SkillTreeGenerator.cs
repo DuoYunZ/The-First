@@ -67,6 +67,10 @@ public class SkillTreeGenerator : EditorWindow
         {
             GenerateBladeNodes();
         }
+        if (GUILayout.Button("Generate LaserCore Nodes"))
+        {
+            GenerateLaserCoreNodes();
+        }
     }
 
     private static void GenerateFireballNodes()
@@ -1286,6 +1290,117 @@ public class SkillTreeGenerator : EditorWindow
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("<color=red>[技能树生成] 灵能飞刀节点已生成完毕！共11个节点</color>");
+    }
+
+    // ==================== 镭射核心 ====================
+    /// <summary>
+    /// 镭射核心技能树节点生成 — 3层11个节点
+    /// 设计围绕「聚焦升温」核心机制，4条路线：过载/恒温/棱镜/聚能
+    /// </summary>
+    private static void GenerateLaserCoreNodes()
+    {
+        string folderPath = "Assets/_TheFirst/Prefabs/Skill Tree/LaserCore";
+        EnsureDirectory(folderPath);
+
+        WeaponStatBlock lcWeapon = LoadAsset<WeaponStatBlock>("Assets/_TheFirst/GameData/SO_Weapon/SO_Laser_Tank.asset");
+        if (lcWeapon == null) { Debug.LogError("找不到 WSB_Laser_Tank Weapon SO"); return; }
+
+        // === 第一层：基础强化（4节点，无前置） ===
+
+        // 🔴 过载路线入口
+        var n_dmgBoost = CreateNode(folderPath, "LC_DmgBoost", "能量增幅", lcWeapon, "镭射伤害+60%");
+        SetEffects(n_dmgBoost, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 60, ModifierType.Percentage)
+        });
+
+        // 🔵 恒温路线入口
+        var n_endurance = CreateNode(folderPath, "LC_Endurance", "续航强化", lcWeapon, "光束持续时间+50%，冷却-15%");
+        SetEffects(n_endurance, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDuration, 50, ModifierType.Percentage),
+            (UpgradeType.WeaponFireRate, -15, ModifierType.Percentage)
+        });
+
+        // 🟡 棱镜路线入口
+        var n_prism = CreateNode(folderPath, "LC_Prism", "棱镜折射", lcWeapon, "光束命中后折射到1个附近敌人");
+        SetEffects(n_prism, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LaserRefraction, 1, ModifierType.Flat)
+        });
+
+        // 🟢 聚能路线入口
+        var n_precision = CreateNode(folderPath, "LC_Precision", "精准聚焦", lcWeapon, "暴击率+15%");
+        SetEffects(n_precision, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CritRate, 15, ModifierType.Percentage)
+        });
+
+        // === 第二层：进阶强化（4节点） ===
+
+        // 🔴 过载路线
+        var n_overload = CreateNode(folderPath, "LC_Overload", "过载射线", lcWeapon, "伤害+100%，过热爆发范围+60%");
+        SetEffects(n_overload, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 100, ModifierType.Percentage),
+            (UpgradeType.AoeRadius, 60, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_overload, n_dmgBoost);
+
+        // 🔵 恒温路线
+        var n_coolFlow = CreateNode(folderPath, "LC_CoolFlow", "冷却循环", lcWeapon, "冷却-30%，聚焦每层加成+5%");
+        SetEffects(n_coolFlow, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponFireRate, -30, ModifierType.Percentage),
+            (UpgradeType.LaserFocusBonus, 5, ModifierType.Flat)
+        });
+        SetPrerequisite(n_coolFlow, n_endurance);
+
+        // 🟡 棱镜路线
+        var n_refraction = CreateNode(folderPath, "LC_Refraction", "多重折射", lcWeapon, "折射再+1个目标");
+        SetEffects(n_refraction, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.LaserRefraction, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_refraction, n_prism);
+
+        // 🟢 聚能路线
+        var n_critII = CreateNode(folderPath, "LC_CritII", "致命聚焦", lcWeapon, "暴击率+10%，暴击伤害+50%");
+        SetEffects(n_critII, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.CritRate, 10, ModifierType.Percentage),
+            (UpgradeType.CritDamage, 50, ModifierType.Percentage)
+        });
+        SetPrerequisite(n_critII, n_precision);
+
+        // === 第三层：终极特化（3节点） ===
+
+        // 🔴 终极：核心熔毁
+        var n_meltdown = CreateNode(folderPath, "LC_Meltdown", "核心熔毁", lcWeapon, "伤害+120%，过热爆发变为持续灼烧区域");
+        SetEffects(n_meltdown, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 120, ModifierType.Percentage),
+            (UpgradeType.LaserMeltdown, 1, ModifierType.Flat)
+        });
+        SetPrerequisite(n_meltdown, n_overload);
+
+        // 🔵🟢 交叉点：镭射精通（需要恒温路线 + 聚能路线入口）
+        var n_mastery = CreateNode(folderPath, "LC_Mastery", "镭射精通", lcWeapon, "伤害+40%，光束宽度+80%，暴击率+5%");
+        SetEffects(n_mastery, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.WeaponDamage, 40, ModifierType.Percentage),
+            (UpgradeType.AoeRadius, 80, ModifierType.Percentage),
+            (UpgradeType.CritRate, 5, ModifierType.Percentage)
+        });
+        SetPrerequisites(n_mastery, new List<SkillTreeNodeData> { n_coolFlow, n_precision });
+
+        // 🟢 终极：电磁镭射
+        var n_stunBeam = CreateNode(folderPath, "LC_StunBeam", "电磁镭射", lcWeapon, "聚焦3层后命中附带1.5秒麻痹");
+        SetEffects(n_stunBeam, new List<(UpgradeType, float, ModifierType)> {
+            (UpgradeType.Stun, 1.5f, ModifierType.Flat)
+        });
+        SetPrerequisite(n_stunBeam, n_critII);
+
+        // --- 添加到数据库 ---
+        AddToDatabase(new List<SkillTreeNodeData> {
+            n_dmgBoost, n_endurance, n_prism, n_precision,
+            n_overload, n_coolFlow, n_refraction, n_critII,
+            n_meltdown, n_mastery, n_stunBeam
+        });
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=#FF4444>[技能树生成] 镭射核心技能树节点已生成完毕！共11个节点</color>");
     }
 
     /// <summary>

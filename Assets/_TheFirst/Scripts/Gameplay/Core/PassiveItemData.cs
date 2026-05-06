@@ -29,6 +29,20 @@ public class PassiveItemData : ScriptableObject
     [Tooltip("需要拥有指定武器才能出现在卡池中 (留空 = 无限制)")]
     public WeaponStatBlock requiredWeapon;
 
+    [Header("图鉴解锁条件")]
+    [Tooltip("默认是否已在图鉴中解锁 (属性类被动建议勾选)")]
+    public bool isDefaultUnlocked = true;
+
+    [Tooltip("解锁所需的统计键值 (留空则只依赖 isDefaultUnlocked 或 unlockedItems)")]
+    public string unlockStatKey = "";
+
+    [Tooltip("解锁所需的目标数量")]
+    public int unlockThreshold = 0;
+
+    [TextArea]
+    [Tooltip("未解锁时在图鉴中显示的提示文本")]
+    public string lockedDescription = "在游戏中获取此道具以解锁";
+
     /// <summary>
     /// 获取指定等级的描述文本
     /// </summary>

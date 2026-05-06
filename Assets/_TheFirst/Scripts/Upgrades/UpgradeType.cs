@@ -128,5 +128,10 @@ public enum UpgradeType
     SwordmasterSoul,           // 剑圣之魂（斩击命中多个敌人后短暂攻速提升）
     ArcaneMastery,             // 奥术精通（射弹命中时有概率产生小型爆炸）
     ElementalResonance,        // 元素共鸣（拥有多种元素武器时全局增伤）
-    MechanicalResonance        // 机械共鸣（部署类武器数量+1、冷却缩减）
+    MechanicalResonance,       // 机械共鸣（部署类武器数量+1、冷却缩减）
+
+    // 镭射核心类
+    LaserRefraction,           // 棱镜折射（光束命中后折射到附近敌人，value=折射目标数）
+    LaserFocusBonus,           // 聚焦强化（提升每层聚焦的伤害加成百分比）
+    LaserMeltdown              // 核心熔毁（过热爆发变为持续灼烧区域）
 }

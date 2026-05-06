@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -62,6 +62,8 @@ public class UltimateManager : MonoBehaviour
 
     // 事件：大招释放时通知UI
     public System.Action<string> OnUltimateReleased;
+    // 事件：大招释放时传递 weaponID（供法师系统等判断武器类型）
+    public System.Action<string> OnUltimateReleasedWithID;
     // 事件：能量满武器列表变化时
     public System.Action<List<WeaponPart>> OnChargedWeaponsChanged;
 
@@ -656,6 +658,7 @@ public class UltimateManager : MonoBehaviour
         }
 
         OnUltimateReleased?.Invoke(weapon.StatBlock.weaponName);
+        OnUltimateReleasedWithID?.Invoke(weapon.StatBlock.weaponID);
     }
 
     private void ReleaseComboUltimate(SO_ComboUltimate combo, WeaponPart weaponA, WeaponPart weaponB)
@@ -959,9 +962,12 @@ public class UltimateManager : MonoBehaviour
     /// </summary>
     private System.Collections.IEnumerator HurricaneSpeedBuff(float bonus, float duration)
     {
+        // 同时修改temp（RecalculateStats安全）和主字段（立刻生效）
+        PlayerStats.Instance.tempMoveSpeedBonus += bonus;
         PlayerStats.Instance.moveSpeedMultiplier += bonus;
         yield return new WaitForSeconds(duration);
 
+        PlayerStats.Instance.tempMoveSpeedBonus -= bonus;
         PlayerStats.Instance.moveSpeedMultiplier -= bonus;
     }
 
@@ -970,9 +976,11 @@ public class UltimateManager : MonoBehaviour
     /// </summary>
     private System.Collections.IEnumerator BladeLifeStealBuff(float bonus, float duration)
     {
+        PlayerStats.Instance.tempLifeStealBonus += bonus;
         PlayerStats.Instance.lifeStealPercent += bonus;
         yield return new WaitForSeconds(duration);
 
+        PlayerStats.Instance.tempLifeStealBonus -= bonus;
         PlayerStats.Instance.lifeStealPercent -= bonus;
     }
 
@@ -1010,10 +1018,12 @@ public class UltimateManager : MonoBehaviour
         }
 
         // 应用BUFF
+        PlayerStats.Instance.tempAoeRadiusBonus += bonus;
         PlayerStats.Instance.aoeRadiusMultiplier += bonus;
 
         yield return new WaitForSeconds(duration);
 
+        PlayerStats.Instance.tempAoeRadiusBonus -= bonus;
         PlayerStats.Instance.aoeRadiusMultiplier -= bonus;
         if (buffVFXInstance != null) Destroy(buffVFXInstance);
     }
@@ -1051,11 +1061,13 @@ public class UltimateManager : MonoBehaviour
             buffVFXInstance.transform.localPosition = Vector3.zero;
         }
 
-        // 应用BUFF
+        // 应用BUFF（同时修改temp和主字段）
+        PlayerStats.Instance.tempCritRateBonus += bonus;
         PlayerStats.Instance.critRate += bonus;
 
         yield return new WaitForSeconds(duration);
 
+        PlayerStats.Instance.tempCritRateBonus -= bonus;
         PlayerStats.Instance.critRate -= bonus;
         if (buffVFXInstance != null) Destroy(buffVFXInstance);
     }
@@ -1105,13 +1117,17 @@ public class UltimateManager : MonoBehaviour
             buffVFXInstance.transform.localPosition = Vector3.zero;
         }
 
-        // 应用BUFF
+        // 应用BUFF（使用临时字段，防止RecalculateStats竞态）
+        PlayerStats.Instance.tempMoveSpeedBonus += moveBonus;
         PlayerStats.Instance.moveSpeedMultiplier += moveBonus;
+        PlayerStats.Instance.tempFireRateBonus += fireRateBonus;
         PlayerStats.Instance.fireRateMultiplier += fireRateBonus;
 
         yield return new WaitForSeconds(duration);
 
+        PlayerStats.Instance.tempMoveSpeedBonus -= moveBonus;
         PlayerStats.Instance.moveSpeedMultiplier -= moveBonus;
+        PlayerStats.Instance.tempFireRateBonus -= fireRateBonus;
         PlayerStats.Instance.fireRateMultiplier -= fireRateBonus;
         if (buffVFXInstance != null) Destroy(buffVFXInstance);
     }

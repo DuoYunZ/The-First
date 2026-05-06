@@ -141,6 +141,8 @@ public class GameTimelineManager : MonoBehaviour
         waveSpawnedTotal = evt.waveConfig.GetTotalEnemiesInWave();
         aliveEnemyCount += waveSpawnedTotal; // 累加（可能上一波还没打完）
 
+        Debug.Log($"<color=orange>[Timeline] 触发波次 {currentWaveIndex}/{totalWaveCount}: '{currentWaveName}' | 本波生成={waveSpawnedTotal} | 当前存活={aliveEnemyCount} | 剩余波次={pendingEvents.Count - 1}</color>");
+
         // --- 动态计算属性成长 ---
         int effectiveWaveNumber = 1 + (int)(gameTimer.GetElapsedTime() / 60f);
 
@@ -178,13 +180,25 @@ public class GameTimelineManager : MonoBehaviour
         isAdvancing = false;
     }
 
+    // 记录最后被击杀的 Boss 信息（由 EnemyDefeated 传入）
+    private Vector3 lastBossDeathPosition;
+    private GameObject lastBossGameObject;
+
     void GameWin()
     {
         gameFinished = true;
         // 停止所有刷怪
         enemySpawner.StopAndClearSpawning();
 
-        // 触发胜利结算界面
+        // 如果有 Boss 死亡表演系统，播放表演后再结算
+        if (BossDeathCeremony.Instance != null && lastBossGameObject != null)
+        {
+            Debug.Log("<color=gold>[Timeline] 启动 Boss 死亡表演！</color>");
+            BossDeathCeremony.Instance.StartCeremony(lastBossDeathPosition, lastBossGameObject);
+            return;
+        }
+
+        // 没有表演系统，直接触发胜利结算界面
         if (GameManager.Instance != null)
         {
             GameManager.Instance.HandleVictory();
@@ -199,9 +213,16 @@ public class GameTimelineManager : MonoBehaviour
         totalKills++;
         aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
 
+        // 每50次击杀输出一次状态（减少日志量），或者当存活数很少时每次都输出
+        if (totalKills % 50 == 0 || aliveEnemyCount <= 5)
+        {
+            Debug.Log($"<color=lime>[Timeline] 击杀#{totalKills} | 存活={aliveEnemyCount} | allWavesFired={allWavesFired} | gameFinished={gameFinished}</color>");
+        }
+
         // 胜利判定：所有波次已触发 + 场上敌人全部被消灭 = 胜利
         if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
         {
+            Debug.Log($"<color=gold>[Timeline] ★ 胜利条件达成！总击杀={totalKills}</color>");
             GameWin();
             return;
         }
@@ -211,6 +232,16 @@ public class GameTimelineManager : MonoBehaviour
         {
             AdvanceToNextWave();
         }
+    }
+
+    /// <summary>
+    /// 由 Health.Die() 在 Boss 死亡时调用，记录 Boss 信息供死亡表演使用
+    /// </summary>
+    public void RegisterBossDeath(Vector3 position, GameObject bossGO)
+    {
+        lastBossDeathPosition = position;
+        lastBossGameObject = bossGO;
+        Debug.Log($"<color=orange>[Timeline] Boss 死亡信息已注册: pos={position}</color>");
     }
 
     public void AnEnemyFailedToSpawn()

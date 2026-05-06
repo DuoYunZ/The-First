@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 // 这个脚本专门挂在 BOSS 预制体上
 // 它的作用只有两个：
@@ -8,6 +8,10 @@ public class BossUnit : MonoBehaviour
 {
     [Header("Boss 信息配置")]
     public string bossName = "终极机甲·原型机"; // 你可以在 Inspector 里随便改名字
+
+    [Header("Boss 战斗属性")]
+    [Tooltip("勾选后 Boss 免疫所有击退效果")]
+    public bool immuneToKnockback = true;
 
     private Health myHealth;
 

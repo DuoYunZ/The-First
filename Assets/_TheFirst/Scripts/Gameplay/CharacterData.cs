@@ -25,7 +25,15 @@ public class CharacterData : ScriptableObject
     [Tooltip("这个角色的初始武器列表")]
     public List<WeaponStatBlock> initialWeapons;
 
-    [Header("解锁设置")]
+    [Header("分支初始武器（可选）")]
+    [Tooltip("当玩家选择了特定分支后，用此武器替换初始武器列表中的第一个武器")]
+    public WeaponStatBlock alternateStartWeapon;
+
+    [Tooltip("触发替换的机制分支ID（如 IcePath）。留空则不使用替换功能")]
+    public string alternateStartMechanicID;
+
+    [Tooltip("法师特性：初始武器自动解锁大招（无需5颗宝石）")]
+    public bool autoUnlockInitialUltimate = false;
     [Tooltip("角色唯一标识，用于存档（如 Role01）")]
     public string characterID;
     [Tooltip("是否默认解锁（第一个角色应勾选）")]

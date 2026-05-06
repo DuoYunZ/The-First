@@ -6,6 +6,7 @@ using System.Collections.Generic;
 /// 角色技能树节点UI — 手动布局模式
 /// 你在 Unity 中手动摆放节点位置，脚本自动画连接线
 /// 通过 connectTo 列表指定当前节点连向哪些节点
+/// 在 Inspector 中拖入 assignedNode 指定对应的技能SO
 /// </summary>
 [RequireComponent(typeof(Button))]
 public class CharacterSkillNodeUI : MonoBehaviour
@@ -13,6 +14,10 @@ public class CharacterSkillNodeUI : MonoBehaviour
     [Header("UI 组件")]
     public Image iconImage;       // 技能图标
     public Image borderImage;     // 边框/底板（用于状态变色）
+
+    [Header("技能数据（在Inspector中拖入对应的SO）")]
+    [Tooltip("将对应的 CharacterSkillNode SO 拖到这里，拖入后GameObject自动改名")]
+    public CharacterSkillNode assignedNode;
 
     [Header("连线目标")]
     [Tooltip("从当前节点画线连到这些节点（在 Inspector 中拖入）")]
@@ -22,10 +27,15 @@ public class CharacterSkillNodeUI : MonoBehaviour
     public Color unlockedBorderColor = new Color(0.3f, 1f, 0.3f, 1f);   // 绿色 — 已解锁
     public Color availableBorderColor = new Color(1f, 0.9f, 0.4f, 1f);  // 金色 — 可购买
     public Color lockedBorderColor = new Color(0.4f, 0.4f, 0.4f, 1f);   // 灰色 — 锁定
+    public Color excludedBorderColor = new Color(0.8f, 0.2f, 0.2f, 0.8f); // 红色 — 互斥锁定
 
     [Header("灰度效果")]
     [Tooltip("锁定时使用的灰度 Material（使用 UI/Grayscale Shader）")]
     public Material grayscaleMaterial;
+
+    [Header("互斥标记")]
+    [Tooltip("互斥锁定时显示的❌图标（可选）")]
+    public GameObject excludedOverlay;
 
     // 运行时数据
     [HideInInspector] public CharacterSkillNode nodeData;
@@ -35,11 +45,26 @@ public class CharacterSkillNodeUI : MonoBehaviour
     private Material defaultMaterial; // 默认 Material（亮色状态）
 
     /// <summary>
+    /// 编辑器中拖入SO后自动改名 — 方便在Hierarchy中识别节点
+    /// </summary>
+    private void OnValidate()
+    {
+        if (assignedNode != null)
+        {
+            // 用层级+技能名命名，例如 "L1_攻击力I" 或 "L2_⚔️精准斩击"
+            string cleanName = assignedNode.nodeName.Replace(" ", "");
+            gameObject.name = $"L{assignedNode.layer}_{cleanName}";
+        }
+    }
+
+    /// <summary>
     /// 初始化节点数据和回调
+    /// 在手动布局模式下，node参数可以为null（使用assignedNode）
     /// </summary>
     public void Setup(CharacterSkillNode node, CharacterData charData, System.Action<CharacterSkillNodeUI> onClick)
     {
-        nodeData = node;
+        // 优先使用传入的node，其次使用Inspector中拖入的assignedNode
+        nodeData = node != null ? node : assignedNode;
         characterData = charData;
         onClicked = onClick;
 
@@ -48,8 +73,8 @@ public class CharacterSkillNodeUI : MonoBehaviour
             defaultMaterial = iconImage.material;
 
         // 设置图标
-        if (iconImage != null && node != null && node.icon != null)
-            iconImage.sprite = node.icon;
+        if (iconImage != null && nodeData != null && nodeData.icon != null)
+            iconImage.sprite = nodeData.icon;
 
         // 自动获取 Button
         cachedButton = GetComponent<Button>();
@@ -62,6 +87,10 @@ public class CharacterSkillNodeUI : MonoBehaviour
             });
         }
 
+        // 初始隐藏互斥覆盖层
+        if (excludedOverlay != null)
+            excludedOverlay.SetActive(false);
+
         RefreshState();
     }
 
@@ -73,20 +102,23 @@ public class CharacterSkillNodeUI : MonoBehaviour
         if (nodeData == null || PlayerProgressManager.Instance == null) return;
 
         bool isUnlocked = PlayerProgressManager.Instance.IsCharacterNodeUnlocked(nodeData);
-        bool canUnlock = PlayerProgressManager.Instance.CanUnlockCharacterNode(characterData, nodeData);
+        bool isExcluded = PlayerProgressManager.Instance.IsNodeExcluded(nodeData);
+        bool canUnlock = !isExcluded && PlayerProgressManager.Instance.CanUnlockCharacterNode(characterData, nodeData);
 
-        // 边框颜色（全不透明）
+        // 边框颜色
         if (borderImage != null)
         {
             if (isUnlocked)
                 borderImage.color = unlockedBorderColor;
+            else if (isExcluded)
+                borderImage.color = excludedBorderColor; // 互斥锁定 — 红色
             else if (canUnlock)
                 borderImage.color = availableBorderColor;
             else
                 borderImage.color = lockedBorderColor;
         }
 
-        // 图标：已解锁 = 正常彩色，锁定/可解锁 = 灰度 Material
+        // 图标材质
         if (iconImage != null)
         {
             if (isUnlocked)
@@ -95,17 +127,27 @@ public class CharacterSkillNodeUI : MonoBehaviour
                 iconImage.material = defaultMaterial;
                 iconImage.color = Color.white;
             }
-            else
+            else if (isExcluded)
             {
-                // 使用灰度 Material（去饱和度）
+                // 互斥锁定：灰度 + 半透明
                 if (grayscaleMaterial != null)
                     iconImage.material = grayscaleMaterial;
-                // 保持颜色全白全不透明，灰度由 Shader 处理
+                iconImage.color = new Color(1f, 1f, 1f, 0.4f);
+            }
+            else
+            {
+                // 普通锁定：灰度
+                if (grayscaleMaterial != null)
+                    iconImage.material = grayscaleMaterial;
                 iconImage.color = Color.white;
             }
         }
 
-        // 锁定节点不可点击
+        // 互斥覆盖层（❌图标）
+        if (excludedOverlay != null)
+            excludedOverlay.SetActive(isExcluded);
+
+        // 已解锁 → 可点击查看；可解锁 → 可点击购买；其他 → 不可点击
         if (cachedButton != null)
         {
             cachedButton.interactable = isUnlocked || canUnlock;

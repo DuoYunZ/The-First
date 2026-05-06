@@ -3,8 +3,8 @@ using UnityEngine;
 // 品质枚举保持不变
 public enum Rarity { Common, Uncommon, Rare, Epic }
 
-// 效果行为类型枚举保持不变
-public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield, EvolveWeapon, UnlockUltimate }
+// 效果行为类型枚举
+public enum EffectActionType { ModifyStat, UnlockWeapon, UnlockShield, EvolveWeapon, UnlockUltimate, ActivateCharSkill }
 
 // 【新增】修改类型枚举，用于区分是增加固定值还是百分比
 public enum ModifierType { Flat, Percentage }
@@ -35,4 +35,8 @@ public class UpgradeEffect
     [Header("【如果 Action Type 是 UnlockShield】")]
     [Tooltip("要解锁的护盾数据")]
     public ShieldData shieldToUnlock;
+
+    [Header("【如果 Action Type 是 ActivateCharSkill】")]
+    [Tooltip("要激活的角色技能标识符（如 PrecisionSlash、Sword_Talent_Wind 等）")]
+    public string skillIdentifier;
 }

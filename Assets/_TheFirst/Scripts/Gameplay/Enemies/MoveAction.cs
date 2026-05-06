@@ -28,6 +28,9 @@ public class MoveAction : Node
     [Tooltip("随机移动的范围半径（仅 Random 模式）")]
     public float randomMoveRadius = 8f;
 
+    [Tooltip("当 Agent 速度为 0 时使用的备用速度")]
+    public float fallbackSpeed = 5f;
+
     // 内部状态
     private NavMeshAgent agent;
     private EnemyAI regularAI;
@@ -36,6 +39,7 @@ public class MoveAction : Node
     private float timer;
     private bool isMoving = false;
     private float originalSpeed;
+    private bool wasAIDisabledByMe = false; // 记录是否是由本节点禁用的 AI
 
     void Awake()
     {
@@ -49,19 +53,64 @@ public class MoveAction : Node
 
     public override NodeState Evaluate()
     {
-        if (agent == null || selfTransform == null) return NodeState.FAILURE;
+        if (agent == null || selfTransform == null)
+        {
+            Debug.LogWarning($"<color=red>[MoveAction] FAILURE: agent={agent != null}, selfTransform={selfTransform != null}, name={gameObject.name}</color>");
+            return NodeState.FAILURE;
+        }
+
+        // 如果正在移动期间 Agent 被禁用（比如被击退），安全退出
+        if (isMoving && !agent.enabled)
+        {
+            Debug.LogWarning($"<color=yellow>[MoveAction] Agent 被外部禁用（可能是击退），安全退出移动。name={gameObject.name}</color>");
+            CleanupMove();
+            return NodeState.FAILURE;
+        }
 
         // 初始化移动
         if (!isMoving)
         {
+            // 确保 Agent 已启用
+            if (!agent.enabled)
+            {
+                Debug.LogWarning($"<color=yellow>[MoveAction] Agent 未启用，跳过移动。name={gameObject.name}</color>");
+                return NodeState.FAILURE;
+            }
+
+            // 如果不在 NavMesh 上，尝试 Warp 回去
+            if (!agent.isOnNavMesh)
+            {
+                if (!TryWarpToNavMesh())
+                {
+                    Debug.LogWarning($"<color=red>[MoveAction] Agent 不在 NavMesh 上且无法恢复! name={gameObject.name}</color>");
+                    return NodeState.FAILURE;
+                }
+            }
+
             isMoving = true;
             timer = 0f;
 
             // 禁用常规AI追击，由MoveAction接管移动
-            if (regularAI != null) regularAI.enabled = false;
+            if (regularAI != null && regularAI.enabled)
+            {
+                regularAI.enabled = false;
+                wasAIDisabledByMe = true;
+            }
+            else
+            {
+                wasAIDisabledByMe = false;
+            }
 
             // 保存原速度并应用倍率
             originalSpeed = agent.speed;
+
+            // 防止速度为 0 的情况（可能是被冻结/暂停后遗留）
+            if (originalSpeed < 0.1f)
+            {
+                originalSpeed = fallbackSpeed;
+                Debug.LogWarning($"<color=yellow>[MoveAction] 检测到 agent.speed 接近 0 ({agent.speed:F2})，使用备用速度 {fallbackSpeed}。name={gameObject.name}</color>");
+            }
+
             agent.speed = originalSpeed * speedMultiplier;
             agent.isStopped = false;
 
@@ -75,26 +124,101 @@ public class MoveAction : Node
             return NodeState.RUNNING;
         }
 
-        // 持续移动
+        // 持续移动阶段 —— 做安全性检查
+        if (!agent.isOnNavMesh)
+        {
+            // 移动途中脱离了 NavMesh（被击退弹出去了）
+            Debug.LogWarning($"<color=yellow>[MoveAction] 移动途中脱离 NavMesh，尝试恢复。name={gameObject.name}</color>");
+            if (TryWarpToNavMesh())
+            {
+                // Warp 成功，重新设置目标
+                Vector3 newTarget = CalculateTargetPosition();
+                agent.SetDestination(newTarget);
+                agent.isStopped = false;
+            }
+            else
+            {
+                // 无法恢复，结束移动
+                CleanupMove();
+                return NodeState.FAILURE;
+            }
+        }
+
         timer += Time.deltaTime;
 
         // 如果到达目的地或超时，结束移动
-        bool reachedDestination = !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.1f;
+        bool reachedDestination = agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.1f;
         if (timer >= moveDuration || reachedDestination)
         {
-            // 恢复状态
-            isMoving = false;
-            agent.speed = originalSpeed;
-            agent.isStopped = true;
-            agent.velocity = Vector3.zero;
-
-            // 停止移动动画
-            if (animator != null) animator.SetBool("isMoving", false);
-
+            CleanupMove();
             return NodeState.SUCCESS;
         }
 
         return NodeState.RUNNING;
+    }
+
+    /// <summary>
+    /// 清理移动状态，恢复 AI 和 Agent
+    /// </summary>
+    private void CleanupMove()
+    {
+        isMoving = false;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.speed = originalSpeed;
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        // 停止移动动画
+        if (animator != null) animator.SetBool("isMoving", false);
+
+        // 只恢复由本节点禁用的 AI
+        if (wasAIDisabledByMe && regularAI != null)
+        {
+            regularAI.enabled = true;
+            wasAIDisabledByMe = false;
+        }
+    }
+
+    /// <summary>
+    /// 尝试将 Agent Warp 到最近的 NavMesh 有效位置
+    /// </summary>
+    private bool TryWarpToNavMesh()
+    {
+        NavMeshHit hit;
+        // 在当前位置附近 5 米范围内搜索有效的 NavMesh 位置
+        if (NavMesh.SamplePosition(selfTransform.position, out hit, 5f, NavMesh.AllAreas))
+        {
+            agent.enabled = false;
+            selfTransform.position = hit.position;
+            agent.enabled = true;
+
+            if (agent.isOnNavMesh)
+            {
+                agent.Warp(hit.position);
+                Debug.Log($"<color=green>[MoveAction] 成功 Warp 回 NavMesh: {hit.position}。name={gameObject.name}</color>");
+                return true;
+            }
+        }
+
+        // 扩大搜索范围
+        if (NavMesh.SamplePosition(selfTransform.position, out hit, 15f, NavMesh.AllAreas))
+        {
+            agent.enabled = false;
+            selfTransform.position = hit.position;
+            agent.enabled = true;
+
+            if (agent.isOnNavMesh)
+            {
+                agent.Warp(hit.position);
+                Debug.Log($"<color=green>[MoveAction] 扩大范围后 Warp 回 NavMesh: {hit.position}。name={gameObject.name}</color>");
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

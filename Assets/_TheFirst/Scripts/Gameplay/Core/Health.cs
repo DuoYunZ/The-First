@@ -163,6 +163,38 @@ public class Health : MonoBehaviour
         }
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
+
+    // 【图鉴成就】半血存活秒数累计计时器
+    private float halfHpSurviveAccumulator = 0f;
+
+    void Update()
+    {
+        // 仅玩家血量组件执行半血存活时间追踪
+        if (!isPlayerHealth || IsDead) return;
+
+        // 判断是否低于50%血量
+        if (currentHealth > 0 && currentHealth <= maxHealth / 2)
+        {
+            halfHpSurviveAccumulator += Time.deltaTime;
+
+            // 每累计1秒记录一次，减少调用频率
+            if (halfHpSurviveAccumulator >= 1f)
+            {
+                int seconds = Mathf.FloorToInt(halfHpSurviveAccumulator);
+                halfHpSurviveAccumulator -= seconds;
+
+                if (PlayerProgressManager.Instance != null)
+                {
+                    PlayerProgressManager.Instance.AddStat("HalfHP_Survive_Seconds", seconds);
+                }
+            }
+        }
+        else
+        {
+            // 血量高于50%时重置累计器（不影响已记录的总秒数）
+            halfHpSurviveAccumulator = 0f;
+        }
+    }
     /// <summary>
     /// 提供一个公共方法来从外部初始化或重置生命值。
     /// EnemySpawner 将为每个生成的敌人调用此方法，用计算出的新值覆盖 Awake 中设置的初始值。
@@ -243,6 +275,18 @@ public class Health : MonoBehaviour
             {
                 damageAmount -= Mathf.RoundToInt(armorValue);
                 if (damageAmount < 1) damageAmount = 1;
+            }
+
+            // 3.5 剑圣之道：精准斩击停顿期间减伤
+            PlayerBladeAttack blade = FindFirstObjectByType<PlayerBladeAttack>();
+            if (blade != null)
+            {
+                float reduction = blade.GetKenseiDamageReduction();
+                if (reduction > 0f)
+                {
+                    damageAmount = Mathf.RoundToInt(damageAmount * (1f - reduction));
+                    if (damageAmount < 1) damageAmount = 1;
+                }
             }
         }
 
@@ -351,18 +395,59 @@ public class Health : MonoBehaviour
             if (!string.IsNullOrEmpty(sourceWeaponName) && !isPlayerHealth && BattleStatisticsManager.Instance != null)
                 BattleStatisticsManager.Instance.AddDamage(sourceWeaponName, remainingDamage);
 
-            // --- 吸血处理：玩家对敌人造成伤害时回血 ---
+            // 【图鉴成就】追踪雷系武器造成的伤害 (雷鸣意志解锁条件)
+            if (!isPlayerHealth && PlayerProgressManager.Instance != null)
+            {
+                bool isLightning = false;
+                // 通过武器ID或武器名称判断是否为雷系
+                if (sourcePart != null && sourcePart.StatBlock != null)
+                {
+                    string wid = sourcePart.StatBlock.weaponID ?? "";
+                    string wname = sourcePart.StatBlock.weaponName ?? "";
+                    if (wid.Contains("ChainLightning") || wid.Contains("LightningStrike") ||
+                        wid.Contains("MagneticStorm") || wid.Contains("Thunder") ||
+                        wname.Contains("闪电") || wname.Contains("雷") || wname.Contains("电弧"))
+                    {
+                        isLightning = true;
+                    }
+                }
+                // 也检查 sourceWeaponName 参数（某些伤害来源不走 sourcePart）
+                if (!isLightning && !string.IsNullOrEmpty(sourceWeaponName))
+                {
+                    if (sourceWeaponName.Contains("闪电") || sourceWeaponName.Contains("雷") ||
+                        sourceWeaponName.Contains("Lightning") || sourceWeaponName.Contains("Thunder") ||
+                        sourceWeaponName.Contains("电弧"))
+                    {
+                        isLightning = true;
+                    }
+                }
+                if (isLightning)
+                {
+                    PlayerProgressManager.Instance.AddStat("Lightning_Damage", remainingDamage);
+                }
+            }
+
+            // --- 吸血处理：玩家对敌人造成伤害时累积，满阈值回血 ---
             if (!isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.lifeStealPercent > 0f)
             {
-                int healAmount = Mathf.Max(1, Mathf.RoundToInt(remainingDamage * PlayerStats.Instance.lifeStealPercent));
-                // 找到玩家的 Health 组件
-                GameObject player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null)
+                // 将本次伤害按吸血比例累积到全局计数器
+                PassiveEffectManager.lifeStealDamageAccumulator += remainingDamage * PlayerStats.Instance.lifeStealPercent;
+
+                // 每累积 1000 点等效伤害恢复 1 点 HP
+                const int LIFESTEAL_THRESHOLD = 1000;
+                if (PassiveEffectManager.lifeStealDamageAccumulator >= LIFESTEAL_THRESHOLD)
                 {
-                    Health playerHealth = player.GetComponent<Health>();
-                    if (playerHealth != null && !playerHealth.IsDead)
+                    int healTimes = Mathf.FloorToInt(PassiveEffectManager.lifeStealDamageAccumulator / LIFESTEAL_THRESHOLD);
+                    PassiveEffectManager.lifeStealDamageAccumulator -= healTimes * LIFESTEAL_THRESHOLD;
+
+                    GameObject player = GameObject.FindGameObjectWithTag("Player");
+                    if (player != null)
                     {
-                        playerHealth.Heal(healAmount);
+                        Health playerHealth = player.GetComponent<Health>();
+                        if (playerHealth != null && !playerHealth.IsDead)
+                        {
+                            playerHealth.Heal(healTimes);
+                        }
                     }
                 }
             }
@@ -706,26 +791,46 @@ public class Health : MonoBehaviour
         if (!isPlayerHealth)
         {
             OnEnemyDied?.Invoke(this);
+
+            // 疑影无踪：击杀敌人时概率生成影分身
+            PlayerBladeAttack blade = FindFirstObjectByType<PlayerBladeAttack>();
+            if (blade != null)
+            {
+                blade.TrySpawnShadowClone(transform.position);
+            }
         }
+
+        // 检查是否是 Boss 死亡
+        BossUnit bossUnit = GetComponent<BossUnit>();
+        bool isBossDeath = (bossUnit != null);
 
         if (gameObject.CompareTag("Enemy"))
         {
+            // 如果是 Boss，先把信息注册到 GameTimelineManager，供死亡表演使用
+            if (isBossDeath && GameTimelineManager.Instance != null)
+            {
+                GameTimelineManager.Instance.RegisterBossDeath(transform.position, gameObject);
+            }
+
             GameTimelineManager.Instance?.EnemyDefeated();
         }
 
-        HandleDrops();
-        var enemyAI = GetComponent<EnemyAI>();
-
-       
-        if (EnemyTypeData != null && EnemyTypeData.deathVfxPrefab != null)
+        // Boss 不执行普通掉落和立即销毁（由 BossDeathCeremony 接管）
+        if (!isBossDeath)
         {
-            // 在当前物体的位置生成死亡特效
-            Instantiate(EnemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
-        }
+            HandleDrops();
+            var enemyAI = GetComponent<EnemyAI>();
 
-        if (destroyImmediately)
-        {
-            Destroy(gameObject);
+            if (EnemyTypeData != null && EnemyTypeData.deathVfxPrefab != null)
+            {
+                // 在当前物体的位置生成死亡特效
+                Instantiate(EnemyTypeData.deathVfxPrefab, transform.position, Quaternion.identity);
+            }
+
+            if (destroyImmediately)
+            {
+                Destroy(gameObject);
+            }
         }
 
         if (gameObject.CompareTag("Enemy") && BattleStatisticsManager.Instance != null)

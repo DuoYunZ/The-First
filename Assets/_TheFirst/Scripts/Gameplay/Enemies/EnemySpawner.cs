@@ -167,7 +167,7 @@ public class EnemySpawner : MonoBehaviour
                         spawnPositionOffset = (rightDir * lineOffset);
                         break;
                     case FormationType.V_Shape:
-                        int half = (group.count - 1) / 2;
+                        float half = (group.count - 1) / 2.0f;
                         float vOffset = (i - half) * group.formationSpacing;
                         spawnPositionOffset = (rightDir * vOffset) + (forwardDir * Mathf.Abs(vOffset) * group.vShapeDepthFactor);
                         break;
@@ -195,7 +195,9 @@ public class EnemySpawner : MonoBehaviour
                 }
                 else
                 {
-                    StartCoroutine(SpawnSingleEnemyWithWarning(anchorPos, anchorRot, group, waveNum, healthG, damageG, speedG));
+                    // 地面射线失败时，使用原定 XZ 坐标 + 锚点 Y 高度，保持阵型不错位
+                    Vector3 fallbackPos = new Vector3(finalSpawnPos.x, anchorPos.y, finalSpawnPos.z);
+                    StartCoroutine(SpawnSingleEnemyWithWarning(fallbackPos, anchorRot, group, waveNum, healthG, damageG, speedG));
                 }
                 if (interval > 0) { yield return new WaitForSeconds(interval); }
             }
@@ -262,7 +264,7 @@ public class EnemySpawner : MonoBehaviour
                 if (type.isSuicideBomber) { enemyGO.GetComponent<EnemyExplosionAttack>()?.Initialize(type); }
                 enemyGO.GetComponent<Health>()?.InitializeHealth(Mathf.RoundToInt(finalHealth), type, spawnAsElite);
                 enemyGO.GetComponent<EnemyAI>()?.InitializeEnemy(finalSpeed, Mathf.RoundToInt(finalDamage));
-                if (type.isBoss && enemyGO.GetComponent<Health>() != null) { /* WaveManager.Instance?.RegisterBossInstance(enemyGO.GetComponent<Health>()); */ }
+                if (type.isBoss && enemyGO.GetComponent<Health>() != null) { WaveManager.Instance?.RegisterBossInstance(enemyGO.GetComponent<Health>()); }
                 break;
 
 

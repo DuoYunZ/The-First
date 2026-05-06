@@ -48,6 +48,18 @@ public class PlayerStats : MonoBehaviour
     public float energyGainMultiplier = 1f;  // 能量获取倍率
     public float lifeStealPercent = 0f;      // 伤害吸血百分比
 
+    [Header("临时Buff（不参与RecalculateStats重置）")]
+    [Tooltip("协程类临时移速加成，独立于moveSpeedMultiplier，读取时叠加")]
+    public float tempMoveSpeedBonus = 0f;
+    [Tooltip("协程类临时攻速加成")]
+    public float tempFireRateBonus = 0f;
+    [Tooltip("协程类临时暴击加成")]
+    public float tempCritRateBonus = 0f;
+    [Tooltip("协程类临时范围加成")]
+    public float tempAoeRadiusBonus = 0f;
+    [Tooltip("协程类临时吸血加成")]
+    public float tempLifeStealBonus = 0f;
+
     [Header("触发型被动属性")]
     public float berserkerDamagePerLevel = 0f;  // 狂战士之心：每级的增伤比例（实际增伤在RecalcStats中根据血量动态计算）
     public int berserkerLevel = 0;              // 狂战士之心等级
@@ -61,17 +73,17 @@ public class PlayerStats : MonoBehaviour
     public float experienceGainMultiplier = 1f; // 经验获取倍率
 
     // --- 【新增】基础值备份 (用于重算) ---
-    private float _baseDamageMultiplier;
+    internal float _baseDamageMultiplier;
     private float _baseAoeDamageMultiplier;
     private float _baseAoeRadiusMultiplier;
     private float _baseFireRateMultiplier;
     private float _baseProjectileSpeedMultiplier;
     private float _basePickupRadiusMultiplier;
-    private float _baseMoveSpeedMultiplier;
+    internal float _baseMoveSpeedMultiplier;
     private float _baseDurationMultiplier; // 【新增】
     private float _baseFlatDamage;
     private int _baseMaxHealth;
-    private float _baseCritRate;
+    internal float _baseCritRate;
     private float _baseCritDamage;
 
     // 【核心修复 1】为整数属性添加备份变量
@@ -188,6 +200,10 @@ public class PlayerStats : MonoBehaviour
         _baseEnergyGainMultiplier += ppm.permanentEnergyGainBonus;
         _baseLifeStealPercent += ppm.permanentLifeStealPercent;
 
+        Debug.Log($"<color=cyan>[PlayerStats] 永久加成来源：" +
+            $"武器树DmgPct={ppm.permanentDamagePercentBonus:F2}, " +
+            $"角色树DmgPct={ppm.permanentCharDamagePercentBonus:F2}, " +
+            $"最终_baseDamageMultiplier={_baseDamageMultiplier:F2}</color>");
     }
 
     public void EquipOrUpgradePassiveItem(PassiveItemData itemData)
@@ -265,7 +281,14 @@ public class PlayerStats : MonoBehaviour
         // 3. 条件型加成（狂战士之心）—— 每次重算都检查血量
         ApplyBerserkerBonus();
 
-        // 4. 通知其他组件
+        // 4. 叠加临时Buff（协程类临时加成，不参与重置）
+        moveSpeedMultiplier += tempMoveSpeedBonus;
+        fireRateMultiplier += tempFireRateBonus;
+        critRate += tempCritRateBonus;
+        aoeRadiusMultiplier += tempAoeRadiusBonus;
+        lifeStealPercent += tempLifeStealBonus;
+
+        // 5. 通知其他组件
         UpdateDependentComponents();
 
     }
@@ -364,6 +387,7 @@ public class PlayerStats : MonoBehaviour
                 break;
             case UpgradeType.ExperienceGain:
                 experienceGainMultiplier += totalValue;
+                Debug.Log($"<color=cyan>[PlayerStats] 经验倍率更新: +{totalValue*100f:F0}% → 当前总倍率={experienceGainMultiplier*100f:F0}% (道具:{data.itemName} Lv{level})</color>");
                 break;
         }
     }

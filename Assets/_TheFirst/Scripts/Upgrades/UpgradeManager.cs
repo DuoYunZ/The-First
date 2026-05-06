@@ -10,6 +10,14 @@ public class UpgradeManager : MonoBehaviour
     [Header("UI引用")]
     public GameObject upgradePanel;
     public Transform cardContainer;
+    [Tooltip("升级面板标题文字")]
+    public TMPro.TextMeshProUGUI titleText;
+
+    [Header("宝箱多选特效")]
+    [Tooltip("可选2张时的彩带特效")]
+    public GameObject confetti2;
+    [Tooltip("可选3张时的彩带特效")]
+    public GameObject confetti3;
 
     [Header("卡片预制件库 (按品质)")]
     public GameObject commonCardPrefab;
@@ -44,6 +52,23 @@ public class UpgradeManager : MonoBehaviour
     private List<WeaponStatBlock> pendingUltimateUnlocks = new List<WeaponStatBlock>();
     public const int GEM_SLOT_COUNT = 5;
 
+    // === 宝箱多选系统 ===
+    /// <summary>
+    /// 宝箱选卡剩余可选次数（>0 时选完一张后不关面板，继续选择下一张）
+    /// </summary>
+    private int remainingTreasurePicks = 0;
+
+    // === 角色专属技能卡系统 ===
+    /// <summary>
+    /// 本局已激活的角色技能标识符集合（抽到卡片后加入）
+    /// </summary>
+    private HashSet<string> activeCharacterSkills = new HashSet<string>();
+
+    /// <summary>
+    /// 本局可用的角色技能卡池（局外解锁的 layer 2+ 节点关联的卡片）
+    /// </summary>
+    private List<SkillTreeNodeData> characterCardPool = new List<SkillTreeNodeData>();
+
     void Awake()
     {
         if (Instance == null) Instance = this;
@@ -57,6 +82,9 @@ public class UpgradeManager : MonoBehaviour
             PlayerLevelManager.Instance.OnLevelUp += HandlePlayerLevelUp;
         }
         if (upgradePanel != null) upgradePanel.SetActive(false);
+
+        // 初始化角色专属卡池
+        InitCharacterCardPool();
     }
 
     void OnDestroy()
@@ -126,8 +154,14 @@ public class UpgradeManager : MonoBehaviour
 
             // B. 获取所有可用的被动升级
             List<SkillTreeNodeData> validPassives = new List<SkillTreeNodeData>();
-            int currentPassiveCount = ownedUpgrades.Count;
+
+            // 从 PlayerStats 获取真实的被动道具持有状态
+            int currentUniquePassiveCount = 0;
             int maxPassiveSlots = 6;
+            if (PlayerStats.Instance != null)
+            {
+                currentUniquePassiveCount = PlayerStats.Instance.activePassiveItems.Count;
+            }
 
             if (upgradeDatabase.passiveUpgrades != null)
             {
@@ -135,7 +169,19 @@ public class UpgradeManager : MonoBehaviour
                 {
                     bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
                     bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
-                    if (prerequisitesMet && notMaxed) validPassives.Add(node);
+
+                    // 【图鉴解锁过滤】未解锁的被动道具不进入升级卡池
+                    if (!prerequisitesMet || !notMaxed || !IsPassiveNodeUnlocked(node)) continue;
+
+                    // 【槽位上限过滤】已有6种不同的被动道具时，只允许已拥有（可升级）的道具出现
+                    if (currentUniquePassiveCount >= maxPassiveSlots)
+                    {
+                        // 检查这个道具是否已被玩家持有（可以升级）
+                        bool alreadyOwned = ownedUpgrades.ContainsKey(node);
+                        if (!alreadyOwned) continue; // 新道具不再出现
+                    }
+
+                    validPassives.Add(node);
                 }
             }
 
@@ -160,24 +206,64 @@ public class UpgradeManager : MonoBehaviour
 
             Debug.Log($"[UpgradeManager] 卡池状态 - 武器解锁:{shuffledWeapons.Count} 被动:{shuffledPassives.Count} 武器技能:{shuffledSkills.Count} 需补:{slotsToFill}张");
 
+            // E. 获取可用的角色专属卡
+            List<SkillTreeNodeData> validCharCards = GetAvailableCharacterCards();
+
+            // 优先把分支卡（精准斩击/敏捷猎手）排到最前面
+            validCharCards.Sort((a, b) =>
+            {
+                bool aIsBranch = IsBranchMechanicCard(a);
+                bool bIsBranch = IsBranchMechanicCard(b);
+                if (aIsBranch && !bIsBranch) return -1;
+                if (!aIsBranch && bIsBranch) return 1;
+                return Random.value > 0.5f ? 1 : -1; // 非分支卡随机排序
+            });
+
+            // 角色卡每次升级最多出现 1 张
+            bool charCardUsed = false;
+
+            // 每5级保底出现角色卡
+            bool forceCharCard = (newLevel % 5 == 0) && validCharCards.Count > 0;
+            if (forceCharCard)
+            {
+                SkillTreeNodeData charCard = validCharCards[0];
+                offeredUpgrades.Add(charCard);
+                slotsToFill--;
+                charCardUsed = true;
+                Debug.Log($"[UpgradeManager] 每5级保底角色卡: {charCard.skillName}");
+            }
+
+            // 如果已经用了角色卡，清空池子防止 for 循环再抽到
+            var shuffledCharCards = charCardUsed
+                ? new List<SkillTreeNodeData>()
+                : validCharCards;
+
             // D. 抽取剩余张数的卡（确保不重复）
             for (int i = 0; i < slotsToFill; i++)
             {
-                // 权重：40% 武器技能树、30% 武器解锁、30% 被动
+                // 权重：30% 武器技能树、20% 角色卡、25% 武器解锁、25% 被动
                 float roll = Random.value;
 
                 bool hasWeapon = shuffledWeapons.Count > 0;
                 bool hasPassive = shuffledPassives.Count > 0;
                 bool hasSkill = shuffledSkills.Count > 0;
+                bool hasCharCard = shuffledCharCards.Count > 0;
 
                 SkillTreeNodeData pickedNode = null;
 
-                if (roll < 0.4f && hasSkill)
+                if (roll < 0.30f && hasSkill)
                 {
                     pickedNode = shuffledSkills[0];
                     shuffledSkills.RemoveAt(0);
                 }
-                else if (roll < 0.7f && hasWeapon)
+                else if (roll < 0.50f && hasCharCard && !charCardUsed)
+                {
+                    // 20% 概率抽角色卡（每次升级最多1张）
+                    pickedNode = shuffledCharCards[0];
+                    shuffledCharCards.Clear(); // 清空防止再抽
+                    charCardUsed = true;
+                }
+                else if (roll < 0.75f && hasWeapon)
                 {
                     pickedNode = shuffledWeapons[0];
                     shuffledWeapons.RemoveAt(0);
@@ -192,6 +278,11 @@ public class UpgradeManager : MonoBehaviour
                 {
                     pickedNode = shuffledSkills[0];
                     shuffledSkills.RemoveAt(0);
+                }
+                else if (hasCharCard)
+                {
+                    pickedNode = shuffledCharCards[0];
+                    shuffledCharCards.RemoveAt(0);
                 }
                 else if (hasWeapon)
                 {
@@ -215,6 +306,7 @@ public class UpgradeManager : MonoBehaviour
                     Debug.Log($"[UpgradeManager] 第{i+1}张卡重复跳过: {pickedNode.skillName}，尝试从其他池补充");
                     // 重复了，尝试从其他池子补一张不重复的
                     SkillTreeNodeData fallback = null;
+                    fallback = fallback ?? shuffledCharCards.FirstOrDefault(n => !offeredUpgrades.Contains(n));
                     fallback = fallback ?? shuffledPassives.FirstOrDefault(n => !offeredUpgrades.Contains(n));
                     fallback = fallback ?? shuffledWeapons.FirstOrDefault(n => !offeredUpgrades.Contains(n));
                     fallback = fallback ?? shuffledSkills.FirstOrDefault(n => !offeredUpgrades.Contains(n));
@@ -239,6 +331,8 @@ public class UpgradeManager : MonoBehaviour
 
         foreach (Transform child in cardContainer) Destroy(child.gameObject);
         activeCardUIs.Clear();
+        // 普通升级：标题还原，关闭彩带
+        SetUpgradePanelTitle(1);
         upgradePanel.SetActive(true);
         StartCoroutine(ShowCardsSequentially());
     }
@@ -941,6 +1035,25 @@ public class UpgradeManager : MonoBehaviour
                             appliedLocally = true;
                             Debug.Log($"<color=red>[升级生效] 连锁灵刃 命中点燃敌人触发爆破</color>");
                             break;
+
+                        // === 镭射核心类 ===
+                        case UpgradeType.LaserRefraction:
+                            part.localLaserRefractionCount += Mathf.RoundToInt(effect.value);
+                            appliedLocally = true;
+                            Debug.Log($"<color=#FF4444>[升级生效] {sourceNode.associatedWeapon.weaponName} 棱镜折射 +{Mathf.RoundToInt(effect.value)}，当前折射数: {part.localLaserRefractionCount}</color>");
+                            break;
+
+                        case UpgradeType.LaserFocusBonus:
+                            part.localLaserFocusBonus += effect.value / 100f; // 5 代表 +5% 每层
+                            appliedLocally = true;
+                            Debug.Log($"<color=#FF4444>[升级生效] {sourceNode.associatedWeapon.weaponName} 聚焦强化 +{effect.value}%/层</color>");
+                            break;
+
+                        case UpgradeType.LaserMeltdown:
+                            part.localLaserMeltdownEnabled = true;
+                            appliedLocally = true;
+                            Debug.Log($"<color=#FF4444>[升级生效] {sourceNode.associatedWeapon.weaponName} 核心熔毁已开启（过热变为灼烧区域）</color>");
+                            break;
                         
                     }
                 }
@@ -1014,6 +1127,18 @@ public class UpgradeManager : MonoBehaviour
                     }
                 }
             }
+            // 【角色技能卡】处理激活角色技能效果
+            else if (effect.actionType == EffectActionType.ActivateCharSkill)
+            {
+                if (!string.IsNullOrEmpty(effect.skillIdentifier))
+                {
+                    activeCharacterSkills.Add(effect.skillIdentifier);
+                    Debug.Log($"<color=magenta>[角色卡生效] 激活技能: {effect.skillIdentifier}</color>");
+
+                    // 同时应用对应技能树节点上的属性加成（伤害/移速/护甲等）
+                    ApplyCharacterNodeEffectsForSkill(effect.skillIdentifier);
+                }
+            }
         }
 
         // --- 2. 只有当【不是】解锁操作时，才去增加武器等级 ---
@@ -1081,7 +1206,26 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
-        // 6. 关闭面板恢复游戏
+        // 6. 检查宝箱多选：是否还有剩余可选次数
+        if (remainingTreasurePicks > 0)
+        {
+            remainingTreasurePicks--;
+            Debug.Log($"<color=yellow>[宝箱] 还可以再选 {remainingTreasurePicks + 1} 张卡</color>");
+            // 只更新标题文字提示剩余可选数，彩带保持不变
+            if (titleText != null)
+            {
+                if (remainingTreasurePicks > 0)
+                    titleText.text = $"还可选择{remainingTreasurePicks + 1}项";
+                else
+                    titleText.text = "选择最后一项";
+            }
+            // 不关闭面板，不恢复时间，等待玩家继续选择
+            return;
+        }
+
+        // 没有剩余次数，关闭面板恢复游戏
+        if (confetti2 != null) confetti2.SetActive(false);
+        if (confetti3 != null) confetti3.SetActive(false);
         if (upgradePanel != null) upgradePanel.SetActive(false);
         Time.timeScale = 1f;
     }
@@ -1195,7 +1339,9 @@ public class UpgradeManager : MonoBehaviour
             {
                 bool ok = (node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p)));
                 bool notMax = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
-                if (ok && notMax) pool.Add(node);
+
+                // 【图鉴解锁过滤】未解锁的被动道具不进入卡池
+                if (ok && notMax && IsPassiveNodeUnlocked(node)) pool.Add(node);
             }
         }
         if (WeaponController.Instance != null)
@@ -1214,10 +1360,20 @@ public class UpgradeManager : MonoBehaviour
     // ============================================================
 
     /// <summary>
-    /// 外部触发一次仅包含被动道具的升级选卡（宝箱拾取使用）
+    /// 查询是否处于宝箱多选模式（选完一张后还能继续选）
+    /// UpgradeCardUI 在判断是否淡出其他卡片时使用
     /// </summary>
-    public void TriggerPassiveOnlyUpgrade()
+    public bool HasRemainingTreasurePicks() => remainingTreasurePicks > 0;
+
+    /// <summary>
+    /// 外部触发仅包含被动道具的升级选卡（宝箱拾取使用）
+    /// </summary>
+    /// <param name="allowedPicks">本次可选卡片数量（1=标准，2=双倍，3=全选），默认1张</param>
+    public void TriggerPassiveOnlyUpgrade(int allowedPicks = 1)
     {
+        // 设置剩余可选次数（减1是因为第一次选择不消耗此计数）
+        remainingTreasurePicks = Mathf.Max(0, allowedPicks - 1);
+        Debug.Log($"<color=yellow>[宝箱选卡] 触发被动道具选卡，可选 {allowedPicks} 张</color>");
         StartCoroutine(PassiveOnlyUpgradeSequence());
     }
 
@@ -1238,13 +1394,33 @@ public class UpgradeManager : MonoBehaviour
 
         // 4. 仅从被动道具池中抽取3张卡
         List<SkillTreeNodeData> validPassives = new List<SkillTreeNodeData>();
+
+        // 从 PlayerStats 获取真实的被动道具持有数量
+        int currentUniquePassiveCount = 0;
+        int maxPassiveSlots = 6;
+        if (PlayerStats.Instance != null)
+        {
+            currentUniquePassiveCount = PlayerStats.Instance.activePassiveItems.Count;
+        }
+
         if (upgradeDatabase.passiveUpgrades != null)
         {
             foreach (var node in upgradeDatabase.passiveUpgrades)
             {
                 bool prerequisitesMet = node.prerequisites == null || node.prerequisites.Count == 0 || node.prerequisites.All(p => ownedUpgrades.ContainsKey(p));
                 bool notMaxed = !ownedUpgrades.ContainsKey(node) || ownedUpgrades[node] < node.maxLevel;
-                if (prerequisitesMet && notMaxed) validPassives.Add(node);
+
+                // 【图鉴解锁过滤】未解锁的被动道具不进入宝箱卡池
+                if (!prerequisitesMet || !notMaxed || !IsPassiveNodeUnlocked(node)) continue;
+
+                // 【槽位上限过滤】已有6种不同的被动道具时，只允许已拥有（可升级）的道具出现
+                if (currentUniquePassiveCount >= maxPassiveSlots)
+                {
+                    bool alreadyOwned = ownedUpgrades.ContainsKey(node);
+                    if (!alreadyOwned) continue; // 新道具不再出现
+                }
+
+                validPassives.Add(node);
             }
         }
 
@@ -1269,8 +1445,269 @@ public class UpgradeManager : MonoBehaviour
         // 6. 显示卡片UI
         foreach (Transform child in cardContainer) Destroy(child.gameObject);
         activeCardUIs.Clear();
+        // 宝箱选卡：设置标题和彩带特效
+        int totalPicks = remainingTreasurePicks + 1; // 当前可选总数
+        SetUpgradePanelTitle(totalPicks);
         upgradePanel.SetActive(true);
         StartCoroutine(ShowCardsSequentially());
+    }
+
+    /// <summary>
+    /// 根据可选张数设置面板标题文字和彩带特效
+    /// </summary>
+    private void SetUpgradePanelTitle(int allowedPicks)
+    {
+        // 设置标题文字
+        if (titleText != null)
+        {
+            switch (allowedPicks)
+            {
+                case 3:
+                    titleText.text = "选择三项升级";
+                    break;
+                case 2:
+                    titleText.text = "选择两项升级";
+                    break;
+                default:
+                    titleText.text = "选择一项升级";
+                    break;
+            }
+        }
+
+        // 激活/关闭彩带特效（使用Unscaled Time，不受暂停影响）
+        if (confetti2 != null)
+        {
+            confetti2.SetActive(allowedPicks == 2);
+            if (allowedPicks == 2) SetParticlesUnscaled(confetti2);
+        }
+        if (confetti3 != null)
+        {
+            confetti3.SetActive(allowedPicks == 3);
+            if (allowedPicks == 3) SetParticlesUnscaled(confetti3);
+        }
+    }
+
+    /// <summary>
+    /// 设置目标物体上所有 ParticleImage 使用不受 Time.timeScale 影响的时间
+    /// </summary>
+    private void SetParticlesUnscaled(GameObject target)
+    {
+        var particles = target.GetComponentsInChildren<AssetKits.ParticleImage.ParticleImage>(true);
+        foreach (var pi in particles)
+        {
+            pi.timeScale = AssetKits.ParticleImage.Enumerations.TimeScale.Unscaled;
+        }
+    }
+
+    /// <summary>
+    /// 检查被动道具节点是否已通过图鉴解锁
+    /// 如果节点没有关联 PassiveItemData，或者道具是默认解锁的，则视为已解锁
+    /// </summary>
+    private bool IsPassiveNodeUnlocked(SkillTreeNodeData node)
+    {
+        if (node == null || node.possibleOptions == null) return true;
+
+        // 遍历节点的所有选项，查找关联的 PassiveItemData
+        foreach (var option in node.possibleOptions)
+        {
+            if (option.effects == null) continue;
+            foreach (var effect in option.effects)
+            {
+                PassiveItemData passiveData = effect.passiveItemData;
+                if (passiveData == null) continue;
+
+                // 默认解锁的道具直接通过
+                if (passiveData.isDefaultUnlocked) return true;
+
+                // 需要成就解锁的道具：检查当前进度
+                if (!string.IsNullOrEmpty(passiveData.unlockStatKey) && passiveData.unlockThreshold > 0)
+                {
+                    if (PlayerProgressManager.Instance != null)
+                    {
+                        int currentVal = 0;
+                        if (PlayerProgressManager.Instance.achievementStats.ContainsKey(passiveData.unlockStatKey))
+                        {
+                            currentVal = PlayerProgressManager.Instance.achievementStats[passiveData.unlockStatKey];
+                        }
+                        // 未达到阈值 → 未解锁
+                        if (currentVal < passiveData.unlockThreshold) return false;
+                    }
+                    else
+                    {
+                        // PlayerProgressManager 不存在时，无法判断，保守返回 false
+                        return false;
+                    }
+                }
+                else
+                {
+                    // 没有设置 unlockStatKey 且 isDefaultUnlocked 为 false → 未解锁
+                    return false;
+                }
+            }
+        }
+
+        // 没有找到任何 PassiveItemData → 视为通用节点，允许入池
+        return true;
+    }
+
+    #endregion
+
+    #region === 角色专属技能卡系统 ===
+
+    /// <summary>
+    /// 初始化角色专属卡池：读取当前角色已解锁的 layer 2+ 节点，收集关联的卡片
+    /// </summary>
+    private void InitCharacterCardPool()
+    {
+        characterCardPool.Clear();
+        activeCharacterSkills.Clear();
+
+        if (PlayerProgressManager.Instance == null || DataManager.Instance == null) return;
+
+        CharacterData charData = DataManager.Instance.selectedCharacter;
+        if (charData == null || charData.characterSkillNodes == null) return;
+
+        foreach (var node in charData.characterSkillNodes)
+        {
+            if (node == null) continue;
+            // 只有 layer 2+ 且已解锁且配置了关联卡片的节点才加入卡池
+            if (node.layer >= 2
+                && node.linkedUpgradeNode != null
+                && PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node))
+            {
+                characterCardPool.Add(node.linkedUpgradeNode);
+                Debug.Log($"[角色卡池] 加入: {node.linkedUpgradeNode.skillName} (来自节点: {node.nodeName})");
+            }
+        }
+
+        Debug.Log($"[角色卡池] 初始化完成，当前角色({charData.characterName})共 {characterCardPool.Count} 张角色卡");
+    }
+
+    /// <summary>
+    /// 获取本局可用的角色卡（排除已激活的一次性卡）
+    /// </summary>
+    private List<SkillTreeNodeData> GetAvailableCharacterCards()
+    {
+        List<SkillTreeNodeData> available = new List<SkillTreeNodeData>();
+
+        foreach (var card in characterCardPool)
+        {
+            if (card == null) continue;
+
+            // 一次性卡片：已激活则不再出现
+            if (card.isOneTimeOnly && ownedUpgrades.ContainsKey(card)) continue;
+
+            // 跳过已通过 ForceActivateCharacterSkill 自动激活的技能卡
+            // （如法师的 IcePath/FirePath 分支选择卡，战斗开始时已自动生效）
+            if (card.possibleOptions != null && card.possibleOptions.Count > 0)
+            {
+                bool alreadyForceActivated = false;
+                foreach (var option in card.possibleOptions)
+                {
+                    if (option.effects == null) continue;
+                    foreach (var eff in option.effects)
+                    {
+                        if (eff.actionType == EffectActionType.ActivateCharSkill
+                            && activeCharacterSkills.Contains(eff.skillIdentifier))
+                        {
+                            alreadyForceActivated = true;
+                            break;
+                        }
+                    }
+                    if (alreadyForceActivated) break;
+                }
+                if (alreadyForceActivated) continue;
+            }
+
+            // 检查是否已达最大等级
+            if (ownedUpgrades.ContainsKey(card) && ownedUpgrades[card] >= card.maxLevel) continue;
+
+            // 组合技卡片：必须同时装备所有指定武器才出现
+            if (card.requiredWeapons != null && card.requiredWeapons.Count > 0)
+            {
+                if (WeaponController.Instance == null) continue;
+                bool hasAll = true;
+                foreach (var rw in card.requiredWeapons)
+                {
+                    if (rw == null) continue;
+                    bool found = false;
+                    foreach (var ow in WeaponController.Instance.ownedWeapons)
+                    {
+                        if (ow.stats == rw || (ow.weaponPartInstance != null && ow.weaponPartInstance.StatBlock == rw))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) { hasAll = false; break; }
+                }
+                if (!hasAll) continue;
+            }
+
+            available.Add(card);
+        }
+
+        return available;
+    }
+
+    /// <summary>
+    /// 查询本局是否已激活某个角色技能（战斗系统使用）
+    /// </summary>
+    public bool HasActiveCharacterSkill(string skillIdentifier)
+    {
+        if (string.IsNullOrEmpty(skillIdentifier)) return false;
+        return activeCharacterSkills.Contains(skillIdentifier);
+    }
+
+    /// <summary>
+    /// 强制激活一个角色技能（供战斗初始化使用，跳过抽卡流程）
+    /// 用于 IcePath/FirePath 等分支选择技能的自动激活
+    /// </summary>
+    public void ForceActivateCharacterSkill(string skillIdentifier)
+    {
+        if (string.IsNullOrEmpty(skillIdentifier)) return;
+        if (!activeCharacterSkills.Contains(skillIdentifier))
+        {
+            activeCharacterSkills.Add(skillIdentifier);
+            Debug.Log($"<color=magenta>[角色技能] 强制激活: {skillIdentifier}</color>");
+        }
+    }
+
+    /// <summary>
+    /// 判断卡片是否为分支机制卡（精准斩击/敏捷猎手），用于优先排序
+    /// </summary>
+    private bool IsBranchMechanicCard(SkillTreeNodeData card)
+    {
+        if (card == null || card.possibleOptions == null) return false;
+        foreach (var option in card.possibleOptions)
+        {
+            if (option.effects == null) continue;
+            foreach (var effect in option.effects)
+            {
+                if (effect.actionType == EffectActionType.ActivateCharSkill
+                    && (effect.skillIdentifier == "PrecisionSlash" || effect.skillIdentifier == "AgileHunter"))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 抽到角色卡时，查找对应的 CharacterSkillNode 并应用其属性效果
+    /// </summary>
+    private void ApplyCharacterNodeEffectsForSkill(string skillIdentifier)
+    {
+        // 角色卡的效果只是「激活某个机制」（如残影连斩、影分身等）
+        // 机制激活通过 HasActiveCharacterSkill(skillIdentifier) 查询
+        // 节点上的 PermanentUpgradeEffect（如 DamagePercent）是技能树的永久属性
+        // 已在 RecalculateCharacterBonuses 中处理，不应在此重复应用
+
+        Debug.Log($"<color=magenta>[角色卡] 激活技能: {skillIdentifier} （仅激活机制，不叠加属性）</color>");
+
+        // 技能已通过 ActivateCharacterSkill() 注册到 activeCharacterSkills 中
+        // 战斗代码通过 HasActiveCharacterSkill() 检查是否启用
     }
 
     #endregion

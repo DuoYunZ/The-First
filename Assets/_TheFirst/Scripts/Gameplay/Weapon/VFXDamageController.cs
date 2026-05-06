@@ -1,4 +1,4 @@
-﻿// --- VFXDamageController.cs (调试版) ---
+// --- VFXDamageController.cs (调试版) ---
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,6 +17,11 @@ public class VFXDamageController : MonoBehaviour
     [HideInInspector] public bool forceBurn = false;
     [HideInInspector] public float forceBurnDamage = 5f;
     [HideInInspector] public float forceBurnDuration = 3f;
+
+    // 剑圣之道：额外暴击率
+    [HideInInspector] public float bonusCritRate = 0f;
+    // 破甲一击：忽略护甲
+    [HideInInspector] public bool ignoreArmor = false;
 
     [Header("生命周期与伤害窗口")]
     public float totalLifetime = 2f;
@@ -86,6 +91,9 @@ public class VFXDamageController : MonoBehaviour
                 totalCritRate += PlayerStats.Instance.critRate;
                 totalCritDmgMult = PlayerStats.Instance.critDamage;
             }
+
+            // 1.5 剑圣之道额外暴击率
+            totalCritRate += bonusCritRate;
 
             // 2. 获取局部属性 (直接从 launcher 读取)
             if (sourceWeapon != null)

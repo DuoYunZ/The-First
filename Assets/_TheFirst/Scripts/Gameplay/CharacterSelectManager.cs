@@ -4,6 +4,20 @@ using TMPro;
 using System.Collections.Generic;
 
 /// <summary>
+/// 角色技能树布局映射：将角色数据关联到对应的技能树UI容器
+/// </summary>
+[System.Serializable]
+public class CharacterSkillTreeLayout
+{
+    [Tooltip("角色数据 SO")]
+    public CharacterData character;
+    [Tooltip("该角色技能树节点的父容器")]
+    public Transform nodeContainer;
+    [Tooltip("该角色连接线的父容器（可选）")]
+    public Transform connectorContainer;
+}
+
+/// <summary>
 /// 角色信息面板UI管理器 — 手动布局模式
 /// 节点由你在 Unity 中手动摆放，脚本负责数据绑定 + 自动画线 + 弹窗
 /// </summary>
@@ -40,9 +54,12 @@ public class CharacterSelectManager : MonoBehaviour
     public TextMeshProUGUI goldText;
 
     [Header("角色技能树 — 手动布局")]
-    [Tooltip("技能树节点的父容器（你在这个容器下手动摆放节点）")]
+    [Tooltip("每个角色的技能树容器映射（在Inspector中配置）")]
+    public List<CharacterSkillTreeLayout> skillTreeLayouts = new List<CharacterSkillTreeLayout>();
+
+    [Tooltip("默认技能树容器（当角色没有配置专属布局时使用）")]
     public Transform skillNodeContainer;
-    [Tooltip("连接线的父容器（线会生成在这里，放在节点下方的层级）")]
+    [Tooltip("默认连接线容器")]
     public Transform connectorContainer;
 
     [Header("连接线设置")]
@@ -69,6 +86,14 @@ public class CharacterSelectManager : MonoBehaviour
     [Tooltip("弹窗中的解锁按钮文字")]
     public TextMeshProUGUI popupUnlockButtonText;
 
+    [Header("分支重置")]
+    [Tooltip("重置分支选择的按钮")]
+    public Button resetBranchButton;
+    [Tooltip("重置按钮文字")]
+    public TextMeshProUGUI resetBranchButtonText;
+    [Tooltip("重置费用")]
+    public int resetBranchCost = 500;
+
     // 公开属性
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
     public CharacterData CurrentCharacter => currentCharacter;
@@ -82,6 +107,8 @@ public class CharacterSelectManager : MonoBehaviour
     private List<ConnectorInfo> connectorInfos = new List<ConnectorInfo>();
     private CharacterSkillNodeUI currentPopupNode;
     private GameObject popupBlocker; // 全屏遮罩（点击关闭弹窗）
+    private Transform activeSkillNodeContainer; // 当前激活的技能树容器
+    private Transform activeConnectorContainer; // 当前激活的连接线容器
 
     private struct ConnectorInfo
     {
@@ -98,6 +125,7 @@ public class CharacterSelectManager : MonoBehaviour
         if (selectButton != null) selectButton.onClick.AddListener(OnSelectClicked);
         if (unlockButton != null) unlockButton.onClick.AddListener(OnUnlockClicked);
         if (popupUnlockButton != null) popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
+        if (resetBranchButton != null) resetBranchButton.onClick.AddListener(OnResetBranchClicked);
     }
 
     public void ShowCharacter(CharacterData data)
@@ -143,25 +171,37 @@ public class CharacterSelectManager : MonoBehaviour
         ClearConnectors();
         activeSkillNodeUIs.Clear();
 
-        if (skillNodeContainer == null) return;
-        if (data.characterSkillNodes == null || data.characterSkillNodes.Count == 0) return;
+        // 切换到对应角色的技能树容器
+        SwitchSkillTreeLayout(data);
+
+        if (activeSkillNodeContainer == null) return;
 
         if (!IsCharacterUnlocked(data))
         {
-            skillNodeContainer.gameObject.SetActive(false);
+            activeSkillNodeContainer.gameObject.SetActive(false);
             return;
         }
-        skillNodeContainer.gameObject.SetActive(true);
+        activeSkillNodeContainer.gameObject.SetActive(true);
 
-        // 找到容器下所有 CharacterSkillNodeUI（按层级顺序）
-        CharacterSkillNodeUI[] nodeUIs = skillNodeContainer.GetComponentsInChildren<CharacterSkillNodeUI>(true);
+        // 找到容器下所有 CharacterSkillNodeUI
+        CharacterSkillNodeUI[] nodeUIs = activeSkillNodeContainer.GetComponentsInChildren<CharacterSkillNodeUI>(true);
 
-        // 按 SO 列表顺序绑定
-        int count = Mathf.Min(data.characterSkillNodes.Count, nodeUIs.Length);
-        for (int i = 0; i < count; i++)
+        // 使用每个节点自身的 assignedNode（Inspector中拖入的SO）
+        foreach (var nodeUI in nodeUIs)
         {
-            nodeUIs[i].Setup(data.characterSkillNodes[i], data, (clicked) => ShowNodeDetailPopup(clicked));
-            activeSkillNodeUIs.Add(nodeUIs[i]);
+            if (nodeUI == null) continue;
+
+            // 优先使用 assignedNode（手动拖入的），这是正确的数据源
+            CharacterSkillNode nodeData = nodeUI.assignedNode;
+            if (nodeData != null)
+            {
+                nodeUI.Setup(nodeData, data, (clicked) => ShowNodeDetailPopup(clicked));
+                activeSkillNodeUIs.Add(nodeUI);
+            }
+            else
+            {
+                Debug.LogWarning($"[技能树] 节点 '{nodeUI.name}' 没有设置 assignedNode，请在Inspector中拖入对应的SO！");
+            }
         }
 
         // 画连接线
@@ -169,11 +209,49 @@ public class CharacterSelectManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 切换技能树布局：隐藏所有容器，显示当前角色的容器
+    /// </summary>
+    private void SwitchSkillTreeLayout(CharacterData data)
+    {
+        // 先隐藏所有布局容器
+        foreach (var layout in skillTreeLayouts)
+        {
+            if (layout.nodeContainer != null)
+                layout.nodeContainer.gameObject.SetActive(false);
+        }
+        if (skillNodeContainer != null)
+            skillNodeContainer.gameObject.SetActive(false);
+
+        // 查找当前角色的专属布局
+        activeSkillNodeContainer = null;
+        activeConnectorContainer = null;
+
+        foreach (var layout in skillTreeLayouts)
+        {
+            if (layout.character == data)
+            {
+                activeSkillNodeContainer = layout.nodeContainer;
+                activeConnectorContainer = layout.connectorContainer;
+                Debug.Log($"[技能树] 使用 {data.characterName} 的专属布局");
+                break;
+            }
+        }
+
+        // 如果没有找到专属布局，使用默认容器
+        if (activeSkillNodeContainer == null)
+        {
+            activeSkillNodeContainer = skillNodeContainer;
+            activeConnectorContainer = connectorContainer;
+            Debug.Log($"[技能树] {data.characterName} 使用默认布局");
+        }
+    }
+
+    /// <summary>
     /// 根据 connectTo 画连接线
     /// </summary>
     private void GenerateConnectors()
     {
-        Transform lineParent = connectorContainer != null ? connectorContainer : skillNodeContainer;
+        Transform lineParent = activeConnectorContainer != null ? activeConnectorContainer : activeSkillNodeContainer;
 
         foreach (var nodeUI in activeSkillNodeUIs)
         {
@@ -307,22 +385,20 @@ public class CharacterSelectManager : MonoBehaviour
     // =========================================================
 
     /// <summary>
-    /// 显示弹窗（已解锁的节点不弹窗）
+    /// 显示弹窗（已解锁/未解锁都可查看）
     /// </summary>
     private void ShowNodeDetailPopup(CharacterSkillNodeUI nodeUI)
     {
         if (nodeDetailPopup == null || nodeUI == null || nodeUI.nodeData == null) return;
-
-        // 已解锁的节点不需要弹窗
-        if (PlayerProgressManager.Instance != null &&
-            PlayerProgressManager.Instance.IsCharacterNodeUnlocked(nodeUI.nodeData))
-            return;
 
         currentPopupNode = nodeUI;
         var node = nodeUI.nodeData;
 
         if (popupNodeName != null) popupNodeName.text = node.LocalizedNodeName;
         if (popupDescription != null) popupDescription.text = node.LocalizedDescription;
+
+        // 自动适配弹窗大小：让底图根据文本内容自动调整高度
+        EnsurePopupAutoSize();
 
         RefreshPopupButton(nodeUI);
         PositionPopupNearNode(nodeUI);
@@ -379,7 +455,7 @@ public class CharacterSelectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 弹窗按钮 — 只显示费用数字
+    /// 弹窗按钮 — 已解锁显示"已解锁"(不可点击)，未解锁显示费用
     /// </summary>
     private void RefreshPopupButton(CharacterSkillNodeUI nodeUI)
     {
@@ -391,7 +467,7 @@ public class CharacterSelectManager : MonoBehaviour
         if (isUnlocked)
         {
             popupUnlockButton.interactable = false;
-            if (popupUnlockButtonText != null) popupUnlockButtonText.text = "\u2713";
+            if (popupUnlockButtonText != null) popupUnlockButtonText.text = "已解锁";
         }
         else
         {
@@ -438,6 +514,41 @@ public class CharacterSelectManager : MonoBehaviour
         DestroyPopupBlocker();
         if (nodeDetailPopup != null) nodeDetailPopup.SetActive(false);
         currentPopupNode = null;
+    }
+
+    /// <summary>
+    /// 确保弹窗面板有自适应大小的组件
+    /// 首次调用时自动添加 VerticalLayoutGroup + ContentSizeFitter
+    /// </summary>
+    private void EnsurePopupAutoSize()
+    {
+        if (nodeDetailPopup == null) return;
+
+        // 只添加一次 ContentSizeFitter
+        ContentSizeFitter csf = nodeDetailPopup.GetComponent<ContentSizeFitter>();
+        if (csf == null)
+        {
+            csf = nodeDetailPopup.AddComponent<ContentSizeFitter>();
+            csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained; // 宽度固定
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;   // 高度自适应
+        }
+
+        // 只添加一次 VerticalLayoutGroup
+        VerticalLayoutGroup vlg = nodeDetailPopup.GetComponent<VerticalLayoutGroup>();
+        if (vlg == null)
+        {
+            vlg = nodeDetailPopup.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(20, 20, 15, 15);
+            vlg.spacing = 8f;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+        }
+
+        // 强制刷新布局（文本更新后立刻重算大小）
+        LayoutRebuilder.ForceRebuildLayoutImmediate(nodeDetailPopup.GetComponent<RectTransform>());
     }
 
     // =========================================================
@@ -491,6 +602,36 @@ public class CharacterSelectManager : MonoBehaviour
                                             LocalizationManager.T("ui.gold") + ")";
             }
         }
+
+        // === 重置分支按钮：只有已解锁角色且选了分支才显示 ===
+        if (resetBranchButton != null)
+        {
+            // 动态检查当前查看角色的分支机制节点是否已解锁
+            // 注意：不能用 HasMechanic()，因为它内部依赖 DataManager.selectedCharacter
+            // 而这里 data 是当前正在查看的角色，两者可能不同
+            bool hasBranch = false;
+            if (isUnlocked && PlayerProgressManager.Instance != null && data.characterSkillNodes != null)
+            {
+                foreach (var node in data.characterSkillNodes)
+                {
+                    if (node != null && node.isMechanicBranch &&
+                        !string.IsNullOrEmpty(node.mechanicID) &&
+                        PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node))
+                    {
+                        hasBranch = true;
+                        break;
+                    }
+                }
+            }
+            resetBranchButton.gameObject.SetActive(hasBranch);
+
+            if (hasBranch)
+            {
+                resetBranchButton.interactable = true; // 免费重置，始终可用
+                if (resetBranchButtonText != null)
+                    resetBranchButtonText.text = "重置分支";
+            }
+        }
     }
 
     private void OnSelectClicked()
@@ -517,6 +658,89 @@ public class CharacterSelectManager : MonoBehaviour
         PlayerProgressManager.Instance.SpendGold(currentCharacter.unlockCost);
         PlayerProgressManager.Instance.UnlockItem(currentCharacter.characterID);
         RefreshUI(currentCharacter);
+        BindSkillNodes(currentCharacter); // 解锁后立即刷新技能树显示
+    }
+
+    /// <summary>
+    /// 重置分支按钮点击回调 —— 显示二次确认弹窗
+    /// </summary>
+    private void OnResetBranchClicked()
+    {
+        if (currentCharacter == null || PlayerProgressManager.Instance == null) return;
+
+        // 显示确认弹窗
+        ShowResetConfirmDialog();
+    }
+
+    /// <summary>
+    /// 显示重置确认弹窗
+    /// </summary>
+    private void ShowResetConfirmDialog()
+    {
+        // 复用节点详情弹窗作为确认弹窗
+        if (nodeDetailPopup == null) return;
+
+        if (popupNodeName != null) popupNodeName.text = "❗ 重置确认";
+        if (popupDescription != null) popupDescription.text = "确定要重置当前角色的\n技能树分支吗？\n\n重置后可重新选择分支方向";
+
+        EnsurePopupAutoSize();
+
+        // 按钮改为确认功能
+        if (popupUnlockButton != null)
+        {
+            popupUnlockButton.interactable = true;
+            popupUnlockButton.onClick.RemoveAllListeners();
+            popupUnlockButton.onClick.AddListener(OnResetConfirmed);
+        }
+        if (popupUnlockButtonText != null) popupUnlockButtonText.text = "确认重置";
+
+        // 居中显示
+        RectTransform popupRect = nodeDetailPopup.GetComponent<RectTransform>();
+        if (popupRect != null)
+        {
+            popupRect.anchoredPosition = Vector2.zero;
+        }
+
+        CreatePopupBlocker();
+        nodeDetailPopup.SetActive(true);
+        nodeDetailPopup.transform.SetAsLastSibling();
+    }
+
+    /// <summary>
+    /// 确认重置回调 —— 执行实际重置（不扣金币）
+    /// </summary>
+    private void OnResetConfirmed()
+    {
+        if (currentCharacter == null || PlayerProgressManager.Instance == null) return;
+
+        // 使用新的全重置方法（不扣金币）
+        PlayerProgressManager.Instance.ResetCharacterSkillTree(currentCharacter);
+        Debug.Log($"[技能树] 分支已重置（免费）");
+
+        // 关闭弹窗并恢复按钮功能
+        CloseResetConfirmDialog();
+
+        // 重新绑定节点状态
+        BindSkillNodes(currentCharacter);
+        RefreshUI(currentCharacter);
+        RefreshAllSkillNodes();
+    }
+
+    /// <summary>
+    /// 关闭确认弹窗并恢复按钮原始功能
+    /// </summary>
+    private void CloseResetConfirmDialog()
+    {
+        DestroyPopupBlocker();
+        if (nodeDetailPopup != null) nodeDetailPopup.SetActive(false);
+
+        // 恢复解锁按钮的原始点击事件
+        if (popupUnlockButton != null)
+        {
+            popupUnlockButton.onClick.RemoveAllListeners();
+            popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
+        }
+        currentPopupNode = null;
     }
 
     private bool IsCharacterUnlocked(CharacterData data)

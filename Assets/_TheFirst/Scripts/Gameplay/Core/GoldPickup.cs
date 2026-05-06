@@ -1,4 +1,4 @@
-﻿// GoldPickup.cs (Enhanced Version)
+// GoldPickup.cs (Enhanced Version)
 using UnityEngine;
 using System.Collections;
 
@@ -189,6 +189,22 @@ public class GoldPickup : MonoBehaviour
         {
             collectionTarget = target;
         }
+
+        StartAbsorbSequence();
+    }
+
+    /// <summary>
+    /// 强制触发金币收集（跳过所有延迟和状态检查）。
+    /// 用于 Boss 死亡表演结束时快速吸收所有剩余金币。
+    /// </summary>
+    public void ForceCollect(Transform target)
+    {
+        if (isCollecting) return; // 已经在飞了就不重复
+
+        // 强制覆盖状态
+        StopAllCoroutines(); // 停止弹跳/延迟协程
+        canBePickedUp = true;
+        collectionTarget = target;
 
         StartAbsorbSequence();
     }

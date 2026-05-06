@@ -233,6 +233,31 @@ public class PlayerProgressManager : MonoBehaviour
         SaveGame();
     }
 
+    /// <summary>
+    /// 重置指定角色的技能树（清除所有已解锁节点，不退还金币）
+    /// </summary>
+    public void ResetCharacterSkillTree(CharacterData charData)
+    {
+        if (charData == null || charData.characterSkillNodes == null) return;
+
+        // 移除该角色所有节点的解锁记录
+        foreach (var node in charData.characterSkillNodes)
+        {
+            if (node != null)
+            {
+                unlockedNodeIDs.Remove(node.name);
+            }
+        }
+
+        // 互斥状态是动态计算的（基于解锁状态），无需额外清除
+
+        // 重新计算属性
+        RecalculateCharacterBonuses(charData);
+        SaveGame();
+
+        Debug.Log($"[技能树重置] {charData.characterName} 的技能树已重置");
+    }
+
     private void ApplyCharacterNodeEffect(PermanentUpgradeEffect effect)
     {
         switch (effect.upgradeType)
@@ -262,6 +287,14 @@ public class PlayerProgressManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 公共接口：供 UpgradeManager 在局内抽到角色卡时调用，更新 PPM 内部计数器
+    /// </summary>
+    public void ApplyCharacterNodeEffectPublic(PermanentUpgradeEffect effect)
+    {
+        ApplyCharacterNodeEffect(effect);
+    }
+
+    /// <summary>
     /// 【核心新增】根据指定角色的已解锁节点重新计算角色技能树加成
     /// 解决了不同角色共享同一组属性的问题
     /// </summary>
@@ -283,6 +316,9 @@ public class PlayerProgressManager : MonoBehaviour
         {
             if (node != null && IsCharacterNodeUnlocked(node))
             {
+                // 有关联卡片的节点（layer 2+），属性延迟到局内抽卡时才生效
+                if (node.linkedUpgradeNode != null) continue;
+
                 foreach (var effect in node.effects)
                 {
                     ApplyCharacterNodeEffect(effect);
@@ -322,15 +358,23 @@ public class PlayerProgressManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 检查某节点是否满足解锁条件（前置层级要求）
-    /// 第1层：无前置
-    /// 第2-3层：前一层解锁2个以上
-    /// 第4层（天赋）：前一层全部解锁
+    /// 检查某节点是否满足解锁条件
+    /// 包含前置节点检查和互斥节点检查
     /// </summary>
     public bool CanUnlockCharacterNode(CharacterData charData, CharacterSkillNode node)
     {
         if (node == null) return false;
         if (IsCharacterNodeUnlocked(node)) return false; // 已解锁
+
+        // 互斥检查：如果互斥节点中有任意一个已解锁，则当前节点永久锁定
+        if (node.mutuallyExclusiveNodes != null)
+        {
+            foreach (var exclusive in node.mutuallyExclusiveNodes)
+            {
+                if (exclusive != null && IsCharacterNodeUnlocked(exclusive))
+                    return false; // 互斥节点已被选择，当前节点不可解锁
+            }
+        }
 
         // 无前置节点 → 可直接解锁
         if (node.prerequisites == null || node.prerequisites.Count == 0)
@@ -343,6 +387,83 @@ public class PlayerProgressManager : MonoBehaviour
             if (!IsCharacterNodeUnlocked(prereq))
                 return false;
         }
+        return true;
+    }
+
+    /// <summary>
+    /// 检查某节点是否因互斥而被永久锁定
+    /// </summary>
+    public bool IsNodeExcluded(CharacterSkillNode node)
+    {
+        if (node == null || node.mutuallyExclusiveNodes == null) return false;
+        foreach (var exclusive in node.mutuallyExclusiveNodes)
+        {
+            if (exclusive != null && IsCharacterNodeUnlocked(exclusive))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 查询玩家是否拥有某个机制分支（战斗系统使用）
+    /// </summary>
+    public bool HasMechanic(string mechanicID)
+    {
+        if (string.IsNullOrEmpty(mechanicID)) return false;
+        if (DataManager.Instance == null || DataManager.Instance.selectedCharacter == null) return false;
+
+        CharacterData charData = DataManager.Instance.selectedCharacter;
+        if (charData.characterSkillNodes == null) return false;
+
+        foreach (var node in charData.characterSkillNodes)
+        {
+            if (node != null && node.isMechanicBranch 
+                && node.mechanicID == mechanicID 
+                && IsCharacterNodeUnlocked(node))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 重置角色技能树的分支选择（付费重置）
+    /// 只重置机制分支及其后续节点，保留共通基础层
+    /// </summary>
+    public bool ResetCharacterBranch(CharacterData charData, int resetCost)
+    {
+        if (charData == null || !CanAfford(resetCost)) return false;
+
+        // 收集所有需要重置的节点（layer >= 2 的节点）
+        List<string> nodesToReset = new List<string>();
+        if (charData.characterSkillNodes != null)
+        {
+            foreach (var node in charData.characterSkillNodes)
+            {
+                if (node != null && node.layer >= 2 && IsCharacterNodeUnlocked(node))
+                {
+                    nodesToReset.Add(node.name);
+                }
+            }
+        }
+
+        if (nodesToReset.Count == 0) return false; // 没有需要重置的节点
+
+        // 扣除金币
+        SpendGold(resetCost);
+
+        // 移除已解锁的节点
+        foreach (var nodeID in nodesToReset)
+        {
+            unlockedNodeIDs.Remove(nodeID);
+        }
+
+        // 重新计算角色属性加成
+        RecalculateCharacterBonuses(charData);
+        SaveGame();
+
+        Debug.Log($"[技能树] 已重置 {charData.characterName} 的分支选择，移除了 {nodesToReset.Count} 个节点");
         return true;
     }
 

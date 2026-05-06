@@ -1,12 +1,16 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
+/// <summary>
+/// 管道传送器 — 玩家进入管道触发器后，弹出地图关卡选择界面，
+/// 选择关卡后执行吸入动画并传送到对应战斗场景
+/// </summary>
 public class PipeTeleporter : MonoBehaviour
 {
     [Header("传送设置")]
-    [Tooltip("要加载的战斗场景的名称")]
-    public string sceneToLoad = "CombatArena01"; 
+    [Tooltip("默认场景名（仅在没有 LevelSelectUI 时作为回退使用）")]
+    public string fallbackScene = "CombatArena01";
 
     [Header("动画控制")]
     [Tooltip("管道入口中心点（角色会被吸向这个点）")]
@@ -22,6 +26,9 @@ public class PipeTeleporter : MonoBehaviour
     private AudioSource audioSource;
 
     private bool isActivated = false;
+
+    // 缓存玩家 Transform，用于关卡选择确认后执行吸入动画
+    private Transform cachedPlayerTransform;
 
     void Start()
     {
@@ -50,14 +57,46 @@ public class PipeTeleporter : MonoBehaviour
             return;
         }
 
-        isActivated = true; 
-        
-        StartCoroutine(SuckInSequence(other.transform));
+        isActivated = true;
+        cachedPlayerTransform = other.transform;
+
+        // 尝试打开地图关卡选择界面
+        if (LevelSelectUI.Instance != null)
+        {
+            // 打开地图选择UI，传入回调：玩家确认关卡后执行传送
+            LevelSelectUI.Instance.Show(OnLevelSelected);
+        }
+        else
+        {
+            // 没有地图选择UI，直接用默认场景传送（兼容旧行为）
+            Debug.LogWarning("[PipeTeleporter] 未找到 LevelSelectUI，将直接传送到默认场景。", this);
+            StartCoroutine(SuckInSequence(cachedPlayerTransform, fallbackScene));
+        }
     }
 
-    private IEnumerator SuckInSequence(Transform playerTransform)
+    /// <summary>
+    /// 玩家在地图UI中确认选择关卡后的回调
+    /// </summary>
+    /// <param name="targetScene">目标场景名称</param>
+    private void OnLevelSelected(string targetScene)
     {
-        // 1. 禁用玩家物理与控制 (这里尝试多种可能的方式禁用)
+        if (cachedPlayerTransform == null)
+        {
+            Debug.LogError("[PipeTeleporter] 缓存的玩家 Transform 为空！无法执行传送动画。");
+            isActivated = false;
+            return;
+        }
+
+        // 开始吸入动画 + 传送
+        StartCoroutine(SuckInSequence(cachedPlayerTransform, targetScene));
+    }
+
+    /// <summary>
+    /// 吸入动画序列：禁用玩家控制 → 播放音效 → 缩小旋转移动到管道中心 → 加载场景
+    /// </summary>
+    private IEnumerator SuckInSequence(Transform playerTransform, string sceneToLoad)
+    {
+        // 1. 禁用玩家物理与控制
         var rb = playerTransform.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -71,7 +110,7 @@ public class PipeTeleporter : MonoBehaviour
             charController.enabled = false;
         }
         
-        // （视您项目的角色控制器脚本而定，可以尝试发消息禁用其 Update）
+        // 发送消息禁用角色控制器的移动逻辑
         playerTransform.SendMessage("DisableMovement", SendMessageOptions.DontRequireReceiver);
 
         // 2. 播放音效
@@ -80,7 +119,7 @@ public class PipeTeleporter : MonoBehaviour
             audioSource.PlayOneShot(suckSound);
         }
 
-        // 3. 开始补间动画 (Tween) - 缩放、移动、旋转
+        // 3. 开始补间动画 - 缩放、移动、旋转
         Vector3 startPos = playerTransform.position;
         Vector3 targetPos = pipeEntrance.position;
         
@@ -130,5 +169,15 @@ public class PipeTeleporter : MonoBehaviour
         {
             SceneManager.LoadScene(sceneToLoad);
         }
+    }
+
+    /// <summary>
+    /// 当关卡选择UI被关闭（玩家取消选择）时，重置传送器状态
+    /// 允许玩家再次进入管道触发传送
+    /// </summary>
+    public void ResetTeleporter()
+    {
+        isActivated = false;
+        cachedPlayerTransform = null;
     }
 }

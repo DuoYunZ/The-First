@@ -20,7 +20,8 @@ public enum WeaponBehaviorType
     Aura,           // 光环
     CreateAndForget, // <--- 【新增】生成后不管 (用于游荡型超武)
     FlyingDagger,    // <--- 【新增】追踪飞刀 (无需发射，本体撞击)
-    FrostNova        // 冰霜新星 (在敌人脚底爆发冰晶)
+    FrostNova,       // 冰霜新星 (在敌人脚底爆发冰晶)
+    LaserCore        // 镭射核心 (浮空跟随，聚焦升温光束)
 }
 
 public enum WeaponXpSource

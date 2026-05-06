@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -36,6 +36,12 @@ public class GroundHazard : MonoBehaviour
         this.duration = lifeTime;
         this.weaponName = sourceWeaponName;
         this.owner = ownerInfo;
+
+        // 火焰类型的地面危害注册到法师系统（供炼狱之焰/风助火势联动）
+        if (hazardTypeTag == "FireHazard" && PlayerMagicSystem.Instance != null)
+        {
+            PlayerMagicSystem.Instance.RegisterFirePool(gameObject);
+        }
 
         Destroy(gameObject, duration);
     }
@@ -124,8 +130,13 @@ public class GroundHazard : MonoBehaviour
     // 可选：在场景切换时清理静态字典，防止内存泄漏 (虽然后果很小)
     void OnDestroy()
     {
-        // 这是一个简单的清理策略：如果这个火堆销毁时，字典太大，就清理一下
-        // (在Roguelike里，更严谨的做法是在 GameManager 重启关卡时清理)
+        // 火焰类型：从法师系统注销
+        if (hazardTypeTag == "FireHazard" && PlayerMagicSystem.Instance != null)
+        {
+            PlayerMagicSystem.Instance.UnregisterFirePool(gameObject);
+        }
+
+        // 清理静态字典防内存泄漏
         if (globalDamageCooldowns.Count > 1000)
         {
             globalDamageCooldowns.Clear();

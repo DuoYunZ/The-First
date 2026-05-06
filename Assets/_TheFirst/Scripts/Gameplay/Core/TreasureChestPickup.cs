@@ -95,8 +95,46 @@ public class TreasureChestPickup : MonoBehaviour
         }
     }
 
+    [Header("多选概率")]
+    [Tooltip("一次可选2张卡的基础概率（0~1）")]
+    public float doublePickChance = 0.15f;
+    [Tooltip("一次可选3张卡（全选）的基础概率（0~1）")]
+    public float triplePickChance = 0.05f;
+
     /// <summary>
-    /// 执行拾取逻辑：触发被动道具选卡界面
+    /// 根据幸运值计算本次宝箱可选卡片张数
+    /// 幸运值作为概率乘数：luck=1.0为无加成，luck=1.5则概率×1.5
+    /// </summary>
+    private int CalculatePickCount()
+    {
+        float luck = PlayerStats.Instance != null ? PlayerStats.Instance.luck : 1.0f;
+
+        // 幸运值加成后的概率（上限钳制到0.8防止必中）
+        float tripleChance = Mathf.Min(triplePickChance * luck, 0.8f);
+        float doubleChance = Mathf.Min(doublePickChance * luck, 0.8f);
+
+        float roll = Random.value;
+
+        // 优先判定全选（3张），再判定双选（2张），否则标准（1张）
+        if (roll < tripleChance)
+        {
+            Debug.Log($"<color=gold>[宝箱] 大丰收！可选3张卡 (roll={roll:F3}, 需<{tripleChance:F3}, luck={luck:F2})</color>");
+            return 3;
+        }
+        else if (roll < tripleChance + doubleChance)
+        {
+            Debug.Log($"<color=yellow>[宝箱] 双倍收获！可选2张卡 (roll={roll:F3}, 需<{tripleChance + doubleChance:F3}, luck={luck:F2})</color>");
+            return 2;
+        }
+        else
+        {
+            Debug.Log($"<color=white>[宝箱] 标准收获，可选1张卡 (luck={luck:F2})</color>");
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// 执行拾取逻辑：触发被动道具选卡界面（支持多选）
     /// </summary>
     private void PickUp()
     {
@@ -115,10 +153,11 @@ public class TreasureChestPickup : MonoBehaviour
             Destroy(vfx, 2f);
         }
 
-        // 触发被动道具选卡界面
+        // 根据幸运值计算选卡轮数，并触发被动道具选卡界面
         if (UpgradeManager.Instance != null)
         {
-            UpgradeManager.Instance.TriggerPassiveOnlyUpgrade();
+            int picks = CalculatePickCount();
+            UpgradeManager.Instance.TriggerPassiveOnlyUpgrade(picks);
         }
         else
         {

@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion, MeleeAttacking } // <-- [新增] MeleeAttacking
+    public enum AIState { Chasing, Paused, JumpingAttack, PreparingExplosion, MeleeAttacking, RangedAttacking }
     private AIState _currentState = AIState.Chasing;
     public AIState CurrentState => _currentState;
 
@@ -51,7 +51,8 @@ public class EnemyAI : MonoBehaviour
     private float offsetRecalculateTimer;
 
     private EnemyExplosionAttack explosionAttackScript;
-    private EnemyMeleeAttack meleeAttackScript; // 【新增】用于在眩晕/击退时中断近战攻击
+    private EnemyMeleeAttack meleeAttackScript; // 用于在眩晕/击退时中断近战攻击
+    private BossUnit bossUnit; // 缓存 Boss 组件引用（用于击退免疫等检查）
 
     // ... Start(), InitializeEnemy(), FixedUpdate() 方法保持不变 ...
     void Awake()
@@ -62,6 +63,7 @@ public class EnemyAI : MonoBehaviour
         explosionAttackScript = GetComponent<EnemyExplosionAttack>();
         meleeAttackScript = GetComponent<EnemyMeleeAttack>(); // 【新增】获取爆炸攻击脚本
         statusReceiver = GetComponent<StatusEffectReceiver>();
+        bossUnit = GetComponent<BossUnit>();
     }
     void Start()
     {
@@ -83,6 +85,24 @@ public class EnemyAI : MonoBehaviour
             {
                 _currentState = AIState.Chasing;
                 // MeleeAttack 脚本会恢复 agent.isStopped
+            }
+        }
+    }
+
+    /// <summary>
+    /// 远程攻击脚本在进入/离开攻击范围时调用，防止 EnemyAI 干扰导航控制
+    /// </summary>
+    public void SetRangedAttackingState(bool isAttacking)
+    {
+        if (isAttacking)
+        {
+            _currentState = AIState.RangedAttacking;
+        }
+        else
+        {
+            if (_currentState == AIState.RangedAttacking)
+            {
+                EnterChaseState(); // 恢复追逐
             }
         }
     }
@@ -112,10 +132,20 @@ public class EnemyAI : MonoBehaviour
     {
         isStunned = stunned;
 
-        // 【修复】被眩晕时，立即中断正在进行的近战攻击并清理预警特效
-        if (stunned && meleeAttackScript != null)
+        // 被眩晕时，立即中断正在进行的攻击
+        if (stunned)
         {
-            meleeAttackScript.InterruptAttack();
+            // 中断近战攻击
+            if (meleeAttackScript != null)
+            {
+                meleeAttackScript.InterruptAttack();
+            }
+            // 中断远程攻击
+            EnemyProjectileAttack rangedAttack = GetComponent<EnemyProjectileAttack>();
+            if (rangedAttack != null)
+            {
+                rangedAttack.InterruptAttack();
+            }
         }
 
         if (agent != null && agent.isOnNavMesh)
@@ -139,6 +169,9 @@ public class EnemyAI : MonoBehaviour
 
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
+        // Boss 免疫击退检查
+        if (bossUnit != null && bossUnit.immuneToKnockback) return;
+
         // 眩晕时 或已经在被击退时，不触发
         if (isStunned || knockbackCoroutine != null) return;
 
@@ -153,10 +186,6 @@ public class EnemyAI : MonoBehaviour
 
     private IEnumerator KnockbackRoutine(Vector3 force, float duration)
     {
-        // --- vvv 新增 Debug 1 vvv ---
-        //Debug.Log($"<color=orange>KnockbackRoutine: 启动！施加的力: {force.magnitude}</color>");
-        // --- ^^^ 新增结束 ^^^ ---
-
         // 1. 禁用 NavMeshAgent 对位置的控制
         if (agent.isOnNavMesh)
         {
@@ -176,11 +205,28 @@ public class EnemyAI : MonoBehaviour
         rb.isKinematic = true;
         agent.enabled = true;
 
-        // 5. 将 Agent“传送”到物理模拟结束的新位置
+        // 5. 将 Agent 传送到物理模拟结束的新位置
         if (agent.isOnNavMesh)
         {
             agent.Warp(transform.position);
             agent.isStopped = false;
+        }
+        else
+        {
+            // 被弹出 NavMesh！尝试找到最近的有效位置并恢复
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(transform.position, out hit, 10f, NavMesh.AllAreas))
+            {
+                agent.enabled = false;
+                transform.position = hit.position;
+                agent.enabled = true;
+
+                if (agent.isOnNavMesh)
+                {
+                    agent.Warp(hit.position);
+                    agent.isStopped = false;
+                }
+            }
         }
 
         knockbackCoroutine = null;
@@ -211,7 +257,7 @@ public class EnemyAI : MonoBehaviour
         }
 
         // 【修改】当处于特殊攻击状态时，暂停常规的追逐/停顿逻辑
-        if (_currentState == AIState.MeleeAttacking)
+        if (_currentState == AIState.MeleeAttacking || _currentState == AIState.RangedAttacking)
         {
             return; // 暂停所有移动和动画逻辑
         }

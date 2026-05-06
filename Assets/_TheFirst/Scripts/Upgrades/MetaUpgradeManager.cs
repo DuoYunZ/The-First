@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class MetaUpgradeManager : MonoBehaviour
@@ -56,16 +56,19 @@ public class MetaUpgradeManager : MonoBehaviour
                 stats.bonusMaxHealth += (int)value;
                 break;
             case UpgradeType.WeaponDamage:
-                // 假设 value 是 0.1 (10%)
+                // 修改基础值，防止RecalculateStats丢失
+                stats._baseDamageMultiplier += value;
                 stats.damageMultiplier += value;
                 break;
             case UpgradeType.CritRate:
+                stats._baseCritRate += value;
                 stats.critRate += value;
                 break;
             case UpgradeType.Armor:
                 stats.armor += (int)value;
                 break;
             case UpgradeType.MoveSpeed:
+                stats._baseMoveSpeedMultiplier += value;
                 stats.moveSpeedMultiplier += value;
                 break;
                 // 如果你有其他属性（比如复活次数），在这里加 case

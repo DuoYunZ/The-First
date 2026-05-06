@@ -32,8 +32,13 @@ public class Projectile : MonoBehaviour
 
     [HideInInspector] public bool isUltimate = false; // 标记是否为大招发出的子弹
     [HideInInspector] public bool isSubHurricane = false; // 标记是否为子飓风，防止无限递归生成
+    [HideInInspector] public bool isBarrageProjectile = false; // 冰锥连射弹标记（不计入穿透计数）
     [HideInInspector] public int remainingBounces = 0; // 榴弹弹跳剩余次数
     [HideInInspector] public float knockbackForce = 0f; // 击退力度（0=不击退）
+
+    // 法师·烈焰轨迹/风助火势计时器
+    private float fireTrailTimer = 0f;
+    private float fireWindTimer = 0f;
 
     private float spawnProtectionTimer = 0.5f; // 【新增】生成保护时间（秒）：在这个时间内不进行撞墙/撞地检测，防止出生距地太近直接销毁。
 
@@ -189,7 +194,9 @@ public class Projectile : MonoBehaviour
             rb.isKinematic = false; // 确保非运动学
             rb.useGravity = false;  // 强制关闭重力
                                     // 可以选择性地设置 Constraints，如果直线弹不需要旋转的话
-            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+            rb.constraints = isEnemyBullet
+                ? (RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ)
+                : (RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ);
         }
         Destroy(gameObject, life);
     }
@@ -234,7 +241,10 @@ public class Projectile : MonoBehaviour
         {
             rb.isKinematic = false;
             rb.useGravity = false; // 强制关闭重力，防止因预制体勾选了重力导致直射变斜下射
-            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+            // 敌人子弹不锁Y轴，否则无法命中不同高度的玩家
+            rb.constraints = isEnemyBullet
+                ? (RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ)
+                : (RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ);
         }
 
         this.mode = ProjectileMode.Straight;
@@ -262,46 +272,48 @@ public class Projectile : MonoBehaviour
         this.explosionEffectPrefab = explodeVfx;
         this.freezeChance = freezeChance;
         // ==========================================
-        // 【新增逻辑】计算暴击（全局 + 局部）
+        // 【暴击逻辑】仅玩家子弹才判定暴击
         // ==========================================
-        float totalCritRate = 0f;
-        float totalCritDmgMult = 1.5f; // 默认1.5倍
-
-        // 1. 获取全局玩家属性
-        if (PlayerStats.Instance != null)
+        if (!isEnemyBullet)
         {
-            totalCritRate += PlayerStats.Instance.critRate;
-            totalCritDmgMult = PlayerStats.Instance.critDamage;
-        }
+            float totalCritRate = 0f;
+            float totalCritDmgMult = 1.5f; // 默认1.5倍
 
-        // 2. 获取武器局部属性 (localCritRateBonus)
-        if (this.sourceWeapon != null) // 替换 launcher
-        {
-            totalCritRate += this.sourceWeapon.localCritRateBonus;
-            totalCritDmgMult += this.sourceWeapon.localCritDamageBonus;
-        }
+            // 1. 获取全局玩家属性
+            if (PlayerStats.Instance != null)
+            {
+                totalCritRate += PlayerStats.Instance.critRate;
+                totalCritDmgMult = PlayerStats.Instance.critDamage;
+            }
 
-        // 3. 判定暴击
-        // 如果随机数小于总暴击率，则判定为暴击
-        if (Random.value <= totalCritRate)
-        {
-            this.isCritical = true;
-            // 直接在这里把伤害乘上去
-            this.damage = Mathf.RoundToInt(this.damage * totalCritDmgMult);
+            // 2. 获取武器局部属性 (localCritRateBonus)
+            if (this.sourceWeapon != null)
+            {
+                totalCritRate += this.sourceWeapon.localCritRateBonus;
+                totalCritDmgMult += this.sourceWeapon.localCritDamageBonus;
+            }
 
-            // 可以把子弹变大一点表示暴击
-            transform.localScale *= 1.2f;
-        }
-        else
-        {
-            this.isCritical = false;
+            // 3. 判定暴击
+            if (Random.value <= totalCritRate)
+            {
+                this.isCritical = true;
+                this.damage = Mathf.RoundToInt(this.damage * totalCritDmgMult);
+                transform.localScale *= 1.2f; // 暴击子弹变大一点
+            }
+            else
+            {
+                this.isCritical = false;
+            }
         }
         // ==========================================
 
         if (rb != null)
         {
             rb.isKinematic = false;
-            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+            // 保持与上面一致的约束设置
+            rb.constraints = isEnemyBullet
+                ? (RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ)
+                : (RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ);
         }
         Destroy(gameObject, this.lifetime);
     }
@@ -589,6 +601,40 @@ public class Projectile : MonoBehaviour
                         newTrailScript.Initialize(finalTrailDamage, 3f, weaponName, ownerObj);
                     }
                 }
+            }
+        }
+
+        // =========================================================
+        // 【法师·烈焰轨迹】大招火球飞行时自动留下火海
+        // =========================================================
+        if (isUltimate && sourceWeapon != null && sourceWeapon.StatBlock != null
+            && (sourceWeapon.StatBlock.weaponID == "Fireball" || sourceWeapon.StatBlock.weaponID == "ExtremeFireball")
+            && PlayerMagicSystem.Instance != null
+            && PlayerMagicSystem.Instance.HasMageSkill("Mage_Fire_Trail"))
+        {
+            fireTrailTimer += Time.deltaTime;
+            if (fireTrailTimer >= 0.3f) // 每0.3秒留一个火海
+            {
+                fireTrailTimer = 0f;
+                Vector3 trailPos = transform.position;
+                trailPos.y = 0.05f; // 落到地面
+                PlayerMagicSystem.Instance.SpawnFireTrailPool(trailPos);
+            }
+        }
+
+        // =========================================================
+        // 【法师·风助火势】飓风弹经过火海时扩散火海
+        // =========================================================
+        if (sourceWeapon != null && sourceWeapon.StatBlock != null
+            && sourceWeapon.StatBlock.weaponID == "Hurricane"
+            && PlayerMagicSystem.Instance != null
+            && PlayerMagicSystem.Instance.HasMageSkill("Mage_Fire_Wind"))
+        {
+            fireWindTimer += Time.deltaTime;
+            if (fireWindTimer >= 0.5f) // 每0.5秒检测一次
+            {
+                fireWindTimer = 0f;
+                PlayerMagicSystem.Instance.TryWindSpreadFire(transform.position);
             }
         }
     }
@@ -976,6 +1022,14 @@ public class Projectile : MonoBehaviour
                     if (directReceiver != null) directReceiver.ApplyStun(stunDuration);
                 }
             }
+
+            // 法师·燃烧大地：爆炸型火球命中也触发火海
+            if (sourceWeapon != null && sourceWeapon.StatBlock != null
+                && (sourceWeapon.StatBlock.weaponID == "Fireball" || sourceWeapon.StatBlock.weaponID == "ExtremeFireball")
+                && PlayerMagicSystem.Instance != null)
+            {
+                PlayerMagicSystem.Instance.OnFireballDamage(explosionPoint, damage);
+            }
         }
         if (!hasCreatedHazard)
         {
@@ -1326,6 +1380,20 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         }
 
         string weaponName = (sourceWeapon != null && sourceWeapon.StatBlock != null) ? sourceWeapon.StatBlock.weaponName : "";
+
+        // 法师·毁灭雷击：对冰冻目标100%暴击
+        if (!isCritical && PlayerMagicSystem.Instance != null && PlayerMagicSystem.Instance.ShouldCritFrozenTarget())
+        {
+            StatusEffectReceiver ser = targetHealth.GetComponent<StatusEffectReceiver>();
+            if (ser != null && ser.IsFrozen)
+            {
+                isCritical = true;
+                float critMult = (PlayerStats.Instance != null) ? PlayerStats.Instance.critDamage : 1.5f;
+                damage = Mathf.RoundToInt(damage * critMult);
+                transform.localScale *= 1.2f;
+            }
+        }
+
         bool wasReflected = targetHealth.TakeDamage(
             damage,
             SafeClosestPoint(hitCollider, transform.position),
@@ -1346,6 +1414,15 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
                 ApplyElementalEffects(targetHealth, weaponName);
             }
 
+            // 法师·燃烧大地：火球命中时概率生成火海
+            if (sourceWeapon != null && sourceWeapon.StatBlock != null
+                && (sourceWeapon.StatBlock.weaponID == "Fireball" || sourceWeapon.StatBlock.weaponID == "ExtremeFireball")
+                && PlayerMagicSystem.Instance != null)
+            {
+                PlayerMagicSystem.Instance.OnFireballDamage(
+                    SafeClosestPoint(hitCollider, transform.position), damage);
+            }
+
             StatusEffectReceiver receiver = targetHealth.GetComponent<StatusEffectReceiver>();
             if (receiver != null)
             {
@@ -1364,9 +1441,27 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             }
 
             hitEnemies.Add(targetHealth);
-            piercedEnemies++;
 
-            // 【飓风-乱流】命中时尝试生成小飓风
+            // 永冻领域激活时，冰锥穿透不消耗
+            bool blizzardNoPierce = (sourceWeapon != null
+                && sourceWeapon.StatBlock != null
+                && sourceWeapon.StatBlock.weaponID == "IceShard"
+                && PlayerMagicSystem.Instance != null
+                && PlayerMagicSystem.Instance.isBlizzardActive);
+
+            if (!blizzardNoPierce)
+            {
+                piercedEnemies++;
+            }
+
+            // 法师冰锥连射：穿透计数通知（连射弹自身不计入）
+            if (!isBarrageProjectile && sourceWeapon != null
+                && sourceWeapon.StatBlock != null
+                && sourceWeapon.StatBlock.weaponID == "IceShard"
+                && PlayerMagicSystem.Instance != null)
+            {
+                PlayerMagicSystem.Instance.OnIcePenetrate(sourceWeapon);
+            }
             if (!isSubHurricane)
             {
                 HurricaneProjectile hc = GetComponent<HurricaneProjectile>();

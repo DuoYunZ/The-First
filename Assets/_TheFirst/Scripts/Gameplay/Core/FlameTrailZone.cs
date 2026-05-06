@@ -47,6 +47,12 @@ public class FlameTrailZone : MonoBehaviour
         gameObject.layer = LayerMask.NameToLayer("Default");
 
         isInitialized = true;
+
+        // 注册到法师系统火海列表（供炼狱之焰/风助火势联动）
+        if (PlayerMagicSystem.Instance != null)
+        {
+            PlayerMagicSystem.Instance.RegisterFirePool(gameObject);
+        }
     }
 
     void Update()
@@ -97,5 +103,11 @@ public class FlameTrailZone : MonoBehaviour
     void OnDestroy()
     {
         enemiesInZone.Clear();
+
+        // 从法师系统火海列表注销
+        if (PlayerMagicSystem.Instance != null)
+        {
+            PlayerMagicSystem.Instance.UnregisterFirePool(gameObject);
+        }
     }
 }

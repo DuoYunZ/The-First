@@ -44,6 +44,11 @@ public class MechController : MonoBehaviour
     private bool isKnockedBack = false; // 是否处于受击退状态
     private float knockbackTimer = 0f;  // 击退剩余时间
 
+    /// <summary>
+    /// 外部移动锁定标记（精准斩击停顿等场景使用）
+    /// </summary>
+    [HideInInspector] public bool isMovementLocked = false;
+
     // 冲刺充能格系统
     private int currentCharges;
     private float[] chargeTimers; // 每格独立的充能计时器
@@ -211,9 +216,14 @@ public class MechController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!isDashing && !isKnockedBack)
+        if (!isDashing && !isKnockedBack && !isMovementLocked)
         {
             Move();
+        }
+        else if (isMovementLocked)
+        {
+            // 移动锁定期间强制速度归零
+            rb.velocity = Vector3.zero;
         }
     }
     private void PerformDash(InputAction.CallbackContext context)
@@ -234,6 +244,12 @@ public class MechController : MonoBehaviour
     {
         // 1. 设置状态
         isDashing = true;
+
+        // 【图鉴成就】记录冲刺次数 (冲刺余烬解锁条件)
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.AddStat("Dash_Count", 1);
+        }
 
         // 启用无敌状态（先开始）
         if (PlayerStats.Instance != null)
@@ -307,7 +323,7 @@ public class MechController : MonoBehaviour
     {
         if (visualsTransform == null) return;
 
-        // --- 【修复】应用移速加成 ---
+        // --- 移速加成（临时Buff已在RecalculateStats中叠加到主字段） ---
         float finalSpeed = moveSpeed;
         if (PlayerStats.Instance != null)
         {

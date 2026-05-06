@@ -165,6 +165,12 @@ public class WeaponPart : MonoBehaviour
     [HideInInspector] public bool daggerLifeStealUpgrade = false;   // 灵魂收割
     [HideInInspector] public bool daggerChainExplosion = false;     // 连锁灵刃
 
+    // === 镭射核心升级字段 ===
+    [HideInInspector] public int localLaserRefractionCount = 0;      // 棱镜折射目标数量
+    [HideInInspector] public float localLaserFocusBonus = 0f;        // 聚焦每层加成提升（如0.05表示每层+5%）
+    [HideInInspector] public bool localLaserMeltdownEnabled = false;  // 核心熔毁：过热时生成灼烧区域
+    private List<GameObject> activeLaserCores = new List<GameObject>(); // 已生成的镭射核心列表
+
     // 由 WeaponController 在运行时赋值
     public WeaponStatBlock StatBlock
     {
@@ -280,6 +286,10 @@ public class WeaponPart : MonoBehaviour
         else if (StatBlock.behavior == WeaponBehaviorType.Beam)
         {
             SetupAutoBeam();
+        }
+        else if (StatBlock.behavior == WeaponBehaviorType.LaserCore)
+        {
+            SetupLaserCore();
         }
         else if (StatBlock.behavior == WeaponBehaviorType.Funnel) // 假设你加了这个枚举，或者暂时复用 Beam
         {
@@ -2141,12 +2151,12 @@ public class WeaponPart : MonoBehaviour
                 float distToCenter = Vector3.Distance(center, h.transform.position);
                 bool isInCenter = distToCenter <= baseRadius * 0.4f; // 内圈40%为中心区域
 
-                h.TakeDamage(damage, h.transform.position, this.gameObject);
+                h.TakeDamage(damage, h.transform.position, this.gameObject, sourceWeaponName: StatBlock.weaponName);
 
                 // 寒霜之心：中心区域额外伤害
                 if (localFrostNovaCenterDmg && isInCenter)
                 {
-                    h.TakeDamage(damage, h.transform.position, this.gameObject);
+                    h.TakeDamage(damage, h.transform.position, this.gameObject, sourceWeaponName: StatBlock.weaponName);
                 }
 
                 // 冻结效果
@@ -2905,6 +2915,90 @@ public class WeaponPart : MonoBehaviour
             activeLaserTanks.Add(tankGO);
         }
     }
+
+    /// <summary>
+    /// 部署镭射核心 — 浮空跟随玩家，发射聚焦光束
+    /// </summary>
+    private void SetupLaserCore()
+    {
+        if (StatBlock == null || StatBlock.projectilePrefab == null) return;
+
+        // 1. 清理旧核心
+        foreach (var core in activeLaserCores)
+        {
+            if (core != null) Destroy(core);
+        }
+        activeLaserCores.Clear();
+
+        // 2. 计算伤害
+        float stoneDmgMod = (currentStone != null) ? currentStone.damageModifier : 0f;
+        float finalDmgMult = PlayerStats.Instance.damageMultiplier + localDamageBonus + stoneDmgMod;
+
+        int damagePerTick = Mathf.CeilToInt((float)StatBlock.beamDamagePerSecond / StatBlock.beamDamageTickRate);
+        damagePerTick = Mathf.RoundToInt(damagePerTick * finalDmgMult);
+
+        // 3. 计算暴击
+        float finalCritRate = PlayerStats.Instance.critRate + StatBlock.baseCritRate + localCritRateBonus;
+        float finalCritDmg = PlayerStats.Instance.critDamage + StatBlock.baseCritDamage + localCritDamageBonus;
+
+        // 4. 计算核心数量（基础1 + 数量加成）
+        int count = GetTotalCount();
+        if (count < 1) count = 1;
+
+        // 5. 折射数量
+        int refraction = localLaserRefractionCount;
+
+        // 6. 生成镭射核心
+        for (int i = 0; i < count; i++)
+        {
+            // 生成在玩家头顶（核心脚本会自己跟随）
+            Vector3 spawnPos = transform.position + Vector3.up * 2f
+                             + Quaternion.Euler(0, i * 360f / count, 0) * Vector3.right * 0.8f;
+
+            GameObject coreGO = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.identity);
+
+            LaserCoreController coreScript = coreGO.GetComponent<LaserCoreController>();
+            if (coreScript != null)
+            {
+                coreScript.Initialize(this, damagePerTick, StatBlock.beamDamageTickRate,
+                                      transform.root, finalCritRate, finalCritDmg, refraction);
+
+                // 将技能树中的聚焦加成传入核心
+                if (localLaserFocusBonus > 0)
+                {
+                    coreScript.focusDamageBonus += localLaserFocusBonus;
+                }
+
+                // 从 StatBlock 读取光束持续时间和冷却
+                if (StatBlock.beamDuration > 0) coreScript.overheatDelay = StatBlock.beamDuration;
+                if (StatBlock.beamCooldown > 0) coreScript.cooldownTime = StatBlock.beamCooldown;
+
+                // 过热AOE范围：基础 × (1 + 局部范围加成)
+                if (localAreaBonus > 0)
+                {
+                    coreScript.overheatAoeRadius *= (1f + localAreaBonus);
+                }
+
+                // 冷却缩减：冷却时间 × (1 - 局部冷却缩减)
+                if (localFireRateBonus != 0)
+                {
+                    coreScript.cooldownTime = Mathf.Max(0.5f, coreScript.cooldownTime * (1f - localFireRateBonus));
+                }
+
+                // 核心熔毁：开启灼烧区域
+                coreScript.meltdownEnabled = localLaserMeltdownEnabled;
+
+                // 命中特效
+                if (StatBlock.beamImpactVfxPrefab != null)
+                {
+                    coreScript.impactVfxPrefab = StatBlock.beamImpactVfxPrefab;
+                }
+            }
+
+            activeLaserCores.Add(coreGO);
+        }
+    }
+
     private void SetupFunnelSystem()
     {
         if (StatBlock == null || StatBlock.projectilePrefab == null) return;
@@ -3100,6 +3194,7 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock.behavior == WeaponBehaviorType.FlyingDagger) SetupFlyingDaggers(); // Refresh flying daggers
 
         if (StatBlock.behavior == WeaponBehaviorType.Beam) SetupAutoBeam();
+        if (StatBlock.behavior == WeaponBehaviorType.LaserCore) SetupLaserCore();
 
         // 进化/融合后，刷新模型
         UpdateVisualModel();

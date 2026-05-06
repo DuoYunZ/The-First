@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -250,6 +250,12 @@ public class StatusEffectReceiver : MonoBehaviour
 
         // 2. 确定特效
         GameObject vfxToUse = (vfxOverride != null) ? vfxOverride : freezeVfxPrefab;
+
+        // 【图鉴成就】记录冰冻次数 (冰霜之触解锁条件)
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.AddStat("Freeze_Count", 1);
+        }
 
         // 3. 启动新协程
         var freezeCoroutine = StartCoroutine(FreezeRoutine(duration, vfxToUse, applyFrostBite));
@@ -683,6 +689,12 @@ public class StatusEffectReceiver : MonoBehaviour
                         finalBurnDmg += maxHpDmg;
                     }
                     enemyHealth.TakeDamage(finalBurnDmg, transform.position, null, AttackType.Standard, null, null, currentBurnSource);
+
+                    // 【图鉴成就】记录点燃伤害 (燃烧轨迹解锁条件)
+                    if (PlayerProgressManager.Instance != null)
+                    {
+                        PlayerProgressManager.Instance.AddStat("Ignite_Damage", finalBurnDmg);
+                    }
                 }
                 else
                 {
@@ -888,4 +900,4 @@ public class StatusEffectReceiver : MonoBehaviour
     {
         ClearShockEffect();
     }
-}
+}

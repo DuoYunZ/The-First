@@ -102,6 +102,13 @@ public class GameManager : MonoBehaviour
         if (currentState == GameState.GameOver) return; // 防止重複執行
 
         currentState = GameState.GameOver;
+
+        // 【图鉴成就】记录死亡次数 (不死鸟的羽毛解锁条件)
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.AddStat("Death_Count", 1);
+        }
+
         Time.timeScale = 0f; // 凍結遊戲時間
         if (UIManager.Instance != null)
         {

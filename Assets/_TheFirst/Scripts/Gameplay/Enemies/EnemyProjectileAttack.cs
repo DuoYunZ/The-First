@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -77,41 +77,43 @@ public class EnemyProjectileAttack : MonoBehaviour
         attackCooldownTimer -= Time.deltaTime;
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
 
+        bool wasInRange = isInAttackRange;
         isInAttackRange = distanceToPlayer <= attackRange;
 
         if (isInAttackRange)
         {
-            // --- 【核心修改 1】玩家在攻击范围内 ---
-            // 1. 禁用基础AI，由本脚本接管
-            if (agent.isStopped == false)
+            // --- 刚进入攻击范围时，通知 EnemyAI 让出控制权 ---
+            if (!wasInRange)
             {
-                agent.isStopped = true; // 修改
-                agent.velocity = Vector3.zero; // 确保停稳
+                if (enemyAI != null) enemyAI.SetRangedAttackingState(true);
+                agent.isStopped = true;
+                agent.velocity = Vector3.zero;
                 animator.SetBool("isMoving", false);
             }
 
-            // 2. 持续、平滑地转向玩家
+            // 持续、平滑地转向玩家
             Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
 
-            // 3. 检查冷却并触发攻击协程
+            // 检查冷却并触发攻击协程
             if (attackCooldownTimer <= 0 && !isAttacking)
             {
-                // 保存协程引用，以便我们可以打断它
                 attackCoroutine = StartCoroutine(AttackSequence());
             }
-            // --- ^^^ [修改] ^^^ ---
         }
         else
         {
-            // --- vvv [修改] vvv ---
-            // (增加 isAttacking 检查，防止在攻击动画播放时恢复移动)
-            if (agent.isStopped == true && !isAttacking)
+            // --- 离开攻击范围且不在攻击中时，归还控制权给 EnemyAI ---
+            if (wasInRange && !isAttacking)
             {
-                agent.isStopped = false;
+                if (enemyAI != null) enemyAI.SetRangedAttackingState(false);
             }
-            // --- ^^^ [修改] ^^^ ---
+            // 攻击结束后也需要归还（攻击中离开范围的情况在 AttackSequence 结束时处理）
+            else if (!isAttacking && enemyAI != null && enemyAI.CurrentState == EnemyAI.AIState.RangedAttacking)
+            {
+                enemyAI.SetRangedAttackingState(false);
+            }
         }
     }
 
@@ -153,7 +155,7 @@ public class EnemyProjectileAttack : MonoBehaviour
 
         if (attackCoroutine != null)
         {
-            StopCoroutine(attackCoroutine); // [!] 停止攻击协程
+            StopCoroutine(attackCoroutine);
         }
 
         // 立即重置状态
@@ -161,14 +163,13 @@ public class EnemyProjectileAttack : MonoBehaviour
         attackCoroutine = null;
         attackCooldownTimer = 1f / fireRate; // 让它进入冷却
 
+        // 归还 EnemyAI 控制权
+        if (enemyAI != null) enemyAI.SetRangedAttackingState(false);
+
         // 重置动画器
         if (animator != null)
         {
-            animator.ResetTrigger("Attack"); //
+            animator.ResetTrigger("Attack");
         }
-
-        // (我们不需要在这里设置 agent.isStopped = false, 
-        //  因为 Stun/Knockback 会保持它停止，
-        //  或者 Update() 会在下一帧处理它)
     }
 }

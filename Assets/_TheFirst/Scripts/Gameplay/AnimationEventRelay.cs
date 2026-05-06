@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class AnimationEventRelay : MonoBehaviour
 {
@@ -8,12 +8,9 @@ public class AnimationEventRelay : MonoBehaviour
 
     void Awake()
     {
-        // 在父级物体中寻找 PlayerMovement 脚本
+        // 在父级物体中寻找 MechController 脚本
         playerMovement = GetComponentInParent<MechController>();
-        if (playerMovement == null)
-        {
-            Debug.LogError("在父级中找不到 PlayerMovement 脚本!", this);
-        }
+        // 影分身等场景下可能没有 MechController，不需要报错
     }
 
     // 这个方法将由动画事件来调用

@@ -1,45 +1,116 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine.UI;
 
+/// <summary>
+/// 图鉴系统 UI 管理器 (由原 SkillTree 改造而来)
+/// 左侧展示武器 + 被动道具图标列表
+/// 右侧根据条目类型显示不同内容：
+///   - 武器(已解锁): 图标 + 名称 + 属性面板
+///   - 被动道具(已解锁): 图标 + 名称 + 描述文本
+///   - 任意(未解锁): 解锁条件 + 进度条
+/// </summary>
 public class SkillTreeUIManager : MonoBehaviour
 {
-    [Header("全局数据")]
-    [Tooltip("把游戏里所有的武器技能树配置都拖到这里 (火球, 飞刀, 燃烧瓶...)")]
+    // =========================================================
+    //  数据引用
+    // =========================================================
+
+    [Header("武器数据")]
+    [Tooltip("把游戏里所有的武器技能树配置都拖到这里")]
     public List<WeaponSkillTree> allWeaponTrees;
+
+    [Header("被动道具数据")]
+    [Tooltip("把游戏里所有的被动道具配置都拖到这里")]
+    public List<PassiveItemData> allPassiveItems;
+
+    // =========================================================
+    //  左侧列表 (Sidebar)
+    // =========================================================
 
     [Header("左侧列表组件 (Sidebar)")]
     public Transform sidebarContent;      // 左侧 ScrollView 的 Content 父节点
     public GameObject sidebarItemPrefab;  // 需要挂载 SkillTreeSidebarItem 脚本的预制体
+
+    // =========================================================
+    //  右侧 - 锁定状态界面
+    // =========================================================
 
     [Header("右侧 - 锁定状态界面 (Locked View)")]
     public GameObject lockedViewRoot;           // 锁定界面的父物体
     public TextMeshProUGUI lockConditionText;   // 显示解锁条件描述
     public Slider lockProgressBar;              // 解锁进度条
     public TextMeshProUGUI lockProgressText;    // 进度数值 "500/1000"
-    public Image lockedWeaponIcon;              // (可选) 锁定界面显示的大图标
+    public Image lockedWeaponIcon;              // 锁定界面显示的大图标
 
-    [Header("右侧 - 已解锁界面 (Unlocked View)")]
-    public GameObject unlockedViewRoot;         // 解锁界面的父物体
-    public Transform hexNodesContainer;         // 放六边形技能节点的地方
-    public GameObject upgradeNodePrefab;        // 六边形节点预制体
+    // =========================================================
+    //  右侧 - 武器属性展示视图
+    // =========================================================
 
-    [Header("右侧 - 已获技能描述列表")]
-    public Transform skillDescriptionContainer; // 右侧放文字条目的 Content
-    public GameObject skillDescriptionPrefab;   // 文字条目预制体 (Text 或包含 Text 的 Panel)
-    public Color unlockedDescColor = Color.yellow;
-    public Color lockedDescColor = Color.gray;
+    [Header("右侧 - 武器属性展示 (Weapon Stats View)")]
+    public GameObject weaponStatsViewRoot;         // 武器属性界面的父物体
+    public Image weaponStatsIcon;                  // 大图标
+    public TextMeshProUGUI weaponStatsName;        // 武器名称
+    public Transform weaponStatsContainer;         // 放属性条目的容器
+    public GameObject weaponStatItemPrefab;        // 单个属性条目预制体 (挂 CodexStatSlot)
+
+    [Header("武器属性图标 (拖入对应 Sprite)")]
+    [Tooltip("伤害图标")]
+    public Sprite iconDamage;
+    [Tooltip("射速/冷却图标")]
+    public Sprite iconFireRate;
+    [Tooltip("范围图标")]
+    public Sprite iconRange;
+    [Tooltip("弹数图标")]
+    public Sprite iconProjectile;
+
+    // =========================================================
+    //  右侧 - 被动道具描述视图
+    // =========================================================
+
+    [Header("右侧 - 被动道具描述 (Passive Description View)")]
+    public GameObject passiveDescViewRoot;          // 被动描述界面的父物体
+    public Image passiveDescIcon;                   // 大图标
+    public TextMeshProUGUI passiveDescName;         // 道具名称
+    public TextMeshProUGUI passiveDescText;         // 详细描述文本
+
+    // =========================================================
+    //  通用 UI
+    // =========================================================
 
     [Header("通用 UI")]
     public Button closeButton;
 
-    // --- 运行时状态 ---
+    // =========================================================
+    //  【已关闭】原技能树升级相关 (保留引用以便日后恢复)
+    // =========================================================
+
+    [Header("【已关闭】原升级系统引用 (暂不使用)")]
+    public GameObject unlockedViewRoot;            // 原解锁界面的父物体 (暂时不用)
+    public Transform hexNodesContainer;
+    public GameObject upgradeNodePrefab;
+    public Transform skillDescriptionContainer;
+    public GameObject skillDescriptionPrefab;
+
+    // =========================================================
+    //  运行时状态
+    // =========================================================
+
+    /// <summary>
+    /// 当前选中的条目类型
+    /// </summary>
+    private enum SelectedEntryType { None, Weapon, Passive }
+    private SelectedEntryType currentEntryType = SelectedEntryType.None;
+
     private WeaponSkillTree currentSelectedTree;
+    private PassiveItemData currentSelectedPassive;
     private List<SkillTreeSidebarItem> sidebarItems = new List<SkillTreeSidebarItem>();
-    private List<GameObject> activeHexNodes = new List<GameObject>();
-    private List<GameObject> activeDescItems = new List<GameObject>();
-    private List<SkillDescriptionItem> activeSkillItems = new List<SkillDescriptionItem>();
+    private List<GameObject> activeStatSlots = new List<GameObject>();
+
+    // =========================================================
+    //  生命周期
+    // =========================================================
 
     void Awake()
     {
@@ -49,7 +120,10 @@ public class SkillTreeUIManager : MonoBehaviour
         }
     }
 
-    // --- 外部调用入口 ---
+    // =========================================================
+    //  外部调用入口
+    // =========================================================
+
     public bool IsPanelOpen()
     {
         return gameObject.activeSelf;
@@ -60,22 +134,33 @@ public class SkillTreeUIManager : MonoBehaviour
         gameObject.SetActive(true);
         Time.timeScale = 0f; // 暂停游戏
 
-        // 1. 生成左侧导航栏
+        // 1. 生成左侧导航栏（武器 + 被动道具）
         GenerateSidebar();
 
-        // 2. 默认逻辑：
-        // 如果之前没有选中过，或者选中的树不在列表里，默认选第一个
-        if (currentSelectedTree == null || !allWeaponTrees.Contains(currentSelectedTree))
+        // 2. 默认选中逻辑
+        if (currentEntryType == SelectedEntryType.Weapon && currentSelectedTree != null
+            && allWeaponTrees.Contains(currentSelectedTree))
         {
-            if (allWeaponTrees.Count > 0)
-            {
-                SelectWeaponTree(allWeaponTrees[0]);
-            }
+            // 恢复上次选中的武器
+            SelectWeaponEntry(currentSelectedTree);
+        }
+        else if (currentEntryType == SelectedEntryType.Passive && currentSelectedPassive != null
+            && allPassiveItems.Contains(currentSelectedPassive))
+        {
+            // 恢复上次选中的被动道具
+            SelectPassiveEntry(currentSelectedPassive);
         }
         else
         {
-            // 如果有上次选中的，重新刷新一下它的显示（防止数据变了）
-            SelectWeaponTree(currentSelectedTree);
+            // 默认选第一个武器
+            if (allWeaponTrees.Count > 0)
+            {
+                SelectWeaponEntry(allWeaponTrees[0]);
+            }
+            else if (allPassiveItems != null && allPassiveItems.Count > 0)
+            {
+                SelectPassiveEntry(allPassiveItems[0]);
+            }
         }
     }
 
@@ -86,7 +171,7 @@ public class SkillTreeUIManager : MonoBehaviour
     }
 
     // =========================================================
-    //  左侧导航栏逻辑 (Sidebar)
+    //  左侧导航栏 (Sidebar)
     // =========================================================
 
     private void GenerateSidebar()
@@ -95,131 +180,167 @@ public class SkillTreeUIManager : MonoBehaviour
         foreach (Transform child in sidebarContent) Destroy(child.gameObject);
         sidebarItems.Clear();
 
-        // 2. 遍历所有武器树生成按钮
+        // 2. 生成武器条目
         foreach (var tree in allWeaponTrees)
         {
             if (tree == null) continue;
+            CreateSidebarItem_Weapon(tree);
+        }
 
-            GameObject itemObj = Instantiate(sidebarItemPrefab, sidebarContent);
-            SkillTreeSidebarItem script = itemObj.GetComponent<SkillTreeSidebarItem>();
-
-            if (script != null)
+        // 3. 生成被动道具条目
+        if (allPassiveItems != null)
+        {
+            foreach (var passive in allPassiveItems)
             {
-                bool isUnlocked = CheckIfUnlocked(tree);
-                bool isSelected = (currentSelectedTree == tree);
-
-                script.Setup(tree, this, isUnlocked, isSelected);
-                sidebarItems.Add(script);
+                if (passive == null) continue;
+                CreateSidebarItem_Passive(passive);
             }
         }
     }
 
+    /// <summary>
+    /// 创建武器类型的侧边栏条目
+    /// </summary>
+    private void CreateSidebarItem_Weapon(WeaponSkillTree tree)
+    {
+        GameObject itemObj = Instantiate(sidebarItemPrefab, sidebarContent);
+        SkillTreeSidebarItem script = itemObj.GetComponent<SkillTreeSidebarItem>();
+
+        if (script != null)
+        {
+            bool isUnlocked = CheckWeaponUnlocked(tree);
+            bool isSelected = (currentEntryType == SelectedEntryType.Weapon && currentSelectedTree == tree);
+            script.Setup(tree, this, isUnlocked, isSelected);
+            sidebarItems.Add(script);
+        }
+    }
+
+    /// <summary>
+    /// 创建被动道具类型的侧边栏条目
+    /// </summary>
+    private void CreateSidebarItem_Passive(PassiveItemData passive)
+    {
+        GameObject itemObj = Instantiate(sidebarItemPrefab, sidebarContent);
+        SkillTreeSidebarItem script = itemObj.GetComponent<SkillTreeSidebarItem>();
+
+        if (script != null)
+        {
+            bool isUnlocked = CheckPassiveUnlocked(passive);
+            bool isSelected = (currentEntryType == SelectedEntryType.Passive && currentSelectedPassive == passive);
+            script.Setup(passive, this, isUnlocked, isSelected);
+            sidebarItems.Add(script);
+        }
+    }
+
+    /// <summary>
+    /// 刷新左侧所有条目的视觉状态（高亮、解锁）
+    /// </summary>
     private void RefreshSidebarVisuals()
     {
-        // 简单高效的做法：重新 Setup 所有 Item 的高亮状态
         foreach (var item in sidebarItems)
         {
-            bool isSelected = (item.MyTreeData == currentSelectedTree);
-            bool isUnlocked = CheckIfUnlocked(item.MyTreeData);
-            item.Setup(item.MyTreeData, this, isUnlocked, isSelected);
+            if (item == null) continue;
+
+            switch (item.EntryType)
+            {
+                case SkillTreeSidebarItem.CodexEntryType.Weapon:
+                    {
+                        bool isSelected = (currentEntryType == SelectedEntryType.Weapon
+                                           && item.MyTreeData == currentSelectedTree);
+                        bool isUnlocked = CheckWeaponUnlocked(item.MyTreeData);
+                        item.Setup(item.MyTreeData, this, isUnlocked, isSelected);
+                    }
+                    break;
+
+                case SkillTreeSidebarItem.CodexEntryType.Passive:
+                    {
+                        bool isSelected = (currentEntryType == SelectedEntryType.Passive
+                                           && item.MyPassiveData == currentSelectedPassive);
+                        bool isUnlocked = CheckPassiveUnlocked(item.MyPassiveData);
+                        item.Setup(item.MyPassiveData, this, isUnlocked, isSelected);
+                    }
+                    break;
+            }
         }
     }
 
     // =========================================================
-    //  核心切换逻辑 (Switching Views)
+    //  核心选择逻辑
     // =========================================================
 
-    public void SelectWeaponTree(WeaponSkillTree tree)
+    /// <summary>
+    /// 选中一个武器条目（由侧边栏点击调用）
+    /// </summary>
+    public void SelectWeaponEntry(WeaponSkillTree tree)
     {
+        currentEntryType = SelectedEntryType.Weapon;
         currentSelectedTree = tree;
+        currentSelectedPassive = null;
 
-        // 1. 刷新左侧按钮的高亮
+        // 刷新左侧高亮
         RefreshSidebarVisuals();
 
-        // 2. 根据解锁状态切换右侧界面
-        if (CheckIfUnlocked(tree))
+        // 根据解锁状态切换右侧视图
+        if (CheckWeaponUnlocked(tree))
         {
-            ShowUnlockedView(tree);
+            ShowWeaponStatsView(tree);
         }
         else
         {
-            ShowLockedView(tree);
+            ShowLockedView_Weapon(tree);
         }
     }
-    private void GenerateUnlockedSkillsList()
+
+    /// <summary>
+    /// 选中一个被动道具条目（由侧边栏点击调用）
+    /// </summary>
+    public void SelectPassiveEntry(PassiveItemData passive)
     {
-        // [调试] 打印日志看看有没有运行到这里
-        // 1. 检查容器
-        if (skillDescriptionContainer == null)
+        currentEntryType = SelectedEntryType.Passive;
+        currentSelectedPassive = passive;
+        currentSelectedTree = null;
+
+        // 刷新左侧高亮
+        RefreshSidebarVisuals();
+
+        // 根据解锁状态切换右侧视图
+        if (CheckPassiveUnlocked(passive))
         {
-            Debug.LogError("出错：Skill Description Container 没赋值！请在 Inspector 里拖拽 SkillDescriptionList 物体。");
-            return;
+            ShowPassiveDescView(passive);
         }
-
-        // 2. 清理旧列表
-        foreach (Transform child in skillDescriptionContainer)
+        else
         {
-            Destroy(child.gameObject);
+            ShowLockedView_Passive(passive);
         }
-
-        // 3. 检查数据
-        if (currentSelectedTree == null)
-        {
-            Debug.LogWarning("出错：currentSelectedTree 是空的！");
-            return;
-        }
-        if (currentSelectedTree.allNodesInTree == null || currentSelectedTree.allNodesInTree.Count == 0)
-        {
-            Debug.LogWarning($"注意：武器 {currentSelectedTree.name} 的 allNodesInTree 列表是空的，没东西可显示。");
-            return;
-        }
-
-        activeSkillItems.Clear();
-
-        foreach (WeaponUpgradeNode nodeData in currentSelectedTree.allNodesInTree)
-        {
-            GameObject displayGO = Instantiate(skillDescriptionPrefab, skillDescriptionContainer);
-            SkillDescriptionItem itemScript = displayGO.GetComponent<SkillDescriptionItem>();
-
-            if (itemScript != null)
-            {
-                // 【新增】加入列表
-                activeSkillItems.Add(itemScript);
-
-                itemScript.Setup(nodeData, () =>
-                {
-                    RefreshAllNodeStates();
-                });
-            }
-        }
-
-        // 【新增】生成完立马刷新一次，把该锁的锁住
-        RefreshAllNodeStates();
     }
-    private bool CheckIfUnlocked(WeaponSkillTree tree)
+
+    // =========================================================
+    //  解锁检查
+    // =========================================================
+
+    /// <summary>
+    /// 检查武器是否已解锁（复用原有逻辑）
+    /// </summary>
+    private bool CheckWeaponUnlocked(WeaponSkillTree tree)
     {
         // 1. 默认解锁
         if (tree.isDefaultUnlocked) return true;
 
         if (PlayerProgressManager.Instance == null) return false;
 
-        // 2. 检查“白名单” (unlockedItems)
-        // 优先检查 ID (兼容多语言)
+        // 2. 检查白名单 (unlockedItems)
         string id = tree.associatedWeapon.weaponID;
         if (!string.IsNullOrEmpty(id) && PlayerProgressManager.Instance.unlockedItems.Contains(id)) return true;
 
-        // 兼容检查 Name (防止旧存档是用名字存的)
+        // 兼容检查 Name
         if (PlayerProgressManager.Instance.unlockedItems.Contains(tree.associatedWeapon.weaponName)) return true;
 
-        // 3. 【核心修复】检查“成就进度”是否达标
-        // 即使没有明确 Unlock，只要进度满了 (比如 1/1)，就视为解锁！
+        // 3. 检查成就进度
         if (!string.IsNullOrEmpty(tree.unlockStatKey))
         {
             if (PlayerProgressManager.Instance.achievementStats.ContainsKey(tree.unlockStatKey))
             {
                 int currentVal = PlayerProgressManager.Instance.achievementStats[tree.unlockStatKey];
-
-                // 如果当前进度 >= 目标阈值，放行！
                 if (currentVal >= tree.unlockThreshold)
                 {
                     return true;
@@ -230,43 +351,251 @@ public class SkillTreeUIManager : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// 检查被动道具是否已解锁
+    /// </summary>
+    private bool CheckPassiveUnlocked(PassiveItemData item)
+    {
+        if (item == null) return false;
+
+        // 1. 默认解锁
+        if (item.isDefaultUnlocked) return true;
+
+        if (PlayerProgressManager.Instance == null) return false;
+
+        // 2. 检查白名单 (用 SO 的 name 作为 ID)
+        string id = item.name;
+        if (PlayerProgressManager.Instance.unlockedItems.Contains(id)) return true;
+
+        // 也检查 itemName (兼容)
+        if (!string.IsNullOrEmpty(item.itemName)
+            && PlayerProgressManager.Instance.unlockedItems.Contains(item.itemName)) return true;
+
+        // 3. 检查成就统计
+        if (!string.IsNullOrEmpty(item.unlockStatKey))
+        {
+            if (PlayerProgressManager.Instance.achievementStats.ContainsKey(item.unlockStatKey))
+            {
+                int currentVal = PlayerProgressManager.Instance.achievementStats[item.unlockStatKey];
+                if (currentVal >= item.unlockThreshold)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     // =========================================================
-    //  视图 A: 锁定状态 (Locked View)
+    //  右侧视图切换辅助
     // =========================================================
 
-    private void ShowLockedView(WeaponSkillTree tree)
+    /// <summary>
+    /// 隐藏所有右侧视图
+    /// </summary>
+    private void HideAllViews()
     {
-        if (lockedViewRoot) lockedViewRoot.SetActive(true);
+        if (lockedViewRoot) lockedViewRoot.SetActive(false);
+        if (weaponStatsViewRoot) weaponStatsViewRoot.SetActive(false);
+        if (passiveDescViewRoot) passiveDescViewRoot.SetActive(false);
+
+        // 同时隐藏旧的升级视图 (已关闭的功能)
         if (unlockedViewRoot) unlockedViewRoot.SetActive(false);
 
-        // 1. 设置描述文本 (需要在 WeaponSkillTree 中加 lockedDescription 字段)
+        // 【修复】切换视图时彻底清除武器属性条目，防止残留重叠
+        ClearStatSlots();
+
+        // 【修复】主动隐藏武器大图标和名称，防止非武器视图切换时残留
+        if (weaponStatsIcon) weaponStatsIcon.gameObject.SetActive(false);
+        if (weaponStatsName) weaponStatsName.gameObject.SetActive(false);
+    }
+
+    // =========================================================
+    //  视图 A: 武器属性展示 (已解锁的武器)
+    // =========================================================
+
+    private void ShowWeaponStatsView(WeaponSkillTree tree)
+    {
+        HideAllViews();
+        if (weaponStatsViewRoot) weaponStatsViewRoot.SetActive(true);
+
+        var weapon = tree.associatedWeapon;
+        if (weapon == null) return;
+
+        // 设置大图标和名称（先激活再赋值）
+        if (weaponStatsIcon != null)
+        {
+            weaponStatsIcon.gameObject.SetActive(true);
+            weaponStatsIcon.sprite = weapon.weaponIcon;
+        }
+        if (weaponStatsName != null)
+        {
+            weaponStatsName.gameObject.SetActive(true);
+            // 使用本地化名称
+            string localizedName = LanguageTable.LocalizeWeaponName(weapon.weaponName, LocalizationManager.CurrentLanguage);
+            weaponStatsName.text = localizedName;
+        }
+
+        // 清除旧属性条目
+        ClearStatSlots();
+
+        // 生成4个核心属性条目
+        if (weaponStatsContainer != null && weaponStatItemPrefab != null)
+        {
+            // 1. 伤害 — 取直击伤害和范围伤害中较大的那个
+            int damage = Mathf.Max(weapon.baseDirectDamage, weapon.baseAoeDamage);
+            CreateStatSlot(iconDamage, damage.ToString());
+
+            // 2. 射速 — 转换为冷却时间显示
+            float cooldown = weapon.baseFireRate > 0 ? (1f / weapon.baseFireRate) : 0f;
+            CreateStatSlot(iconFireRate, cooldown.ToString("F1") + "S");
+
+            // 3. 范围
+            float range = weapon.baseAoeRadius;
+            CreateStatSlot(iconRange, range.ToString("F0") + "M");
+
+            // 4. 穿透 — 基础穿透次数
+            int pierce = weapon.basePierceCount;
+            CreateStatSlot(iconProjectile, pierce.ToString());
+        }
+    }
+
+    /// <summary>
+    /// 创建单个属性条目
+    /// </summary>
+    private void CreateStatSlot(Sprite icon, string value)
+    {
+        GameObject slotObj = Instantiate(weaponStatItemPrefab, weaponStatsContainer);
+        CodexStatSlot slot = slotObj.GetComponent<CodexStatSlot>();
+        if (slot != null)
+        {
+            slot.Setup(icon, value);
+        }
+        activeStatSlots.Add(slotObj);
+    }
+
+    /// <summary>
+    /// 清除所有属性条目
+    /// </summary>
+    private void ClearStatSlots()
+    {
+        foreach (var slot in activeStatSlots)
+        {
+            if (slot != null) Destroy(slot);
+        }
+        activeStatSlots.Clear();
+
+        // 同时清除容器中的残留子物体
+        if (weaponStatsContainer != null)
+        {
+            foreach (Transform child in weaponStatsContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+    }
+
+    // =========================================================
+    //  视图 B: 被动道具描述 (已解锁的被动道具)
+    // =========================================================
+
+    private void ShowPassiveDescView(PassiveItemData passive)
+    {
+        HideAllViews();
+        if (passiveDescViewRoot) passiveDescViewRoot.SetActive(true);
+
+        if (passive == null) return;
+
+        // 设置大图标
+        if (passiveDescIcon != null)
+        {
+            passiveDescIcon.sprite = passive.icon;
+            passiveDescIcon.enabled = (passive.icon != null);
+        }
+
+        // 设置名称
+        if (passiveDescName != null)
+        {
+            passiveDescName.text = passive.itemName;
+        }
+
+        // 设置描述文本
+        if (passiveDescText != null)
+        {
+            passiveDescText.text = passive.description;
+        }
+    }
+
+    // =========================================================
+    //  视图 C: 锁定状态 (武器)
+    // =========================================================
+
+    private void ShowLockedView_Weapon(WeaponSkillTree tree)
+    {
+        HideAllViews();
+        if (lockedViewRoot) lockedViewRoot.SetActive(true);
+
+        // 解锁条件描述
         if (lockConditionText != null)
         {
-            // 确保你已经在 SO 里填了字，不然这里会显示空
             lockConditionText.text = tree.lockedDescription;
         }
 
-        // 2. 设置图标
+        // 图标 (显示为锁定状态的武器图标)
         if (lockedWeaponIcon && tree.associatedWeapon != null)
         {
             lockedWeaponIcon.sprite = tree.associatedWeapon.weaponIcon;
         }
 
-        // 3. 设置进度条
-        int currentVal = 0;
-        int targetVal = tree.unlockThreshold;
+        // 进度条
+        UpdateProgressBar(tree.unlockStatKey, tree.unlockThreshold);
+    }
 
-        if (PlayerProgressManager.Instance != null && !string.IsNullOrEmpty(tree.unlockStatKey))
+    // =========================================================
+    //  视图 D: 锁定状态 (被动道具)
+    // =========================================================
+
+    private void ShowLockedView_Passive(PassiveItemData passive)
+    {
+        HideAllViews();
+        if (lockedViewRoot) lockedViewRoot.SetActive(true);
+
+        // 解锁条件描述
+        if (lockConditionText != null)
         {
-            if (PlayerProgressManager.Instance.achievementStats.ContainsKey(tree.unlockStatKey))
+            lockConditionText.text = passive.lockedDescription;
+        }
+
+        // 图标
+        if (lockedWeaponIcon && passive.icon != null)
+        {
+            lockedWeaponIcon.sprite = passive.icon;
+        }
+
+        // 进度条
+        UpdateProgressBar(passive.unlockStatKey, passive.unlockThreshold);
+    }
+
+    /// <summary>
+    /// 更新进度条显示（武器和被动道具通用）
+    /// </summary>
+    private void UpdateProgressBar(string statKey, int threshold)
+    {
+        int currentVal = 0;
+        int targetVal = threshold;
+
+        if (PlayerProgressManager.Instance != null && !string.IsNullOrEmpty(statKey))
+        {
+            if (PlayerProgressManager.Instance.achievementStats.ContainsKey(statKey))
             {
-                currentVal = PlayerProgressManager.Instance.achievementStats[tree.unlockStatKey];
+                currentVal = PlayerProgressManager.Instance.achievementStats[statKey];
             }
         }
 
         if (lockProgressBar != null)
         {
-            lockProgressBar.maxValue = targetVal > 0 ? targetVal : 1; // 防止除以0
+            lockProgressBar.maxValue = targetVal > 0 ? targetVal : 1; // 防除以0
             lockProgressBar.value = currentVal;
         }
         if (lockProgressText != null)
@@ -276,192 +605,37 @@ public class SkillTreeUIManager : MonoBehaviour
     }
 
     // =========================================================
-    //  视图 B: 已解锁状态 (Unlocked View - Hex Nodes)
+    //  【兼容保留】旧方法签名 (防止外部引用报错)
     // =========================================================
 
-    private void ShowUnlockedView(WeaponSkillTree tree)
+    /// <summary>
+    /// 【已关闭】原技能树选择方法，现重定向到武器图鉴
+    /// </summary>
+    public void SelectWeaponTree(WeaponSkillTree tree)
     {
-        // 1. 切换界面显示
-        if (lockedViewRoot) lockedViewRoot.SetActive(false);
-        if (unlockedViewRoot) unlockedViewRoot.SetActive(true);
-
-        // 2. 生成六边形 (如果你保留了的话)
-        //GenerateNodes(tree);
-
-        // 3. 【核心检查】这一行必须有！！而且名字要和你写的生成方法一致！
-        // 建议统一改名为 GenerateUnlockedSkillsList
-        GenerateUnlockedSkillsList();
-    }
-
-    private void GenerateNodes(WeaponSkillTree tree)
-    {
-        // 1. 清理旧节点
-        foreach (var node in activeHexNodes) Destroy(node);
-        activeHexNodes.Clear();
-
-        if (tree == null || tree.allNodesInTree == null) return;
-
-        // 【核心逻辑】追踪“上一个节点”是否已解锁
-        // 第一个节点的前置默认视为已解锁，否则没人能买第一个
-        bool isPreviousUnlocked = true;
-
-        // 2. 遍历生成
-        foreach (WeaponUpgradeNode nodeData in tree.allNodesInTree)
-        {
-            GameObject nodeGO = Instantiate(upgradeNodePrefab, hexNodesContainer);
-            UpgradeNodeUI nodeUI = nodeGO.GetComponent<UpgradeNodeUI>();
-
-            // 先初始化基础显示
-            nodeUI.Initialize(nodeData, this);
-
-            // 检查当前这个节点是否已购买
-            bool isCurrentNodeUnlocked = PlayerProgressManager.Instance.IsNodeUnlocked(nodeData);
-
-            if (isCurrentNodeUnlocked)
-            {
-                // 情况 A: 已经买过了
-                // 保持原样 (Initialize里通常会处理已购买的绿色状态)
-                // 它的下一个节点有资格被购买
-                isPreviousUnlocked = true;
-            }
-            else
-            {
-                // 情况 B: 还没买
-                if (isPreviousUnlocked)
-                {
-                    // 前一个买过了 -> 我是下一个待买的
-                    // 允许点击，显示正常
-                    if (nodeUI.purchaseButton) nodeUI.purchaseButton.interactable = true;
-
-                    // 【关键】因为我还没买，所以我的下一个节点绝对不能买
-                    isPreviousUnlocked = false;
-                }
-                else
-                {
-                    // 前一个都没买 -> 我处于“被锁住”状态
-                    // 禁用按钮
-                    if (nodeUI.purchaseButton) nodeUI.purchaseButton.interactable = false;
-
-                    // 可选：在这里给图标加个灰色遮罩，或者把透明度调低，让它看起来像“不可用”
-                    // var canvasGroup = nodeGO.GetComponent<CanvasGroup>();
-                    // if(canvasGroup) canvasGroup.alpha = 0.5f;
-
-                    // 传递锁定状态给下一个
-                    isPreviousUnlocked = false;
-                }
-            }
-
-            activeHexNodes.Add(nodeGO);
-        }
-    }
-
-    private void GenerateSkillDescriptionList(WeaponSkillTree tree)
-    {
-        // 1. 清理旧描述
-        foreach (var item in activeDescItems) Destroy(item);
-        activeDescItems.Clear();
-
-        if (skillDescriptionContainer == null || skillDescriptionPrefab == null) return;
-
-        // 2. 生成描述条目
-        foreach (WeaponUpgradeNode nodeData in tree.allNodesInTree)
-        {
-            GameObject itemGO = Instantiate(skillDescriptionPrefab, skillDescriptionContainer);
-            TextMeshProUGUI textComp = itemGO.GetComponentInChildren<TextMeshProUGUI>();
-            Image bg = itemGO.GetComponent<Image>();
-
-            if (textComp != null)
-            {
-                textComp.text = nodeData.description;
-            }
-
-            // 根据该节点是否已购买，设置颜色
-            bool isPurchased = PlayerProgressManager.Instance.IsNodeUnlocked(nodeData);
-
-            if (textComp != null) textComp.color = isPurchased ? unlockedDescColor : lockedDescColor;
-            if (bg != null) bg.color = isPurchased ? Color.white : new Color(1, 1, 1, 0.2f); // 简单的透明度变化
-
-            activeDescItems.Add(itemGO);
-        }
+        SelectWeaponEntry(tree);
     }
 
     // =========================================================
-    //  节点交互逻辑 (购买)
+    //  【已关闭】以下为原升级购买逻辑的空壳方法
+    //  保留方法签名以防止 UpgradeNodeUI 等外部脚本编译报错
+    //  恢复金币升级功能时，在此处补回具体逻辑
     // =========================================================
 
+    /// <summary>
+    /// 【已关闭】节点被点击时的购买回调（当前不执行任何操作）
+    /// </summary>
     public void OnNodeSelected(UpgradeNodeUI selectedNodeUI, WeaponUpgradeNode selectedNodeData)
     {
-        // 这里的逻辑和你之前的一样，只要按钮可点击就代表钱够且前置已满足
-        if (selectedNodeUI.purchaseButton.interactable)
-        {
-            // 1. 扣钱
-            PlayerProgressManager.Instance.SpendGold(selectedNodeData.cost);
-
-            // 2. 解锁
-            PlayerProgressManager.Instance.UnlockNode(selectedNodeData);
-
-            // 3. 刷新界面 (刷新所有节点的状态)
-            RefreshAllNodeStates();
-
-            // 4. 刷新右侧的描述列表颜色
-            GenerateSkillDescriptionList(currentSelectedTree);
-        }
+        // 图鉴模式下不执行购买逻辑
+        Debug.Log("[图鉴模式] 升级购买功能已暂时关闭。");
     }
 
+    /// <summary>
+    /// 【已关闭】刷新所有节点状态（当前不执行任何操作）
+    /// </summary>
     public void RefreshAllNodeStates()
     {
-        // 1. 链式顺序锁定逻辑
-        bool isPreviousUnlocked = true; // 列表第一个默认允许
-
-        // 【核心修改】遍历长条列表，而不是六边形
-        foreach (SkillDescriptionItem item in activeSkillItems)
-        {
-            if (item == null || item.NodeData == null) continue;
-
-            // 获取按钮和画布组 (假设你在 SkillDescriptionItem 里公开了它们)
-            // 如果没公开，请去 SkillDescriptionItem 把 myButton 和 canvasGroup 改成 public
-            Button btn = item.myButton;
-            // 建议给预制体根物体加个 CanvasGroup 组件来控制半透明
-            CanvasGroup cg = item.GetComponent<CanvasGroup>();
-
-            // 检查当前节点是否已购买
-            bool isCurrentUnlocked = PlayerProgressManager.Instance.IsNodeUnlocked(item.NodeData);
-
-            if (isCurrentUnlocked)
-            {
-                // 自己解锁了 -> 下一个可以买
-                isPreviousUnlocked = true;
-
-                // 既然买了，按钮通常就禁用了 (或者显示已购买状态，这在 item.Setup 里应该处理过)
-                if (cg) cg.alpha = 1f;
-            }
-            else
-            {
-                // 自己没解锁
-                if (isPreviousUnlocked)
-                {
-                    // 前一个是通的 -> 我是“待买节点”
-                    // 允许交互 (具体钱够不够，由 Item 自己的逻辑决定，这里只管顺序)
-                    if (btn) btn.interactable = true; // 这里只是解开“顺序锁”，钱够不够的锁由 Item 自己管
-                    if (cg) cg.alpha = 1f;
-
-                    // 重新触发一次 Item 自身的状态刷新，确保金币判断正确
-                    // (这需要你在 SkillDescriptionItem 里有个 public void RefreshState() 方法)
-                    // item.RefreshState(); 
-
-                    isPreviousUnlocked = false; // 链条中断
-                }
-                else
-                {
-                    // 前一个没通 -> 强制锁死
-                    if (btn) btn.interactable = false;
-
-                    // 【视觉反馈】变半透明，一眼看出被锁了
-                    if (cg) cg.alpha = 0.4f;
-
-                    isPreviousUnlocked = false;
-                }
-            }
-        }
+        // 图鉴模式下不执行节点状态刷新
     }
 }

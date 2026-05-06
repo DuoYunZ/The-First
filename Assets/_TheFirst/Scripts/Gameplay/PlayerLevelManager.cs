@@ -83,7 +83,18 @@ public class PlayerLevelManager : MonoBehaviour
     /// <param name="amount">增加的经验数量</param>
     public void AddExperience(int amount)
     {
-        currentExperience += amount;
+        // 【修复】应用经验获取倍率（经验磁铁等被动道具）
+        float multiplier = 1f;
+        if (PlayerStats.Instance != null && PlayerStats.Instance.experienceGainMultiplier > 0)
+        {
+            multiplier = PlayerStats.Instance.experienceGainMultiplier;
+        }
+        int finalAmount = Mathf.RoundToInt(amount * multiplier);
+        if (Mathf.Abs(multiplier - 1f) > 0.01f)
+        {
+            Debug.Log($"<color=yellow>[XP] 经验加成生效! 原始={amount} × 倍率={multiplier:F2} = 最终={finalAmount}</color>");
+        }
+        currentExperience += finalAmount;
         // 检查是否升级
         while (currentExperience >= experienceToNextLevel) // 使用 while 以处理一次获得很多经验连升多级的情况
         {
@@ -110,6 +121,22 @@ public class PlayerLevelManager : MonoBehaviour
 
         // 触发升级事件，通知 UpgradeManager
         OnLevelUp?.Invoke(currentLevel);
+
+        // 【图鉴成就】记录最高等级 (经验磁铁解锁条件)
+        if (PlayerProgressManager.Instance != null)
+        {
+            // 只在当前等级高于已记录的最高等级时才更新
+            int recorded = 0;
+            if (PlayerProgressManager.Instance.achievementStats.ContainsKey("Max_Level_Reached"))
+            {
+                recorded = PlayerProgressManager.Instance.achievementStats["Max_Level_Reached"];
+            }
+            if (currentLevel > recorded)
+            {
+                // 设置为当前等级(差值补齐)
+                PlayerProgressManager.Instance.AddStat("Max_Level_Reached", currentLevel - recorded);
+            }
+        }
     }
 
     /// <summary>

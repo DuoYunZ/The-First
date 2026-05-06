@@ -27,7 +27,7 @@ public class CharacterSkillNode : ScriptableObject
     public Sprite icon;
 
     [Header("层级与费用")]
-    [Tooltip("所在层级（1=基础层, 2=进阶层, 3=精通层, 4=天赋层）")]
+    [Tooltip("所在层级（1=共通基础, 2=命运抉择/分支, 3=路线强化, 4=路线天赋）")]
     [Range(1, 4)]
     public int layer = 1;
 
@@ -38,9 +38,23 @@ public class CharacterSkillNode : ScriptableObject
     [Tooltip("必须先解锁这些节点才能解锁当前节点（留空 = 无前置，可直接解锁）")]
     public List<CharacterSkillNode> prerequisites;
 
+    [Header("机制分支设置")]
+    [Tooltip("互斥节点列表：选择当前节点后，列表中的节点将永久锁定")]
+    public List<CharacterSkillNode> mutuallyExclusiveNodes;
+
+    [Tooltip("是否为机制分支节点（用于特殊UI显示和战斗逻辑查询）")]
+    public bool isMechanicBranch = false;
+
+    [Tooltip("机制分支标识符（对应战斗系统中的机制，如 PrecisionSlash / AgileHunter）")]
+    public string mechanicID;
+
     [Header("升级效果")]
     [Tooltip("解锁此节点后获得的永久效果")]
     public List<PermanentUpgradeEffect> effects;
+
+    [Header("局内卡片关联")]
+    [Tooltip("解锁此节点后，该升级卡片会加入局内抽卡池（仅 layer 2+ 节点需要配置）")]
+    public SkillTreeNodeData linkedUpgradeNode;
 
     /// <summary>
     /// 获取本地化后的节点名称
