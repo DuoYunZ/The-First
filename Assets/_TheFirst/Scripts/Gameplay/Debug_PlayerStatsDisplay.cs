@@ -38,8 +38,16 @@ public class Debug_PlayerStatsDisplay : MonoBehaviour
         sb.AppendLine($"范围伤害 (AoE Dmg): <color=yellow>{playerStats.aoeDamageMultiplier * 100:F0}%</color> (+{playerStats.flatAoeDamageBonus})");
         sb.AppendLine($"范围半径 (AoE Rad): <color=yellow>{playerStats.aoeRadiusMultiplier * 100:F0}%</color>");
         sb.AppendLine($"射速 (Fire Rate): <color=yellow>{playerStats.fireRateMultiplier:F2}x</color>");
+        sb.AppendLine($"弹道速度 (Proj Spd): <color=yellow>{playerStats.projectileSpeedMultiplier:F2}x</color>");
+        sb.AppendLine($"子弹数量 (Proj): <color=yellow>+{playerStats.bonusProjectileCount}</color>");
         sb.AppendLine($"穿透 (Pierce): <color=yellow>+{playerStats.bonusPierceCount}</color>");
+        sb.AppendLine($"环绕/部署数量 (Orbit): <color=yellow>+{playerStats.bonusOrbitalCount}</color>");
+        sb.AppendLine($"持续时间 (Duration): <color=yellow>{playerStats.durationMultiplier:F2}x</color>");
+        sb.AppendLine($"移动速度 (Move): <color=yellow>{playerStats.moveSpeedMultiplier:F2}x</color>");
+        sb.AppendLine($"拾取范围 (Pickup): <color=yellow>{playerStats.pickupRadiusMultiplier:F2}x</color>");
+        sb.AppendLine($"经验 (XP): <color=yellow>{playerStats.experienceGainMultiplier:F2}x</color>");
         sb.AppendLine($"幸运 (Luck): <color=yellow>{playerStats.luck * 100:F0}%</color>");
+        sb.AppendLine($"冲刺余烬 (Dash Blast): <color=yellow>Lv{playerStats.dashExplosionLevel}</color>");
         // ... 您可以按需添加更多属性的显示 ...
 
         statsDisplayText.text = sb.ToString();

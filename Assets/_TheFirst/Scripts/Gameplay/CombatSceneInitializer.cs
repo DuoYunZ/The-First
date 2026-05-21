@@ -58,6 +58,13 @@ public class CombatSceneInitializer : MonoBehaviour
 
         GameObject playerInstance = Instantiate(characterData.chassisPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
         playerInstance.name = characterData.characterName + "_RuntimeInstance";
+        PlayerRoleRuntimeMechanics roleMechanics = playerInstance.GetComponent<PlayerRoleRuntimeMechanics>();
+        if (roleMechanics == null)
+        {
+            roleMechanics = playerInstance.AddComponent<PlayerRoleRuntimeMechanics>();
+        }
+        roleMechanics.Initialize(characterData);
+
         // --- 核心集成代码：在这里关联UI和玩家状态 ---
         Health playerHealth = playerInstance.GetComponent<Health>();
         PlayerShield playerShield = playerInstance.GetComponent<PlayerShield>();
@@ -88,6 +95,19 @@ public class CombatSceneInitializer : MonoBehaviour
                 string oldName = builtIn.StatBlock != null ? builtIn.StatBlock.weaponName : "无";
                 builtIn.myStatBlock = characterData.alternateStartWeapon;
                 Debug.Log($"<color=cyan>[法师分支] 替换预制件内置武器: {oldName} → {characterData.alternateStartWeapon.weaponName}</color>");
+            }
+
+            // 工程师临时复用剑士底盘时，用工程师初始武器替换底盘内置武器。
+            if (!shouldReplaceBranch
+                && characterData.characterID == "Role03"
+                && weaponController.builtInBladeWeapon != null
+                && characterData.initialWeapons.Count > 0
+                && characterData.initialWeapons[0] != null)
+            {
+                WeaponPart builtIn = weaponController.builtInBladeWeapon;
+                string oldName = builtIn.StatBlock != null ? builtIn.StatBlock.weaponName : "None";
+                builtIn.myStatBlock = characterData.initialWeapons[0];
+                Debug.Log($"<color=cyan>[Engineer] Replaced built-in weapon: {oldName} -> {characterData.initialWeapons[0].weaponName}</color>");
             }
 
             // 自动激活分支技能（IcePath/FirePath），无需抽卡
@@ -148,7 +168,8 @@ public class CombatSceneInitializer : MonoBehaviour
             }
 
             // 法师特性：初始武器自动解锁大招（无需5颗宝石）
-            if (characterData.autoUnlockInitialUltimate)
+            if (characterData.autoUnlockInitialUltimate &&
+                !(DemoContentGate.DemoModeEnabled && DemoContentGate.DisableUltimateSystemInDemo))
             {
                 // 延迟一帧执行，确保武器完全初始化
                 StartCoroutine(AutoUnlockInitialUltimate(weaponController));

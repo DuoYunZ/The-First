@@ -49,6 +49,8 @@ public class MagneticOrbiter : MonoBehaviour
         Collider[] enemies = Physics.OverlapSphere(transform.position, pullRadius, enemyLayer);
         foreach (var col in enemies)
         {
+            if (StatusEffectReceiver.IsKnockbackImmune(col.transform)) continue;
+
             Health h = col.GetComponentInParent<Health>();
             if (h != null && !h.IsDead)
             {

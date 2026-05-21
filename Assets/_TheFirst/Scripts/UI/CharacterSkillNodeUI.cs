@@ -42,6 +42,7 @@ public class CharacterSkillNodeUI : MonoBehaviour
     [HideInInspector] public CharacterData characterData;
     private System.Action<CharacterSkillNodeUI> onClicked;
     private Button cachedButton;
+    private CanvasGroup cachedCanvasGroup;
     private Material defaultMaterial; // 默认 Material（亮色状态）
 
     /// <summary>
@@ -71,6 +72,10 @@ public class CharacterSkillNodeUI : MonoBehaviour
         // 记住默认 Material
         if (iconImage != null && defaultMaterial == null)
             defaultMaterial = iconImage.material;
+
+        cachedCanvasGroup = GetComponent<CanvasGroup>();
+        if (cachedCanvasGroup == null)
+            cachedCanvasGroup = gameObject.AddComponent<CanvasGroup>();
 
         // 设置图标
         if (iconImage != null && nodeData != null && nodeData.icon != null)
@@ -105,6 +110,20 @@ public class CharacterSkillNodeUI : MonoBehaviour
         bool isExcluded = PlayerProgressManager.Instance.IsNodeExcluded(nodeData);
         bool canUnlock = !isExcluded && PlayerProgressManager.Instance.CanUnlockCharacterNode(characterData, nodeData);
 
+        if (cachedCanvasGroup == null)
+        {
+            cachedCanvasGroup = GetComponent<CanvasGroup>();
+            if (cachedCanvasGroup == null)
+                cachedCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        if (cachedCanvasGroup != null)
+        {
+            cachedCanvasGroup.alpha = isUnlocked ? 1f : isExcluded ? 0.28f : canUnlock ? 0.62f : 0.32f;
+            cachedCanvasGroup.blocksRaycasts = true;
+            cachedCanvasGroup.interactable = true;
+        }
+
         // 边框颜色
         if (borderImage != null)
         {
@@ -129,17 +148,22 @@ public class CharacterSkillNodeUI : MonoBehaviour
             }
             else if (isExcluded)
             {
-                // 互斥锁定：灰度 + 半透明
+                // 互斥锁定：灰度/红色降亮
                 if (grayscaleMaterial != null)
                     iconImage.material = grayscaleMaterial;
-                iconImage.color = new Color(1f, 1f, 1f, 0.4f);
+                iconImage.color = new Color(0.75f, 0.35f, 0.35f, 1f);
+            }
+            else if (canUnlock)
+            {
+                iconImage.material = defaultMaterial;
+                iconImage.color = new Color(1f, 0.9f, 0.55f, 1f);
             }
             else
             {
-                // 普通锁定：灰度
+                // 普通锁定：即使没有灰度材质，也明显压暗。
                 if (grayscaleMaterial != null)
                     iconImage.material = grayscaleMaterial;
-                iconImage.color = Color.white;
+                iconImage.color = new Color(0.55f, 0.55f, 0.55f, 1f);
             }
         }
 

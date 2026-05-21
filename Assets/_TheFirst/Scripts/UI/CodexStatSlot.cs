@@ -3,28 +3,45 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// 图鉴武器属性条目 — 挂在每个属性条目预制体上
-/// 每个条目显示一个属性图标和对应的数值文本
+/// Single stat row used by the codex detail page.
+/// Existing prefabs can keep using only valueText; labelText is optional.
 /// </summary>
 public class CodexStatSlot : MonoBehaviour
 {
-    [Header("UI 组件")]
-    public Image statIcon;            // 属性图标 (如剑、弓等)
-    public TextMeshProUGUI valueText; // 数值文本 (如 "28", "0.3S")
+    [Header("UI Components")]
+    public Image statIcon;
+    public TextMeshProUGUI labelText;
+    public TextMeshProUGUI valueText;
 
-    /// <summary>
-    /// 设置属性条目的显示内容
-    /// </summary>
     public void Setup(Sprite icon, string value)
+    {
+        Setup(icon, "", value);
+    }
+
+    public void Setup(Sprite icon, string label, string value)
     {
         if (statIcon != null)
         {
             statIcon.sprite = icon;
-            statIcon.enabled = (icon != null);
+            statIcon.enabled = icon != null;
         }
+
+        if (labelText != null)
+        {
+            labelText.text = label;
+            labelText.color = new Color(0.95f, 0.72f, 0.32f, 1f);
+            labelText.alignment = TextAlignmentOptions.Left;
+            labelText.textWrappingMode = TextWrappingModes.NoWrap;
+        }
+
         if (valueText != null)
         {
-            valueText.text = value;
+            valueText.text = labelText == null && !string.IsNullOrEmpty(label)
+                ? $"{label}\n{value}"
+                : value;
+            valueText.color = Color.white;
+            valueText.alignment = TextAlignmentOptions.Right;
+            valueText.textWrappingMode = TextWrappingModes.NoWrap;
         }
     }
 }

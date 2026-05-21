@@ -85,10 +85,9 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             return;
         }
 
-        iconImage.sprite = sourceNode.skillIcon;
-        nameText.text = (sourceNode.associatedWeapon != null && !string.IsNullOrEmpty(sourceNode.associatedWeapon.weaponID))
-            ? LocalizationManager.T("weapon." + sourceNode.associatedWeapon.weaponID)
-            : sourceNode.skillName;
+        WeaponStatBlock displayWeapon = GetDisplayedEvolutionWeapon();
+        iconImage.sprite = displayWeapon != null && displayWeapon.weaponIcon != null ? displayWeapon.weaponIcon : sourceNode.skillIcon;
+        nameText.text = GetDisplayNameForCard(displayWeapon);
 
         // --- 核心：生成预览文本 ---
         string finalDesc = displayedOption.LocalizedDescription;
@@ -174,14 +173,19 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             NotifyOtherCardsDismiss();
         }
 
-        // 判断是否需要播放宝石飞入动画（武器相关的卡片才播放）
+        // 判断是否需要播放宝石飞入动画（武器/被动道具卡片播放不同的镶嵌进度）
         bool isWeaponCard = sourceNode != null && sourceNode.associatedWeapon != null;
+        bool isPassiveCard = GetDisplayedPassiveData() != null;
         bool hasGemSlots = (gemSlotImages != null && gemSlotImages.Length > 0) || ultimateGemSlot != null;
 
         if (isWeaponCard && hasGemSlots && UpgradeManager.Instance != null)
         {
             // 先播放宝石镶嵌动画，再消失
             PlayGemEmbedThenDismiss();
+        }
+        else if (isPassiveCard && hasGemSlots)
+        {
+            PlayPassiveGemEmbedThenDismiss();
         }
         else
         {
@@ -288,8 +292,21 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         // 计算宝石信息
         int totalGemsBefore = UpgradeManager.Instance.GetGemCountForWeapon(sourceNode.associatedWeapon);
-        int gemIndex = totalGemsBefore % UpgradeManager.GEM_SLOT_COUNT;
-        int gemTier = totalGemsBefore / UpgradeManager.GEM_SLOT_COUNT;
+        int nextGemCount = totalGemsBefore + 1;
+        bool reachesCapstone = totalGemsBefore < UpgradeManager.GEM_SLOT_COUNT
+            && nextGemCount >= UpgradeManager.GEM_SLOT_COUNT
+            && ultimateGemSlot != null
+            && ultimateGemSprite != null;
+
+        if (reachesCapstone)
+        {
+            ultimateGemSlot.gameObject.SetActive(true);
+            ultimateGemSlot.sprite = ultimateGemSprite;
+            ultimateGemSlot.color = new Color(1f, 1f, 1f, 0f);
+        }
+
+        int gemIndex = GetWeaponNormalGemSlotIndexForNextGem(totalGemsBefore);
+        int gemTier = nextGemCount > UpgradeManager.GEM_SLOT_COUNT ? 1 : 0;
 
         // 确保目标插槽有效
         if (gemIndex < 0 || gemIndex >= gemSlotImages.Length || gemSlotImages[gemIndex] == null)
@@ -299,7 +316,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         }
 
         Image targetSlot = gemSlotImages[gemIndex];
-        Sprite gemSprite = gemTier > 0 ? filledGemSpriteTier1 : filledGemSprite;
+        Sprite gemSprite = gemTier > 0 && filledGemSpriteTier1 != null ? filledGemSpriteTier1 : filledGemSprite;
         if (gemSprite == null)
         {
             PlayDismissAnimation();
@@ -312,13 +329,100 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         targetSlot.color = new Color(1f, 1f, 1f, 0f);
 
         // 播放飞入动画
+        if (reachesCapstone)
+        {
+            PlayGemFlyAnimation(targetSlot, gemSprite, false);
+            PlayGemFlyAnimation(ultimateGemSlot, ultimateGemSprite, true, 0.08f);
+        }
+        else
+        {
+            PlayGemFlyAnimation(targetSlot, gemSprite);
+        }
+    }
+
+    private int GetWeaponNormalGemSlotIndexForNextGem(int totalGemsBefore)
+    {
+        int nextGemCount = Mathf.Max(0, totalGemsBefore) + 1;
+        if (nextGemCount <= UpgradeManager.GEM_SLOT_COUNT)
+        {
+            return nextGemCount - 1;
+        }
+
+        return Mathf.Clamp(nextGemCount - UpgradeManager.GEM_SLOT_COUNT - 1, 0, UpgradeManager.GEM_SLOT_COUNT - 1);
+    }
+
+    private void PlayPassiveGemEmbedThenDismiss()
+    {
+        PassiveItemData passive = GetDisplayedPassiveData();
+        if (passive == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        int currentLevel = GetCurrentPassiveLevel(passive);
+        int nextLevel = Mathf.Clamp(currentLevel + 1, 1, passive.EffectiveMaxLevel);
+        bool reachesCapstone = nextLevel >= passive.EffectiveMaxLevel;
+
+        if (reachesCapstone && gemSlotImages != null)
+        {
+            int filledTo = Mathf.Min(passive.EffectiveMaxLevel, gemSlotImages.Length);
+            for (int i = 0; i < filledTo; i++)
+            {
+                if (gemSlotImages[i] == null) continue;
+                gemSlotImages[i].gameObject.SetActive(true);
+                gemSlotImages[i].sprite = filledGemSprite != null ? filledGemSprite : gemSlotImages[i].sprite;
+                gemSlotImages[i].color = Color.white;
+            }
+        }
+
+        if (reachesCapstone && ultimateGemSlot != null)
+        {
+            Sprite capstoneSprite = GetPassiveCapstoneGemSprite();
+            if (capstoneSprite == null)
+            {
+                PlayDismissAnimation();
+                return;
+            }
+
+            ultimateGemSlot.gameObject.SetActive(true);
+            ultimateGemSlot.sprite = capstoneSprite;
+            ultimateGemSlot.color = new Color(1f, 1f, 1f, 0f);
+            PlayGemFlyAnimation(ultimateGemSlot, capstoneSprite);
+            return;
+        }
+
+        if (gemSlotImages == null || gemSlotImages.Length == 0)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        int gemIndex = Mathf.Clamp(currentLevel, 0, Mathf.Min(passive.EffectiveMaxLevel, gemSlotImages.Length) - 1);
+        if (gemIndex < 0 || gemIndex >= gemSlotImages.Length || gemSlotImages[gemIndex] == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        Sprite gemSprite = filledGemSprite != null ? filledGemSprite : gemSlotImages[gemIndex].sprite;
+        if (gemSprite == null)
+        {
+            PlayDismissAnimation();
+            return;
+        }
+
+        Image targetSlot = gemSlotImages[gemIndex];
+        targetSlot.gameObject.SetActive(true);
+        targetSlot.sprite = gemSprite;
+        targetSlot.color = new Color(1f, 1f, 1f, 0f);
         PlayGemFlyAnimation(targetSlot, gemSprite);
     }
 
     /// <summary>
     /// 统一的宝石飞入动画（从卡片上方飞到目标插槽）
     /// </summary>
-    private void PlayGemFlyAnimation(Image targetSlot, Sprite gemSprite)
+    private void PlayGemFlyAnimation(Image targetSlot, Sprite gemSprite, bool dismissAfter = true, float startDelay = 0f)
     {
         if (flyingGemPrefab != null)
         {
@@ -337,6 +441,10 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
             // 全部动画在同一个Sequence中，消除帧间延迟
             DG.Tweening.Sequence seq = DOTween.Sequence();
+            if (startDelay > 0f)
+            {
+                seq.AppendInterval(startDelay);
+            }
 
             // 1. 宝石飞向插槽
             seq.Append(flyRT.DOMove(targetPos, gemFlyDuration).SetEase(Ease.InBack));
@@ -366,6 +474,12 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             }
 
             // 5. 可选停留
+            if (!dismissAfter)
+            {
+                seq.SetUpdate(true);
+                return;
+            }
+
             if (gemShowDelay > 0f)
                 seq.AppendInterval(gemShowDelay);
 
@@ -390,7 +504,10 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             // 没有飞行宝石预制件：直接点亮插槽然后消失
             targetSlot.sprite = gemSprite;
             targetSlot.color = Color.white;
-            PlayDismissAnimation();
+            if (dismissAfter)
+            {
+                PlayDismissAnimation();
+            }
         }
     }
 
@@ -475,9 +592,35 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             {
                 string changeLine = SimulateGlobalStat(effect);
                 if (!string.IsNullOrEmpty(changeLine)) sb.AppendLine(changeLine);
+
+                string milestoneLine = SimulatePassiveMilestone(effect);
+                if (!string.IsNullOrEmpty(milestoneLine)) sb.AppendLine(milestoneLine);
             }
         }
         return sb.ToString();
+    }
+
+    private string SimulatePassiveMilestone(UpgradeEffect effect)
+    {
+        if (effect == null || effect.passiveItemData == null || PlayerStats.Instance == null) return "";
+
+        PassiveItemData passive = effect.passiveItemData;
+        int currentLevel = 0;
+        foreach (var item in PlayerStats.Instance.activePassiveItems)
+        {
+            if (item != null && item.data == passive)
+            {
+                currentLevel = item.currentLevel;
+                break;
+            }
+        }
+
+        if (currentLevel >= passive.EffectiveMaxLevel) return "";
+
+        string milestone = passive.GetMilestoneUnlockDescription(currentLevel, currentLevel + 1);
+        if (string.IsNullOrEmpty(milestone)) return "";
+
+        return $"<color=#FFD166>{milestone}</color>";
     }
 
     /// <summary>
@@ -717,9 +860,7 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 return FormatChange("燃烧轨迹", stats.flameTrailLevel, stats.flameTrailLevel + 1);
 
             case UpgradeType.ThornsDamage:
-                float curThorns = stats.thornsReflectPercent * 100f;
-                float nextThorns = (stats.thornsReflectPercent + effect.value) * 100f;
-                return FormatChange("伤害反弹", curThorns, nextThorns, false, "%");
+                return "";
 
             case UpgradeType.KillHeal:
                 // 击杀回血是阈值制：每100击杀回复5HP，killHealAmount > 0 仅为启用开关
@@ -772,6 +913,18 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 float xpIncrement = (effect.modType == ModifierType.Percentage) ? effect.value / 100f : effect.value;
                 float nextXP = (stats.experienceGainMultiplier + xpIncrement) * 100f;
                 return FormatChange("经验获取", curXP, nextXP, false, "%");
+
+            case UpgradeType.SwordmasterSoul:
+                return FormatChange("剑圣之魂", stats.swordmasterSoulLevel, stats.swordmasterSoulLevel + 1);
+
+            case UpgradeType.ArcaneMastery:
+                return FormatChange("奥术爆破概率", stats.arcaneMasteryChance * 100f, stats.arcaneMasteryChance * 100f + effect.value, false, "%");
+
+            case UpgradeType.ElementalResonance:
+                return FormatChange("元素脉冲等级", stats.elementalResonanceLevel, stats.elementalResonanceLevel + 1);
+
+            case UpgradeType.MechanicalResonance:
+                return FormatChange("机械超频等级", stats.mechanicalResonanceLevel, stats.mechanicalResonanceLevel + 1);
         }
         return "";
     }
@@ -816,17 +969,37 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     private void RefreshGemSlots()
     {
         // 获取关联的武器（大招卡使用 associatedWeapon）
-        WeaponStatBlock weapon = (sourceNode != null) ? sourceNode.associatedWeapon : null;
+        WeaponStatBlock weapon = GetDisplayedEvolutionWeapon();
+        if (weapon == null && sourceNode != null) weapon = sourceNode.associatedWeapon;
+        PassiveItemData passive = GetDisplayedPassiveData();
 
         // --- 刷新底部5个技能宝石插槽 ---
         if (gemSlotImages != null && gemSlotImages.Length > 0)
         {
-            if (weapon == null)
+            if (weapon == null && passive == null)
             {
                 // 非武器卡片，隐藏所有插槽
                 foreach (var slot in gemSlotImages)
                 {
                     if (slot != null) slot.gameObject.SetActive(false);
+                }
+            }
+            else if (passive != null)
+            {
+                int currentLevel = GetCurrentPassiveLevel(passive);
+                int maxLevel = passive.EffectiveMaxLevel;
+                for (int i = 0; i < gemSlotImages.Length; i++)
+                {
+                    if (gemSlotImages[i] == null) continue;
+                    bool withinPassiveSlots = i < maxLevel;
+                    bool filled = i < currentLevel;
+
+                    gemSlotImages[i].gameObject.SetActive(withinPassiveSlots && filled);
+                    if (withinPassiveSlots && filled)
+                    {
+                        gemSlotImages[i].sprite = filledGemSprite != null ? filledGemSprite : gemSlotImages[i].sprite;
+                        gemSlotImages[i].color = Color.white;
+                    }
                 }
             }
             else
@@ -838,25 +1011,26 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                     totalGems = UpgradeManager.Instance.GetGemCountForWeapon(weapon);
                 }
 
-                int filledCount = totalGems % UpgradeManager.GEM_SLOT_COUNT;
-                int gemTier = totalGems / UpgradeManager.GEM_SLOT_COUNT;
+                int normalSlotCount = Mathf.Min(UpgradeManager.GEM_SLOT_COUNT, gemSlotImages.Length);
+                int firstRoundCount = Mathf.Clamp(totalGems, 0, normalSlotCount);
+                int secondRoundCount = Mathf.Clamp(totalGems - UpgradeManager.GEM_SLOT_COUNT, 0, normalSlotCount);
 
                 for (int i = 0; i < gemSlotImages.Length; i++)
                 {
                     if (gemSlotImages[i] == null) continue;
 
-                    if (i < filledCount)
+                    if (i < firstRoundCount)
                     {
                         // 当前轮次的新宝石（覆盖上一轮）
                         gemSlotImages[i].gameObject.SetActive(true);
-                        gemSlotImages[i].sprite = gemTier > 0 ? filledGemSpriteTier1 : filledGemSprite;
+                        gemSlotImages[i].sprite = i < secondRoundCount && filledGemSpriteTier1 != null ? filledGemSpriteTier1 : filledGemSprite;
                         gemSlotImages[i].color = Color.white;
                     }
-                    else if (gemTier > 0)
+                    else if (i < 0)
                     {
                         // 上一轮的宝石仍然保留显示（宝石永不消耗）
                         gemSlotImages[i].gameObject.SetActive(true);
-                        gemSlotImages[i].sprite = (gemTier > 1) ? filledGemSpriteTier1 : filledGemSprite;
+                        gemSlotImages[i].sprite = filledGemSprite;
                         gemSlotImages[i].color = Color.white;
                     }
                     else
@@ -871,27 +1045,45 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         // --- 刷新大招宝石（顶部红宝石位置） ---
         if (ultimateGemSlot != null)
         {
-            if (weapon == null)
+            if (passive != null)
+            {
+                bool capstoneUnlocked = GetCurrentPassiveLevel(passive) >= passive.EffectiveMaxLevel;
+                Sprite capstoneSprite = GetPassiveCapstoneGemSprite();
+                if (capstoneUnlocked && capstoneSprite != null)
+                {
+                    ultimateGemSlot.gameObject.SetActive(true);
+                    ultimateGemSlot.sprite = capstoneSprite;
+                    ultimateGemSlot.color = Color.white;
+                }
+                else
+                {
+                    ultimateGemSlot.gameObject.SetActive(false);
+                }
+            }
+            else if (weapon == null)
             {
                 ultimateGemSlot.gameObject.SetActive(false);
             }
             else
             {
-                // 检查该武器是否已解锁大招
+                int totalGems = UpgradeManager.Instance != null
+                    ? UpgradeManager.Instance.GetGemCountForWeapon(weapon)
+                    : 0;
+
+                // Lv.5 is the weapon capstone gem. Ultimate unlock can also light the same socket.
                 bool ultimateUnlocked = false;
                 if (WeaponController.Instance != null)
                 {
                     var wrapper = WeaponController.Instance.ownedWeapons
-                        .FirstOrDefault(w => w.stats == weapon);
+                        .FirstOrDefault(w => w != null && w.InheritsSkillSource(weapon));
                     if (wrapper != null && wrapper.weaponPartInstance != null)
                     {
                         ultimateUnlocked = wrapper.weaponPartInstance.isUltimateUnlocked;
                     }
                 }
 
-                if (ultimateUnlocked && ultimateGemSprite != null)
+                if ((ultimateUnlocked || totalGems >= UpgradeManager.GEM_SLOT_COUNT) && ultimateGemSprite != null)
                 {
-                    // 大招已解锁：显示红宝石
                     ultimateGemSlot.gameObject.SetActive(true);
                     ultimateGemSlot.sprite = ultimateGemSprite;
                     ultimateGemSlot.color = Color.white;
@@ -903,6 +1095,92 @@ public class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 }
             }
         }
+    }
+
+    private PassiveItemData GetDisplayedPassiveData()
+    {
+        if (displayedOption == null || displayedOption.effects == null) return null;
+        foreach (UpgradeEffect effect in displayedOption.effects)
+        {
+            if (effect != null && effect.passiveItemData != null)
+            {
+                return effect.passiveItemData;
+            }
+        }
+
+        return null;
+    }
+
+    private WeaponStatBlock GetDisplayedEvolutionWeapon()
+    {
+        if (displayedOption == null || displayedOption.effects == null) return null;
+
+        foreach (UpgradeEffect effect in displayedOption.effects)
+        {
+            if (effect != null
+                && effect.actionType == EffectActionType.EvolveWeapon
+                && effect.weaponToUnlock != null)
+            {
+                return effect.weaponToUnlock;
+            }
+        }
+
+        return null;
+    }
+
+    private string GetDisplayNameForCard(WeaponStatBlock displayWeapon)
+    {
+        if (displayWeapon != null)
+        {
+            if (!string.IsNullOrEmpty(displayWeapon.weaponName))
+            {
+                return LanguageTable.LocalizeWeaponName(displayWeapon.weaponName, LocalizationManager.CurrentLanguage);
+            }
+
+            if (!string.IsNullOrEmpty(displayWeapon.weaponID))
+            {
+                string localized = LanguageTable.TryGet("weapon." + displayWeapon.weaponID, LocalizationManager.CurrentLanguage);
+                if (!string.IsNullOrEmpty(localized)) return localized;
+            }
+        }
+
+        if (sourceNode != null && sourceNode.associatedWeapon != null)
+        {
+            WeaponStatBlock sourceWeapon = sourceNode.associatedWeapon;
+            if (!string.IsNullOrEmpty(sourceWeapon.weaponName))
+            {
+                return LanguageTable.LocalizeWeaponName(sourceWeapon.weaponName, LocalizationManager.CurrentLanguage);
+            }
+
+            if (!string.IsNullOrEmpty(sourceWeapon.weaponID))
+            {
+                string localized = LanguageTable.TryGet("weapon." + sourceWeapon.weaponID, LocalizationManager.CurrentLanguage);
+                if (!string.IsNullOrEmpty(localized)) return localized;
+            }
+        }
+
+        return sourceNode != null ? sourceNode.skillName : "";
+    }
+
+    private int GetCurrentPassiveLevel(PassiveItemData passive)
+    {
+        if (passive == null || PlayerStats.Instance == null) return 0;
+        foreach (var item in PlayerStats.Instance.activePassiveItems)
+        {
+            if (item != null && item.data == passive)
+            {
+                return Mathf.Clamp(item.currentLevel, 0, passive.EffectiveMaxLevel);
+            }
+        }
+
+        return 0;
+    }
+
+    private Sprite GetPassiveCapstoneGemSprite()
+    {
+        if (ultimateGemSprite != null) return ultimateGemSprite;
+        if (filledGemSpriteTier1 != null) return filledGemSpriteTier1;
+        return filledGemSprite;
     }
 
     #endregion

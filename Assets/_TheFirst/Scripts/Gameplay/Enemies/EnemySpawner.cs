@@ -58,44 +58,48 @@ public class EnemySpawner : MonoBehaviour
     }
 
     public void InstructToSpawnWaveConfig(WaveConfig waveConfig, int actualWaveNumber,
-                                          float healthG, float damageG, float speedG)
+                                          float healthG, float damageG, float speedG,
+                                          float healthScaleMultiplier = 1f)
     {
         AcquirePlayerReference();
         if (playerTransform == null) { Debug.LogError("EnemySpawner: 玩家引用为空!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
         if (waveConfig == null || waveConfig.enemyGroups == null || waveConfig.enemyGroups.Count == 0) { Debug.LogError("EnemySpawner: 传入的 WaveConfig 无效或没有敌人组!", this); GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); return; }
 
-        if (_currentSpawnRoutine != null) StopCoroutine(_currentSpawnRoutine);
-
         _currentSpawnRoutine = StartCoroutine(SpawnEnemiesFromConfigRoutine(
-            waveConfig, actualWaveNumber, healthG, damageG, speedG
+            waveConfig, actualWaveNumber, healthG, damageG, speedG, healthScaleMultiplier
         ));
     }
 
     IEnumerator SpawnEnemiesFromConfigRoutine(WaveConfig config, int waveNum,
-                                           float healthG, float damageG, float speedG)
+                                           float healthG, float damageG, float speedG,
+                                           float healthScaleMultiplier)
     {
         List<Coroutine> groupCoroutines = new List<Coroutine>();
         for (int groupIndex = 0; groupIndex < config.enemyGroups.Count; groupIndex++)
         {
             EnemySpawnGroup group = config.enemyGroups[groupIndex];
-            if (group.enemyType == null) { continue; }
-            groupCoroutines.Add(StartCoroutine(GroupSpawnWrapper(group, waveNum, healthG, damageG, speedG)));
+            if (group.enemyType == null || group.enemyType.enemyPrefab == null)
+            {
+                GameTimelineManager.Instance?.EnemiesFailedToSpawn(group.count);
+                continue;
+            }
+            groupCoroutines.Add(StartCoroutine(GroupSpawnWrapper(group, waveNum, healthG, damageG, speedG, healthScaleMultiplier)));
         }
         foreach (Coroutine coroutine in groupCoroutines) { yield return coroutine; }
         _currentSpawnRoutine = null;
         // 已移除 WaveManager 通知
     }
 
-    private IEnumerator GroupSpawnWrapper(EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG)
+    private IEnumerator GroupSpawnWrapper(EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG, float healthScaleMultiplier)
     {
         if (group.delayAfterPreviousGroupStarts > 0)
         {
             yield return new WaitForSeconds(group.delayAfterPreviousGroupStarts);
         }
-        StartCoroutine(SpawnGroupRoutine(group, waveNum, healthG, damageG, speedG));
+        StartCoroutine(SpawnGroupRoutine(group, waveNum, healthG, damageG, speedG, healthScaleMultiplier));
     }
 
-    private IEnumerator SpawnGroupRoutine(EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG)
+    private IEnumerator SpawnGroupRoutine(EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG, float healthScaleMultiplier)
     {
         bool isStampede = group.enemyType.aiType == AIType.StraightLineStampede;
 
@@ -118,10 +122,14 @@ public class EnemySpawner : MonoBehaviour
         {
             for (int i = 0; i < group.count; i++)
             {
-                if (playerTransform == null) yield break;
+                if (playerTransform == null)
+                {
+                    GameTimelineManager.Instance?.EnemiesFailedToSpawn(group.count - i);
+                    yield break;
+                }
                 if (TryFindValidSpawnPoint(out Vector3 spawnPosition, out Quaternion spawnRotation, group.directionHint, isStampede, false))
                 {
-                    StartCoroutine(SpawnSingleEnemyWithWarning(spawnPosition, spawnRotation, group, waveNum, healthG, damageG, speedG));
+                    StartCoroutine(SpawnSingleEnemyWithWarning(spawnPosition, spawnRotation, group, waveNum, healthG, damageG, speedG, healthScaleMultiplier));
                 }
                 else { GameTimelineManager.Instance?.AnEnemyFailedToSpawn(); }
                 if (interval > 0) { yield return new WaitForSeconds(interval); }
@@ -157,7 +165,11 @@ public class EnemySpawner : MonoBehaviour
 
             for (int i = 0; i < group.count; i++)
             {
-                if (playerTransform == null) yield break;
+                if (playerTransform == null)
+                {
+                    GameTimelineManager.Instance?.EnemiesFailedToSpawn(group.count - i);
+                    yield break;
+                }
 
                 Vector3 spawnPositionOffset = Vector3.zero;
                 switch (group.formation)
@@ -191,20 +203,20 @@ public class EnemySpawner : MonoBehaviour
 
                 if (IsSpawnPointStillValid(finalSpawnPos, playerTransform.position, out Vector3 validatedPos, out Quaternion validatedRot, false, anchorRot))
                 {
-                    StartCoroutine(SpawnSingleEnemyWithWarning(validatedPos, anchorRot, group, waveNum, healthG, damageG, speedG));
+                    StartCoroutine(SpawnSingleEnemyWithWarning(validatedPos, anchorRot, group, waveNum, healthG, damageG, speedG, healthScaleMultiplier));
                 }
                 else
                 {
                     // 地面射线失败时，使用原定 XZ 坐标 + 锚点 Y 高度，保持阵型不错位
                     Vector3 fallbackPos = new Vector3(finalSpawnPos.x, anchorPos.y, finalSpawnPos.z);
-                    StartCoroutine(SpawnSingleEnemyWithWarning(fallbackPos, anchorRot, group, waveNum, healthG, damageG, speedG));
+                    StartCoroutine(SpawnSingleEnemyWithWarning(fallbackPos, anchorRot, group, waveNum, healthG, damageG, speedG, healthScaleMultiplier));
                 }
                 if (interval > 0) { yield return new WaitForSeconds(interval); }
             }
         }
     }
 
-    private IEnumerator SpawnSingleEnemyWithWarning(Vector3 position, Quaternion rotation, EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG)
+    private IEnumerator SpawnSingleEnemyWithWarning(Vector3 position, Quaternion rotation, EnemySpawnGroup group, int waveNum, float healthG, float damageG, float speedG, float healthScaleMultiplier)
     {
         EnemyType type = group.enemyType;
         if (type.aiType == AIType.StraightLineStampede)
@@ -226,7 +238,7 @@ public class EnemySpawner : MonoBehaviour
         if (group.overrideStats) { baseHealth = type.baseHealth * group.statOverrides.healthMultiplier; baseDamage = type.baseDamage * group.statOverrides.damageMultiplier; baseSpeed = type.baseSpeed * group.statOverrides.speedMultiplier; scale = group.statOverrides.scale; }
         else if (group.isElite && type.canBeElite) { baseHealth = type.baseHealth * type.eliteHealthMultiplier; baseDamage = type.baseDamage * type.eliteDamageMultiplier; baseSpeed = type.baseSpeed * type.eliteSpeedMultiplier; scale = type.eliteScale; spawnAsElite = true; }
         else { baseHealth = type.baseHealth; baseDamage = type.baseDamage; baseSpeed = type.baseSpeed; }
-        float finalHealth = baseHealth * (1f + (waveNum - 1) * healthG);
+        float finalHealth = baseHealth * (1f + (waveNum - 1) * healthG) * Mathf.Max(1f, healthScaleMultiplier);
         float finalDamage = baseDamage * (1f + (waveNum - 1) * damageG);
         float finalSpeed = baseSpeed * (1f + (waveNum - 1) * speedG);
         Vector3 moveDirection = rotation * Vector3.forward;

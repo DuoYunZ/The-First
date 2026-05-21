@@ -69,6 +69,7 @@ public class CharacterSelectManager : MonoBehaviour
     public Color connectorUnlockedColor = new Color(1f, 0.85f, 0.6f, 1f);
     [Tooltip("连接线颜色（锁定路径）")]
     public Color connectorLockedColor = new Color(0.4f, 0.4f, 0.4f, 0.5f);
+    public Color connectorExcludedColor = new Color(0.8f, 0.2f, 0.2f, 0.35f);
     [Tooltip("连接线粗细")]
     public float connectorThickness = 14f;
     [Tooltip("连接线灰度 Material（锁定时使用）")]
@@ -122,16 +123,49 @@ public class CharacterSelectManager : MonoBehaviour
         if (panelRoot != null) panelRoot.SetActive(false);
         if (nodeDetailPopup != null) nodeDetailPopup.SetActive(false);
 
-        if (selectButton != null) selectButton.onClick.AddListener(OnSelectClicked);
-        if (unlockButton != null) unlockButton.onClick.AddListener(OnUnlockClicked);
-        if (popupUnlockButton != null) popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
-        if (resetBranchButton != null) resetBranchButton.onClick.AddListener(OnResetBranchClicked);
+        EnsureButtonBindings();
+    }
+
+    void OnEnable()
+    {
+        EnsureButtonBindings();
+        RefreshGoldText();
+    }
+
+    private void EnsureButtonBindings()
+    {
+        if (selectButton != null)
+        {
+            selectButton.onClick.RemoveListener(OnSelectClicked);
+            selectButton.onClick.AddListener(OnSelectClicked);
+        }
+
+        if (unlockButton != null)
+        {
+            unlockButton.onClick.RemoveListener(OnUnlockClicked);
+            unlockButton.onClick.AddListener(OnUnlockClicked);
+        }
+
+        if (popupUnlockButton != null)
+        {
+            popupUnlockButton.onClick.RemoveListener(OnPopupUnlockClicked);
+            popupUnlockButton.onClick.RemoveListener(OnResetConfirmed);
+            popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
+        }
+
+        if (resetBranchButton != null)
+        {
+            resetBranchButton.onClick.RemoveListener(OnResetBranchClicked);
+            resetBranchButton.onClick.AddListener(OnResetBranchClicked);
+        }
     }
 
     public void ShowCharacter(CharacterData data)
     {
         if (data == null) return;
         currentCharacter = data;
+
+        EnsureButtonBindings();
 
         if (panelRoot != null) panelRoot.SetActive(true);
 
@@ -344,8 +378,16 @@ public class CharacterSelectManager : MonoBehaviour
                           PlayerProgressManager.Instance.IsCharacterNodeUnlocked(info.fromNode.nodeData);
             bool toOk = info.toNode != null && info.toNode.nodeData != null &&
                         PlayerProgressManager.Instance.IsCharacterNodeUnlocked(info.toNode.nodeData);
+            bool toExcluded = info.toNode != null && info.toNode.nodeData != null &&
+                              PlayerProgressManager.Instance.IsNodeExcluded(info.toNode.nodeData);
 
-            if (fromOk && toOk)
+            if (toExcluded && !toOk)
+            {
+                info.image.color = connectorExcludedColor;
+                if (connectorGrayscaleMaterial != null)
+                    info.image.material = connectorGrayscaleMaterial;
+            }
+            else if (fromOk && toOk)
             {
                 info.image.color = connectorUnlockedColor;
                 info.image.material = null; // 彩色
@@ -376,8 +418,7 @@ public class CharacterSelectManager : MonoBehaviour
             if (nodeUI != null) nodeUI.RefreshState();
         }
         RefreshConnectorColors();
-        if (goldText != null && PlayerProgressManager.Instance != null)
-            goldText.text = PlayerProgressManager.Instance.currentGold.ToString();
+        RefreshGoldText();
     }
 
     // =========================================================
@@ -393,6 +434,7 @@ public class CharacterSelectManager : MonoBehaviour
 
         currentPopupNode = nodeUI;
         var node = nodeUI.nodeData;
+        RestorePopupUnlockButtonAction();
 
         if (popupNodeName != null) popupNodeName.text = node.LocalizedNodeName;
         if (popupDescription != null) popupDescription.text = node.LocalizedDescription;
@@ -459,15 +501,21 @@ public class CharacterSelectManager : MonoBehaviour
     /// </summary>
     private void RefreshPopupButton(CharacterSkillNodeUI nodeUI)
     {
-        if (popupUnlockButton == null || nodeUI == null) return;
+        if (popupUnlockButton == null || nodeUI == null || PlayerProgressManager.Instance == null) return;
         var node = nodeUI.nodeData;
         bool isUnlocked = PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node);
+        bool canUnlock = PlayerProgressManager.Instance.CanUnlockCharacterNode(nodeUI.characterData, node);
         bool canAfford = PlayerProgressManager.Instance.CanAfford(node.cost);
 
         if (isUnlocked)
         {
             popupUnlockButton.interactable = false;
-            if (popupUnlockButtonText != null) popupUnlockButtonText.text = "已解锁";
+            if (popupUnlockButtonText != null) popupUnlockButtonText.text = "\u5df2\u89e3\u9501";
+        }
+        else if (!canUnlock)
+        {
+            popupUnlockButton.interactable = false;
+            if (popupUnlockButtonText != null) popupUnlockButtonText.text = "\u6761\u4ef6\u672a\u6ee1\u8db3";
         }
         else
         {
@@ -492,6 +540,9 @@ public class CharacterSelectManager : MonoBehaviour
         if (currentPopupNode == null || currentPopupNode.nodeData == null) return;
         if (PlayerProgressManager.Instance == null) return;
 
+        CharacterData unlockedCharacter = currentPopupNode.characterData != null
+            ? currentPopupNode.characterData
+            : currentCharacter;
         var node = currentPopupNode.nodeData;
         if (PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node)) return;
         if (!PlayerProgressManager.Instance.CanUnlockCharacterNode(currentPopupNode.characterData, node)) return;
@@ -501,6 +552,8 @@ public class CharacterSelectManager : MonoBehaviour
         PlayerProgressManager.Instance.UnlockCharacterNode(node);
 
         RefreshAllSkillNodes();
+        if (unlockedCharacter != null)
+            RefreshUI(unlockedCharacter);
 
         // 解锁成功，直接关闭弹窗
         CloseNodeDetailPopup();
@@ -513,7 +566,15 @@ public class CharacterSelectManager : MonoBehaviour
     {
         DestroyPopupBlocker();
         if (nodeDetailPopup != null) nodeDetailPopup.SetActive(false);
+        RestorePopupUnlockButtonAction();
         currentPopupNode = null;
+    }
+
+    private void RestorePopupUnlockButtonAction()
+    {
+        if (popupUnlockButton == null) return;
+        popupUnlockButton.onClick.RemoveAllListeners();
+        popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
     }
 
     /// <summary>
@@ -564,8 +625,7 @@ public class CharacterSelectManager : MonoBehaviour
         if (characterIconImage != null)
             characterIconImage.color = isUnlocked ? Color.white : new Color(0.3f, 0.3f, 0.3f, 1f);
         if (currentCharacterBadge != null) currentCharacterBadge.SetActive(isCurrent);
-        if (goldText != null && PlayerProgressManager.Instance != null)
-            goldText.text = PlayerProgressManager.Instance.currentGold.ToString();
+        RefreshGoldText();
 
         if (isUnlocked)
         {
@@ -603,34 +663,19 @@ public class CharacterSelectManager : MonoBehaviour
             }
         }
 
-        // === 重置分支按钮：只有已解锁角色且选了分支才显示 ===
+        // Keep the reset control visible for unlocked characters, and grey it out when there is nothing to reset.
         if (resetBranchButton != null)
         {
-            // 动态检查当前查看角色的分支机制节点是否已解锁
-            // 注意：不能用 HasMechanic()，因为它内部依赖 DataManager.selectedCharacter
-            // 而这里 data 是当前正在查看的角色，两者可能不同
-            bool hasBranch = false;
-            if (isUnlocked && PlayerProgressManager.Instance != null && data.characterSkillNodes != null)
-            {
-                foreach (var node in data.characterSkillNodes)
-                {
-                    if (node != null && node.isMechanicBranch &&
-                        !string.IsNullOrEmpty(node.mechanicID) &&
-                        PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node))
-                    {
-                        hasBranch = true;
-                        break;
-                    }
-                }
-            }
-            resetBranchButton.gameObject.SetActive(hasBranch);
+            int spentNodeCount = isUnlocked ? CountUnlockedCharacterNodes(data) : 0;
+            bool hasSpentNode = spentNodeCount > 0;
 
-            if (hasBranch)
-            {
-                resetBranchButton.interactable = true; // 免费重置，始终可用
-                if (resetBranchButtonText != null)
-                    resetBranchButtonText.text = "重置分支";
-            }
+            resetBranchButton.gameObject.SetActive(isUnlocked);
+            resetBranchButton.interactable = hasSpentNode;
+
+            if (resetBranchButtonText != null)
+                resetBranchButtonText.text = hasSpentNode
+                    ? "\u91cd\u7f6e\u6280\u80fd\u6811"
+                    : "\u6682\u65e0\u53ef\u91cd\u7f6e";
         }
     }
 
@@ -651,12 +696,19 @@ public class CharacterSelectManager : MonoBehaviour
     private void OnUnlockClicked()
     {
         if (currentCharacter == null || PlayerProgressManager.Instance == null) return;
+        if (string.IsNullOrEmpty(currentCharacter.characterID))
+        {
+            Debug.LogError($"[CharacterUnlock] {currentCharacter.name} is missing characterID.");
+            return;
+        }
         if (!PlayerProgressManager.Instance.CanAfford(currentCharacter.unlockCost))
         {
+            Debug.LogWarning($"[CharacterUnlock] Not enough gold: {PlayerProgressManager.Instance.currentGold}/{currentCharacter.unlockCost}");
             return;
         }
         PlayerProgressManager.Instance.SpendGold(currentCharacter.unlockCost);
         PlayerProgressManager.Instance.UnlockItem(currentCharacter.characterID);
+        PlayerProgressManager.Instance.SaveGame();
         RefreshUI(currentCharacter);
         BindSkillNodes(currentCharacter); // 解锁后立即刷新技能树显示
     }
@@ -666,9 +718,26 @@ public class CharacterSelectManager : MonoBehaviour
     /// </summary>
     private void OnResetBranchClicked()
     {
-        if (currentCharacter == null || PlayerProgressManager.Instance == null) return;
+        if (currentCharacter == null)
+        {
+            Debug.LogWarning("[CharacterSkillTree] Reset clicked without a current character.");
+            return;
+        }
 
-        // 显示确认弹窗
+        if (PlayerProgressManager.Instance == null)
+        {
+            Debug.LogWarning("[CharacterSkillTree] Reset clicked but PlayerProgressManager is missing.");
+            return;
+        }
+
+        int spentNodeCount = CountUnlockedCharacterNodes(currentCharacter);
+        if (spentNodeCount <= 0)
+        {
+            Debug.Log("[CharacterSkillTree] Reset clicked, but this character has no unlocked skill nodes.");
+            RefreshUI(currentCharacter);
+            return;
+        }
+
         ShowResetConfirmDialog();
     }
 
@@ -678,10 +747,15 @@ public class CharacterSelectManager : MonoBehaviour
     private void ShowResetConfirmDialog()
     {
         // 复用节点详情弹窗作为确认弹窗
-        if (nodeDetailPopup == null) return;
+        if (nodeDetailPopup == null)
+        {
+            Debug.LogWarning("[CharacterSkillTree] Reset confirm popup is not assigned.");
+            return;
+        }
 
-        if (popupNodeName != null) popupNodeName.text = "❗ 重置确认";
-        if (popupDescription != null) popupDescription.text = "确定要重置当前角色的\n技能树分支吗？\n\n重置后可重新选择分支方向";
+        if (popupNodeName != null) popupNodeName.text = "\u91cd\u7f6e\u786e\u8ba4";
+        if (popupDescription != null)
+            popupDescription.text = "\u786e\u5b9a\u8981\u91cd\u7f6e\u5f53\u524d\u89d2\u8272\u7684\n\u6280\u80fd\u6811\u5206\u652f\u5417\uff1f\n\n\u91cd\u7f6e\u540e\u53ef\u91cd\u65b0\u9009\u62e9\u5206\u652f\u65b9\u5411";
 
         EnsurePopupAutoSize();
 
@@ -692,7 +766,7 @@ public class CharacterSelectManager : MonoBehaviour
             popupUnlockButton.onClick.RemoveAllListeners();
             popupUnlockButton.onClick.AddListener(OnResetConfirmed);
         }
-        if (popupUnlockButtonText != null) popupUnlockButtonText.text = "确认重置";
+        if (popupUnlockButtonText != null) popupUnlockButtonText.text = "\u786e\u8ba4\u91cd\u7f6e";
 
         // 居中显示
         RectTransform popupRect = nodeDetailPopup.GetComponent<RectTransform>();
@@ -715,7 +789,7 @@ public class CharacterSelectManager : MonoBehaviour
 
         // 使用新的全重置方法（不扣金币）
         PlayerProgressManager.Instance.ResetCharacterSkillTree(currentCharacter);
-        Debug.Log($"[技能树] 分支已重置（免费）");
+        Debug.Log($"[CharacterSkillTree] Reset skill tree for {currentCharacter.characterID}.");
 
         // 关闭弹窗并恢复按钮功能
         CloseResetConfirmDialog();
@@ -735,12 +809,41 @@ public class CharacterSelectManager : MonoBehaviour
         if (nodeDetailPopup != null) nodeDetailPopup.SetActive(false);
 
         // 恢复解锁按钮的原始点击事件
-        if (popupUnlockButton != null)
-        {
-            popupUnlockButton.onClick.RemoveAllListeners();
-            popupUnlockButton.onClick.AddListener(OnPopupUnlockClicked);
-        }
+        RestorePopupUnlockButtonAction();
         currentPopupNode = null;
+    }
+
+    private void RefreshGoldText()
+    {
+        if (PlayerProgressManager.Instance == null) return;
+
+        int currentGold = PlayerProgressManager.Instance.currentGold;
+        if (goldText != null)
+        {
+            goldText.gameObject.SetActive(true);
+            goldText.enabled = true;
+            goldText.transform.SetAsLastSibling();
+            goldText.color = new Color(0.24f, 0.12f, 0.03f, 1f);
+            goldText.text = currentGold.ToString();
+        }
+
+        if (UIManager.Instance != null)
+            UIManager.Instance.UpdateGoldDisplay(currentGold);
+    }
+
+    private int CountUnlockedCharacterNodes(CharacterData data)
+    {
+        if (data == null || data.characterSkillNodes == null || PlayerProgressManager.Instance == null)
+            return 0;
+
+        int count = 0;
+        foreach (var node in data.characterSkillNodes)
+        {
+            if (node != null && PlayerProgressManager.Instance.IsCharacterNodeUnlocked(node))
+                count++;
+        }
+
+        return count;
     }
 
     private bool IsCharacterUnlocked(CharacterData data)

@@ -51,7 +51,7 @@ public class PinballAI : MonoBehaviour
         Vector3 initialVelocity = new Vector3(randomDir.x, 0, randomDir.y) * moveSpeed; //
         rb.velocity = initialVelocity; //
         lastVelocity = initialVelocity; //
-        if (lifetime > 0) Destroy(gameObject, lifetime); //
+        if (lifetime > 0) StartCoroutine(LifetimeDespawnRoutine(lifetime)); //
     }
 
     void FixedUpdate()
@@ -181,5 +181,18 @@ public class PinballAI : MonoBehaviour
     {
         yield return new WaitForSeconds(damageCooldown); //
         canDealDamage = true; //
+    }
+
+    private IEnumerator LifetimeDespawnRoutine(float lifetime)
+    {
+        yield return new WaitForSeconds(lifetime);
+
+        Health health = GetComponent<Health>();
+        if (health != null && !health.IsDead && gameObject.CompareTag("Enemy"))
+        {
+            GameTimelineManager.Instance?.EnemyRemovedWithoutKill("pinball-lifetime");
+        }
+
+        Destroy(gameObject);
     }
 }

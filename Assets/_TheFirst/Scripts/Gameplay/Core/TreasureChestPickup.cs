@@ -1,5 +1,5 @@
 // TreasureChestPickup.cs — 宝箱拾取物
-// 怪物死亡掉落，玩家触碰拾取后弹出被动道具选卡界面
+// 怪物死亡掉落，玩家触碰拾取后触发独立宝箱开奖界面
 using UnityEngine;
 using System.Collections;
 
@@ -134,7 +134,7 @@ public class TreasureChestPickup : MonoBehaviour
     }
 
     /// <summary>
-    /// 执行拾取逻辑：触发被动道具选卡界面（支持多选）
+    /// 执行拾取逻辑：触发宝箱老虎机式自动奖励
     /// </summary>
     private void PickUp()
     {
@@ -153,15 +153,13 @@ public class TreasureChestPickup : MonoBehaviour
             Destroy(vfx, 2f);
         }
 
-        // 根据幸运值计算选卡轮数，并触发被动道具选卡界面
         if (UpgradeManager.Instance != null)
         {
-            int picks = CalculatePickCount();
-            UpgradeManager.Instance.TriggerPassiveOnlyUpgrade(picks);
+            UpgradeManager.Instance.TriggerTreasureSlotMachineReward();
         }
         else
         {
-            Debug.LogWarning("[TreasureChestPickup] UpgradeManager 未找到，无法触发选卡！");
+            Debug.LogWarning("[TreasureChestPickup] UpgradeManager 未找到，无法触发宝箱奖励！");
         }
 
         // 销毁宝箱

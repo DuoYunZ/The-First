@@ -79,14 +79,17 @@ public class BuildCameraController : MonoBehaviour
         targetPosition = target.position;
 
         // 【修改】检查鼠标右键是否按下 (我们复用之前创建的 SecondaryAction)
-        bool mouseButtonPressed = !requireMouseButton || playerControls.Builder.SecondaryAction.IsPressed();
+        Vector2 lookDelta = playerControls.Builder.CameraLook.ReadValue<Vector2>();
+        bool gamepadLook = playerControls.Builder.CameraLook.activeControl?.device is Gamepad
+            && lookDelta.sqrMagnitude > 0.01f;
+        bool mouseButtonPressed = !requireMouseButton || playerControls.Builder.SecondaryAction.IsPressed() || gamepadLook;
 
         if (mouseButtonPressed)
         {
             // 【修改】读取鼠标移动增量
-            Vector2 lookDelta = playerControls.Builder.CameraLook.ReadValue<Vector2>();
-            x += lookDelta.x * xSpeed * 0.02f;
-            y -= lookDelta.y * ySpeed * 0.02f;
+            float lookScale = gamepadLook ? Time.deltaTime : 0.02f;
+            x += lookDelta.x * xSpeed * lookScale;
+            y -= lookDelta.y * ySpeed * lookScale;
 
             y = ClampAngle(y, yMinLimit, yMaxLimit);
         }
@@ -94,9 +97,11 @@ public class BuildCameraController : MonoBehaviour
         Quaternion targetRotation = Quaternion.Euler(y, x, 0);
 
         // 【修改】读取鼠标滚轮输入
-        float scrollValue = playerControls.Builder.CameraZoom.ReadValue<Vector2>().y;
+        Vector2 zoomInput = playerControls.Builder.CameraZoom.ReadValue<Vector2>();
+        float scrollValue = zoomInput.y;
+        bool gamepadZoom = playerControls.Builder.CameraZoom.activeControl?.device is Gamepad;
         // 滚轮向上是正值，向下是负值。我们需要反转它以符合直觉（向上滚是拉近，距离变小）
-        distance -= scrollValue * zoomSpeed * 0.01f; // 乘以一个小数让速度更可控
+        distance -= scrollValue * zoomSpeed * (gamepadZoom ? Time.deltaTime : 0.01f);
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);

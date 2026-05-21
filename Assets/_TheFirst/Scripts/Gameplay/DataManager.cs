@@ -1,6 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+public enum DemoDifficultySelection
+{
+    Normal,
+    Hard
+}
+
 public class DataManager : MonoBehaviour
 {
     public static DataManager Instance { get; private set; } // 单例模式方便访问
@@ -18,6 +24,10 @@ public class DataManager : MonoBehaviour
     /// 持久化记住玩家上次选择的角色ID
     /// </summary>
     public string selectedCharacterID;
+
+    [Header("关卡选择")]
+    [Tooltip("Demo关卡难度选择，会在进入战斗场景后由时间轴管理器读取。")]
+    public DemoDifficultySelection selectedDemoDifficulty = DemoDifficultySelection.Normal;
 
     void Awake()
     {
@@ -48,7 +58,7 @@ public class DataManager : MonoBehaviour
         if (string.IsNullOrEmpty(id)) return null;
         foreach (var c in allCharacters)
         {
-            if (c != null && c.characterID == id) return c;
+            if (c != null && c.characterID == id && DemoContentGate.IsCharacterAllowed(c)) return c;
         }
         return null;
     }
@@ -60,10 +70,14 @@ public class DataManager : MonoBehaviour
     {
         foreach (var c in allCharacters)
         {
-            if (c != null && c.isDefaultUnlocked) return c;
+            if (c != null && c.isDefaultUnlocked && DemoContentGate.IsCharacterAllowed(c)) return c;
         }
         // 回退：返回列表第一个
-        return allCharacters.Count > 0 ? allCharacters[0] : null;
+        foreach (var c in allCharacters)
+        {
+            if (DemoContentGate.IsCharacterAllowed(c)) return c;
+        }
+        return null;
     }
 
     /// <summary>
@@ -72,7 +86,12 @@ public class DataManager : MonoBehaviour
     public CharacterData ResolveSelectedCharacter()
     {
         // 优先用已设置的 selectedCharacter
-        if (selectedCharacter != null) return selectedCharacter;
+        if (selectedCharacter != null && DemoContentGate.IsCharacterAllowed(selectedCharacter)) return selectedCharacter;
+        if (selectedCharacter != null && !DemoContentGate.IsCharacterAllowed(selectedCharacter))
+        {
+            selectedCharacter = null;
+            selectedCharacterID = null;
+        }
 
         // 尝试根据存档的ID恢复
         if (!string.IsNullOrEmpty(selectedCharacterID))

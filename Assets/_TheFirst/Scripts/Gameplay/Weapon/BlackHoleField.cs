@@ -45,6 +45,8 @@ public class BlackHoleField : MonoBehaviour
 
         foreach (var enemyTransform in victims)
         {
+            if (StatusEffectReceiver.IsKnockbackImmune(enemyTransform)) continue;
+
             // 2. 压制敌人的 AI 移动 (防止它挣扎)
             NavMeshAgent agent = enemyTransform.GetComponent<NavMeshAgent>();
             if (agent != null && agent.enabled)

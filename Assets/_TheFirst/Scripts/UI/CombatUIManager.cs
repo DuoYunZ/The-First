@@ -18,7 +18,9 @@ public class CombatUIManager : MonoBehaviour
     void Awake()
     {
         // 3. 初始化这个 Action 并绑定到键盘的 Escape 键
-        pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
+        pauseAction = new InputAction("Pause");
+        pauseAction.AddBinding("<Keyboard>/escape");
+        pauseAction.AddBinding("<Gamepad>/start");
     }
 
     private void OnEnable()
@@ -57,7 +59,7 @@ public class CombatUIManager : MonoBehaviour
     /// </summary>
     void OnApplicationFocus(bool hasFocus)
     {
-        if (!hasFocus && !isPaused)
+        if (!hasFocus && !isPaused && !IsCodexPanelOpen())
         {
             // 失去焦点时自动暂停
             PauseGame();
@@ -76,6 +78,12 @@ public class CombatUIManager : MonoBehaviour
         // .triggered 相当于旧的 GetButtonDown
         if (pauseAction.triggered)
         {
+            if (IsCodexPanelOpen())
+            {
+                UIManager.Instance.skillTreeUIManager.ClosePanel();
+                return;
+            }
+
             // 如果设置面板打开，则关闭设置面板
             if (isSettingsOpen)
             {
@@ -90,6 +98,13 @@ public class CombatUIManager : MonoBehaviour
                 PauseGame();
             }
         }
+    }
+
+    private bool IsCodexPanelOpen()
+    {
+        return UIManager.Instance != null
+            && UIManager.Instance.skillTreeUIManager != null
+            && UIManager.Instance.skillTreeUIManager.IsPanelOpen();
     }
 
     // 暂停游戏

@@ -27,6 +27,13 @@ public class UltimateHUD : MonoBehaviour
 
     void Awake()
     {
+        if (DemoContentGate.DemoModeEnabled && DemoContentGate.DisableUltimateSystemInDemo)
+        {
+            gameObject.SetActive(false);
+            enabled = false;
+            return;
+        }
+
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
     }

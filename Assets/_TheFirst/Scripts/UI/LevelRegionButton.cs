@@ -87,6 +87,12 @@ public class LevelRegionButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     /// </summary>
     public void RefreshUnlockState()
     {
+        if (!DemoContentGate.IsLevelAllowed(levelData))
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         // 确保初始化
         Initialize();
 

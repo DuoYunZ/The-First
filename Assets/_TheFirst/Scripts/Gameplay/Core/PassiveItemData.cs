@@ -3,6 +3,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewPassiveItem", menuName = "Gameplay/Passive Item Data")]
 public class PassiveItemData : ScriptableObject
 {
+    public const int PassiveCapstoneLevel = 3;
+
     [Header("UI 信息")]
     public string itemName;
     public Sprite icon;
@@ -16,7 +18,9 @@ public class PassiveItemData : ScriptableObject
     public float valuePerLevel;
 
     [Header("等级限制")]
-    public int maxLevel = 5;
+    public int maxLevel = PassiveCapstoneLevel;
+
+    public int EffectiveMaxLevel => Mathf.Max(1, Mathf.Min(maxLevel, PassiveCapstoneLevel));
 
     [Header("触发型被动（可选）")]
     [Tooltip("是否为触发型被动（如燃烧轨迹、击杀回血等），触发型被动由 PassiveEffectManager 管理运行时逻辑")]
@@ -58,5 +62,58 @@ public class PassiveItemData : ScriptableObject
         float val = valuePerLevel * level;
         string valStr = isPercent ? $"{val * 100}%" : $"{val}";
         return $"{description} (+{valStr})";
+    }
+
+    public string GetMilestoneUnlockDescription(int currentLevel, int nextLevel)
+    {
+        int effectiveMaxLevel = EffectiveMaxLevel;
+        int cappedNextLevel = Mathf.Clamp(nextLevel, 0, effectiveMaxLevel);
+        if (cappedNextLevel <= currentLevel) return "";
+
+        if (currentLevel < effectiveMaxLevel && cappedNextLevel >= effectiveMaxLevel)
+        {
+            string maxDescription = GetMilestoneDescriptionForLevel(effectiveMaxLevel, true);
+            if (!string.IsNullOrEmpty(maxDescription)) return maxDescription;
+        }
+
+        if (currentLevel < 3 && cappedNextLevel >= 3)
+        {
+            return GetMilestoneDescriptionForLevel(3, false);
+        }
+
+        return "";
+    }
+
+    private string GetMilestoneDescriptionForLevel(int milestoneLevel, bool isMaxLevel)
+    {
+        string prefix = isMaxLevel ? $"{milestoneLevel}级红宝石" : $"{milestoneLevel}级节点";
+
+        switch (statType)
+        {
+            case UpgradeType.WeaponDamage:
+                return isMaxLevel ? $"{prefix}: 暴击伤害 +20%" : $"{prefix}: 暴击率 +5%";
+            case UpgradeType.WeaponFireRate:
+                return isMaxLevel ? $"{prefix}: 子弹数量 +1" : $"{prefix}: 弹道速度 +15%";
+            case UpgradeType.AoeRadius:
+                return isMaxLevel ? $"{prefix}: 抛物线爆炸眩晕 +12%" : $"{prefix}: 范围伤害 +10%";
+            case UpgradeType.WeaponDuration:
+                return isMaxLevel ? $"{prefix}: 冷却额外缩短 8%" : $"{prefix}: 环绕/部署数量 +1";
+            case UpgradeType.PierceCount:
+                return isMaxLevel ? $"{prefix}: 子弹数量 +1" : "";
+            case UpgradeType.PickupRadius:
+                return isMaxLevel ? $"{prefix}: 移动速度 +8%" : $"{prefix}: 经验获取 +8%";
+            case UpgradeType.MoveSpeed:
+                return isMaxLevel ? $"{prefix}: 冲刺结束释放冲击波" : $"{prefix}: 拾取范围 +15%";
+            case UpgradeType.MaxHealth:
+                return isMaxLevel ? $"{prefix}: 每100击杀恢复2HP" : $"{prefix}: 护甲 +1";
+            case UpgradeType.Armor:
+                return isMaxLevel ? $"{prefix}: 最大生命 +25" : $"{prefix}: 护甲 +1";
+            case UpgradeType.Luck:
+                return isMaxLevel ? $"{prefix}: 暴击伤害 +25%" : $"{prefix}: 暴击率 +3%";
+            case UpgradeType.ExperienceGain:
+                return isMaxLevel ? $"{prefix}: 幸运 +8%" : $"{prefix}: 拾取范围 +15%";
+        }
+
+        return "";
     }
 }

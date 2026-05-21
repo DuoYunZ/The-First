@@ -544,6 +544,8 @@ public class PlayerBladeAttack : MonoBehaviour
             slashBonus += PlayerStats.Instance.bonusSlashCount;
         if (myWeaponPart != null)
             slashBonus += myWeaponPart.localSlashCountBonus;
+        int swordmasterSoulSlashBonus = GetSwordmasterSoulSlashBonus();
+        slashBonus += swordmasterSoulSlashBonus;
 
         // === 雷霆模式：使用三连刺替代普通刀光（0.2s间隔） ===
         if (currentMode == BladeMode.Thunder)
@@ -553,7 +555,7 @@ public class PlayerBladeAttack : MonoBehaviour
         }
 
         // === 风刃模式：替换斩击为发射风刃子弹（不再生成刀光） ===
-        if (currentMode == BladeMode.WindBlade && windBladeProjectilePrefab != null)
+        if (currentMode == BladeMode.WindBlade && GetWindBladeProjectilePrefab() != null)
         {
             StartCoroutine(WindBladeSequence(1 + slashBonus));
             return; // 风刃模式跳过普通刀光
@@ -584,7 +586,7 @@ public class PlayerBladeAttack : MonoBehaviour
             }
 
             // 4. 计算总数
-            int totalSlashCount = baseCount + globalBonus + localBonus;
+            int totalSlashCount = baseCount + globalBonus + localBonus + swordmasterSoulSlashBonus;
 
             if (localBonus > 0)
             {
@@ -747,16 +749,101 @@ public class PlayerBladeAttack : MonoBehaviour
     }
     private List<SlashPattern> GetCurrentSlashPattern(int slashLevel)
     {
+        int targetCount = Mathf.Clamp(slashLevel, 1, 12);
+        List<SlashPattern> pattern;
         switch (slashLevel)
         {
-            case 2: return slashesLevel2;
-            case 3: return slashesLevel3;
-            case 4: return slashesLevel4;
+            case 2: pattern = slashesLevel2; break;
+            case 3: pattern = slashesLevel3; break;
+            case 4: pattern = slashesLevel4; break;
             case 5:
             default: // 如果等级超过5，或等于1，或出现意外情况，都使用对应的列表
-                if (slashLevel >= 5) return slashesLevel5;
-                return slashesLevel1;
+                pattern = slashLevel >= 5 ? slashesLevel5 : slashesLevel1;
+                break;
         }
+
+        if (pattern == null || pattern.Count == 0)
+        {
+            return new List<SlashPattern>
+            {
+                new SlashPattern { positionOffset = Vector3.zero, angleOffset = 0f }
+            };
+        }
+
+        if (targetCount <= pattern.Count)
+        {
+            return pattern;
+        }
+
+        List<SlashPattern> expandedPattern = new List<SlashPattern>(pattern);
+        int extraIndex = 0;
+        while (expandedPattern.Count < targetCount)
+        {
+            int pairIndex = extraIndex / 2 + 1;
+            bool leftSide = extraIndex % 2 == 0;
+            float sideSign = leftSide ? -1f : 1f;
+            float sideOffset = sideSlashOffset * 0.35f * pairIndex;
+            float forwardOffset = 0.35f * pairIndex;
+            float angle = sideSign * Mathf.Min(72f, 18f + pairIndex * 10f);
+
+            expandedPattern.Add(new SlashPattern
+            {
+                positionOffset = new Vector3(sideSign * sideOffset, 0f, forwardOffset),
+                angleOffset = angle
+            });
+            extraIndex++;
+        }
+
+        return expandedPattern;
+    }
+
+    private int GetSwordmasterSoulSlashBonus()
+    {
+        if (PlayerStats.Instance == null || PlayerStats.Instance.swordmasterSoulLevel <= 0) return 0;
+        if (!IsCurrentAttackBladeWeapon()) return 0;
+
+        int bladeLevel = GetCurrentSlashWeaponLevel();
+        return Mathf.Max(0, bladeLevel / 2);
+    }
+
+    private int GetCurrentSlashWeaponLevel()
+    {
+        int level = 1;
+        if (myWeaponPart != null)
+        {
+            level = Mathf.Max(level, myWeaponPart.currentLevel, myWeaponPart.currentProficiencyLevel);
+        }
+
+        if (WeaponController.Instance == null || attackData == null) return level;
+
+        foreach (OwnedWeapon owned in WeaponController.Instance.ownedWeapons)
+        {
+            if (owned == null) continue;
+
+            bool matches = owned.stats == attackData
+                || owned.InheritsSkillSource(attackData)
+                || owned.weaponPartInstance == myWeaponPart
+                || (owned.weaponPartInstance != null && owned.weaponPartInstance.StatBlock == attackData);
+
+            if (!matches) continue;
+
+            level = Mathf.Max(level, owned.currentLevel);
+            if (owned.weaponPartInstance != null)
+            {
+                level = Mathf.Max(level, owned.weaponPartInstance.currentLevel, owned.weaponPartInstance.currentProficiencyLevel);
+            }
+        }
+
+        return level;
+    }
+
+    private bool IsCurrentAttackBladeWeapon()
+    {
+        if (attackData == null) return false;
+        if (WeaponBuildTagUtility.IsSlashWeapon(attackData)) return true;
+        string id = attackData.weaponID ?? "";
+        string name = attackData.weaponName ?? "";
+        return id.Contains("Blade") || name.Contains("斩") || name.Contains("刃");
     }
 
     // SpawnSlashVFX 和 OnDrawGizmosSelected 方法保持我们上一个版本即可
@@ -980,15 +1067,50 @@ public class PlayerBladeAttack : MonoBehaviour
 
     }
 
+    public void ApplyModeFromWeapon(WeaponStatBlock weapon)
+    {
+        if (weapon == null) return;
+
+        BladeMode mode = GetBladeModeForWeapon(weapon);
+        if (mode != BladeMode.Normal || IsBladeEvolutionWeapon(weapon))
+        {
+            SetBladeMode(mode);
+        }
+    }
+
+    private BladeMode GetBladeModeForWeapon(WeaponStatBlock weapon)
+    {
+        string id = weapon.weaponID ?? "";
+        if (id.Contains("WindBlade")) return BladeMode.WindBlade;
+        if (id.Contains("LightBlade") || id.Contains("ThunderBlade")) return BladeMode.Thunder;
+        if (id.Contains("FireBlade")) return BladeMode.Fire;
+        return BladeMode.Normal;
+    }
+
+    private bool IsBladeEvolutionWeapon(WeaponStatBlock weapon)
+    {
+        string id = weapon.weaponID ?? "";
+        return id.Contains("WindBlade") || id.Contains("LightBlade") || id.Contains("ThunderBlade") || id.Contains("FireBlade");
+    }
+
+    private GameObject GetWindBladeProjectilePrefab()
+    {
+        if (windBladeProjectilePrefab != null) return windBladeProjectilePrefab;
+        if (attackData != null && attackData.bladeEnergyPrefab != null) return attackData.bladeEnergyPrefab;
+        return attackData != null ? attackData.projectilePrefab : null;
+    }
+
     /// <summary>
     /// 风刃模式：发射风刃子弹
     /// </summary>
     private void FireWindBladeProjectile()
     {
-        if (windBladeProjectilePrefab == null) return;
+        GameObject projectilePrefab = GetWindBladeProjectilePrefab();
+        if (projectilePrefab == null) return;
 
         Transform spawnPoint = bladeEnergySpawnPoint != null ? bladeEnergySpawnPoint : this.transform;
         Vector3 spawnPos = spawnPoint.position;
+        if (visualsTransform == null) visualsTransform = transform;
 
         // === 自动瞄准：寻找最近敌人 ===
         Vector3 fireDir = visualsTransform.rotation * Vector3.forward; // 默认朝玩家面向
@@ -1019,7 +1141,7 @@ public class PlayerBladeAttack : MonoBehaviour
 
         Quaternion fireRot = Quaternion.LookRotation(fireDir);
 
-        GameObject projectileGO = Instantiate(windBladeProjectilePrefab, spawnPos, fireRot);
+        GameObject projectileGO = Instantiate(projectilePrefab, spawnPos, fireRot);
         Projectile proj = projectileGO.GetComponent<Projectile>();
 
         if (proj != null)

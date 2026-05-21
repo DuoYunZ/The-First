@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     public Transform playerTransform { get; private set; }
     private Health playerHealthComponent = null;
     public Transform playerAimTarget { get; private set; }
+    private bool victoryPending = false;
 
     [Header("能量石掉落池")]
     [Tooltip("所有可能掉落的能量石 (EnergyStoneSO) 资产文件")]
@@ -58,6 +59,7 @@ public class GameManager : MonoBehaviour
         }
 
         currentState = GameState.Combat;
+        victoryPending = false;
         Time.timeScale = 1f; // 確保遊戲時間正常流動
 
         // 保存對玩家核心組件的引用
@@ -99,7 +101,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void HandleGameOver()
     {
-        if (currentState == GameState.GameOver) return; // 防止重複執行
+        if (currentState == GameState.GameOver || currentState == GameState.Victory || victoryPending) return; // 防止重複執行
 
         currentState = GameState.GameOver;
 
@@ -135,10 +137,21 @@ public class GameManager : MonoBehaviour
 
     public void HandleVictory()
     {
-        if (currentState == GameState.Victory || currentState == GameState.GameOver) return;
+        if (currentState == GameState.Victory) return;
+        if (currentState == GameState.GameOver && !victoryPending) return;
 
         currentState = GameState.Victory;
+        victoryPending = false;
         Time.timeScale = 0f;
+
+        if (PlayerProgressManager.Instance != null)
+        {
+            PlayerProgressManager.Instance.IncreaseAchievementStat("Victory_Count", 1);
+            string timelineName = GameTimelineManager.Instance != null
+                ? GameTimelineManager.Instance.GetActiveTimelineName()
+                : string.Empty;
+            PlayerProgressManager.Instance.RecordDemoVictory(SceneManager.GetActiveScene().name, timelineName);
+        }
         // 1. 隱藏戰鬥UI
         if (UIManager.Instance != null)
         {
@@ -150,6 +163,12 @@ public class GameManager : MonoBehaviour
         {
             settlementUI.Show(true); // true = 勝利
         }
+    }
+
+    public void BeginVictoryPending()
+    {
+        if (currentState == GameState.GameOver || currentState == GameState.Victory) return;
+        victoryPending = true;
     }
     /// <summary>
     /// 供“重新開始戰鬥”按鈕呼叫

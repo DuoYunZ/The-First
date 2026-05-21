@@ -74,6 +74,7 @@ public class TornadoController : MonoBehaviour
         foreach (var h in victims)
         {
             Transform enemyTrans = h.transform;
+            if (StatusEffectReceiver.IsKnockbackImmune(enemyTrans)) continue;
 
             // --- 核心吸附逻辑 (参考 BlackHole) ---
 

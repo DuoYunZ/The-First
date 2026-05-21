@@ -16,18 +16,21 @@ public class NPCInteraction : MonoBehaviour
 
     void Awake()
     {
-        playerControls = new PlayerControls();
-        KeyBindingManager.ApplyOverrides(playerControls);
+        EnsurePlayerControls();
     }
 
     private void OnEnable()
     {
+        EnsurePlayerControls();
         playerControls.Player.Enable();
     }
 
     private void OnDisable()
     {
-        playerControls.Player.Disable();
+        if (playerControls != null)
+        {
+            playerControls.Player.Disable();
+        }
     }
 
     void Start()
@@ -37,6 +40,11 @@ public class NPCInteraction : MonoBehaviour
 
     void Update()
     {
+        if (playerIsInRange)
+        {
+            EnsurePlayerControls();
+        }
+
         if (playerIsInRange && playerControls.Player.Interact.WasPressedThisFrame())
         {
             if (UIManager.Instance != null && UIManager.Instance.skillTreeUIManager != null)
@@ -58,6 +66,13 @@ public class NPCInteraction : MonoBehaviour
                 Debug.LogError("UIManager 或 SkillTreeUIManager 未找到！无法打开/关闭技能树。");
             }
         }
+    }
+
+    private void EnsurePlayerControls()
+    {
+        if (playerControls != null) return;
+        playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
     }
 
     private void OnTriggerEnter(Collider other)

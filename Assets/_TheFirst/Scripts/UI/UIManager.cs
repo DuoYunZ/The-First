@@ -34,8 +34,11 @@ public class UIManager : MonoBehaviour
     private string _cachedWaveName = "";
     private float _cachedNextWaveTime;
     private int _cachedEnemiesRemaining;
+
     void Start()
     {
+        EnsureGoldDisplayReference();
+
         if (PlayerProgressManager.Instance != null)
         {
             // 直接调用已有的更新方法，传入当前的金币值
@@ -57,6 +60,7 @@ public class UIManager : MonoBehaviour
         {
             Instance = this;
             // DontDestroyOnLoad(gameObject); // 如果您的UIManager是持久化的
+            EnsureGoldDisplayReference();
         }
         else
         {
@@ -215,10 +219,36 @@ public class UIManager : MonoBehaviour
 
     public void UpdateGoldDisplay(int amount)
     {
+        EnsureGoldDisplayReference();
+
         if (goldDisplayText != null)
         {
+            goldDisplayText.gameObject.SetActive(true);
+            goldDisplayText.enabled = true;
+            goldDisplayText.transform.SetAsLastSibling();
+            goldDisplayText.color = new Color(0.24f, 0.12f, 0.03f, 1f);
             goldDisplayText.text = $"{amount}";
         }
+    }
+
+    private void EnsureGoldDisplayReference()
+    {
+        if (goldDisplayText != null) return;
+
+        TextMeshProUGUI[] textComponents =
+            FindObjectsByType<TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        foreach (TextMeshProUGUI textComponent in textComponents)
+        {
+            if (textComponent != null && textComponent.name == "Gold_Display_Text")
+            {
+                goldDisplayText = textComponent;
+                Debug.Log("[UIManager] Auto-bound goldDisplayText to Gold_Display_Text.");
+                return;
+            }
+        }
+
+        Debug.LogWarning("[UIManager] goldDisplayText is missing and Gold_Display_Text was not found.");
     }
 
     public void CreateUiForWeapon(WeaponPart weapon)

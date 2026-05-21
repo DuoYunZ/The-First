@@ -59,6 +59,7 @@ public class EnemyAI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>(); // 【新增】获取 Rigidbody 组件
+        StabilizeAgentRigidbody();
         animator = GetComponentInChildren<Animator>();
         explosionAttackScript = GetComponent<EnemyExplosionAttack>();
         meleeAttackScript = GetComponent<EnemyMeleeAttack>(); // 【新增】获取爆炸攻击脚本
@@ -97,6 +98,7 @@ public class EnemyAI : MonoBehaviour
         if (isAttacking)
         {
             _currentState = AIState.RangedAttacking;
+            StopAgentMotion();
         }
         else
         {
@@ -203,6 +205,8 @@ public class EnemyAI : MonoBehaviour
 
         // 4. 恢复 Rigidbody 和 NavMeshAgent
         rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
         agent.enabled = true;
 
         // 5. 将 Agent 传送到物理模拟结束的新位置
@@ -298,6 +302,7 @@ public class EnemyAI : MonoBehaviour
     {
         _currentState = AIState.Chasing;
         stateTimer = Random.Range(chaseDurationRange.x, chaseDurationRange.y);
+        StabilizeAgentRigidbody();
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
@@ -308,11 +313,42 @@ public class EnemyAI : MonoBehaviour
     {
         _currentState = AIState.Paused;
         stateTimer = Random.Range(pauseDurationRange.x, pauseDurationRange.y);
+        StabilizeAgentRigidbody();
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
         }
+    }
+
+    public void StopAgentMotion()
+    {
+        StabilizeAgentRigidbody();
+
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool("isMoving", false);
+        }
+    }
+
+    private void StabilizeAgentRigidbody()
+    {
+        if (rb == null)
+        {
+            return;
+        }
+
+        rb.useGravity = false;
+        rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
     public void RequestJumpAttack(Vector3 targetPosition, float jumpDuration, float arcHeight)
@@ -357,6 +393,8 @@ public class EnemyAI : MonoBehaviour
 
         transform.position = endPoint;
         rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
         agent.enabled = originalAgentState;
 
         // 【关键】将Agent同步到新位置

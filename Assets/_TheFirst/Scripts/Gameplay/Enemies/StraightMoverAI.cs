@@ -59,8 +59,10 @@ public class StraightMoverAI : MonoBehaviour
             animator.SetBool("isMoving", true);
         }
 
-        // 在 'lifetime' 秒后自动销毁
-        Destroy(gameObject, lifetime);
+        if (lifetime > 0f)
+        {
+            StartCoroutine(LifetimeDespawnRoutine(lifetime));
+        }
     }
 
     public void SetStunned(bool stunned)
@@ -91,6 +93,9 @@ public class StraightMoverAI : MonoBehaviour
     }
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount)
     {
+        BossUnit bossUnit = GetComponentInParent<BossUnit>();
+        if (bossUnit != null && bossUnit.immuneToKnockback) return;
+
         if (rb != null && !isStunned)
         {
             // 在眩晕时不接受击退
@@ -128,5 +133,18 @@ public class StraightMoverAI : MonoBehaviour
     {
         yield return new WaitForSeconds(damageCooldown);
         canDealDamage = true;
+    }
+
+    private IEnumerator LifetimeDespawnRoutine(float lifetime)
+    {
+        yield return new WaitForSeconds(lifetime);
+
+        Health health = GetComponent<Health>();
+        if (health != null && !health.IsDead && gameObject.CompareTag("Enemy"))
+        {
+            GameTimelineManager.Instance?.EnemyRemovedWithoutKill("stampede-lifetime");
+        }
+
+        Destroy(gameObject);
     }
 }

@@ -16,6 +16,8 @@ public class HubSceneInitializer : MonoBehaviour
     public Transform playerSpawnPoint;
     [Tooltip("将场景中的枢纽虚拟相机拖到这里")]
     public CinemachineVirtualCamera hubCamera;
+    [Tooltip("可选。用于限制Hub相机跟随范围，让玩家走出边界时相机停在边界内。")]
+    public CameraFollowBounds hubCameraBounds;
 
     [Header("角色选择UI")]
     [Tooltip("场景中的角色选择面板管理器")]
@@ -129,8 +131,20 @@ public class HubSceneInitializer : MonoBehaviour
         // 关联相机
         if (hubCamera != null)
         {
-            hubCamera.Follow = currentPlayerInstance.transform;
-            hubCamera.LookAt = currentPlayerInstance.transform;
+            if (hubCameraBounds == null)
+            {
+                hubCameraBounds = hubCamera.GetComponent<CameraFollowBounds>();
+            }
+
+            if (hubCameraBounds != null)
+            {
+                hubCameraBounds.Configure(hubCamera, currentPlayerInstance.transform);
+            }
+            else
+            {
+                hubCamera.Follow = currentPlayerInstance.transform;
+                hubCamera.LookAt = currentPlayerInstance.transform;
+            }
         }
     }
 

@@ -51,12 +51,15 @@ public class Landmine : MonoBehaviour
     void Update()
     {
         // 【引力陷阱】武装后持续吸引附近敌人
-        if (isArmed && launcher != null && launcher.isMineGravityTrap)
+        bool engineerMinefield = launcher != null && launcher.IsCharacterSkillActive("Engineer_Fortress_Minefield");
+        if (isArmed && launcher != null && (launcher.isMineGravityTrap || engineerMinefield))
         {
             Collider[] nearby = Physics.OverlapSphere(transform.position, gravityTrapRadius, damageableLayers);
             foreach (Collider col in nearby)
             {
                 if (!col.CompareTag("Enemy")) continue;
+                if (StatusEffectReceiver.IsKnockbackImmune(col.transform)) continue;
+
                 // 微弱地将敌人向地雷中心拉扯
                 Vector3 dir = (transform.position - col.transform.position).normalized;
                 col.transform.position += dir * gravityPullForce * Time.deltaTime;
@@ -97,12 +100,13 @@ public class Landmine : MonoBehaviour
                 enemyHealth.TakeDamage(damage, transform.position, gameObject, AttackType.Standard, null, null, weaponName);
 
                 // 【震撼弹片】爆炸附加 1.5 秒眩晕
-                if (launcher != null && launcher.isMineStun)
+                if (launcher != null && (launcher.isMineStun || launcher.IsCharacterSkillActive("Engineer_Fortress_Minefield")))
                 {
                     StatusEffectReceiver receiver = hit.GetComponentInParent<StatusEffectReceiver>();
                     if (receiver != null)
                     {
-                        receiver.ApplyStun(1.5f);
+                        float stunDuration = launcher.isMineStun ? 1.5f : 0.8f;
+                        receiver.ApplyStun(stunDuration);
                     }
                 }
 

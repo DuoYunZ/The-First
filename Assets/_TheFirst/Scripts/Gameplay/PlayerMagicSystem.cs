@@ -53,6 +53,10 @@ public class PlayerMagicSystem : MonoBehaviour
     public float hailRadius = 8f;
     [Tooltip("冰雹风暴持续时间")]
     public float hailDuration = 5f;
+    [Tooltip("Mage_Ice_Hail: ice weapon hits required before spawning hail.")]
+    public int iceHailHitThreshold = 14;
+    [Tooltip("Mage_Ice_Hail: minimum seconds between hail spawns.")]
+    public float iceHailCooldown = 7f;
 
     [Header("炼狱之焰设置")]
     [Tooltip("触发炼狱所需的最少火海数量")]
@@ -66,7 +70,9 @@ public class PlayerMagicSystem : MonoBehaviour
 
     // 运行时状态
     private int icePenetrateCount = 0;
+    private int iceHailHitCount = 0;
     private float blizzardTimer = 0f;
+    private float iceHailTimer = 0f;
     private float infernoTimer = 0f;
     private bool infernoActive = false;
 
@@ -91,6 +97,11 @@ public class PlayerMagicSystem : MonoBehaviour
 
     void Start()
     {
+        if (DemoContentGate.DemoModeEnabled && DemoContentGate.DisableUltimateSystemInDemo)
+        {
+            return;
+        }
+
         // 延迟订阅大招事件（UltimateManager 可能还没初始化）
         StartCoroutine(DelayedSubscribe());
     }
@@ -140,7 +151,12 @@ public class PlayerMagicSystem : MonoBehaviour
         Transform playerT = GameManager.Instance?.playerTransform;
         if (playerT == null) return;
 
-        Vector3 spawnPos = playerT.position;
+        SpawnHailStorm(playerT.position);
+    }
+
+    private void SpawnHailStorm(Vector3 spawnPos)
+    {
+        spawnPos.y = 0.05f;
 
         // 如果有预制件，使用预制件
         if (hailStormPrefab != null)
@@ -170,6 +186,7 @@ public class PlayerMagicSystem : MonoBehaviour
     {
         // 永冻领域计时
         if (blizzardTimer > 0f) blizzardTimer -= Time.deltaTime;
+        if (iceHailTimer > 0f) iceHailTimer -= Time.deltaTime;
 
         // 炼狱之焰计时
         if (infernoTimer > 0f) infernoTimer -= Time.deltaTime;
@@ -201,13 +218,30 @@ public class PlayerMagicSystem : MonoBehaviour
     /// </summary>
     public void OnIcePenetrate(WeaponPart sourceWeapon)
     {
-        if (!HasMageSkill("Mage_Ice_Barrage")) return;
+        Vector3 hitPosition = sourceWeapon != null ? sourceWeapon.transform.position : transform.position;
+        OnIceWeaponHit(sourceWeapon, hitPosition);
+    }
 
-        icePenetrateCount++;
-        if (icePenetrateCount >= iceBarragePenetrateThreshold)
+    public void OnIceWeaponHit(WeaponPart sourceWeapon, Vector3 hitPosition)
+    {
+        if (HasMageSkill("Mage_Ice_Barrage"))
         {
-            icePenetrateCount = 0;
-            StartCoroutine(FireIceBarrageSequential(sourceWeapon));
+            icePenetrateCount++;
+            if (icePenetrateCount >= iceBarragePenetrateThreshold)
+            {
+                icePenetrateCount = 0;
+                StartCoroutine(FireIceBarrageSequential(sourceWeapon));
+            }
+        }
+
+        if (!HasMageSkill("Mage_Ice_Hail")) return;
+
+        iceHailHitCount++;
+        if (iceHailHitCount >= Mathf.Max(1, iceHailHitThreshold) && iceHailTimer <= 0f)
+        {
+            iceHailHitCount = 0;
+            iceHailTimer = iceHailCooldown;
+            SpawnHailStorm(hitPosition);
         }
     }
 

@@ -33,6 +33,7 @@ public class Orbiter : MonoBehaviour
     {
         this.damage = damage;
         this.launcher = part;
+        ConfigureFriendlyCollision();
         // 应用终极技能的旋转速度倍率
         this.selfRotationSpeed *= part.orbitalSpeedMultiplier;
         this.currentSpinSpeed = selfRotationSpeed;
@@ -146,6 +147,8 @@ public class Orbiter : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (IsFriendlyProjectile(other)) return;
+
         // 动能吸附 (OrbitalAbsorbProjectiles) 中阶技能
         if (launcher != null && launcher.isOrbitalAbsorbEnabled)
         {
@@ -412,5 +415,26 @@ public class Orbiter : MonoBehaviour
                 launcher.ChainLightningFromTarget(target.transform, cCount, smiteDmg, cRange);
             }
         }
+    }
+
+    private void ConfigureFriendlyCollision()
+    {
+        Collider[] colliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider col in colliders)
+        {
+            if (col != null)
+            {
+                col.isTrigger = true;
+            }
+        }
+    }
+
+    private bool IsFriendlyProjectile(Collider other)
+    {
+        if (other == null) return false;
+        if (other.CompareTag("PlayerProjectile")) return true;
+
+        Projectile projectile = other.GetComponentInParent<Projectile>();
+        return projectile != null && !projectile.IsEnemyProjectile;
     }
 }

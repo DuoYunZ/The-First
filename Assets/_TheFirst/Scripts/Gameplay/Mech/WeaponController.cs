@@ -9,11 +9,27 @@ public class OwnedWeapon
     public WeaponStatBlock stats;
     public int currentLevel = 1;
     public WeaponPart weaponPartInstance;
+    public List<WeaponStatBlock> inheritedSkillSources = new List<WeaponStatBlock>();
+
+    public bool InheritsSkillSource(WeaponStatBlock source)
+    {
+        if (source == null) return false;
+        if (stats == source) return true;
+        return inheritedSkillSources != null && inheritedSkillSources.Contains(source);
+    }
+
+    public void EnsureSkillSource(WeaponStatBlock source)
+    {
+        if (source == null) return;
+        if (inheritedSkillSources == null) inheritedSkillSources = new List<WeaponStatBlock>();
+        if (!inheritedSkillSources.Contains(source)) inheritedSkillSources.Add(source);
+    }
 }
 
 public class WeaponController : MonoBehaviour
 {
     public static WeaponController Instance { get; private set; }
+    private const int DefaultEvolutionWeaponLevel = 5;
 
     private Transform weaponMountPoint;
 
@@ -25,6 +41,8 @@ public class WeaponController : MonoBehaviour
 
     [Header("瞄准设置")]
     public float aimTurnSpeed = 25f;
+    [Tooltip("Minimum right-stick magnitude before gamepad aim takes over.")]
+    public float gamepadAimDeadzone = 0.2f;
 
     [Header("武器库")]
     public List<OwnedWeapon> ownedWeapons = new List<OwnedWeapon>();
@@ -37,6 +55,8 @@ public class WeaponController : MonoBehaviour
 
     private Camera mainCamera;
     private PlayerControls playerControls;
+    private Vector3 lastAimDirection = Vector3.forward;
+    private bool usingGamepadAim;
 
     void Awake()
     {
@@ -93,8 +113,10 @@ public class WeaponController : MonoBehaviour
                     currentLevel = builtInBladeWeapon.currentLevel,
                     weaponPartInstance = builtInBladeWeapon
                 };
+                initialWeapon.EnsureSkillSource(builtInBladeWeapon.StatBlock);
                 ownedWeapons.Insert(0, initialWeapon);
                 builtInBladeWeapon.Activate(); // 确保激活
+                PlayerProgressManager.Instance?.RecordWeaponLevelReached(initialWeapon.stats, initialWeapon.currentLevel);
             }
         }
     }
@@ -117,6 +139,7 @@ public class WeaponController : MonoBehaviour
         {
             targetPart.currentLevel++;
             targetWeaponData.currentLevel++;
+            PlayerProgressManager.Instance?.RecordWeaponLevelReached(targetWeaponData.stats, targetWeaponData.currentLevel);
         }
         else
         {
@@ -133,18 +156,22 @@ public class WeaponController : MonoBehaviour
     /// <returns>返回满足条件的配方，如果没有则返回 null</returns>
     public FusionRecipeSO CheckForAvailableFusion()
     {
+        if (fusionRecipes == null || ownedWeapons == null) return null;
+
         foreach (var recipe in fusionRecipes)
         {
+            if (recipe == null || recipe.weaponA == null || recipe.weaponB == null || recipe.resultWeapon == null) continue;
+            if (FindOwnedWeaponForSource(recipe.resultWeapon) != null) continue;
             // 1. 检查是否拥有配方中的武器 A 和 B
-            OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
-            OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
+            OwnedWeapon weaponA = FindOwnedWeaponForSource(recipe.weaponA);
+            OwnedWeapon weaponB = FindOwnedWeaponForSource(recipe.weaponB, weaponA);
 
             if (weaponA != null && weaponB != null)
             {
                 // 2. 检查是否都达到满级 (假设满级是 8 或 WeaponStatBlock.maxLevel)
                 // 为了保险，我们检查它是否达到该武器设定的 maxLevel
-                bool isAMaxed = weaponA.currentLevel >= weaponA.stats.maxLevel;
-                bool isBMaxed = weaponB.currentLevel >= weaponB.stats.maxLevel;
+                bool isAMaxed = IsOwnedWeaponAtEvolutionLevel(weaponA);
+                bool isBMaxed = IsOwnedWeaponAtEvolutionLevel(weaponB);
 
                 if (isAMaxed && isBMaxed)
                 {
@@ -161,26 +188,130 @@ public class WeaponController : MonoBehaviour
     public void PerformFusion(FusionRecipeSO recipe)
     {
         if (recipe == null) return;
+        if (recipe.resultWeapon != null && FindOwnedWeaponForSource(recipe.resultWeapon) != null) return;
 
         // 1. 查找并移除旧武器
-        OwnedWeapon weaponA = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponA);
-        OwnedWeapon weaponB = ownedWeapons.FirstOrDefault(w => w.stats == recipe.weaponB);
+        OwnedWeapon weaponA = FindOwnedWeaponForSource(recipe.weaponA);
+        OwnedWeapon weaponB = FindOwnedWeaponForSource(recipe.weaponB, weaponA);
 
         // 【新增】将它们加入黑名单
         if (weaponA != null) banList.Add(weaponA.stats);
         if (weaponB != null) banList.Add(weaponB.stats);
 
-        RemoveWeapon(weaponA);
-        RemoveWeapon(weaponB);
+        OwnedWeapon primary = weaponA ?? weaponB;
+        OwnedWeapon consumed = primary == weaponA ? weaponB : weaponA;
+
+        if (primary != null && primary.weaponPartInstance != null)
+        {
+            MergeSkillSources(primary, consumed);
+            if (consumed != null) RemoveWeapon(consumed);
+            EvolveOwnedWeapon(primary, recipe.resultWeapon, WeaponStage.Evolved);
+        }
+        else
+        {
+            RemoveWeapon(weaponA);
+            RemoveWeapon(weaponB);
+            AddNewWeapon(recipe.resultWeapon);
+        }
 
         // 2. 添加新武器 (超武)
-        AddNewWeapon(recipe.resultWeapon);
 
         // 3. 刷新 UI
         if (WeaponUI.Instance != null)
         {
             WeaponUI.Instance.UpdateWeaponIcons();
         }
+    }
+
+    public void PerformFusion(WeaponFusionRecipeSO recipe)
+    {
+        if (recipe == null || recipe.resultWeapon == null) return;
+        if (FindOwnedWeaponForSource(recipe.resultWeapon) != null) return;
+
+        OwnedWeapon primary = FindOwnedWeaponForSource(recipe.triggerWeapon);
+
+        if (primary == null) return;
+
+        List<OwnedWeapon> consumedWeapons = new List<OwnedWeapon>();
+        if (recipe.conditions != null)
+        {
+            foreach (FusionCondition condition in recipe.conditions)
+            {
+                if (condition == null || condition.type != ConditionType.Weapon || condition.requiredWeapon == null) continue;
+
+                OwnedWeapon consumed = FindOwnedWeaponForSource(condition.requiredWeapon, primary);
+
+                if (consumed != null && !consumedWeapons.Contains(consumed))
+                {
+                    consumedWeapons.Add(consumed);
+                }
+            }
+        }
+
+        foreach (OwnedWeapon consumed in consumedWeapons)
+        {
+            MergeSkillSources(primary, consumed);
+        }
+
+        if (recipe.fusionType == FusionType.Merge)
+        {
+            foreach (OwnedWeapon consumed in consumedWeapons)
+            {
+                RemoveWeapon(consumed);
+            }
+        }
+
+        banList.Add(primary.stats);
+        foreach (OwnedWeapon consumed in consumedWeapons)
+        {
+            if (consumed.stats != null) banList.Add(consumed.stats);
+        }
+
+        EvolveOwnedWeapon(primary, recipe.resultWeapon, WeaponStage.Evolved);
+    }
+
+    private OwnedWeapon FindOwnedWeaponForSource(WeaponStatBlock source, OwnedWeapon exclude = null)
+    {
+        if (source == null || ownedWeapons == null) return null;
+
+        return ownedWeapons.FirstOrDefault(w =>
+            w != null &&
+            w != exclude &&
+            MatchesOwnedWeaponSource(w, source));
+    }
+
+    private bool MatchesOwnedWeaponSource(OwnedWeapon owned, WeaponStatBlock source)
+    {
+        if (owned == null || source == null) return false;
+        if (owned.InheritsSkillSource(source)) return true;
+        if (owned.stats == source) return true;
+        if (owned.weaponPartInstance != null && owned.weaponPartInstance.StatBlock == source) return true;
+
+        string sourceId = source.weaponID;
+        if (!string.IsNullOrEmpty(sourceId))
+        {
+            if (owned.stats != null && string.Equals(owned.stats.weaponID, sourceId, System.StringComparison.OrdinalIgnoreCase)) return true;
+            WeaponStatBlock partStats = owned.weaponPartInstance != null ? owned.weaponPartInstance.StatBlock : null;
+            if (partStats != null && string.Equals(partStats.weaponID, sourceId, System.StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        string sourceName = source.weaponName;
+        if (!string.IsNullOrEmpty(sourceName))
+        {
+            if (owned.stats != null && string.Equals(owned.stats.weaponName, sourceName, System.StringComparison.OrdinalIgnoreCase)) return true;
+            WeaponStatBlock partStats = owned.weaponPartInstance != null ? owned.weaponPartInstance.StatBlock : null;
+            if (partStats != null && string.Equals(partStats.weaponName, sourceName, System.StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        return false;
+    }
+
+    private bool IsOwnedWeaponAtEvolutionLevel(OwnedWeapon owned)
+    {
+        if (owned == null) return false;
+        int maxLevel = GetDynamicMaxLevel(owned);
+        int targetLevel = Mathf.Min(DefaultEvolutionWeaponLevel, maxLevel);
+        return owned.currentLevel >= targetLevel;
     }
 
     public void EvolveWeapon(WeaponStatBlock baseStats, WeaponStatBlock targetStats)
@@ -192,16 +323,11 @@ public class WeaponController : MonoBehaviour
         {
             // 2. 彻底销毁旧武器的物体
             // 这一点至关重要！因为闪电链的 Prefab 和雷击的 Prefab 结构完全不同
-            if (oldWeaponWrapper.weaponPartInstance != null)
-            {
-                Destroy(oldWeaponWrapper.weaponPartInstance.gameObject);
-            }
+            EvolveOwnedWeapon(oldWeaponWrapper, targetStats, WeaponStage.Evolved);
 
             // 3. 从列表中移除旧数据
-            ownedWeapons.Remove(oldWeaponWrapper);
 
             // 4. 添加新武器 (会自动实例化新的 Prefab)
-            AddNewWeapon(targetStats);
 
             // 5. 【可选】局外解锁逻辑 (保存到 PlayerProgressManager)
             if (PlayerProgressManager.Instance != null)
@@ -221,6 +347,42 @@ public class WeaponController : MonoBehaviour
         else
         {
             Debug.LogError($"[WeaponController] 进化失败：找不到基础武器 {baseStats.weaponName}");
+        }
+    }
+
+    public void EvolveOwnedWeapon(OwnedWeapon ownedWeapon, WeaponStatBlock targetStats, WeaponStage stage = WeaponStage.Evolved)
+    {
+        if (ownedWeapon == null || targetStats == null) return;
+
+        ownedWeapon.EnsureSkillSource(ownedWeapon.stats);
+        if (ownedWeapon.weaponPartInstance != null)
+        {
+            ownedWeapon.EnsureSkillSource(ownedWeapon.weaponPartInstance.StatBlock);
+            ownedWeapon.weaponPartInstance.ApplyBranch(targetStats);
+            ownedWeapon.weaponPartInstance.currentStage = stage;
+            ownedWeapon.weaponPartInstance.currentLevel = Mathf.Max(ownedWeapon.currentLevel, ownedWeapon.weaponPartInstance.currentLevel);
+        }
+
+        ownedWeapon.stats = targetStats;
+        ownedWeapon.currentLevel = Mathf.Max(ownedWeapon.currentLevel, 1);
+        ownedWeapon.EnsureSkillSource(targetStats);
+        PlayerProgressManager.Instance?.RecordWeaponLevelReached(targetStats, ownedWeapon.currentLevel);
+        PlayerStats.Instance?.RefreshStats();
+        WeaponUI.Instance?.UpdateWeaponIcons();
+    }
+
+    private void MergeSkillSources(OwnedWeapon primary, OwnedWeapon consumed)
+    {
+        if (primary == null) return;
+        primary.EnsureSkillSource(primary.stats);
+
+        if (consumed == null) return;
+        primary.EnsureSkillSource(consumed.stats);
+        if (consumed.inheritedSkillSources == null) return;
+
+        foreach (WeaponStatBlock source in consumed.inheritedSkillSources)
+        {
+            primary.EnsureSkillSource(source);
         }
     }
 
@@ -267,6 +429,7 @@ public class WeaponController : MonoBehaviour
 
         // 从列表中移除
         ownedWeapons.Remove(weaponToRemove);
+        PlayerStats.Instance?.RefreshStats();
     }
 
     /// <summary>
@@ -302,12 +465,17 @@ public class WeaponController : MonoBehaviour
             part.currentLevel = 1;
             part.Activate();
 
-            ownedWeapons.Add(new OwnedWeapon
+            OwnedWeapon newOwnedWeapon = new OwnedWeapon
             {
                 stats = weaponData,
                 currentLevel = 1,
-                weaponPartInstance = part
-            });
+                weaponPartInstance = part,
+                inheritedSkillSources = new List<WeaponStatBlock> { weaponData }
+            };
+            ownedWeapons.Add(newOwnedWeapon);
+            PlayerProgressManager.Instance?.RecordWeaponLevelReached(weaponData, newOwnedWeapon.currentLevel);
+
+            PlayerStats.Instance?.RefreshStats();
 
         }
 
@@ -315,6 +483,82 @@ public class WeaponController : MonoBehaviour
         {
             WeaponUI.Instance.UpdateWeaponIcons();
         }
+    }
+
+    public List<OwnedWeapon> GetUpgradeableWeapons()
+    {
+        List<OwnedWeapon> result = new List<OwnedWeapon>();
+        foreach (OwnedWeapon owned in ownedWeapons)
+        {
+            if (owned == null || owned.stats == null || owned.weaponPartInstance == null) continue;
+            if (!CanGrantNormalWeaponLevels(owned)) continue;
+
+            int max = GetDynamicMaxLevel(owned);
+            if (owned.currentLevel < max)
+            {
+                result.Add(owned);
+            }
+        }
+        return result;
+    }
+
+    public int GrantWeaponLevels(OwnedWeapon owned, int levels)
+    {
+        if (owned == null || owned.stats == null || levels <= 0) return 0;
+        if (!CanGrantNormalWeaponLevels(owned)) return 0;
+
+        int applied = 0;
+        int max = GetDynamicMaxLevel(owned);
+        while (applied < levels && owned.currentLevel < max)
+        {
+            owned.currentLevel++;
+            applied++;
+        }
+
+        if (owned.weaponPartInstance != null)
+        {
+            owned.weaponPartInstance.currentLevel = owned.currentLevel;
+            owned.weaponPartInstance.OnWeaponLevelUp?.Invoke(owned.currentLevel);
+        }
+
+        if (applied > 0)
+        {
+            PlayerProgressManager.Instance?.RecordWeaponLevelReached(owned.stats, owned.currentLevel);
+            RefreshAllWeaponStates();
+            PlayerStats.Instance?.RefreshStats();
+            WeaponUI.Instance?.UpdateWeaponIcons();
+        }
+
+        return applied;
+    }
+
+    public int GrantWeaponLevels(WeaponStatBlock weaponStats, int levels)
+    {
+        if (weaponStats == null) return 0;
+        OwnedWeapon owned = ownedWeapons.FirstOrDefault(w => w != null && w.InheritsSkillSource(weaponStats));
+        return GrantWeaponLevels(owned, levels);
+    }
+
+    public int GetMaxLevel(OwnedWeapon owned)
+    {
+        return GetDynamicMaxLevel(owned);
+    }
+
+    private bool CanGrantNormalWeaponLevels(OwnedWeapon owned)
+    {
+        if (owned == null || owned.weaponPartInstance == null) return true;
+        return owned.weaponPartInstance.currentStage < WeaponStage.Evolved;
+    }
+
+    private int GetDynamicMaxLevel(OwnedWeapon owned)
+    {
+        if (owned == null) return 1;
+        int max = owned.stats != null ? owned.stats.maxLevel : 1;
+        if (owned.weaponPartInstance != null)
+        {
+            max = Mathf.Max(max, owned.weaponPartInstance.maxLevel);
+        }
+        return Mathf.Max(1, max);
     }
 
     public void RefreshAllWeaponStates()
@@ -336,9 +580,22 @@ public class WeaponController : MonoBehaviour
 
         Vector3 aimDirection = Vector3.zero;
         bool hasAimInput = false;
+        bool gamepadDrivingPlayer = IsGamepadDrivingPlayer();
+
+        if (TryReadStickDirection(playerControls.Player.Look, out aimDirection))
+        {
+            hasAimInput = true;
+            gamepadDrivingPlayer = true;
+            usingGamepadAim = true;
+        }
+        else if (gamepadDrivingPlayer && TryReadStickDirection(playerControls.Player.Move, out aimDirection))
+        {
+            hasAimInput = true;
+            usingGamepadAim = true;
+        }
 
 #if UNITY_STANDALONE || UNITY_EDITOR
-        if (mainCamera != null && Mouse.current != null)
+        if (!hasAimInput && (!usingGamepadAim || HasMouseAimMovement()) && mainCamera != null && Mouse.current != null)
         {
             Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             Plane groundPlane = new Plane(Vector3.up, transform.position);
@@ -347,15 +604,47 @@ public class WeaponController : MonoBehaviour
                 Vector3 mouseWorldPos = mouseRay.GetPoint(distance);
                 aimDirection = mouseWorldPos - transform.position;
                 aimDirection.y = 0;
-                if (aimDirection.sqrMagnitude > 0.01f) hasAimInput = true;
+                if (aimDirection.sqrMagnitude > 0.01f)
+                {
+                    hasAimInput = true;
+                    usingGamepadAim = false;
+                }
             }
         }
 #endif
 
         if (hasAimInput)
         {
+            lastAimDirection = aimDirection.normalized;
             AimAndFire(aimDirection);
         }
+        else if (usingGamepadAim && lastAimDirection.sqrMagnitude > 0.01f)
+        {
+            AimAndFire(lastAimDirection);
+        }
+    }
+
+    private bool TryReadStickDirection(InputAction action, out Vector3 direction)
+    {
+        direction = Vector3.zero;
+        if (action == null) return false;
+
+        Vector2 input = action.ReadValue<Vector2>();
+        if (input.sqrMagnitude < gamepadAimDeadzone * gamepadAimDeadzone) return false;
+
+        direction = new Vector3(input.x, 0f, input.y);
+        return direction.sqrMagnitude > 0.01f;
+    }
+
+    private bool IsGamepadDrivingPlayer()
+    {
+        return playerControls.Player.Look.activeControl?.device is Gamepad
+            || playerControls.Player.Move.activeControl?.device is Gamepad;
+    }
+
+    private static bool HasMouseAimMovement()
+    {
+        return Mouse.current != null && Mouse.current.delta.ReadValue().sqrMagnitude > 0.01f;
     }
 
     private void AimAndFire(Vector3 targetDirection)

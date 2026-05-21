@@ -39,6 +39,7 @@ public class EnemyProjectileAttack : MonoBehaviour
     private EnemyAI enemyAI;
     private Animator animator;
     private NavMeshAgent agent; 
+    private Rigidbody rb;
     private bool isInAttackRange = false; // 用于跟踪玩家是否在攻击范围内
 
     private Coroutine attackCoroutine;
@@ -58,6 +59,7 @@ public class EnemyProjectileAttack : MonoBehaviour
         enemyAI = GetComponent<EnemyAI>();
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>(); 
+        rb = GetComponent<Rigidbody>();
     }
 
     void Update()
@@ -86,10 +88,8 @@ public class EnemyProjectileAttack : MonoBehaviour
             if (!wasInRange)
             {
                 if (enemyAI != null) enemyAI.SetRangedAttackingState(true);
-                agent.isStopped = true;
-                agent.velocity = Vector3.zero;
-                animator.SetBool("isMoving", false);
             }
+            StopAttackDrift();
 
             // 持续、平滑地转向玩家
             Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
@@ -162,6 +162,7 @@ public class EnemyProjectileAttack : MonoBehaviour
         isAttacking = false;
         attackCoroutine = null;
         attackCooldownTimer = 1f / fireRate; // 让它进入冷却
+        StopAttackDrift();
 
         // 归还 EnemyAI 控制权
         if (enemyAI != null) enemyAI.SetRangedAttackingState(false);
@@ -170,6 +171,32 @@ public class EnemyProjectileAttack : MonoBehaviour
         if (animator != null)
         {
             animator.ResetTrigger("Attack");
+        }
+    }
+
+    private void StopAttackDrift()
+    {
+        if (enemyAI != null)
+        {
+            enemyAI.StopAgentMotion();
+        }
+        else if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        if (rb != null)
+        {
+            rb.useGravity = false;
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool("isMoving", false);
         }
     }
 }

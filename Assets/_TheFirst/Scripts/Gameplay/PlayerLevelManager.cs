@@ -59,17 +59,20 @@ public class PlayerLevelManager : MonoBehaviour
 
     [Header("参数设置 (仅对非曲线模式有效)")]
     [Tooltip("基础经验值 (1级升2级大概需要多少)")]
-    public int baseXp = 10;
+    public int baseXp = 6;
 
     [Tooltip("线性增长系数 (影响前期节奏)")]
-    public float linearFactor = 10f;
+    public float linearFactor = 3f;
 
     [Tooltip("二次方/指数增长系数 (影响后期节奏，数值越大约难)")]
-    public float powerFactor = 1.5f;
+    public float powerFactor = 0.35f;
 
     [Header("自定义曲线 (仅 CustomCurve 模式有效)")]
     [Tooltip("X轴=等级, Y轴=所需经验。请将X轴范围设为 1~100 (或你的最大等级)")]
     public AnimationCurve xpCurve = new AnimationCurve(new Keyframe(1, 10), new Keyframe(100, 10000));
+    [Header("Demo/Timeline XP")]
+    [Tooltip("Extra XP gain multiplier applied by the active timeline.")]
+    public float timelineExperienceMultiplier = 1f;
 
     private void Start()
     {
@@ -89,6 +92,7 @@ public class PlayerLevelManager : MonoBehaviour
         {
             multiplier = PlayerStats.Instance.experienceGainMultiplier;
         }
+        multiplier *= Mathf.Max(0.01f, timelineExperienceMultiplier);
         int finalAmount = Mathf.RoundToInt(amount * multiplier);
         if (Mathf.Abs(multiplier - 1f) > 0.01f)
         {
@@ -212,4 +216,8 @@ public class PlayerLevelManager : MonoBehaviour
     public int GetCurrentXP() => currentExperience;
     public int GetXPToNextLevel() => experienceToNextLevel;
     public float GetXPPercentage() => (float)currentExperience / experienceToNextLevel;
+    public void SetTimelineExperienceMultiplier(float multiplier)
+    {
+        timelineExperienceMultiplier = Mathf.Max(0.01f, multiplier);
+    }
 }

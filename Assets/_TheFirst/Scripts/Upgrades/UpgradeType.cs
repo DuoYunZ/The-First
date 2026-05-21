@@ -117,7 +117,7 @@ public enum UpgradeType
     // ============================================================
     BerserkerHeart,            // 狂战士之心（生命值低于50%时增伤）
     FlameTrail,                // 燃烧轨迹（移动时留下火焰区域）
-    ThornsDamage,              // 荆棘护甲（受伤时反弹伤害给攻击者）
+    ThornsDamage,              // Deprecated: 荆棘护甲已移除，保留枚举值避免旧资源错位
     KillHeal,                  // 灵魂汲取（击杀敌人回血）
     GlobalFreezeChance,        // 冰霜之触（所有攻击附加冰冻概率）
     ThunderWill,               // 雷霆意志（击杀时有概率在原地召唤雷击AOE）
@@ -133,5 +133,9 @@ public enum UpgradeType
     // 镭射核心类
     LaserRefraction,           // 棱镜折射（光束命中后折射到附近敌人，value=折射目标数）
     LaserFocusBonus,           // 聚焦强化（提升每层聚焦的伤害加成百分比）
-    LaserMeltdown              // 核心熔毁（过热爆发变为持续灼烧区域）
+    LaserMeltdown,             // 核心熔毁（过热爆发变为持续灼烧区域）
+
+    BoomerangReturnDamage,     // Boomerang inbound path damage bonus
+    BoomerangReturnPulse,      // Boomerang inbound hit-count pulse
+    BoomerangRecallBurst       // Boomerang catch burst based on inbound hits
 }

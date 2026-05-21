@@ -29,6 +29,7 @@ public class Health : MonoBehaviour
 
     // 全局静态事件：当敌人死亡时触发，供光环等技能监听
     public static event System.Action<Health> OnEnemyDied;
+    public static event System.Action<int> OnPlayerHealthDamaged;
     [Header("受伤无敌与视觉 (新增)")]
     [Tooltip("玩家受伤后的无敌时间 (秒)")]
     public float invincibilityDuration = 1.0f;
@@ -54,7 +55,12 @@ public class Health : MonoBehaviour
     private bool isPostHitInvincible = false; // 是否处于受击后的短暂无敌状态
     private Renderer[] modelRenderers; // 角色模型渲染器数组
     private Color[] originalEmissionColors; // 每个 Renderer 的原始发光颜色
+    private MaterialPropertyBlock materialPropertyBlock;
     private Rigidbody playerRigidbody; // 缓存玩家刚体引用
+
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int ColorProperty = Shader.PropertyToID("_Color");
+    private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
 
 
     [Header("掉落设置 (可选)")]
@@ -134,13 +140,13 @@ public class Health : MonoBehaviour
         }
 
         // 初始化发光颜色备份
+        materialPropertyBlock = new MaterialPropertyBlock();
         originalEmissionColors = new Color[modelRenderers.Length];
         for (int i = 0; i < modelRenderers.Length; i++)
         {
-            var mat = modelRenderers[i].material;
-            mat.EnableKeyword("_EMISSION");
-            originalEmissionColors[i] = mat.HasProperty("_EmissionColor")
-                ? mat.GetColor("_EmissionColor")
+            var mat = modelRenderers[i] != null ? modelRenderers[i].sharedMaterial : null;
+            originalEmissionColors[i] = mat != null && mat.HasProperty(EmissionColorProperty)
+                ? mat.GetColor(EmissionColorProperty)
                 : Color.black;
         }
         if (audioSource == null)
@@ -303,6 +309,10 @@ public class Health : MonoBehaviour
         if (remainingDamage > 0)
         {
             currentHealth -= remainingDamage;
+            if (isPlayerHealth)
+            {
+                OnPlayerHealthDamaged?.Invoke(remainingDamage);
+            }
 
             // --- 【核心新增】尝试获取攻击源头的 WeaponPart ---
             WeaponPart sourcePart = null;
@@ -500,6 +510,19 @@ public class Health : MonoBehaviour
                 }
             }
 
+            // --- 【被动道具】奥术精通：玩家伤害命中时概率引发小范围爆炸 ---
+            if (!isPlayerHealth && PlayerStats.Instance != null)
+            {
+                PlayerStats.Instance.TryTriggerArcaneMastery(
+                    transform.position,
+                    attacker != null ? attacker : gameObject,
+                    sourceWeaponName);
+                PlayerStats.Instance.TryTriggerElementalResonance(
+                    transform.position,
+                    attacker != null ? attacker : gameObject,
+                    sourceWeaponName);
+            }
+
             // 受击音效：优先使用攻击来源武器SO的hitSound，回退到Health自身的impactSounds
             AudioClip hitClip = null;
             if (sourcePart != null && sourcePart.StatBlock != null && sourcePart.StatBlock.hitSound != null)
@@ -542,16 +565,7 @@ public class Health : MonoBehaviour
                     CameraShakeManager.Instance.Shake(hitShakeIntensity, hitShakeDuration);
                 }
 
-                // --- 【被动道具】荆棘护甲：受伤时反弹伤害给攻击者 ---
-                if (PlayerStats.Instance != null && PlayerStats.Instance.thornsReflectPercent > 0f && attacker != null)
-                {
-                    Health attackerHealth = attacker.GetComponent<Health>();
-                    if (attackerHealth != null && !attackerHealth.IsDead)
-                    {
-                        int thornsDamage = Mathf.Max(1, Mathf.RoundToInt(remainingDamage * PlayerStats.Instance.thornsReflectPercent));
-                        attackerHealth.TakeDamage(thornsDamage, attacker.transform.position, gameObject, AttackType.Standard, null, null, "荆棘护甲");
-                    }
-                }
+                // 荆棘反伤暂时禁用：当前 demo 的受击反弹不匹配核心清怪玩法。
             }
 
             // 6. 死亡处理
@@ -589,6 +603,12 @@ public class Health : MonoBehaviour
 
         if (currentHealth != oldHealth)
         {
+            int healedAmount = currentHealth - oldHealth;
+            if (isPlayerHealth && healedAmount > 0 && PlayerProgressManager.Instance != null)
+            {
+                PlayerProgressManager.Instance.AddStat("Player_TotalHealing", healedAmount);
+            }
+
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
             // 血量回升可能影响条件型被动（如狂战士之心）
             if (isPlayerHealth && PlayerStats.Instance != null)
@@ -611,7 +631,7 @@ public class Health : MonoBehaviour
             {
                 if (modelRenderers[i] != null)
                 {
-                    modelRenderers[i].material.SetColor("_EmissionColor", damageEmissionColor);
+                    SetRendererEmission(modelRenderers[i], damageEmissionColor);
                 }
             }
         }
@@ -626,7 +646,7 @@ public class Health : MonoBehaviour
             {
                 if (modelRenderers[i] != null)
                 {
-                    modelRenderers[i].material.SetColor("_EmissionColor", originalEmissionColors[i]);
+                    SetRendererEmission(modelRenderers[i], originalEmissionColors[i]);
                 }
             }
         }
@@ -643,18 +663,7 @@ public class Health : MonoBehaviour
             Color[] originalBaseColors = new Color[modelRenderers.Length];
             for (int i = 0; i < modelRenderers.Length; i++)
             {
-                if (modelRenderers[i] != null && modelRenderers[i].material.HasProperty("_BaseColor"))
-                {
-                    originalBaseColors[i] = modelRenderers[i].material.GetColor("_BaseColor");
-                }
-                else if (modelRenderers[i] != null && modelRenderers[i].material.HasProperty("_Color"))
-                {
-                    originalBaseColors[i] = modelRenderers[i].material.GetColor("_Color");
-                }
-                else
-                {
-                    originalBaseColors[i] = Color.white;
-                }
+                originalBaseColors[i] = GetRendererBaseColor(modelRenderers[i]);
             }
 
             while (elapsed < remainingInvincibility)
@@ -702,15 +711,48 @@ public class Health : MonoBehaviour
     /// </summary>
     private void SetRendererColor(Renderer renderer, Color color)
     {
-        Material mat = renderer.material;
-        if (mat.HasProperty("_BaseColor"))
+        Material mat = renderer != null ? renderer.sharedMaterial : null;
+        if (mat == null) return;
+
+        int propertyId = 0;
+        if (mat.HasProperty(BaseColorProperty))
         {
-            mat.SetColor("_BaseColor", color);
+            propertyId = BaseColorProperty;
         }
-        else if (mat.HasProperty("_Color"))
+        else if (mat.HasProperty(ColorProperty))
         {
-            mat.SetColor("_Color", color);
+            propertyId = ColorProperty;
         }
+        else return;
+
+        ApplyRendererColor(renderer, propertyId, color);
+    }
+
+    private void SetRendererEmission(Renderer renderer, Color color)
+    {
+        Material mat = renderer != null ? renderer.sharedMaterial : null;
+        if (mat == null || !mat.HasProperty(EmissionColorProperty)) return;
+
+        ApplyRendererColor(renderer, EmissionColorProperty, color);
+    }
+
+    private Color GetRendererBaseColor(Renderer renderer)
+    {
+        Material mat = renderer != null ? renderer.sharedMaterial : null;
+        if (mat == null) return Color.white;
+        if (mat.HasProperty(BaseColorProperty)) return mat.GetColor(BaseColorProperty);
+        if (mat.HasProperty(ColorProperty)) return mat.GetColor(ColorProperty);
+        return Color.white;
+    }
+
+    private void ApplyRendererColor(Renderer renderer, int propertyId, Color color)
+    {
+        if (renderer == null) return;
+        if (materialPropertyBlock == null) materialPropertyBlock = new MaterialPropertyBlock();
+
+        renderer.GetPropertyBlock(materialPropertyBlock);
+        materialPropertyBlock.SetColor(propertyId, color);
+        renderer.SetPropertyBlock(materialPropertyBlock);
     }
 
     // 缓存实体高度（避免每次受伤都重新计算）
@@ -833,8 +875,14 @@ public class Health : MonoBehaviour
             }
         }
 
-        if (gameObject.CompareTag("Enemy") && BattleStatisticsManager.Instance != null)
-            BattleStatisticsManager.Instance.AddKill(); // [新增]
+        if (gameObject.CompareTag("Enemy"))
+        {
+            if (BattleStatisticsManager.Instance != null)
+                BattleStatisticsManager.Instance.AddKill(); // [新增]
+
+            if (PlayerProgressManager.Instance != null)
+                PlayerProgressManager.Instance.AddStat("Kill_Count", 1);
+        }
     }
     private void HandleDrops()
     {

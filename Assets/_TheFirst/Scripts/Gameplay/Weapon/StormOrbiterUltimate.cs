@@ -109,6 +109,7 @@ public class StormOrbiterUltimate : MonoBehaviour
         {
             Health h = col.GetComponentInParent<Health>();
             if (h == null || h.IsDead) continue;
+            if (StatusEffectReceiver.IsKnockbackImmune(h.transform)) continue;
 
             // 检查是否有 NavMeshAgent（优先控制寻路吸附）
             NavMeshAgent agent = h.GetComponent<NavMeshAgent>();

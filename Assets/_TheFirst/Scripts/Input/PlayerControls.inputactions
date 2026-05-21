@@ -151,8 +151,30 @@
                 },
                 {
                     "name": "",
+                    "id": "0a5f2c93-0fb8-46aa-a889-5a6f6d91f001",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "2864378a-52c8-4baa-839d-5fa305144d1d",
                     "path": "<Keyboard>/leftShift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "53135fe1-78e0-4ef6-b18a-d2f6f215f0ef",
+                    "path": "<Gamepad>/buttonEast",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -173,6 +195,17 @@
                 },
                 {
                     "name": "",
+                    "id": "896a9352-3357-4bd0-aa1b-109c1a94595c",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Ultimate",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
                     "path": "<Mouse>/scroll/y",
                     "interactions": "",
@@ -181,6 +214,39 @@
                     "action": "ScrollWeapon",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "1D Axis",
+                    "id": "d4fe3573-9153-47a0-985d-0d7ac1b00b65",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScrollWeapon",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "ba25f6af-06ce-4fb3-a8f0-b2469e014438",
+                    "path": "<Gamepad>/dpad/left",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScrollWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "44628a86-03a5-4e08-b3f4-73d8979ea37b",
+                    "path": "<Gamepad>/dpad/right",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScrollWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": true
                 }
             ]
         },
@@ -257,8 +323,30 @@
                 },
                 {
                     "name": "",
+                    "id": "728c85b3-f155-4078-9e37-1f6c930f2f05",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PrimaryAction",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "0d6a0c20-ebfe-4629-b48d-170b1810d727",
                     "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SecondaryAction",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f3315d75-401a-4cb8-ae09-9ab028ecf754",
+                    "path": "<Gamepad>/buttonEast",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -300,6 +388,28 @@
                     "isPartOfComposite": true
                 },
                 {
+                    "name": "negative",
+                    "id": "32fd56a9-c885-47db-b03f-8c0961f2c27d",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateYaw",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "7f938fd5-29b1-4eb1-8a7d-3116c0c4fb7a",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateYaw",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
                     "name": "1D Axis",
                     "id": "f0e7513b-0b1d-4663-b474-263bc137657f",
                     "path": "1DAxis",
@@ -333,6 +443,28 @@
                     "isPartOfComposite": true
                 },
                 {
+                    "name": "negative",
+                    "id": "f960ba4a-61d6-4746-8c0b-3f54bb8cb084",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotatePitch",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "33102ab4-866b-4d81-ad7c-6f132e5c0438",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotatePitch",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
                     "name": "",
                     "id": "322df04e-1c5a-4f81-9ffa-5e089274d15d",
                     "path": "<Mouse>/delta",
@@ -345,8 +477,30 @@
                 },
                 {
                     "name": "",
+                    "id": "2b706875-9204-4189-9730-273b550df7cc",
+                    "path": "<Gamepad>/rightStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CameraLook",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "362e7e4a-49ee-48dd-9f9d-a54494352b66",
                     "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CameraZoom",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e2f7d71e-30e1-4a88-a161-4eceb0d0c96a",
+                    "path": "<Gamepad>/dpad",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

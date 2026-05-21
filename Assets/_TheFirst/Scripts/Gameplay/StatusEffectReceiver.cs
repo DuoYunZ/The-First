@@ -444,6 +444,8 @@ public class StatusEffectReceiver : MonoBehaviour
 
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
+        if (IsKnockbackImmune(transform)) return;
+
         // 1. 打断攻击
         if (meleeAttackScript != null) meleeAttackScript.InterruptAttack();
         if (projectileAttackScript != null) projectileAttackScript.InterruptAttack();
@@ -457,6 +459,14 @@ public class StatusEffectReceiver : MonoBehaviour
         {
             straightMoverAI.ApplyKnockback(forceDirection, forceAmount);
         }
+    }
+
+    public static bool IsKnockbackImmune(Transform target)
+    {
+        if (target == null) return false;
+
+        BossUnit bossUnit = target.GetComponentInParent<BossUnit>();
+        return bossUnit != null && bossUnit.immuneToKnockback;
     }
 
     public void ApplyWeaken(float percentage, float duration) //

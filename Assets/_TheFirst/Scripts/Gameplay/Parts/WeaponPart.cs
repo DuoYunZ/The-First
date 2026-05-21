@@ -42,6 +42,7 @@ public class WeaponPart : MonoBehaviour
     private HashSet<StatusEffectReceiver> aura_ActiveWeaKens = new HashSet<StatusEffectReceiver>(); //
     private HashSet<StatusEffectReceiver> aura_ActiveCorrodes = new HashSet<StatusEffectReceiver>(); // <--- [新增]
     private float auraTickTimer = 0f;
+    private float lightningStrikeTimer = 0f;
     private SphereCollider auraCollider;
     private GameObject auraVfxInstance;
     [Tooltip("光环只应检测这些层上的敌人")]
@@ -179,6 +180,13 @@ public class WeaponPart : MonoBehaviour
     }   
 
     private bool isBoomerangOut = false;
+    private int activeBoomerangCount = 0;
+    [HideInInspector] public float boomerangReturnDamageBonus = 0f;
+    [HideInInspector] public int boomerangReturnPulseEveryHits = 0;
+    [HideInInspector] public float boomerangReturnPulseDamageMultiplier = 0f;
+    [HideInInspector] public float boomerangReturnPulseRadius = 0f;
+    [HideInInspector] public float boomerangRecallBurstDamageMultiplier = 0f;
+    [HideInInspector] public float boomerangRecallBurstRadius = 0f;
     private float fireCooldown = 0f;
     private float orbitalCooldownTimer = 0f;
     private bool isOrbitalActive = false;
@@ -400,37 +408,10 @@ public class WeaponPart : MonoBehaviour
             }
         }
 
-        // 3. 火球术可以升至十级
+        // Demo tuning: all weapons can fill two gem rounds.
         if (StatBlock != null)
         {
-            maxLevel = StatBlock.maxLevel;
-
-            // 【修改】使用 ID 判断
-            if (StatBlock.weaponID == "Fireball")
-            {
-                maxLevel = 5;
-                if (IsMetaUnlocked("Fireball_Meta_LimitBreak"))
-                {
-                    maxLevel = 10;
-                }
-            }
-            if (StatBlock.weaponID == "LightningStrike")
-            {
-                // 1. 默认锁在 5 级
-                maxLevel = 5;
-
-                // 2. 检查是否有“等级突破”局外升级
-                // 假设节点文件名叫 "Lightning_Meta_LimitBreak"
-                if (IsMetaUnlocked("Lightning_Meta_LimitBreak"))
-                {
-                    maxLevel = 10;
-                }
-            }
-            if (StatBlock.weaponID == "IceShard")
-            {
-                maxLevel = 5;
-                if (IsMetaUnlocked("Ice_Meta_LimitBreak")) maxLevel = 10;
-            }
+            maxLevel = Mathf.Max(10, StatBlock.maxLevel);
         }
 
         // 1. 火球术攻击力提升 (作为局部加成)
@@ -550,6 +531,79 @@ public class WeaponPart : MonoBehaviour
         GainEnergy(amount);
     }
 
+    public bool IsCharacterSkillActive(string skillIdentifier)
+    {
+        return UpgradeManager.Instance != null && UpgradeManager.Instance.HasActiveCharacterSkill(skillIdentifier);
+    }
+
+    private bool IsEngineerSkillActive(string skillIdentifier)
+    {
+        return IsCharacterSkillActive(skillIdentifier);
+    }
+
+    private float GetEngineerMechanicalFireRateBonus()
+    {
+        if (!IsEngineerSkillActive("Engineer_Talent_AssemblyLine")) return 0f;
+        return IsMechanicalWeaponFamily() ? 0.18f : 0f;
+    }
+
+    private bool IsMechanicalWeaponFamily()
+    {
+        if (StatBlock == null) return false;
+        if (WeaponBuildTagUtility.IsMechanicalWeapon(StatBlock)) return true;
+
+        string id = StatBlock.weaponID ?? "";
+        string weaponName = StatBlock.weaponName ?? "";
+        return id.Contains("Landmine") || id.Contains("Laser") || id.Contains("Beam") ||
+               id.Contains("Orbit") || id.Contains("Turret") || id.Contains("Drone") ||
+               id.Contains("SuperMech") || weaponName.Contains("地雷") || weaponName.Contains("炮塔") ||
+               weaponName.Contains("喷火塔") || weaponName.Contains("塔") || weaponName.Contains("Beam") ||
+               weaponName.Contains("镭射") || weaponName.Contains("盾");
+    }
+
+    private bool IsFlameTurretWeapon()
+    {
+        if (StatBlock == null) return false;
+
+        string id = StatBlock.weaponID ?? "";
+        string weaponName = StatBlock.weaponName ?? "";
+        return id.Contains("FlameTurret") || weaponName.Contains("喷火塔");
+    }
+
+    private void SpawnEngineerSupportFlameTurret(Vector3 origin, Vector3 baseScale, int finalDamage, float finalLifetime, float finalRange, float finalInterval)
+    {
+        if (StatBlock == null || StatBlock.projectilePrefab == null) return;
+
+        Vector2 offset2D = Random.insideUnitCircle.normalized;
+        if (offset2D.sqrMagnitude < 0.01f) offset2D = Vector2.right;
+
+        Vector3 spawnPos = origin + new Vector3(offset2D.x, 0f, offset2D.y) * 2.2f;
+        RaycastHit hit;
+        if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out hit, 10f, LayerMask.GetMask("Ground", "Default", "Terrain")))
+        {
+            spawnPos = hit.point;
+        }
+
+        GameObject supportObj = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+        supportObj.transform.localScale = baseScale * 0.9f;
+
+        FlamethrowerTurret supportTurret = supportObj.GetComponent<FlamethrowerTurret>();
+        if (supportTurret == null)
+        {
+            Destroy(supportObj);
+            return;
+        }
+
+        supportTurret.Initialize(
+            Mathf.Max(1, Mathf.RoundToInt(finalDamage * 0.75f)),
+            Mathf.Max(1f, finalLifetime * 0.65f),
+            WeaponController.Instance != null ? WeaponController.Instance.gameObject : this.gameObject,
+            finalRange * 0.9f,
+            finalInterval,
+            StatBlock.weaponName
+        );
+    }
+
     /// <summary>
     /// 【新增】获得能量（伤害或特色行为触发）
     /// </summary>
@@ -604,11 +658,22 @@ public class WeaponPart : MonoBehaviour
         ClearActiveAura();
         
         StatBlock = branchStatBlock;
+        PlayerBladeAttack bladeAttack = GetComponent<PlayerBladeAttack>();
+        if (bladeAttack != null)
+        {
+            bladeAttack.attackData = branchStatBlock;
+            bladeAttack.ApplyModeFromWeapon(branchStatBlock);
+        }
         currentStage = WeaponStage.Branched;
         hasBranched = true;
         currentProficiencyXP = 0f; // 重置经验
         CalculateNextLevelXP();
         UpdateVisualModel();
+
+        if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Orbital)
+        {
+            SetupOrbiters();
+        }
         
         Time.timeScale = 1f; // 恢复游戏
         OnWeaponLevelUp?.Invoke(1); // 通知UI刷新
@@ -638,6 +703,9 @@ public class WeaponPart : MonoBehaviour
             orbitalPivot = null;
            
         }
+
+        isOrbitalActive = false;
+        currentOrbitalDuration = 0f;
     }
 
     // 获取可用的分支选项列表
@@ -655,6 +723,7 @@ public class WeaponPart : MonoBehaviour
     {
         currentProficiencyXP -= xpToNextLevel; // 溢出的经验保留
         currentProficiencyLevel++;
+        PlayerProgressManager.Instance?.RecordWeaponLevelReached(StatBlock, currentProficiencyLevel);
 
         // 应用成长属性 (简单粗暴地加到 localBonus 上)
         // 这里的公式是：当前等级 * 成长系数
@@ -781,10 +850,17 @@ public class WeaponPart : MonoBehaviour
         }*/
         if (StatBlock != null && StatBlock.behavior == WeaponBehaviorType.Aura)
         {
-            HandleAuraDamageTick();
-            HandleAuraKnockback();
-            HandleAuraPersistentDebuffs();
-            HandleAuraMagnet();
+            if (IsLightningStrikeWeapon())
+            {
+                HandleLightningStrikeTick();
+            }
+            else
+            {
+                HandleAuraDamageTick();
+                HandleAuraKnockback();
+                HandleAuraPersistentDebuffs();
+                HandleAuraMagnet();
+            }
         }
     }
     public int GetTotalCount()
@@ -806,7 +882,13 @@ public class WeaponPart : MonoBehaviour
             globalBonus = PlayerStats.Instance.bonusOrbitalCount;
         }
 
-        return baseCount + localBonus + globalBonus;
+        int engineerBonus = 0;
+        if (IsEngineerSkillActive("Engineer_Overclock_RotorArray") && IsMechanicalWeaponFamily())
+        {
+            engineerBonus += 1;
+        }
+
+        return baseCount + localBonus + globalBonus + engineerBonus;
     }
     private void SetupAura()
     {       
@@ -816,6 +898,10 @@ public class WeaponPart : MonoBehaviour
         { 
             Debug.LogError("[SetupAura] 失败: StatBlock 是空的！"); 
             return; 
+        }
+        if (IsLightningStrikeWeapon())
+        {
+            return;
         }
         if (StatBlock.orbitalPrefab == null) 
         { 
@@ -890,6 +976,7 @@ public class WeaponPart : MonoBehaviour
     public void RefreshAura()
     {
         if (StatBlock == null || StatBlock.behavior != WeaponBehaviorType.Aura) return;
+        if (IsLightningStrikeWeapon()) return;
 
         // --- 【核心修复 4】强制重建光环逻辑对象 ---
         // 只有重建，才能把最新的 damage/range/count 传给 MagneticStormAura
@@ -931,6 +1018,309 @@ public class WeaponPart : MonoBehaviour
             auraVfxInstance.transform.localScale = Vector3.one * finalRadius * scaleMultiplier;
         }
     }
+    private bool IsLightningStrikeWeapon()
+    {
+        return StatBlock != null && StatBlock.weaponID == "LightningStrike";
+    }
+
+    private void HandleLightningStrikeTick()
+    {
+        if (StatBlock == null) return;
+
+        lightningStrikeTimer -= Time.deltaTime;
+        if (lightningStrikeTimer > 0f) return;
+
+        Health firstTarget = FindLightningStrikeTarget(null);
+        if (firstTarget == null)
+        {
+            lightningStrikeTimer = 0.2f;
+            return;
+        }
+
+        lightningStrikeTimer = GetLightningStrikeCooldown();
+        if (cooldownMaterial != null) cooldownMaterial.StartCooldown(lightningStrikeTimer);
+        PlayFireSound();
+
+        int strikeCount = Mathf.Max(1, GetTotalCount());
+        HashSet<Health> selectedTargets = new HashSet<Health>();
+
+        for (int i = 0; i < strikeCount; i++)
+        {
+            Health target = i == 0 ? firstTarget : FindLightningStrikeTarget(selectedTargets);
+            if (target == null) break;
+
+            selectedTargets.Add(target);
+            ExecuteLightningStrike(target, 1f, localLightningRepeatCount);
+        }
+    }
+
+    private float GetLightningStrikeCooldown()
+    {
+        float fireRateMultiplier = 1f;
+        if (PlayerStats.Instance != null)
+        {
+            fireRateMultiplier = PlayerStats.Instance.fireRateMultiplier - localFireRateBonus - GetEngineerMechanicalFireRateBonus();
+        }
+
+        if (currentStone != null)
+        {
+            fireRateMultiplier *= 1f + currentStone.fireRateModifier;
+        }
+
+        fireRateMultiplier = Mathf.Max(0.1f, fireRateMultiplier);
+        float baseRate = Mathf.Max(0.01f, StatBlock.baseFireRate);
+        return Mathf.Max(0.08f, (1f / baseRate) * fireRateMultiplier);
+    }
+
+    private Health FindLightningStrikeTarget(HashSet<Health> excludedTargets)
+    {
+        if (StatBlock == null) return null;
+
+        float searchRadius = StatBlock.autoAimRange > 0f ? StatBlock.autoAimRange : 30f;
+        LayerMask searchMask = GetLightningEnemyMask();
+        Collider[] hits = Physics.OverlapSphere(transform.position, searchRadius, searchMask);
+
+        Health bestTarget = null;
+        float bestDistanceSqr = Mathf.Infinity;
+
+        foreach (Collider hit in hits)
+        {
+            Health health = hit.GetComponentInParent<Health>();
+            if (health == null || health.IsDead) continue;
+            if (excludedTargets != null && excludedTargets.Contains(health)) continue;
+            if (!hit.CompareTag("Enemy") && !health.CompareTag("Enemy")) continue;
+
+            float distanceSqr = (health.transform.position - transform.position).sqrMagnitude;
+            if (distanceSqr < bestDistanceSqr)
+            {
+                bestDistanceSqr = distanceSqr;
+                bestTarget = health;
+            }
+        }
+
+        return bestTarget;
+    }
+
+    private LayerMask GetLightningEnemyMask()
+    {
+        if (enemyLayerMask.value != 0) return enemyLayerMask;
+        if (StatBlock != null && StatBlock.layersToDamageByAOE.value != 0) return StatBlock.layersToDamageByAOE;
+        return LayerMask.GetMask("Enemies");
+    }
+
+    private void ExecuteLightningStrike(Health target, float damageScale, int repeatRemaining)
+    {
+        if (target == null || target.IsDead || StatBlock == null) return;
+
+        Vector3 strikePoint = GetLightningStrikePoint(target);
+        SpawnLightningStrikeVfx(strikePoint);
+
+        bool isCrit = PlayerStats.Instance != null && Random.value <= (PlayerStats.Instance.critRate + StatBlock.baseCritRate + localCritRateBonus);
+        int directDamage = CalculateLightningStrikeDamage(StatBlock.baseDirectDamage, damageScale, isCrit);
+        int splashDamage = CalculateLightningStrikeDamage(StatBlock.baseAoeDamage > 0 ? StatBlock.baseAoeDamage : StatBlock.baseDirectDamage, damageScale, isCrit);
+        float radius = GetLightningStrikeRadius();
+
+        ApplyLightningStrikeDamage(target, strikePoint, directDamage, isCrit, true);
+        ApplyLightningStrikeSplash(strikePoint, radius, splashDamage, isCrit, target);
+
+        if (isMagneticStormEnabled)
+        {
+            TriggerLightningMagneticStorm(strikePoint, splashDamage, isCrit);
+        }
+
+        if (repeatRemaining > 0)
+        {
+            StartCoroutine(RepeatLightningStrikeRoutine(target, repeatRemaining - 1, damageScale * 0.7f));
+        }
+    }
+
+    private IEnumerator RepeatLightningStrikeRoutine(Health originalTarget, int repeatRemaining, float damageScale)
+    {
+        yield return new WaitForSeconds(0.22f);
+
+        Health target = originalTarget != null && !originalTarget.IsDead
+            ? originalTarget
+            : FindLightningStrikeTarget(null);
+
+        if (target != null)
+        {
+            ExecuteLightningStrike(target, damageScale, repeatRemaining);
+        }
+    }
+
+    private int CalculateLightningStrikeDamage(int baseDamage, float damageScale, bool isCrit)
+    {
+        float damageMultiplier = 1f + localDamageBonus;
+        float flatDamage = 0f;
+
+        if (PlayerStats.Instance != null)
+        {
+            damageMultiplier = PlayerStats.Instance.damageMultiplier + localDamageBonus;
+            flatDamage = PlayerStats.Instance.flatDamageBonus;
+        }
+
+        if (currentStone != null)
+        {
+            damageMultiplier += currentStone.damageModifier;
+        }
+
+        int damage = Mathf.Max(1, Mathf.RoundToInt((Mathf.Max(1, baseDamage) * damageMultiplier + flatDamage) * damageScale));
+
+        if (isCrit && PlayerStats.Instance != null)
+        {
+            damage = Mathf.Max(1, Mathf.RoundToInt(damage * (PlayerStats.Instance.critDamage + StatBlock.baseCritDamage + localCritDamageBonus)));
+        }
+
+        return damage;
+    }
+
+    private float GetLightningStrikeRadius()
+    {
+        float radiusMultiplier = 1f + localAreaBonus;
+        if (PlayerStats.Instance != null)
+        {
+            radiusMultiplier = PlayerStats.Instance.aoeRadiusMultiplier + localAreaBonus;
+        }
+        if (currentStone != null)
+        {
+            radiusMultiplier += currentStone.scaleModifier;
+        }
+
+        return Mathf.Max(0.5f, StatBlock.baseAoeRadius * Mathf.Max(0.1f, radiusMultiplier));
+    }
+
+    private Vector3 GetLightningStrikePoint(Health target)
+    {
+        if (target == null) return transform.position;
+        return target.transform.position;
+    }
+
+    private Vector3 GetLightningHitPoint(Health target)
+    {
+        if (target == null) return transform.position;
+        return target.AimTargetPoint != null ? target.AimTargetPoint.position : target.transform.position;
+    }
+
+    private void SpawnLightningStrikeVfx(Vector3 position)
+    {
+        GameObject vfxPrefab = null;
+        if (StatBlock.nativeSmiteVfxPrefab != null)
+        {
+            vfxPrefab = StatBlock.nativeSmiteVfxPrefab;
+        }
+        else if (StatBlock.ultimateEffectPrefab != null)
+        {
+            vfxPrefab = StatBlock.ultimateEffectPrefab;
+        }
+
+        if (vfxPrefab == null) return;
+
+        GameObject vfx = Instantiate(vfxPrefab, position, Quaternion.identity);
+        Destroy(vfx, 2.5f);
+    }
+
+    private void ApplyLightningStrikeSplash(Vector3 center, float radius, int damage, bool isCrit, Health primaryTarget)
+    {
+        LayerMask damageMask = GetLightningEnemyMask();
+        Collider[] hits = Physics.OverlapSphere(center, radius, damageMask);
+        HashSet<Health> damagedTargets = new HashSet<Health>();
+        if (primaryTarget != null) damagedTargets.Add(primaryTarget);
+
+        foreach (Collider hit in hits)
+        {
+            Health health = hit.GetComponentInParent<Health>();
+            if (health == null || health.IsDead || damagedTargets.Contains(health)) continue;
+            if (!hit.CompareTag("Enemy") && !health.CompareTag("Enemy")) continue;
+
+            damagedTargets.Add(health);
+            ApplyLightningStrikeDamage(health, center, damage, isCrit, false);
+        }
+    }
+
+    private void ApplyLightningStrikeDamage(Health target, Vector3 strikePoint, int damage, bool isCrit, bool allowOnKillChain)
+    {
+        if (target == null || target.IsDead) return;
+
+        target.TakeDamage(damage, GetLightningHitPoint(target), this.gameObject, AttackType.Standard, null, null, StatBlock.weaponName, isCrit);
+
+        StatusEffectReceiver receiver = target.GetComponent<StatusEffectReceiver>();
+        if (receiver != null && !target.IsDead)
+        {
+            receiver.ApplyParalyze(GetLightningParalyzeDuration());
+        }
+
+        if (allowOnKillChain && isOnKillChainEnabled && target.IsDead)
+        {
+            int chainCount = Mathf.Max(3, StatBlock.baseChainCount);
+            float chainRange = StatBlock.chainRange > 0f ? StatBlock.chainRange : 8f;
+            int chainDamage = Mathf.Max(1, Mathf.RoundToInt(damage * 0.55f));
+            ChainLightningFromTarget(target.transform, chainCount, chainDamage, chainRange, StatBlock.nativeChainVfxPrefab, StatBlock.nativeChainImpactVfxPrefab);
+        }
+    }
+
+    private float GetLightningParalyzeDuration()
+    {
+        return Mathf.Clamp(0.35f + localStunDurationBonus * 0.15f, 0.15f, 0.9f);
+    }
+
+    private void TriggerLightningMagneticStorm(Vector3 center, int baseDamage, bool isCrit)
+    {
+        float radius = GetLightningStrikeRadius() * 1.35f;
+        int stormDamage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * (0.45f + localElectricFieldDamageBonus)));
+
+        if (StatBlock.nativeChainImpactVfxPrefab != null)
+        {
+            GameObject impact = Instantiate(StatBlock.nativeChainImpactVfxPrefab, center, Quaternion.identity);
+            Destroy(impact, 2f);
+        }
+
+        ApplyLightningFieldDamage(center, radius, stormDamage, isCrit);
+
+        if (isElectricFieldEnabled)
+        {
+            StartCoroutine(LightningElectricFieldRoutine(center, radius, stormDamage));
+        }
+    }
+
+    private IEnumerator LightningElectricFieldRoutine(Vector3 center, float radius, int damagePerPulse)
+    {
+        float duration = Mathf.Max(1f, 1.6f + localElectricFieldDurationBonus);
+        float tickInterval = 0.5f;
+        float elapsed = 0f;
+
+        GameObject fieldVfx = null;
+        if (StatBlock.auraVfxPrefab != null)
+        {
+            fieldVfx = Instantiate(StatBlock.auraVfxPrefab, center, Quaternion.identity);
+            fieldVfx.transform.localScale = Vector3.one * Mathf.Max(0.5f, radius * StatBlock.vfxBaseScaleMultiplier);
+        }
+
+        while (elapsed < duration)
+        {
+            yield return new WaitForSeconds(tickInterval);
+            elapsed += tickInterval;
+            ApplyLightningFieldDamage(center, radius, damagePerPulse, false);
+        }
+
+        if (fieldVfx != null) Destroy(fieldVfx);
+    }
+
+    private void ApplyLightningFieldDamage(Vector3 center, float radius, int damage, bool isCrit)
+    {
+        Collider[] hits = Physics.OverlapSphere(center, radius, GetLightningEnemyMask());
+        HashSet<Health> damagedTargets = new HashSet<Health>();
+
+        foreach (Collider hit in hits)
+        {
+            Health health = hit.GetComponentInParent<Health>();
+            if (health == null || health.IsDead || damagedTargets.Contains(health)) continue;
+            if (!hit.CompareTag("Enemy") && !health.CompareTag("Enemy")) continue;
+
+            damagedTargets.Add(health);
+            ApplyLightningStrikeDamage(health, center, damage, isCrit, false);
+        }
+    }
+
     private void HandleAuraDamageTick()
     {
         auraTickTimer -= Time.deltaTime;
@@ -1458,11 +1848,12 @@ public class WeaponPart : MonoBehaviour
         {
             if (isBoomerangOut) yield break;
             isBoomerangOut = true;
+            activeBoomerangCount = GetBoomerangProjectileCount();
         }
         else
         {
             // 计算冷却
-            float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus) * (1f + stoneFireRateMod);
+            float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus - GetEngineerMechanicalFireRateBonus()) * (1f + stoneFireRateMod);
             if (finalFireRateMultiplier <= 0.1f) finalFireRateMultiplier = 0.1f;
             fireCooldown = (1f / StatBlock.baseFireRate) * finalFireRateMultiplier;
         }
@@ -1502,6 +1893,7 @@ public class WeaponPart : MonoBehaviour
         if (finalTargetDirection.sqrMagnitude < 0.01f)
         {
             if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) isBoomerangOut = false;
+            if (StatBlock?.behavior == WeaponBehaviorType.Boomerang) activeBoomerangCount = 0;
             yield break;
         }
 
@@ -1546,18 +1938,8 @@ public class WeaponPart : MonoBehaviour
         }
 
         // 8. 回旋镖叠加机制 (保持不变)
-        float totalDamageMultiplier = 1f;
-        float totalScaleMultiplier = 1f;
-        if (StatBlock?.behavior == WeaponBehaviorType.Boomerang && PlayerStats.Instance != null && PlayerStats.Instance.boomerangMaxCatchStacks > 0)
-        {
-            float totalDamageBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackDamageBonusPercent;
-            float totalScaleBonusPercent = PlayerStats.Instance.boomerangCatchStacks * PlayerStats.Instance.boomerangStackScaleBonusPercent;
-            totalDamageMultiplier = 1f + totalDamageBonusPercent;
-            totalScaleMultiplier = 1f + totalScaleBonusPercent;
-        }
-
-        int finalDamage = Mathf.RoundToInt(baseDamage * totalDamageMultiplier);
-        float finalScale = baseScale * totalScaleMultiplier;
+        int finalDamage = baseDamage;
+        float finalScale = baseScale;
 
         // 10. Switch 行为模式
         // 【新增】计算连射次数 (BurstCount)
@@ -1659,7 +2041,7 @@ public class WeaponPart : MonoBehaviour
                 break;
 
             case WeaponBehaviorType.Boomerang:
-                InstantiateAndFireBoomerang(finalTargetDirection, finalDamage, finalScale);
+                FireBoomerangVolley(finalTargetDirection, finalDamage, finalScale);
                 break;
 
             case WeaponBehaviorType.FrostNova:
@@ -1689,50 +2071,98 @@ public class WeaponPart : MonoBehaviour
         }
     }
 
-    public void OnBoomerangCaught(Vector3 catchPosition)
+    public float GetBoomerangReturnDamageMultiplier()
     {
-        if (!isBoomerangOut || StatBlock == null || PlayerStats.Instance == null)
+        return Mathf.Max(0.1f, 1.15f + boomerangReturnDamageBonus);
+    }
+
+    public void OnBoomerangReturnHit(Vector3 hitPosition, int returnHitCount, int projectileDamage)
+    {
+        if (StatBlock == null || returnHitCount <= 0) return;
+        if (boomerangReturnPulseEveryHits <= 0 || boomerangReturnPulseDamageMultiplier <= 0f) return;
+        if (returnHitCount % boomerangReturnPulseEveryHits != 0) return;
+
+        int pulseDamage = Mathf.Max(1, Mathf.RoundToInt(projectileDamage * boomerangReturnPulseDamageMultiplier));
+        float pulseRadius = Mathf.Max(0.5f, boomerangReturnPulseRadius);
+        DealBoomerangAreaDamage(hitPosition, pulseRadius, pulseDamage);
+    }
+
+    public void OnBoomerangCaught(Vector3 catchPosition, int returnHitCount = 0, int projectileDamage = 0)
+    {
+        if (!isBoomerangOut || StatBlock == null)
         {
             // Debug.LogWarning($"[OnBoomerangCaught] Ignored. isBoomerangOut={isBoomerangOut}, StatBlock Null? {StatBlock == null}, PlayerStats Null? {PlayerStats.Instance == null}");
             return;
         }
 
-        isBoomerangOut = false; // Mark as returned
+        if (returnHitCount > 0 && boomerangRecallBurstDamageMultiplier > 0f)
+        {
+            int baseDamage = projectileDamage > 0 ? projectileDamage : Mathf.Max(1, StatBlock.baseDirectDamage);
+            float hitBonus = 1f + Mathf.Min(returnHitCount, 10) * 0.08f;
+            int burstDamage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * boomerangRecallBurstDamageMultiplier * hitBonus));
+            float burstRadius = Mathf.Max(0.75f, boomerangRecallBurstRadius + Mathf.Min(returnHitCount, 8) * 0.15f);
+            DealBoomerangAreaDamage(catchPosition, burstRadius, burstDamage);
+        }
+
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.boomerangCatchStacks = 0;
+        }
+
+        activeBoomerangCount = Mathf.Max(0, activeBoomerangCount - 1);
 
         // --- 核心修改：增加 PlayerStats 中的叠加层数 ---
-        if (PlayerStats.Instance.boomerangMaxCatchStacks > 0)
-        {
-            PlayerStats.Instance.boomerangCatchStacks = Mathf.Min(PlayerStats.Instance.boomerangCatchStacks + 1, PlayerStats.Instance.boomerangMaxCatchStacks);
-        }
-
         // --- 核心修改结束 ---
 
-        ResetCooldown(); // 重置冷却
+        if (activeBoomerangCount <= 0)
+        {
+            isBoomerangOut = false;
+            ResetCooldown(); // 重置冷却
+        }
+    }
 
-        // --- 自动再次丢出逻辑 ---
-        Transform nearestEnemy = FindNearestEnemyTransform(catchPosition, StatBlock.autoAimRange);
-        Vector3 nextDirection;
-        if (nearestEnemy != null)
+    private void DealBoomerangAreaDamage(Vector3 center, float radius, int damage)
+    {
+        if (StatBlock == null || damage <= 0 || radius <= 0f) return;
+
+        LayerMask damageMask = enemyLayerMask.value != 0
+            ? enemyLayerMask
+            : (StatBlock.layersToDamageByAOE.value != 0 ? StatBlock.layersToDamageByAOE : LayerMask.GetMask("Enemies"));
+
+        Collider[] hits = Physics.OverlapSphere(center, radius, damageMask);
+        HashSet<Health> damagedTargets = new HashSet<Health>();
+
+        foreach (Collider hit in hits)
         {
-            nextDirection = (nearestEnemy.position - catchPosition).normalized;
-            nextDirection.y = 0; // Keep horizontal
+            Health health = hit.GetComponentInParent<Health>();
+            if (health == null || health.IsDead || damagedTargets.Contains(health)) continue;
+            if (!hit.CompareTag("Enemy") && !health.CompareTag("Enemy")) continue;
+
+            damagedTargets.Add(health);
+            Vector3 hitPoint = health.AimTargetPoint != null ? health.AimTargetPoint.position : hit.ClosestPoint(center);
+            health.TakeDamage(damage, hitPoint, gameObject, AttackType.Standard, null, null, StatBlock.weaponName);
         }
-        else // No enemy? Throw behind player
+
+        GameObject vfxPrefab = StatBlock.defaultImpactEffectPrefab != null
+            ? StatBlock.defaultImpactEffectPrefab
+            : StatBlock.explosionEffectPrefab;
+        if (vfxPrefab != null)
         {
-            if (GameManager.Instance?.playerTransform != null)
-                nextDirection = -GameManager.Instance.playerTransform.forward;
-            else
-                nextDirection = transform.forward; // Fallback
+            GameObject vfx = Instantiate(vfxPrefab, center, Quaternion.identity);
+            Destroy(vfx, 2f);
         }
-        StartCoroutine(FireRoutine(nextDirection.normalized));
     }
 
     public void StartCooldownIfNotCaught()
     {
         if (isBoomerangOut)
         {
+            activeBoomerangCount = Mathf.Max(0, activeBoomerangCount - 1);
+            if (activeBoomerangCount > 0) return;
+
             isBoomerangOut = false;
-            fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+            float fireRateMultiplier = PlayerStats.Instance != null ? PlayerStats.Instance.fireRateMultiplier : 1f;
+            fireCooldown = (1f / StatBlock.baseFireRate) * fireRateMultiplier;
             // Debug.Log($"Boomerang '{StatBlock?.weaponName}' missed, starting cooldown: {fireCooldown}s.");
 
             // --- 【核心修改】重置 PlayerStats 中的叠加层数 ---
@@ -1923,6 +2353,32 @@ public class WeaponPart : MonoBehaviour
         else { Destroy(bullet); }
     }
 
+    private int GetBoomerangProjectileCount()
+    {
+        return Mathf.Clamp(1 + localOrbitalCountBonus, 1, 4);
+    }
+
+    private void FireBoomerangVolley(Vector3 direction, int finalDamage, float finalScale)
+    {
+        int count = GetBoomerangProjectileCount();
+        activeBoomerangCount = count;
+
+        if (count <= 1)
+        {
+            InstantiateAndFireBoomerang(direction, finalDamage, finalScale);
+            return;
+        }
+
+        float spread = Mathf.Min(36f, 12f + (count - 1) * 8f);
+        float startAngle = -spread * 0.5f;
+        float step = count > 1 ? spread / (count - 1) : 0f;
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 shotDirection = Quaternion.Euler(0f, startAngle + step * i, 0f) * direction;
+            InstantiateAndFireBoomerang(shotDirection.normalized, finalDamage, finalScale);
+        }
+    }
+
     // Updated to accept finalDamage and finalScale
     private void InstantiateAndFireBoomerang(Vector3 direction, int finalDamage, float finalScale, Vector3? launchPosition = null) // <-- 添加可选参数
     {
@@ -1932,6 +2388,7 @@ public class WeaponPart : MonoBehaviour
         if (StatBlock?.projectilePrefab == null) // 简化 null 检查
         {
             isBoomerangOut = false;
+            activeBoomerangCount = 0;
             Debug.LogError($"[WeaponPart] Boomerang fire failed: ProjectilePrefab missing for {StatBlock?.weaponName}");
             return;
         }
@@ -1939,10 +2396,12 @@ public class WeaponPart : MonoBehaviour
         GameObject bullet = Instantiate(StatBlock.projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
         bullet.transform.localScale = Vector3.one * finalScale;
 
-        float finalSpeed = StatBlock.baseLaunchForce * PlayerStats.Instance.projectileSpeedMultiplier;
-        float finalMaxDistance = StatBlock.maxDistance * PlayerStats.Instance.durationMultiplier;
-        float finalLifetime = StatBlock.baseProjectileLifetime * (PlayerStats.Instance.durationMultiplier + localDurationBonus);
-        float finalCatchRadius = StatBlock.catchRadius * finalScale;
+        float speedMultiplier = PlayerStats.Instance != null ? PlayerStats.Instance.projectileSpeedMultiplier + localSpeedBonus : 1f + localSpeedBonus;
+        float durationMultiplier = PlayerStats.Instance != null ? PlayerStats.Instance.durationMultiplier + localDurationBonus : 1f + localDurationBonus;
+        float finalSpeed = StatBlock.baseLaunchForce * Mathf.Max(0.1f, speedMultiplier);
+        float finalMaxDistance = StatBlock.maxDistance * Mathf.Max(0.1f, durationMultiplier);
+        float finalLifetime = StatBlock.baseProjectileLifetime * Mathf.Max(0.1f, durationMultiplier);
+        float finalCatchRadius = Mathf.Clamp(StatBlock.catchRadius, 0.35f, 0.95f);
 
         Projectile projectileScript = bullet.GetComponent<Projectile>();
         if (projectileScript != null)
@@ -1965,6 +2424,7 @@ public class WeaponPart : MonoBehaviour
         else
         {
             isBoomerangOut = false;
+            activeBoomerangCount = 0;
             Debug.LogError($"[WeaponPart] Boomerang fire failed: Projectile script missing on prefab for {StatBlock?.weaponName}");
             Destroy(bullet);
         }
@@ -2054,6 +2514,11 @@ public class WeaponPart : MonoBehaviour
                 finalInterval,
                 StatBlock.weaponName
             );
+
+            if (IsFlameTurretWeapon() && IsEngineerSkillActive("Engineer_Fortress_AutoTurret"))
+            {
+                SpawnEngineerSupportFlameTurret(spawnPos, targetScale, finalDamage, finalLifetime, finalRange, finalInterval);
+            }
         }
         else
         {
@@ -2944,9 +3409,18 @@ public class WeaponPart : MonoBehaviour
         // 4. 计算核心数量（基础1 + 数量加成）
         int count = GetTotalCount();
         if (count < 1) count = 1;
+        if (IsEngineerSkillActive("Engineer_Overclock_LaserGrid"))
+        {
+            count += 1;
+            damagePerTick = Mathf.RoundToInt(damagePerTick * 1.12f);
+        }
 
         // 5. 折射数量
         int refraction = localLaserRefractionCount;
+        if (IsEngineerSkillActive("Engineer_Overclock_LaserGrid"))
+        {
+            refraction += 1;
+        }
 
         // 6. 生成镭射核心
         for (int i = 0; i < count; i++)
@@ -2972,6 +3446,10 @@ public class WeaponPart : MonoBehaviour
                 // 从 StatBlock 读取光束持续时间和冷却
                 if (StatBlock.beamDuration > 0) coreScript.overheatDelay = StatBlock.beamDuration;
                 if (StatBlock.beamCooldown > 0) coreScript.cooldownTime = StatBlock.beamCooldown;
+                if (IsEngineerSkillActive("Engineer_Overclock_LaserGrid"))
+                {
+                    coreScript.cooldownTime = Mathf.Max(0.5f, coreScript.cooldownTime * 0.8f);
+                }
 
                 // 过热AOE范围：基础 × (1 + 局部范围加成)
                 if (localAreaBonus > 0)
@@ -3091,7 +3569,12 @@ public class WeaponPart : MonoBehaviour
     {
         if (StatBlock == null || !IsReadyToFire || WeaponController.Instance == null) return;
 
-        int mineCount = 1 + localMineCountBonus; // 基础1颗 + 雷区扩张加成
+        int mineCount = 1 + localMineCountBonus;
+        bool engineerMinefield = IsEngineerSkillActive("Engineer_Fortress_Minefield");
+        if (engineerMinefield)
+        {
+            mineCount += 1;
+        }
 
         for (int i = 0; i < mineCount; i++)
         {
@@ -3112,6 +3595,11 @@ public class WeaponPart : MonoBehaviour
                 {
                     int finalDamage = Mathf.RoundToInt(StatBlock.baseAoeDamage * PlayerStats.Instance.aoeDamageMultiplier + PlayerStats.Instance.flatAoeDamageBonus);
                     float finalRadius = StatBlock.baseAoeRadius * PlayerStats.Instance.aoeRadiusMultiplier;
+                    if (engineerMinefield)
+                    {
+                        finalDamage = Mathf.RoundToInt(finalDamage * 1.12f);
+                        finalRadius *= 1.2f;
+                    }
                     mineScript.Initialize(
                         finalDamage,
                         finalRadius,
@@ -3131,7 +3619,7 @@ public class WeaponPart : MonoBehaviour
         }
 
         // Reset cooldown
-        fireCooldown = (1f / StatBlock.baseFireRate) * PlayerStats.Instance.fireRateMultiplier;
+        fireCooldown = (1f / StatBlock.baseFireRate) * Mathf.Max(0.1f, PlayerStats.Instance.fireRateMultiplier - GetEngineerMechanicalFireRateBonus());
     }
     public void FuseEnergyStone(EnergyStoneSO newStone) 
     {

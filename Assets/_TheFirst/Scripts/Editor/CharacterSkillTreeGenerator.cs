@@ -102,15 +102,15 @@ public class CharacterSkillTreeGenerator : EditorWindow
         // ===== 第2层：命运抉择（2个互斥分支）=====
         CreateMechanicBranchNode(dir, "Mage_Branch_Ice",
             "❄ 冰锥之路",
-            "初始携带「冰锥术」\n并直接习得冰锥大招\n移速 +8%",
-            "Start with Ice Shard\nUltimate auto-unlocked\nMove Speed +8%",
+            "初始携带「冰锥术」\n冰系路线强化\n移速 +8%",
+            "Start with Ice Shard\nIce build focus\nMove Speed +8%",
             2, 200, "IcePath",
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.MoveSpeedPercent, value = 0.08f });
 
         CreateMechanicBranchNode(dir, "Mage_Branch_Fire",
             "🔥 火球之路",
-            "初始携带「火球术」\n并直接习得火球大招\n伤害 +12%",
-            "Start with Fireball\nUltimate auto-unlocked\nDamage +12%",
+            "初始携带「火球术」\n火系路线强化\n伤害 +12%",
+            "Start with Fireball\nFire build focus\nDamage +12%",
             2, 200, "FirePath",
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.DamagePercent, value = 0.12f });
 
@@ -120,7 +120,7 @@ public class CharacterSkillTreeGenerator : EditorWindow
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.DamagePercent, value = 0.05f });
 
         CreateNode(dir, "Mage_Ice_Hail", "🌨 冰雹风暴",
-            "冰锥大招额外下落冰雹\n持续5秒区域伤害", 3, 150,
+            "冰系武器命中累计后落下冰雹\n持续5秒区域伤害", 3, 150,
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.MaxHealthFlat, value = 15f });
 
         CreateNode(dir, "Mage_Ice_Thunder", "⚡ 毁灭雷击",
@@ -133,7 +133,7 @@ public class CharacterSkillTreeGenerator : EditorWindow
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.DamagePercent, value = 0.05f });
 
         CreateNode(dir, "Mage_Fire_Trail", "🔥 烈焰轨迹",
-            "火球大招的火球\n经过地面自动留下火焰轨迹", 3, 150,
+            "火系武器飞行时\n周期性留下火焰轨迹", 3, 150,
             new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.DamagePercent, value = 0.08f });
 
         CreateNode(dir, "Mage_Fire_Wind", "🌪 风助火势",
@@ -148,7 +148,7 @@ public class CharacterSkillTreeGenerator : EditorWindow
         // ===== 第4层B：火球路线终极天赋 =====
         CreateNode(dir, "Mage_Talent_Inferno", "⭐ 炼狱之焰",
             "场上存在3处以上火海时\n自动触发炼狱\n全场火海伤害+200%\n持续5秒，冷却25秒", 4, 500,
-            new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.EnergyGainPercent, value = 0.15f });
+            new PermanentUpgradeEffect { upgradeType = PermanentUpgradeType.DamagePercent, value = 0.06f });
     }
 
     // =============================================

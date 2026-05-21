@@ -32,6 +32,22 @@ public enum WeaponXpSource
 }
 
 
+public enum WeaponBuildTag
+{
+    Slash,
+    Spell,
+    Fire,
+    Ice,
+    Lightning,
+    Wind,
+    Mechanical,
+    Deployable,
+    Guardian,
+    Aura,
+    Projectile,
+    Control
+}
+
 [CreateAssetMenu(fileName = "Weapon_Cannon", menuName = "Weapons/Weapon Stat Block")]
 public class WeaponStatBlock : ScriptableObject
 {
@@ -43,6 +59,10 @@ public class WeaponStatBlock : ScriptableObject
     public Sprite weaponIcon;
     [Tooltip("要挂载到机甲上的武器部件预制件 (WeaponPart Prefab)")]
     public GameObject weaponPartPrefab;
+
+    [Header("Build Tags")]
+    [Tooltip("Optional explicit build tags. Leave empty to use inferred tags from weaponID/behavior.")]
+    public List<WeaponBuildTag> buildTags = new List<WeaponBuildTag>();
 
     [Header("视觉表现")]
     [Tooltip("这把武器的代表色 (HDR)。例如：斩击用橙色，疾风之刃用青色。")]
@@ -159,7 +179,7 @@ public class WeaponStatBlock : ScriptableObject
 
     [Header("进化与融合 (未来扩展)")]
     [Tooltip("此武器的最高等级")]
-    public int maxLevel = 8;
+    public int maxLevel = 10;
 
     [Header("进阶与进化")]
     [Tooltip("当达到最大等级且满足进化条件时，进化成这把武器")]

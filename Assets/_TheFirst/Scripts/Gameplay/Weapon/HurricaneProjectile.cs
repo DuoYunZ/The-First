@@ -45,6 +45,8 @@ public class HurricaneProjectile : MonoBehaviour
         {
             Health h = col.GetComponentInParent<Health>();
             if (h == null || h.IsDead) continue;
+            if (StatusEffectReceiver.IsKnockbackImmune(h.transform)) continue;
+
             Vector3 pushDir = (h.transform.position - transform.position);
             pushDir.y = 0f;
             if (pushDir.sqrMagnitude < 0.01f) continue;

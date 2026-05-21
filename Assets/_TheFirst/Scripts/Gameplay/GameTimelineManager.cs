@@ -11,6 +11,26 @@ public class GameTimelineManager : MonoBehaviour
     [Tooltip("拖入定义了20分钟关卡事件的 ScriptableObject")]
     public GameTimelineConfig timelineConfig;
 
+    [Header("Demo Timeline Overrides")]
+    public bool autoSelectDemoTimeline = true;
+    public GameTimelineConfig demoIntroTimelineConfig;
+    public GameTimelineConfig demoHardTimelineConfig;
+    public bool useBuildTest60Timeline = false;
+    public GameTimelineConfig demoBuildTest60TimelineConfig;
+    public float demoIntroExperienceMultiplier = 1f;
+    public float demoHardExperienceMultiplier = 2f;
+    public float demoBuildTest60ExperienceMultiplier = 1.35f;
+
+    [Header("Demo Surprise Events")]
+    public bool enableDemoSurpriseEvents = true;
+    public bool demoSurpriseHardOnly = true;
+    public int demoSurpriseMaxEvents = 4;
+    public float demoSurpriseFirstTime = 260f;
+    public float demoSurpriseLastTime = 1080f;
+    public float demoSurpriseMinInterval = 120f;
+    public float demoSurpriseMaxInterval = 180f;
+    public List<WaveConfig> demoSurpriseWaves = new List<WaveConfig>();
+
     [Header("游戏状态")]
     public int totalKills = 0; // 可以用来统计击杀数
 
@@ -28,6 +48,12 @@ public class GameTimelineManager : MonoBehaviour
     [Tooltip("每分钟敌人增加的速度百分比")]
     public float speedGrowthFactorPerMinute = 0.02f;
 
+    [Header("Demo Late Pressure")]
+    public bool enableLateHealthRamp = true;
+    public float lateHealthRampStartTime = 240f;
+    public float lateHealthMultiplierPerMinute = 0.3f;
+    public float lateHealthMultiplierMax = 2.4f;
+
     [Header("波次提前完成设置")]
     [Tooltip("勾选此项，当前波敌人全部被消灭后立即进入下一波")]
     public bool advanceWaveOnClear = true;
@@ -36,7 +62,8 @@ public class GameTimelineManager : MonoBehaviour
 
     [Header("调试显示")]
     [Tooltip("勾选此项在左上角显示当前波次调试信息")]
-    public bool showDebugUI = true;
+    public bool showDebugUI = false;
+    private const bool AllowOnGuiDebug = false;
 
     // --- 内部运行时列表 ---
     private class PendingEvent
@@ -46,6 +73,10 @@ public class GameTimelineManager : MonoBehaviour
     }
     private List<PendingEvent> pendingEvents = new List<PendingEvent>();
     private bool gameFinished = false;
+    private int removedWithoutKillCount = 0;
+    private float nextDemoSurpriseTime = -1f;
+    private int demoSurpriseEventsTriggered = 0;
+    private WaveConfig lastDemoSurpriseWave;
 
     // --- 波次追踪 ---
     private int currentWaveIndex = 0;    // 当前已触发的波次编号（从1开始）
@@ -64,13 +95,189 @@ public class GameTimelineManager : MonoBehaviour
 
     void Start()
     {
+        SelectDemoTimelineIfNeeded();
+
         if (timelineConfig == null || enemySpawner == null || gameTimer == null)
         {
             Debug.LogError("GameTimelineManager 缺少关键引用 (Timeline, Spawner, or Timer)！", this);
             enabled = false;
             return;
         }
+        ApplyDemoTimelineExperienceModifier();
         InitializeTimeline();
+    }
+
+    private void SelectDemoTimelineIfNeeded()
+    {
+        if (!autoSelectDemoTimeline || !DemoContentGate.DemoModeEnabled) return;
+        if (!DemoContentGate.IsSceneAllowed(SceneManager.GetActiveScene().name)) return;
+
+        if (useBuildTest60Timeline && demoBuildTest60TimelineConfig != null)
+        {
+            timelineConfig = demoBuildTest60TimelineConfig;
+            advanceWaveOnClear = false;
+            Debug.Log($"<color=cyan>[Timeline] Build test 60 timeline selected: {timelineConfig.name}</color>");
+            return;
+        }
+
+        bool hardUnlocked = PlayerProgressManager.Instance != null
+            && PlayerProgressManager.Instance.IsItemUnlocked(DemoContentGate.HardUnlockItemId);
+
+        bool hardSelected = DataManager.Instance != null
+            && DataManager.Instance.selectedDemoDifficulty == DemoDifficultySelection.Hard;
+
+        GameTimelineConfig selected = hardUnlocked && hardSelected ? demoHardTimelineConfig : demoIntroTimelineConfig;
+        if (selected != null)
+        {
+            timelineConfig = selected;
+            Debug.Log($"<color=cyan>[Timeline] Demo timeline selected: {timelineConfig.name}</color>");
+        }
+    }
+
+    public string GetActiveTimelineName()
+    {
+        return timelineConfig != null ? timelineConfig.name : string.Empty;
+    }
+
+    private void ApplyDemoTimelineExperienceModifier()
+    {
+        if (PlayerLevelManager.Instance == null) return;
+
+        string activeTimelineName = GetActiveTimelineName();
+        float multiplier = IsBuildTest60TimelineName(activeTimelineName)
+            ? demoBuildTest60ExperienceMultiplier
+            : DemoContentGate.IsHardTimelineName(activeTimelineName)
+                ? demoHardExperienceMultiplier
+                : demoIntroExperienceMultiplier;
+        PlayerLevelManager.Instance.SetTimelineExperienceMultiplier(multiplier);
+        Debug.Log($"<color=yellow>[Timeline] XP multiplier: {multiplier:F2}x</color>");
+    }
+
+    private void InitializeDemoSurpriseEvents()
+    {
+        demoSurpriseEventsTriggered = 0;
+        lastDemoSurpriseWave = null;
+        nextDemoSurpriseTime = -1f;
+
+        if (!ShouldRunDemoSurpriseEvents()) return;
+
+        float eventWindowEnd = GetDemoSurpriseWindowEnd();
+        float firstTime = Mathf.Max(0f, demoSurpriseFirstTime);
+        if (firstTime > eventWindowEnd) return;
+
+        nextDemoSurpriseTime = firstTime;
+        Debug.Log($"<color=magenta>[Timeline] Demo surprise events armed. First at {nextDemoSurpriseTime:F0}s.</color>");
+    }
+
+    private bool ShouldRunDemoSurpriseEvents()
+    {
+        if (!enableDemoSurpriseEvents) return false;
+        if (!DemoContentGate.DemoModeEnabled) return false;
+        if (demoSurpriseMaxEvents <= 0) return false;
+        if (demoSurpriseWaves == null || demoSurpriseWaves.Count == 0) return false;
+        string activeTimelineName = GetActiveTimelineName();
+        if (demoSurpriseHardOnly
+            && !DemoContentGate.IsHardTimelineName(activeTimelineName)
+            && !IsBuildTest60TimelineName(activeTimelineName)) return false;
+        return true;
+    }
+
+    private float GetDemoSurpriseWindowEnd()
+    {
+        float timelineEnd = timelineConfig != null ? timelineConfig.totalGameDuration : demoSurpriseLastTime;
+        if (IsBuildTest60TimelineName(GetActiveTimelineName()))
+        {
+            return Mathf.Max(0f, timelineEnd - 180f);
+        }
+        return Mathf.Min(Mathf.Max(0f, demoSurpriseLastTime), Mathf.Max(0f, timelineEnd));
+    }
+
+    private bool IsBuildTest60TimelineName(string timelineName)
+    {
+        return !string.IsNullOrEmpty(timelineName) && timelineName.Contains("BuildTest60");
+    }
+
+    private void TryFireDemoSurpriseEvent(float elapsedTime)
+    {
+        if (nextDemoSurpriseTime < 0f || elapsedTime < nextDemoSurpriseTime) return;
+
+        if (!ShouldRunDemoSurpriseEvents() || demoSurpriseEventsTriggered >= demoSurpriseMaxEvents)
+        {
+            nextDemoSurpriseTime = -1f;
+            return;
+        }
+
+        if (elapsedTime > GetDemoSurpriseWindowEnd())
+        {
+            nextDemoSurpriseTime = -1f;
+            return;
+        }
+
+        WaveConfig wave = PickDemoSurpriseWave();
+        if (wave == null)
+        {
+            nextDemoSurpriseTime = -1f;
+            return;
+        }
+
+        FireDemoSurpriseWave(wave);
+        demoSurpriseEventsTriggered++;
+        ScheduleNextDemoSurpriseEvent(elapsedTime);
+    }
+
+    private WaveConfig PickDemoSurpriseWave()
+    {
+        List<WaveConfig> candidates = demoSurpriseWaves
+            .Where(wave => wave != null && wave != lastDemoSurpriseWave)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            candidates = demoSurpriseWaves
+                .Where(wave => wave != null)
+                .ToList();
+        }
+
+        if (candidates.Count == 0) return null;
+
+        WaveConfig selected = candidates[Random.Range(0, candidates.Count)];
+        lastDemoSurpriseWave = selected;
+        return selected;
+    }
+
+    private void FireDemoSurpriseWave(WaveConfig wave)
+    {
+        int spawned = wave.GetTotalEnemiesInWave();
+        aliveEnemyCount += spawned;
+
+        float elapsedTime = gameTimer != null ? gameTimer.GetElapsedTime() : 0f;
+        int effectiveWaveNumber = 1 + (int)(elapsedTime / 60f);
+        float healthScaleMultiplier = GetLateHealthMultiplier(elapsedTime);
+        Debug.Log($"<color=magenta>[Timeline] Demo surprise {demoSurpriseEventsTriggered + 1}/{demoSurpriseMaxEvents}: '{wave.waveName}' | extraSpawned={spawned} | alive={aliveEnemyCount}</color>");
+
+        enemySpawner.InstructToSpawnWaveConfig(
+            wave,
+            effectiveWaveNumber,
+            healthGrowthFactorPerMinute,
+            damageGrowthFactorPerMinute,
+            speedGrowthFactorPerMinute,
+            healthScaleMultiplier
+        );
+    }
+
+    private void ScheduleNextDemoSurpriseEvent(float currentTime)
+    {
+        if (!ShouldRunDemoSurpriseEvents() || demoSurpriseEventsTriggered >= demoSurpriseMaxEvents)
+        {
+            nextDemoSurpriseTime = -1f;
+            return;
+        }
+
+        float minInterval = Mathf.Max(1f, Mathf.Min(demoSurpriseMinInterval, demoSurpriseMaxInterval));
+        float maxInterval = Mathf.Max(minInterval, demoSurpriseMaxInterval);
+        float nextTime = currentTime + Random.Range(minInterval, maxInterval);
+
+        nextDemoSurpriseTime = nextTime <= GetDemoSurpriseWindowEnd() ? nextTime : -1f;
     }
 
     void InitializeTimeline()
@@ -80,8 +287,10 @@ public class GameTimelineManager : MonoBehaviour
         aliveEnemyCount = 0;
         currentWaveIndex = 0;
         gameFinished = false;
+        removedWithoutKillCount = 0;
         isAdvancing = false;
         allWavesFired = false;
+        InitializeDemoSurpriseEvents();
 
         // 准备所有待处理事件
         foreach (var evt in timelineConfig.timelineEvents)
@@ -130,6 +339,8 @@ public class GameTimelineManager : MonoBehaviour
                 allWavesFired = true;
             }
         }
+
+        TryFireDemoSurpriseEvent(elapsedTime);
     }
 
     void FireEvent(PendingEvent evt)
@@ -144,7 +355,9 @@ public class GameTimelineManager : MonoBehaviour
         Debug.Log($"<color=orange>[Timeline] 触发波次 {currentWaveIndex}/{totalWaveCount}: '{currentWaveName}' | 本波生成={waveSpawnedTotal} | 当前存活={aliveEnemyCount} | 剩余波次={pendingEvents.Count - 1}</color>");
 
         // --- 动态计算属性成长 ---
-        int effectiveWaveNumber = 1 + (int)(gameTimer.GetElapsedTime() / 60f);
+        float elapsedTime = gameTimer != null ? gameTimer.GetElapsedTime() : 0f;
+        int effectiveWaveNumber = 1 + (int)(elapsedTime / 60f);
+        float healthScaleMultiplier = GetLateHealthMultiplier(elapsedTime);
 
         // 【重要】我们复用 EnemySpawner 的方法，传入计算好的成长值
         enemySpawner.InstructToSpawnWaveConfig(
@@ -152,8 +365,21 @@ public class GameTimelineManager : MonoBehaviour
             effectiveWaveNumber,
             healthGrowthFactorPerMinute,
             damageGrowthFactorPerMinute,
-            speedGrowthFactorPerMinute
+            speedGrowthFactorPerMinute,
+            healthScaleMultiplier
         );
+    }
+
+    private float GetLateHealthMultiplier(float elapsedTime)
+    {
+        if (!enableLateHealthRamp || lateHealthMultiplierPerMinute <= 0f || lateHealthMultiplierMax <= 1f)
+        {
+            return 1f;
+        }
+
+        float minutesAfterStart = Mathf.Max(0f, elapsedTime - Mathf.Max(0f, lateHealthRampStartTime)) / 60f;
+        float multiplier = 1f + minutesAfterStart * lateHealthMultiplierPerMinute;
+        return Mathf.Clamp(multiplier, 1f, lateHealthMultiplierMax);
     }
 
     /// <summary>
@@ -176,6 +402,10 @@ public class GameTimelineManager : MonoBehaviour
         {
             FireEvent(pendingEvents[0]);
             pendingEvents.RemoveAt(0);
+            if (pendingEvents.Count == 0)
+            {
+                allWavesFired = true;
+            }
         }
         isAdvancing = false;
     }
@@ -187,6 +417,7 @@ public class GameTimelineManager : MonoBehaviour
     void GameWin()
     {
         gameFinished = true;
+        GameManager.Instance?.BeginVictoryPending();
         // 停止所有刷怪
         enemySpawner.StopAndClearSpawning();
 
@@ -212,6 +443,11 @@ public class GameTimelineManager : MonoBehaviour
     {
         totalKills++;
         aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
+
+        if (allWavesFired && (aliveEnemyCount <= 100 || totalKills % 50 == 0))
+        {
+            ReconcileAliveEnemyCount("kill");
+        }
 
         // 每50次击杀输出一次状态（减少日志量），或者当存活数很少时每次都输出
         if (totalKills % 50 == 0 || aliveEnemyCount <= 5)
@@ -246,15 +482,79 @@ public class GameTimelineManager : MonoBehaviour
 
     public void AnEnemyFailedToSpawn()
     {
-        // 生成失败的敌人也要从存活数中扣除，避免永远无法"清完"
+        EnemiesFailedToSpawn(1);
+    }
+
+    public void EnemiesFailedToSpawn(int count)
+    {
+        if (count <= 0) return;
+
+        aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - count);
+        Debug.LogWarning($"[GameTimelineManager] {count} enemies failed to spawn. alive={aliveEnemyCount}");
+
+        if (allWavesFired)
+        {
+            ReconcileAliveEnemyCount("spawn-failed");
+        }
+
+        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        {
+            GameWin();
+        }
+    }
+
+    public void EnemyRemovedWithoutKill(string reason = "despawn")
+    {
+        if (gameFinished) return;
+
+        removedWithoutKillCount++;
         aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
-        Debug.LogWarning("[GameTimelineManager] 一个敌人未能生成。");
+        if (removedWithoutKillCount % 25 == 0 || aliveEnemyCount <= 5)
+        {
+            Debug.Log($"<color=yellow>[Timeline] Enemy removed without kill ({reason}) #{removedWithoutKillCount}. alive={aliveEnemyCount}</color>");
+        }
+
+        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        {
+            GameWin();
+            return;
+        }
+
+        if (advanceWaveOnClear && aliveEnemyCount <= 0 && pendingEvents.Count > 0 && !isAdvancing)
+        {
+            AdvanceToNextWave();
+        }
+    }
+
+    private void ReconcileAliveEnemyCount(string reason)
+    {
+        int sceneAlive = CountAliveEnemyHealthObjects();
+        if (sceneAlive != aliveEnemyCount)
+        {
+            Debug.Log($"<color=yellow>[Timeline] Alive count reconciled ({reason}): tracked={aliveEnemyCount}, scene={sceneAlive}</color>");
+            aliveEnemyCount = sceneAlive;
+        }
+    }
+
+    private int CountAliveEnemyHealthObjects()
+    {
+        int count = 0;
+        Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
+        for (int i = 0; i < healthObjects.Length; i++)
+        {
+            Health health = healthObjects[i];
+            if (health != null && !health.IsDead && health.gameObject.CompareTag("Enemy"))
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     // --- 调试 UI ---
     void OnGUI()
     {
-        if (!showDebugUI || gameFinished) return;
+        if (!AllowOnGuiDebug || !showDebugUI || gameFinished) return;
 
         // 左上角显示波次调试信息
         GUIStyle style = new GUIStyle(GUI.skin.box);

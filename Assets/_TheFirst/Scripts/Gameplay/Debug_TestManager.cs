@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class Debug_TestManager : MonoBehaviour
 {
@@ -22,11 +25,63 @@ public class Debug_TestManager : MonoBehaviour
     [Tooltip("每次点击“加经验”按钮时给予的经验值")]
     public int xpToAdd = 20;
 
+    [Header("Build Test Kits")]
+    [Tooltip("Play mode debug panel for deterministic build testing.")]
+    public bool showBuildTestGui = true;
+
     private Transform playerTransform;
     private EnemySpawner enemySpawner;
 
+#if UNITY_EDITOR
+    private static readonly string[] BuildTestWeaponPaths =
+    {
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Blade.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Fireball.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_FrostNova.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_IceShard.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Grenade.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_ChainLightning.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_LightningStrike.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Landmine.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Orbit.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_Laser_Tank.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/SO_SuperMech.asset",
+        "Assets/_TheFirst/GameData/SO_Weapon/discard/SO_FlameTurret.asset"
+    };
+
+    private static readonly string[] BuildTestPassivePaths =
+    {
+        "Assets/_TheFirst/Prefabs/Passive Item Data/SwordmasterSoul_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/ArcaneMastery_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/ElementalResonance_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/MechanicalResonance_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/ATK_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/CD_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Fanwei_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Duration_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Pierce_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Cili_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Speed_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/HP_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Armor_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/Lucky_Data.asset",
+        "Assets/_TheFirst/Prefabs/Passive Item Data/XPGain_Data.asset"
+    };
+#endif
+
+    void OnValidate()
+    {
+#if UNITY_EDITOR
+        EnsureBuildTestAssets();
+#endif
+    }
+
     void Start()
     {
+#if UNITY_EDITOR
+        EnsureBuildTestAssets();
+#endif
+
         enemySpawner = FindObjectOfType<EnemySpawner>();
         if (enemySpawner == null)
         {
@@ -41,6 +96,161 @@ public class Debug_TestManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             playerTransform = GameManager.Instance.playerTransform;
+        }
+    }
+
+    void OnGUI()
+    {
+        if (!showBuildTestGui || !Application.isPlaying) return;
+
+        GUILayout.BeginArea(new Rect(10, 120, 260, 390), GUI.skin.box);
+        GUILayout.Label("Build Test Kits");
+
+        if (GUILayout.Button("Sword: Blade + Soul Lv3"))
+        {
+            GiveSwordmasterTestKit();
+        }
+
+        if (GUILayout.Button("Arcane: Mastery Lv5"))
+        {
+            GiveArcaneTestKit();
+        }
+
+        if (GUILayout.Button("Elemental: Fire/Ice/Thunder + Resonance Lv3"))
+        {
+            GiveElementalTestKit();
+        }
+
+        if (GUILayout.Button("Mechanical: Mine/Orbit/Laser + Resonance Lv3"))
+        {
+            GiveMechanicalTestKit();
+        }
+
+        if (GUILayout.Button("Engineer: Role Prototype Kit"))
+        {
+            GiveEngineerPrototypeKit();
+        }
+
+        if (GUILayout.Button("Old Passives: Milestone Kit"))
+        {
+            GiveOldPassiveMilestoneKit();
+        }
+
+        if (GUILayout.Button("All Build Passives +1"))
+        {
+            GiveAllBuildPassivesOnce();
+        }
+
+        if (GUILayout.Button("Add XP Once"))
+        {
+            AddExperience();
+        }
+
+        if (GUILayout.Button("Spawn Enemy Pack"))
+        {
+            SpawnEnemyPack();
+        }
+
+        if (GUILayout.Button("Log Player Build Stats"))
+        {
+            LogCurrentBuildStats("Manual check");
+        }
+
+        GUILayout.EndArea();
+    }
+
+    public void GiveSwordmasterTestKit()
+    {
+        GiveWeaponByAssetName("SO_Blade");
+        GivePassiveByAssetName("SwordmasterSoul_Data", 3);
+        LogCurrentBuildStats("Swordmaster kit");
+    }
+
+    public void GiveArcaneTestKit()
+    {
+        GivePassiveByAssetName("ArcaneMastery_Data", 5);
+        LogCurrentBuildStats("Arcane kit");
+    }
+
+    public void GiveElementalTestKit()
+    {
+        GiveWeaponByAssetName("SO_Fireball");
+        GiveWeaponByAssetName("SO_FrostNova");
+        GiveWeaponByAssetName("SO_ChainLightning");
+        GivePassiveByAssetName("ElementalResonance_Data", 3);
+        LogCurrentBuildStats("Elemental kit");
+    }
+
+    public void GiveMechanicalTestKit()
+    {
+        GiveWeaponByAssetName("SO_Landmine");
+        GiveWeaponByAssetName("SO_Orbit");
+        GiveWeaponByAssetName("SO_Laser_Tank");
+        GivePassiveByAssetName("MechanicalResonance_Data", 3);
+        LogCurrentBuildStats("Mechanical kit");
+    }
+
+    public void GiveEngineerPrototypeKit()
+    {
+        SelectEngineerForNextRun();
+
+        GiveWeaponByAssetName("SO_Landmine");
+        GiveWeaponByAssetName("SO_Orbit");
+        GiveWeaponByAssetName("SO_Laser_Tank");
+        GiveWeaponByAssetName("SO_FlameTurret");
+        GivePassiveByAssetName("MechanicalResonance_Data", 3);
+
+        ForceActivateCharacterSkill("EngineerFortress");
+        ForceActivateCharacterSkill("Engineer_Fortress_Minefield");
+        ForceActivateCharacterSkill("Engineer_Fortress_AutoTurret");
+        ForceActivateCharacterSkill("Engineer_Overclock_LaserGrid");
+        ForceActivateCharacterSkill("Engineer_Overclock_RotorArray");
+        ForceActivateCharacterSkill("Engineer_Talent_AssemblyLine");
+
+        if (WeaponController.Instance != null)
+        {
+            WeaponController.Instance.RefreshAllWeaponStates();
+        }
+
+        LogCurrentBuildStats("Engineer prototype kit");
+    }
+
+    public void GiveAllBuildPassivesOnce()
+    {
+        GivePassiveByAssetName("SwordmasterSoul_Data", 1);
+        GivePassiveByAssetName("ArcaneMastery_Data", 1);
+        GivePassiveByAssetName("ElementalResonance_Data", 1);
+        GivePassiveByAssetName("MechanicalResonance_Data", 1);
+        LogCurrentBuildStats("All build passives +1");
+    }
+
+    public void GiveOldPassiveMilestoneKit()
+    {
+        GiveWeaponByAssetName("SO_Fireball");
+        GiveWeaponByAssetName("SO_IceShard");
+        GiveWeaponByAssetName("SO_Grenade");
+        GiveWeaponByAssetName("SO_Orbit");
+
+        GivePassiveByAssetName("CD_Data", 5);
+        GivePassiveByAssetName("Fanwei_Data", 5);
+        GivePassiveByAssetName("Duration_Data", 5);
+        GivePassiveByAssetName("Pierce_Data", 3);
+        GivePassiveByAssetName("Cili_Data", 5);
+        GivePassiveByAssetName("Speed_Data", 5);
+        LogCurrentBuildStats("Old passive milestone kit");
+    }
+
+    public void SpawnEnemyPack()
+    {
+        if (enemyTypes == null || enemyTypes.Count == 0)
+        {
+            Debug.LogError("Debug_TestManager: enemyTypes is empty.");
+            return;
+        }
+
+        for (int i = 0; i < 10; i++)
+        {
+            SpawnEnemy(i % enemyTypes.Count);
         }
     }
 
@@ -200,4 +410,158 @@ public class Debug_TestManager : MonoBehaviour
             }
         }
     }
+
+    private void ForceActivateCharacterSkill(string skillIdentifier)
+    {
+        if (UpgradeManager.Instance == null)
+        {
+            Debug.LogWarning($"[BuildTest] UpgradeManager not ready, cannot activate {skillIdentifier}.");
+            return;
+        }
+
+        UpgradeManager.Instance.ForceActivateCharacterSkill(skillIdentifier);
+    }
+
+    private void SelectEngineerForNextRun()
+    {
+#if UNITY_EDITOR
+        CharacterData engineer = AssetDatabase.LoadAssetAtPath<CharacterData>("Assets/_TheFirst/GameData/Character/Role03_Data.asset");
+        if (engineer == null)
+        {
+            Debug.LogWarning("[BuildTest] Engineer CharacterData not generated yet. Run Tools/TheFirst/Generate Engineer Prototype.");
+            return;
+        }
+
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.selectedCharacter = engineer;
+            DataManager.Instance.selectedCharacterID = engineer.characterID;
+            if (DataManager.Instance.allCharacters != null && !DataManager.Instance.allCharacters.Contains(engineer))
+            {
+                DataManager.Instance.allCharacters.Add(engineer);
+            }
+            Debug.Log("[BuildTest] Selected Pumpkin Engineer for the next combat spawn.");
+        }
+#endif
+    }
+
+    private void GiveWeaponByAssetName(string assetName)
+    {
+        WeaponStatBlock weapon = FindWeapon(assetName);
+        if (weapon == null)
+        {
+            Debug.LogError($"Debug_TestManager: weapon not found in test list: {assetName}");
+            return;
+        }
+
+        if (WeaponController.Instance == null)
+        {
+            Debug.LogError("WeaponController 未找到！");
+            return;
+        }
+
+        WeaponController.Instance.AddNewWeapon(weapon);
+    }
+
+    private void GivePassiveByAssetName(string assetName, int levels)
+    {
+        PassiveItemData passive = FindPassive(assetName);
+        if (passive == null)
+        {
+            Debug.LogError($"Debug_TestManager: passive not found in test list: {assetName}");
+            return;
+        }
+
+        if (PlayerStats.Instance == null)
+        {
+            Debug.LogError("PlayerStats 未找到！");
+            return;
+        }
+
+        int count = Mathf.Max(1, levels);
+        for (int i = 0; i < count; i++)
+        {
+            PlayerStats.Instance.EquipOrUpgradePassiveItem(passive);
+        }
+
+        if (PassiveItemsUI.Instance != null)
+        {
+            PassiveItemsUI.Instance.UpdateIcons();
+        }
+    }
+
+    private WeaponStatBlock FindWeapon(string assetName)
+    {
+        if (weaponStatBlocks == null) return null;
+        foreach (var weapon in weaponStatBlocks)
+        {
+            if (weapon != null && weapon.name == assetName) return weapon;
+        }
+        return null;
+    }
+
+    private PassiveItemData FindPassive(string assetName)
+    {
+        if (passiveItems == null) return null;
+        foreach (var passive in passiveItems)
+        {
+            if (passive != null && passive.name == assetName) return passive;
+        }
+        return null;
+    }
+
+    private void LogCurrentBuildStats(string label)
+    {
+        if (PlayerStats.Instance == null)
+        {
+            Debug.LogWarning($"[BuildTest] {label}: PlayerStats not ready.");
+            return;
+        }
+
+        PlayerStats stats = PlayerStats.Instance;
+        Debug.Log($"<color=cyan>[BuildTest] {label}</color> " +
+                  $"DMG={stats.damageMultiplier:F2}, Crit={stats.critRate:P0}/{stats.critDamage:P0}, Proj+={stats.bonusProjectileCount}, Pierce+={stats.bonusPierceCount}, Slash+={stats.bonusSlashCount}, " +
+                  $"Arcane={stats.arcaneMasteryChance:P0}, Freeze={stats.globalFreezeChance:P0}, Thunder={stats.thunderWillChance:P0}, " +
+                  $"AoE={stats.aoeRadiusMultiplier:F2}/{stats.aoeDamageMultiplier:F2}, Duration={stats.durationMultiplier:F2}, FireRate={stats.fireRateMultiplier:F2}, Speed={stats.moveSpeedMultiplier:F2}, " +
+                  $"Orbital+={stats.bonusOrbitalCount}, Pickup={stats.pickupRadiusMultiplier:F2}, XP={stats.experienceGainMultiplier:F2}, Luck={stats.luck:F2}, Armor={stats.armor:F1}, HP+={stats.bonusMaxHealth}, DashBlast={stats.dashExplosionLevel}");
+    }
+
+#if UNITY_EDITOR
+    private void EnsureBuildTestAssets()
+    {
+        if (weaponStatBlocks == null) weaponStatBlocks = new List<WeaponStatBlock>();
+        if (passiveItems == null) passiveItems = new List<PassiveItemData>();
+
+        bool changed = false;
+        foreach (string path in BuildTestWeaponPaths)
+        {
+            changed |= AppendAssetIfMissing(weaponStatBlocks, path);
+        }
+
+        foreach (string path in BuildTestPassivePaths)
+        {
+            changed |= AppendAssetIfMissing(passiveItems, path);
+        }
+
+        if (changed && !Application.isPlaying)
+        {
+            EditorUtility.SetDirty(this);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+        }
+    }
+
+    private bool AppendAssetIfMissing<T>(List<T> list, string path) where T : Object
+    {
+        T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+        if (asset == null) return false;
+
+        foreach (var existing in list)
+        {
+            if (existing == asset) return false;
+        }
+
+        list.Add(asset);
+        return true;
+    }
+#endif
 }

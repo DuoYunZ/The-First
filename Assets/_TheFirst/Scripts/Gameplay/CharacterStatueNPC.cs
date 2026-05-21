@@ -22,21 +22,38 @@ public class CharacterStatueNPC : MonoBehaviour
 
     void Awake()
     {
-        playerControls = new PlayerControls();
-        KeyBindingManager.ApplyOverrides(playerControls);
+        EnsurePlayerControls();
     }
 
-    private void OnEnable() => playerControls.Player.Enable();
-    private void OnDisable() => playerControls.Player.Disable();
+    private void OnEnable()
+    {
+        EnsurePlayerControls();
+        playerControls.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        if (playerControls != null)
+        {
+            playerControls.Player.Disable();
+        }
+    }
 
     void Start()
     {
+        if (!DemoContentGate.IsCharacterAllowed(characterData))
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         if (interactionPromptUI != null) interactionPromptUI.SetActive(false);
     }
 
     void Update()
     {
         if (!playerIsInRange) return;
+        EnsurePlayerControls();
 
         if (playerControls.Player.Interact.WasPressedThisFrame())
         {
@@ -63,6 +80,13 @@ public class CharacterStatueNPC : MonoBehaviour
         }
     }
 
+    private void EnsurePlayerControls()
+    {
+        if (playerControls != null) return;
+        playerControls = new PlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -85,4 +109,3 @@ public class CharacterStatueNPC : MonoBehaviour
         }
     }
 }
-

@@ -13,4 +13,8 @@ public class UpgradeDatabase : ScriptableObject
     [Header("武器技能树节点 (新系统)")]
     [Tooltip("按武器分组的技能树节点。武器经验升级时，会从这里筛选该武器可用的卡片。")]
     public List<SkillTreeNodeData> weaponSkillNodes;
+
+    [Header("流派终局奖励")]
+    [Tooltip("机械共鸣达到终局条件时自动授予的武器。")]
+    public WeaponStatBlock mechanicalCapstoneWeapon;
 }

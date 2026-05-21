@@ -171,13 +171,17 @@ public class CharacterSkillTreeGridUI : MonoBehaviour
                 && PlayerProgressManager.Instance != null
                 && PlayerProgressManager.Instance.IsCharacterNodeUnlocked(data.fromNode.nodeData);
 
+            bool toUnlocked = data.toNode != null && data.toNode.nodeData != null
+                && PlayerProgressManager.Instance != null
+                && PlayerProgressManager.Instance.IsCharacterNodeUnlocked(data.toNode.nodeData);
+
             bool toExcluded = data.toNode != null && data.toNode.nodeData != null
                 && PlayerProgressManager.Instance != null
                 && PlayerProgressManager.Instance.IsNodeExcluded(data.toNode.nodeData);
 
             if (toExcluded)
                 img.color = connectorExcludedColor;
-            else if (fromUnlocked)
+            else if (fromUnlocked && toUnlocked)
                 img.color = connectorUnlockedColor;
             else
                 img.color = connectorLockedColor;

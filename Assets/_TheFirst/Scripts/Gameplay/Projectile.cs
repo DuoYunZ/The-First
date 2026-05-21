@@ -74,6 +74,7 @@ public class Projectile : MonoBehaviour
     private enum ProjectileMode { Straight, Parabolic, AirdropDeployer, Homing, Boomerang } // <-- 添加 Boomerang
     private ProjectileMode mode;
     private bool isEnemyProjectile = false;
+    public bool IsEnemyProjectile => isEnemyProjectile;
     private Transform homingTarget;
     private float homingTurnSpeed = 5f;
 
@@ -97,6 +98,7 @@ public class Projectile : MonoBehaviour
     private Vector3 returnTargetPoint;     // <-- 新增: 最终返回的目标点
     private Vector3 returnDirection;       // <-- 新增: 固定的返回方向
     private Vector3 currentReturnDirection;
+    private int boomerangReturnHitCount = 0;
 
     private bool hasBeenCaught = false; // 是否已被抓取
 
@@ -394,6 +396,11 @@ public class Projectile : MonoBehaviour
 
         this.mode = ProjectileMode.Boomerang;
         this.isParabolic = false;
+        this.isEnemyProjectile = false;
+        this.tag = "PlayerProjectile";
+        int playerProjectileLayer = LayerMask.NameToLayer("PlayerProjectiles");
+        if (playerProjectileLayer < 0) playerProjectileLayer = LayerMask.NameToLayer("PlayerProjectile");
+        if (playerProjectileLayer >= 0) gameObject.layer = playerProjectileLayer;
         this.attackType = AttackType.Standard;
         this.shieldImpactEffectPrefab = shieldVFX;
         this.defaultImpactEffectPrefab = defaultVFX;
@@ -407,11 +414,13 @@ public class Projectile : MonoBehaviour
         this.rotationSpeed = rotSpeed;
         this.returnOvershootDistance = overshootDist; // <-- 存储过冲距离
         this.sourceWeapon = launcherPart;
+        this.playerTransform = GameManager.Instance != null ? GameManager.Instance.playerTransform : null;
         // 记录发射点
         this.spawnPoint = transform.position; // 使用 projectile 自己的初始位置
                                               // 
         this.boomerangState = BoomerangState.Outbound;
         this.hasBeenCaught = false;
+        this.boomerangReturnHitCount = 0;
 
         this.damageableLayers = LayerMask.GetMask("Enemies");
         this.groundAndWallLayers = LayerMask.GetMask("Ground");
@@ -430,14 +439,11 @@ public class Projectile : MonoBehaviour
         {
             boomerangState = BoomerangState.Inbound;
 
-            // --- 【核心修改】计算返回目标点 (出生点后方) ---
-            // 使用初始飞出方向的反方向 (-direction) 来计算过冲点
-            returnTargetPoint = spawnPoint - direction * returnOvershootDistance;
-            // --- 计算结束 ---
-
-            // --- 【核心修改】计算【固定】的返回方向 (从当前点指向目标点) ---
-            currentReturnDirection = (returnTargetPoint - transform.position).normalized;
-            // --- 计算结束 ---
+            playerTransform = GameManager.Instance != null ? GameManager.Instance.playerTransform : playerTransform;
+            currentReturnDirection = -direction;
+            hitEnemies.Clear();
+            hitCooldowns.Clear();
+            boomerangReturnHitCount = 0;
 
             // 清除当前速度，以便立即应用返回速度
             if (rb != null) rb.velocity = Vector3.zero;
@@ -607,8 +613,10 @@ public class Projectile : MonoBehaviour
         // =========================================================
         // 【法师·烈焰轨迹】大招火球飞行时自动留下火海
         // =========================================================
-        if (isUltimate && sourceWeapon != null && sourceWeapon.StatBlock != null
-            && (sourceWeapon.StatBlock.weaponID == "Fireball" || sourceWeapon.StatBlock.weaponID == "ExtremeFireball")
+        if (sourceWeapon != null && sourceWeapon.StatBlock != null
+            && (sourceWeapon.StatBlock.weaponID == "Fireball" ||
+                sourceWeapon.StatBlock.weaponID == "ExplosiveFireball" ||
+                sourceWeapon.StatBlock.weaponID == "ExtremeFireball")
             && PlayerMagicSystem.Instance != null
             && PlayerMagicSystem.Instance.HasMageSkill("Mage_Fire_Trail"))
         {
@@ -679,12 +687,23 @@ public class Projectile : MonoBehaviour
                 }
                 else if (boomerangState == BoomerangState.Inbound)
                 {
-                    // --- 【核心修改】使用固定的返回方向 ---
-                    rb.velocity = currentReturnDirection * speed;
-                    // --- 【核心修改结束】 ---
+                    playerTransform = GameManager.Instance != null ? GameManager.Instance.playerTransform : playerTransform;
+                    if (playerTransform == null)
+                    {
+                        rb.velocity = currentReturnDirection * speed;
+                        break;
+                    }
 
-                    // 【重要】移除 FixedUpdate 中的销毁逻辑，完全交给 Update 和 OnTriggerEnter
-                    // if (!hasBeenCaught) { /* ... 移除距离判断和 Destroy ... */ }
+                    Vector3 toPlayer = playerTransform.position - rb.position;
+                    toPlayer.y = 0f;
+                    if (toPlayer.sqrMagnitude <= catchRadius * catchRadius)
+                    {
+                        CatchBoomerang();
+                        break;
+                    }
+
+                    currentReturnDirection = toPlayer.normalized;
+                    rb.velocity = currentReturnDirection * speed;
                 }
                 break;
                 // --- ^^^ 核心修改结束 ^^^ ---
@@ -718,6 +737,7 @@ public class Projectile : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (hasExploded) return;
+        if (ShouldIgnoreFriendlyCollision(other)) return;
 
 
         if (mode == ProjectileMode.Parabolic)
@@ -735,18 +755,7 @@ public class Projectile : MonoBehaviour
         // 抓取逻辑
         if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && other.CompareTag("Player"))
         {
-            Transform currentPlayerTransform = GameManager.Instance?.playerTransform;
-            if (!hasBeenCaught && currentPlayerTransform != null && Vector3.Distance(transform.position, currentPlayerTransform.position) < catchRadius)
-            {
-                hasBeenCaught = true;
-                
-                if (sourceWeapon != null)
-                {
-                    sourceWeapon.OnBoomerangCaught(transform.position); // 替换 launcher
-                }
-                // 【确认】抓住后立刻销毁当前实例
-                Destroy(gameObject);
-            }
+            CatchBoomerang();
             return; // 碰到玩家不再处理其他
         }       
         // 伤害敌人 (保持不变但加入新判断)
@@ -846,6 +855,15 @@ public class Projectile : MonoBehaviour
             }
         }
         return closestTarget;
+    }
+
+    private bool ShouldIgnoreFriendlyCollision(Collider other)
+    {
+        if (isEnemyProjectile || other == null) return false;
+        if (other.GetComponentInParent<Orbiter>() != null) return true;
+
+        Projectile otherProjectile = other.GetComponentInParent<Projectile>();
+        return otherProjectile != null && !otherProjectile.IsEnemyProjectile;
     }
 
     void Explode(Vector3 explosionPoint, Collider initiallyHitCollider = null)
@@ -1394,8 +1412,15 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             }
         }
 
+        int damageToApply = damage;
+        if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound)
+        {
+            float returnDamageMultiplier = sourceWeapon != null ? sourceWeapon.GetBoomerangReturnDamageMultiplier() : 1.15f;
+            damageToApply = Mathf.Max(1, Mathf.RoundToInt(damageToApply * returnDamageMultiplier));
+        }
+
         bool wasReflected = targetHealth.TakeDamage(
-            damage,
+            damageToApply,
             SafeClosestPoint(hitCollider, transform.position),
             attacker,
             this.attackType,
@@ -1441,6 +1466,11 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
             }
 
             hitEnemies.Add(targetHealth);
+            if (mode == ProjectileMode.Boomerang && boomerangState == BoomerangState.Inbound && sourceWeapon != null)
+            {
+                boomerangReturnHitCount++;
+                sourceWeapon.OnBoomerangReturnHit(hitPoint, boomerangReturnHitCount, damageToApply);
+            }
 
             // 永冻领域激活时，冰锥穿透不消耗
             bool blizzardNoPierce = (sourceWeapon != null
@@ -1460,7 +1490,7 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
                 && sourceWeapon.StatBlock.weaponID == "IceShard"
                 && PlayerMagicSystem.Instance != null)
             {
-                PlayerMagicSystem.Instance.OnIcePenetrate(sourceWeapon);
+                PlayerMagicSystem.Instance.OnIceWeaponHit(sourceWeapon, hitPoint);
             }
             if (!isSubHurricane)
             {
@@ -1493,10 +1523,14 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
     /// </summary>
     public static System.Collections.IEnumerator SmoothKnockback(Transform target, Vector3 dir, float totalDistance, float duration)
     {
+        if (StatusEffectReceiver.IsKnockbackImmune(target)) yield break;
+
         float elapsed = 0f;
         float speed = totalDistance / duration;
         while (elapsed < duration && target != null)
         {
+            if (StatusEffectReceiver.IsKnockbackImmune(target)) yield break;
+
             float dt = Time.deltaTime;
             elapsed += dt;
             target.position += dir * speed * dt;
@@ -1529,12 +1563,25 @@ private void SpawnClusterProjectiles(Vector3 origin, WeaponStatBlock stats, int 
         if (!hasBeenCaught)
         {
             float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-            if (distanceToPlayer < 0.5f) // 飞到玩家附近但没触发抓取（可能玩家移速太快），销毁
+            if (distanceToPlayer <= Mathf.Max(0.35f, catchRadius))
             {
-                Destroy(gameObject);
+                CatchBoomerang();
             }
         }
         // 如果已被抓取，它会继续按当前方向飞，直到生命周期结束
+    }
+
+    private void CatchBoomerang()
+    {
+        if (hasBeenCaught) return;
+        hasBeenCaught = true;
+
+        if (sourceWeapon != null)
+        {
+            sourceWeapon.OnBoomerangCaught(transform.position, boomerangReturnHitCount, damage);
+        }
+
+        Destroy(gameObject);
     }
     // --- ^^^ 新增结束 ^^^ ---
     void HandleChaining(Vector3 hitPoint)

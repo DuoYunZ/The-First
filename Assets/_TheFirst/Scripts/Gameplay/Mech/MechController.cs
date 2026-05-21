@@ -39,6 +39,10 @@ public class MechController : MonoBehaviour
 
     private Vector2 moveInput;
     private PlayerControls playerControls;
+    [Header("Gamepad Input")]
+    [Tooltip("Repeat delay for held gamepad weapon-switch input.")]
+    public float weaponScrollRepeatDelay = 0.25f;
+    private float nextWeaponScrollTime;
 
     private bool isDashing = false;
     private bool isKnockedBack = false; // 是否处于受击退状态
@@ -85,9 +89,7 @@ public class MechController : MonoBehaviour
             enabled = false;
         }
 
-        playerControls = new PlayerControls();
-        // 应用已保存的自定义键位
-        KeyBindingManager.ApplyOverrides(playerControls);
+        EnsurePlayerControls();
 
         // 自动查找视觉模型和动画控制器
         visualsTransform = transform.Find("Visuals");
@@ -106,6 +108,8 @@ public class MechController : MonoBehaviour
             Debug.LogWarning("MechController: 在 'Visuals' 对象上未能找到 Animator 组件！", this);
         }
         
+        EnsureRuntimeAudioSources();
+
         if (footstepAudioSource == null)
         {
             Debug.LogError("在玩家身上找不到AudioSource组件!", this);
@@ -116,8 +120,30 @@ public class MechController : MonoBehaviour
         chargeTimers = new float[maxDashCharges];
     }
 
+    private void EnsureRuntimeAudioSources()
+    {
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+            ConfigureRuntimeAudioSource(footstepAudioSource);
+        }
+
+        if (dashAudioSource == null)
+        {
+            dashAudioSource = gameObject.AddComponent<AudioSource>();
+            ConfigureRuntimeAudioSource(dashAudioSource);
+        }
+    }
+
+    private static void ConfigureRuntimeAudioSource(AudioSource source)
+    {
+        source.playOnAwake = false;
+        source.spatialBlend = 1.0f;
+    }
+
     private void OnEnable()
     {
+        EnsurePlayerControls();
         playerControls.Player.Enable();
 
         playerControls.Player.Dash.performed += PerformDash;
@@ -130,6 +156,7 @@ public class MechController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (playerControls == null) return;
         playerControls.Player.Disable();
 
         playerControls.Player.Dash.performed -= PerformDash;
@@ -144,6 +171,16 @@ public class MechController : MonoBehaviour
     /// </summary>
     private void OnBindingChanged(string actionName, int bindingIndex)
     {
+        EnsurePlayerControls();
+        KeyBindingManager.ApplyOverrides(playerControls);
+    }
+
+    private void EnsurePlayerControls()
+    {
+        if (playerControls != null) return;
+
+        playerControls = new PlayerControls();
+        // 应用已保存的自定义键位
         KeyBindingManager.ApplyOverrides(playerControls);
     }
 
@@ -152,6 +189,8 @@ public class MechController : MonoBehaviour
 
     void Update()
     {
+        EnsurePlayerControls();
+
         if (!isDashing)
         {
             moveInput = playerControls.Player.Move.ReadValue<Vector2>();
@@ -159,9 +198,10 @@ public class MechController : MonoBehaviour
 
         // 滚轮切换大招主武器（通过 Input System Action 读取）
         float scroll = playerControls.Player.ScrollWeapon.ReadValue<float>();
-        if (Mathf.Abs(scroll) > 0.1f && UltimateManager.Instance != null)
+        if (!(DemoContentGate.DemoModeEnabled && DemoContentGate.DisableUltimateSystemInDemo) &&
+            CanProcessWeaponScroll(scroll) && UltimateManager.Instance != null)
         {
-            UltimateManager.Instance.ScrollSelectWeapon(scroll);
+            UltimateManager.Instance.ScrollSelectWeapon(Mathf.Sign(scroll));
         }
 
         // 每帧更新动画参数
@@ -184,11 +224,33 @@ public class MechController : MonoBehaviour
         UpdateFlameTrail();
     }
 
+    private bool CanProcessWeaponScroll(float scroll)
+    {
+        if (Mathf.Abs(scroll) <= 0.1f) return false;
+
+        float now = Time.unscaledTime;
+        if (now < nextWeaponScrollTime) return false;
+
+        nextWeaponScrollTime = now + Mathf.Max(0.05f, weaponScrollRepeatDelay);
+        return true;
+    }
+
     /// <summary>
     /// 大招释放（通过 Input System Action 触发，支持改键）
     /// </summary>
     private void PerformUltimate(InputAction.CallbackContext context)
     {
+        PlayerRoleRuntimeMechanics roleMechanics = GetComponent<PlayerRoleRuntimeMechanics>();
+        if (roleMechanics != null && roleMechanics.TryUseActiveSkill())
+        {
+            return;
+        }
+
+        if (DemoContentGate.DemoModeEnabled && DemoContentGate.DisableUltimateSystemInDemo)
+        {
+            return;
+        }
+
         if (UltimateManager.Instance != null)
         {
             UltimateManager.Instance.TryReleaseUltimate();

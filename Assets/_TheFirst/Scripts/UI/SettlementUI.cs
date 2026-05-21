@@ -8,6 +8,12 @@ using System.Collections;
 
 public class SettlementUI : MonoBehaviour
 {
+    private struct WeaponDisplaySnapshot
+    {
+        public Sprite icon;
+        public int level;
+    }
+
     [System.Serializable]
     public class StatUI
     {
@@ -48,6 +54,7 @@ public class SettlementUI : MonoBehaviour
     private float finalTime;
     private int finalKills;
     private int finalGold;
+    private readonly Dictionary<string, WeaponDisplaySnapshot> weaponDisplaySnapshots = new Dictionary<string, WeaponDisplaySnapshot>();
 
     // [新增] Awake 用于缓存位置
     [Header("面板入场动画")]
@@ -124,8 +131,63 @@ public class SettlementUI : MonoBehaviour
             finalTime = stats.GetSurvivalTime();
             finalKills = stats.TotalKills;
             finalGold = stats.TotalGoldEarned;
-            StartCoroutine(FullSequence(stats.WeaponDamageStats));
+            Dictionary<string, int> damageSnapshot = new Dictionary<string, int>(stats.WeaponDamageStats);
+            CacheWeaponDisplaySnapshots(damageSnapshot.Keys);
+            StartCoroutine(FullSequence(damageSnapshot));
         }
+    }
+
+    private void CacheWeaponDisplaySnapshots(IEnumerable<string> weaponNames)
+    {
+        weaponDisplaySnapshots.Clear();
+
+        WeaponController controller = WeaponController.Instance;
+        if (controller == null)
+        {
+            return;
+        }
+
+        if (controller.builtInBladeWeapon != null && controller.builtInBladeWeapon.StatBlock != null)
+        {
+            int level = 1 + (PlayerStats.Instance != null ? PlayerStats.Instance.bonusSlashCount : 0);
+            RegisterWeaponDisplaySnapshot(controller.builtInBladeWeapon.StatBlock, level);
+        }
+
+        foreach (OwnedWeapon owned in controller.ownedWeapons)
+        {
+            if (owned == null)
+            {
+                continue;
+            }
+
+            WeaponStatBlock stats = owned.stats != null
+                ? owned.stats
+                : owned.weaponPartInstance != null ? owned.weaponPartInstance.StatBlock : null;
+
+            RegisterWeaponDisplaySnapshot(stats, owned.currentLevel);
+        }
+
+        foreach (string weaponName in weaponNames)
+        {
+            if (!string.IsNullOrEmpty(weaponName) && !weaponDisplaySnapshots.ContainsKey(weaponName))
+            {
+                weaponDisplaySnapshots[weaponName] = new WeaponDisplaySnapshot { icon = null, level = 1 };
+            }
+        }
+    }
+
+    private void RegisterWeaponDisplaySnapshot(WeaponStatBlock stats, int level)
+    {
+        if (stats == null || string.IsNullOrEmpty(stats.weaponName))
+        {
+            return;
+        }
+
+        weaponDisplaySnapshots[stats.weaponName] = new WeaponDisplaySnapshot
+        {
+            icon = stats.weaponIcon,
+            level = Mathf.Max(1, level)
+        };
     }
 
     private void ResetStatUI(StatUI stat)
@@ -183,7 +245,6 @@ public class SettlementUI : MonoBehaviour
         if (totalDamage == 0) totalDamage = 1;
 
         var sortedStats = damageStats.OrderByDescending(x => x.Value);
-        var controller = WeaponController.Instance;
 
         foreach (var kvp in sortedStats)
         {
@@ -193,25 +254,10 @@ public class SettlementUI : MonoBehaviour
 
             Sprite icon = null;
             int level = 1;
-            if (controller != null)
+            if (weaponDisplaySnapshots.TryGetValue(kvp.Key, out WeaponDisplaySnapshot snapshot))
             {
-                if (controller.builtInBladeWeapon?.StatBlock?.weaponName == kvp.Key)
-                {
-                    icon = controller.builtInBladeWeapon.StatBlock.weaponIcon;
-                    level = 1 + (PlayerStats.Instance != null ? PlayerStats.Instance.bonusSlashCount : 0);
-                }
-                else
-                {
-                    foreach (var owned in controller.ownedWeapons)
-                    {
-                        if (owned.stats?.weaponName == kvp.Key)
-                        {
-                            icon = owned.stats.weaponIcon;
-                            level = owned.currentLevel;
-                            break;
-                        }
-                    }
-                }
+                icon = snapshot.icon;
+                level = snapshot.level;
             }
 
             itemScript.SetupBaseInfo(icon, kvp.Key, level);

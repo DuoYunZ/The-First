@@ -142,13 +142,18 @@ public static class LanguageTable
         Add("weapon.Hurricane",      "旋风术",                   "Tornado");
         Add("weapon.Grenade",        "Grenade",                  "Grenade");
         Add("weapon.Landmine",       "地雷",                     "Landmine");
-        Add("weapon.Orbit",          "大地岩盾",                 "Rock Shield");
+        Add("weapon.Orbit",          "环绕蜂刺",                 "Orbital Stinger");
+        Add("weapon.EarthShield",    "大地岩盾",                 "Rock Shield");
+        Add("weapon.MagneticArmor",  "磁暴岩盾",                 "Magnetic Shield");
+        Add("weapon.VampireWheel",   "吸血鬼之轮",               "Vampire Wheel");
+        Add("weapon.Boomerang",      "回旋镖",                   "Boomerang");
         Add("weapon.FlameDagger",    "灵能飞刃",                 "Flame Dagger");
         Add("weapon.IceShard",       "冰锥术",                   "Ice Shard");
         Add("weapon.FrostNova",      "寒冰新星",                 "Frost Nova");
         Add("weapon.LightningStrike","落雷",                     "Lightning Strike");
         Add("weapon.ExtremeIceShard","极寒冰锥",                 "Cryo Lance");
         Add("weapon.Blade",          "斩击",                     "Blade");
+        Add("weapon.WindBlade",      "风刃",                     "Wind Blade");
 
         // ===== 连携技名称 (key = combo.{文件名}) =====
         Add("combo.Combo_Fireball_Landmine",       "喷火塔",     "Flamethrower");

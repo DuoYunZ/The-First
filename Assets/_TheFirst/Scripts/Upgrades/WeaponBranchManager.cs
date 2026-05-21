@@ -87,9 +87,10 @@ public class WeaponBranchManager : MonoBehaviour
         }
 
         // 2. 【新增】检测并添加融合选项
-        if (WeaponFusionManager.Instance != null)
+        WeaponFusionManager fusionManager = WeaponFusionManager.EnsureInstance();
+        if (fusionManager != null)
         {
-            var fusions = WeaponFusionManager.Instance.GetAvailableFusions(weapon);
+            var fusions = fusionManager.GetAvailableFusions(weapon);
             foreach (var recipe in fusions)
             {
                 if (recipe == null || recipe.resultWeapon == null) continue;

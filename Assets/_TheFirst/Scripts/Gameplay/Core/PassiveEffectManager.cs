@@ -40,13 +40,12 @@ public class PassiveEffectManager : MonoBehaviour
 
     /// <summary>
     /// 击杀回血击杀次数累积器
-    /// 每累积 100 次击杀恢复 5 点 HP
+    /// 每累积 100 次击杀恢复 PlayerStats.killHealAmount 点 HP
     /// </summary>
     private int killHealKillAccumulator = 0;
 
     // 击杀回血阈值配置
     private const int KILL_HEAL_THRESHOLD = 100; // 每100次击杀
-    private const int KILL_HEAL_AMOUNT = 5;      // 恢复5点HP
 
     void Awake()
     {
@@ -90,7 +89,7 @@ public class PassiveEffectManager : MonoBehaviour
         if (PlayerStats.Instance == null || playerHealth == null) return;
 
         // --- 灵魂汲取：击杀累积回血 ---
-        // 每累积 KILL_HEAL_THRESHOLD 次击杀恢复 KILL_HEAL_AMOUNT 点HP
+        // 每累积 KILL_HEAL_THRESHOLD 次击杀恢复当前被动等级提供的生命值
         if (PlayerStats.Instance.killHealAmount > 0)
         {
             killHealKillAccumulator++;
@@ -100,7 +99,7 @@ public class PassiveEffectManager : MonoBehaviour
                 killHealKillAccumulator -= KILL_HEAL_THRESHOLD;
                 if (!playerHealth.IsDead)
                 {
-                    playerHealth.Heal(KILL_HEAL_AMOUNT);
+                    playerHealth.Heal(PlayerStats.Instance.killHealAmount);
                 }
             }
         }
@@ -150,4 +149,3 @@ public class PassiveEffectManager : MonoBehaviour
         Debug.Log($"<color=yellow>[雷霆意志] 触发雷击！伤害={finalDamage}, 命中={hits.Length}</color>");
     }
 }
-
