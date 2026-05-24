@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe2d1d265a34f6547afefe7ef4b242b0, type: 3}
+  m_Name: Fanwei_Data
+  m_EditorClassIdentifier: 
+  itemName: "\u751C\u7B52\u671B\u8FDC\u955C"
+  icon: {fileID: 21300000, guid: 438ab30973d275a4cbff2778c4eef74d, type: 3}
+  description: "\u653B\u51FB\u8303\u56F4\u589E\u52A0 10%\u3002"
+  statType: 2
+  valuePerLevel: 0.1
+  maxLevel: 3

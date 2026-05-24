@@ -1,0 +1,168 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd6f95ded5e3db41ba212e830ec6714, type: 3}
+  m_Name: Weapon_StormSanctuary
+  m_EditorClassIdentifier: 
+  weaponID: StormSanctuary
+  weaponName: "\u98CE\u66B4\u5723\u57DF"
+  weaponIcon: {fileID: 21300000, guid: 40df1a091d6a7fd43a5de2d61fe10fc0, type: 3}
+  weaponPartPrefab: {fileID: 5137123306192418792, guid: 5fac30dab72d1be448ad026dfa688903,
+    type: 3}
+  buildTags: 
+  weaponGlowColor: {r: 0.1, g: 0.9, b: 0.7, a: 2}
+  floatingModelPrefab: {fileID: 0}
+  isOneShot: 0
+  baseFireRate: 1.15
+  projectilePrefab: {fileID: 0}
+  behavior: 13
+  baseLaunchForce: 20
+  launchAngle: 45
+  projectileCount: 1
+  spreadAngle: 0
+  baseCritRate: 0
+  baseCritDamage: 0
+  baseStunChance: 0.1
+  baseStunDuration: 1
+  baseProjectileLifetime: 5
+  baseDirectDamage: 10
+  baseAoeDamage: 0
+  baseAoeRadius: 6.25
+  baseKnockbackForce: 5
+  basePierceCount: 1
+  subHurricanePrefab: {fileID: 0}
+  baseChainCount: 0
+  chainRange: 10
+  nativeSmiteVfxPrefab: {fileID: 0}
+  nativeChainVfxPrefab: {fileID: 0}
+  nativeChainImpactVfxPrefab: {fileID: 0}
+  groundHazardPrefab: {fileID: 0}
+  groundHazardDuration: 5
+  isBlackHole: 0
+  blackHoleForce: 15
+  subProjectilePrefab: {fileID: 0}
+  subProjectileCount: 6
+  subProjectileHitVfx: {fileID: 0}
+  muzzleFlashPrefab: {fileID: 0}
+  impactEffectPrefab: {fileID: 0}
+  explosionEffectPrefab: {fileID: 0}
+  layersToDamageByAOE:
+    serializedVersion: 2
+    m_Bits: 0
+  layersToExplodeOn:
+    serializedVersion: 2
+    m_Bits: 0
+  shieldImpactEffectPrefab: {fileID: 0}
+  defaultImpactEffectPrefab: {fileID: 0}
+  maxLevel: 10
+  evolutionTarget: {fileID: 0}
+  branchOptionA: {fileID: 0}
+  branchOptionB: {fileID: 0}
+  autoAimAtNearestEnemy: 0
+  autoAimRange: 360
+  orbitalPrefab: {fileID: 2629178624561995106, guid: a8649b2d7527f9a42a06ac860d081f83,
+    type: 3}
+  baseOrbitalCount: 1
+  baseOrbitalSpeed: 90
+  baseOrbitalRadius: 3.75
+  baseDuration: 18
+  ignitionChance: 0
+  burnDamagePercent: 0.2
+  baseDotDamage: 5
+  baseDotDuration: 3
+  dotTickInterval: 1
+  deployerProjectilePrefab: {fileID: 0}
+  areaPrefab: {fileID: 0}
+  deployerFallSpeed: 25
+  deployerSpawnHeight: 40
+  baseAreaDuration: 6
+  baseAreaTickInterval: 1
+  baseAreaDamagePerTick: 4
+  auraVfxPrefab: {fileID: 0}
+  vfxBaseScaleMultiplier: 0.7
+  baseSlowPercentage: 0
+  baseSlowDuration: 0
+  baseFreezeChance: 0
+  summonPrefab: {fileID: 0}
+  summonCount: 1
+  summonDuration: 20
+  summonWeaponStats: {fileID: 0}
+  summonSpawnHeight: 2
+  beamVfxPrefab: {fileID: 0}
+  beamImpactVfxPrefab: {fileID: 0}
+  beamMaxDistance: 25
+  beamDamagePerSecond: 25
+  beamDamageTickRate: 5
+  beamDuration: 3.6000001
+  beamCooldown: 5
+  beamTurnSpeed: 5
+  scorchMarkPrefab: {fileID: 0}
+  scorchMarkInterval: 0.2
+  beamScorchMarkGroundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  minePrefab: {fileID: 0}
+  spawnRadius: 10
+  armingTime: 0.5
+  mineDuration: 10
+  blackHolePrefab: {fileID: 0}
+  napalmPrefab: {fileID: 0}
+  slashEffectPrefab: {fileID: 0}
+  multiHitCount: 1
+  multiHitInterval: 0.1
+  autoAimMelee: 0
+  attackAngle: 90
+  hitEffectPrefab: {fileID: 0}
+  bladeEnergyPrefab: {fileID: 0}
+  bladeEnergyDamage: 10
+  bladeEnergySpeed: 15
+  bladeEnergyPierceCount: 1
+  maxDistance: 15
+  catchRadius: 2.5
+  rotationSpeed: 720
+  returnOvershootDistance: 15
+  nativeBurn: 0
+  nativeKnockback: 0
+  nativeKnockbackForce: 10
+  synergyFireTrailPrefab: {fileID: 0}
+  fireTrailSpawnRate: 0.15
+  nativeLightningChance: 0.2
+  nativeElectrify: 0
+  nativeCorrode: 0
+  nativeCorrodeMultiplier: 1.2
+  nativeCorrodeColor: {r: 0.5, g: 1, b: 0.5, a: 1}
+  usesProficiency: 1
+  xpSource: 0
+  xpGainFactor: 1
+  xpRequirementCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  damageGrowthPerLevel: 0.1
+  cooldownGrowthPerLevel: 0.05
+  areaGrowthPerLevel: 0.1
+  usesEnergy: 1
+  maxEnergy: 1000
+  energyGainPerDamage: 1
+  ultimateEffectPrefab: {fileID: 2629178624561995106, guid: 4b01d43a46f9a4841a41f61f682935a9,
+    type: 3}
+  ultimateDamage: 10
+  ultimateRadius: 10
+  ultimateDescription: "\u751F\u547D\u6C72\u53D6\uFF1A30\u79D2\u5185\u5149\u73AF\u8303\u56F4\u6269\u5927\uFF0C\u51FB\u6740\u654C\u4EBA\u6062\u590D\u751F\u547D"
+  ultimateDescriptionEN: 'Life Siphon: Aura range x1.5 and heal on kill for 30s'
+  ultimateIcon: {fileID: 0}
+  fireSounds: []
+  hitSound: {fileID: 0}
+  specialSound: {fileID: 0}
+  fireSoundVolume: 1
+

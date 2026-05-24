@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c937d928b74e6f43ad32d0b4df0aaa7, type: 3}
+  m_Name: Stone_TestAuraBuff
+  m_EditorClassIdentifier: 
+  stoneName: "\u4F53\u79EF\u5B9D\u77F3"
+  description: "\u653E\u592720%\u4F53\u79EF"
+  icon: {fileID: 0}
+  auraVfxOverride: {fileID: 2629178624561995106, guid: 900815509a24e0f4ca8b642106cb1f22,
+    type: 3}
+  overrideVfxScaleMultiplier: 0.7
+  stoneEffects: 0d000000
+  applyBurn: 0
+  burnChance: 0.5
+  burnDamage: 2
+  burnDuration: 3
+  burnTickInterval: 1
+  applySlow: 0
+  slowPercentage: 0.3
+  slowDuration: 1
+  slowColor: {r: 0, g: 0.76483583, b: 1, a: 1}
+  applyChain: 0
+  chainTargets: 2
+  chainRange: 5
+  chainDamageMultiplier: 0.5
+  chainVfxPrefab: {fileID: 0}
+  chainImpactVfxPrefab: {fileID: 0}
+  applyKnockback: 0
+  knockbackForce: 10
+  knockbackInterval: 1
+  applyWeaken: 0
+  weakenPercentage: 0.2
+  weakenDuration: 1
+  applyStun: 0
+  stunChance: 0.25
+  stunDuration: 1
+  damageModifier: 0
+  fireRateModifier: 0
+  scaleModifier: 1
+  pierceModifier: 0

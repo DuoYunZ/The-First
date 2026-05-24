@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: HC_MultiIII
+  m_EditorClassIdentifier: 
+  skillName: "\u591A\u91CD\u65CB\u98CE III"
+  skillIcon: {fileID: 21300000, guid: ef6ac5be6fc6bbd4399067e9d8e464f6, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: fe5c4fa03d1934f4091cdd65e5149801, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u65CB\u98CE\u672F\u4F24\u5BB3-30%\uFF0C\u989D\u5916\u653E2\u6B21"
+    descriptionEN: Tornado DMG -30%, +2 casts
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 11
+      value: 2
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: -30
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 732, y: 410}

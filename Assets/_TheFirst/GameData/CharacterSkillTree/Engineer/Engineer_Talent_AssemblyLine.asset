@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Engineer_Talent_AssemblyLine
+  m_EditorClassIdentifier: 
+  nodeName: "\u81EA\u52A8\u5316\u4EA7\u7EBF"
+  description: "\u5C40\u5185\u673A\u68B0\u6B66\u5668\u90E8\u7F72\u8282\u594F\u5927\u5E45\u52A0\u5FEB\u3002"
+  nodeNameEN: Automated Assembly Line
+  descriptionEN: Mechanical weapon deployment tempo increases sharply in-run.
+  icon: {fileID: 21300000, guid: ba278b146196a854aa51cad85382078d, type: 3}
+  layer: 4
+  cost: 500
+  prerequisites:
+  - {fileID: 11400000, guid: db7110dc48e2dee4faf3e11e9e432eb4, type: 2}
+  - {fileID: 11400000, guid: 54f7fb8b10398f74aaeef2eb85a8eb7b, type: 2}
+  - {fileID: 11400000, guid: a5703e7f5f38fea4f906049489c39db9, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 11
+    value: 0.1
+  linkedUpgradeNode: {fileID: 11400000, guid: 499f1aad43364584e9d7cf662f6f8a3a, type: 2}

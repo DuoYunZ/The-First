@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: IF_Shatter2
+  m_EditorClassIdentifier: 
+  skillName: "\u51B0\u6676\u788E\u88C2 II"
+  skillIcon: {fileID: 21300000, guid: 651e7c64b2998eb4c9e324d79acf22b6, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 6e327a5ce46d2214f844f691536a0164, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: f4bc18678cdd086438a680a096f37ba2, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u51B0\u971C\u65B0\u661F\u7ED3\u675F\u540E\u5206\u88C2\u51FA4\u4E2A\u5C0F\u51B0\u9525"
+    descriptionEN: Frost Nova shatters into 4 ice shards
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 58
+      value: 2
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 400, y: 770}

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Mage_Base_SPD
+  m_EditorClassIdentifier: 
+  nodeName: "\u5143\u7D20\u8C03\u548CII"
+  description: "\u5168\u5C40\u51B7\u5374\u7F29\u51CF5%"
+  nodeNameEN: Elemental Tuning II
+  descriptionEN: Global cooldown reduction +5%
+  icon: {fileID: 21300000, guid: 66827042ee4c83b4991e596f2d7c90cb, type: 3}
+  layer: 1
+  cost: 50
+  prerequisites: []
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 11
+    value: 0.05
+  linkedUpgradeNode: {fileID: 0}

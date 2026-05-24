@@ -639,6 +639,13 @@ public class PlayerStats : MonoBehaviour
         RecalculateStats();
     }
 
+    public void AddBaseDamageMultiplier(float bonus)
+    {
+        if (bonus <= 0f) return;
+        _baseDamageMultiplier += bonus;
+        RecalculateStats();
+    }
+
     public bool TryTriggerArcaneMastery(Vector3 position, GameObject attacker, string sourceWeaponName)
     {
         if (arcaneMasteryLevel <= 0 || arcaneMasteryChance <= 0f) return false;

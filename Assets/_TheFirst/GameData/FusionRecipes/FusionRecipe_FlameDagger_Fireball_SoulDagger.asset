@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_FlameDagger_Fireball_SoulDagger
+  m_EditorClassIdentifier: 
+  recipeId: FlameDagger_Fireball_SoulDagger
+  recipeName: "\u8FFD\u9B42\u7075\u5203"
+  description: "\u7075\u80FD\u98DE\u5203 Lv.5 + \u706B\u7130\u7403 Lv.5"
+  triggerWeapon: {fileID: 11400000, guid: b31f70c23438cd64a835d18a0a6ba29b, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 0
+    requiredWeapon: {fileID: 11400000, guid: 9289f47dd22aaf943ae743fbf57d2e95, type: 2}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 0}
+    requiredPassiveId: 
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 1
+  resultWeapon: {fileID: 11400000, guid: 2e7d5900b318f8c4790352c8fe66bfc3, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 411100cb653086c48a085405f6396f23, type: 3}
+  cardColor: {r: 1, g: 0.25, b: 0.05, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: LC_Refraction
+  m_EditorClassIdentifier: 
+  skillName: "\u591A\u91CD\u6298\u5C04"
+  skillIcon: {fileID: 21300000, guid: c3668b79de0e87b40a9acd0494b1d25c, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: c72e552a0187b144d88edfcc3be64814, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 9eaa38d73fe7e794785585d8f71cae62, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u6298\u5C04\u518D+1\u4E2A\u76EE\u6807"
+    descriptionEN: 
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 91
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 400, y: 535}

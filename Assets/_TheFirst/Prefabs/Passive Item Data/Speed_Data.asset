@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe2d1d265a34f6547afefe7ef4b242b0, type: 3}
+  m_Name: Speed_Data
+  m_EditorClassIdentifier: 
+  itemName: "\u53CC\u7B52\u8DD1\u978B"
+  icon: {fileID: 21300000, guid: a285ec706f13a7640b45356838e48989, type: 3}
+  description: "\u79FB\u52A8\u901F\u5EA6\u589E\u52A0 10%\u3002"
+  statType: 19
+  valuePerLevel: 0.1
+  maxLevel: 3
+  isTriggerPassive: 0
+  triggerVfxPrefab: {fileID: 0}
+  requiredWeapon: {fileID: 0}

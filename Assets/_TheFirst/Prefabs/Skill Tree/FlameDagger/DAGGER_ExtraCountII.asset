@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: DAGGER_ExtraCountII
+  m_EditorClassIdentifier: 
+  skillName: "\u591A\u91CD\u98DE\u5200II"
+  skillIcon: {fileID: 21300000, guid: 411100cb653086c48a085405f6396f23, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: b31f70c23438cd64a835d18a0a6ba29b, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: e867e801c89dee24c94fc4dde04a2f26, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u989D\u5916+2\u628A\u98DE\u5200\uFF0C\u6BCF\u628A\u4F24\u5BB3-25%\uFF08\u66FF\u4EE3I\u7EA7\uFF09"
+    descriptionEN: Extra +2 daggers, each -25% DMG
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 72
+      value: 3
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 400, y: 410}

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c09c8b3bc510645b3a4c658b2984d2, type: 3}
+  m_Name: MainTimeline_DEMO_Repro120
+  m_EditorClassIdentifier: 
+  totalGameDuration: 120
+  timelineEvents:
+  - eventName: Repro_00_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 0
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Repro_01_HardMixA
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 15
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Repro_02_InsaneFinalHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 35
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Repro_03_FinalBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 75
+    minTriggerTime: 0
+    maxTriggerTime: 0

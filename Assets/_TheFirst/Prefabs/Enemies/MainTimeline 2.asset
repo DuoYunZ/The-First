@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c09c8b3bc510645b3a4c658b2984d2, type: 3}
+  m_Name: MainTimeline 2
+  m_EditorClassIdentifier: 
+  totalGameDuration: 600
+  timelineEvents:
+  - eventName: Wave_01_Start
+    waveToSpawn: {fileID: 11400000, guid: 35d35adaf57210947b6c501068cc8611, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 0
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_01_Start
+    waveToSpawn: {fileID: 11400000, guid: 35d35adaf57210947b6c501068cc8611, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 30
+    minTriggerTime: 50
+    maxTriggerTime: 0
+  - eventName: Wave_01_Radom
+    waveToSpawn: {fileID: 11400000, guid: f0042097fb21ee6438f09f4d162aee91, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 55
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_02_Mix
+    waveToSpawn: {fileID: 11400000, guid: b17006c6b761e084886e81f79ec5e38e, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 60
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_03_Range
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 120
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_04_Elite
+    waveToSpawn: {fileID: 11400000, guid: 0a5971ce7e1efb24aaf076cba2123d74, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 180
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_12_Elite_8
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 210
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_12_Elite_8
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 225
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_05_Swarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 240
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_05_Swarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 260
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_04_Elite_MidCheck
+    waveToSpawn: {fileID: 11400000, guid: 0a5971ce7e1efb24aaf076cba2123d74, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 280
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_01_Radom
+    waveToSpawn: {fileID: 11400000, guid: 494033adaee628b46b7177cc8f90860a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 290
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_06_Bomb
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 300
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_07_Pressure
+    waveToSpawn: {fileID: 11400000, guid: 47b5284fb3d4ba94a97f090d0ba7c557, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 360
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_12_Pressure_1
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 480
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_12_Pressure_2
+    waveToSpawn: {fileID: 11400000, guid: 7ea388d2c9eacac43a38b42f27cad183, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 540
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Wave_12_BOSS
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 599
+    minTriggerTime: 0
+    maxTriggerTime: 0

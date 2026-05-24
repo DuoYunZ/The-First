@@ -1,0 +1,103 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd6f95ded5e3db41ba212e830ec6714, type: 3}
+  m_Name: WSB_AnQi
+  m_EditorClassIdentifier: 
+  weaponName: "\u841D\u535C\u98DE\u5200"
+  weaponIcon: {fileID: 21300000, guid: 411100cb653086c48a085405f6396f23, type: 3}
+  weaponPartPrefab: {fileID: 8647411012811990275, guid: ca5c1d4e652ce464c83780b5b0ff40d6,
+    type: 3}
+  isOneShot: 0
+  baseFireRate: 1.35
+  projectilePrefab: {fileID: 7019459199649461963, guid: 43174828e7e04ee47a4c3ea9d4476e4c,
+    type: 3}
+  behavior: 0
+  baseLaunchForce: 20
+  launchAngle: 45
+  baseStunChance: 0
+  baseStunDuration: 1
+  baseProjectileLifetime: 5
+  baseDirectDamage: 60
+  baseAoeDamage: 0
+  baseAoeRadius: 0
+  basePierceCount: 1
+  baseChainCount: 0
+  chainRange: 10
+  muzzleFlashPrefab: {fileID: 0}
+  impactEffectPrefab: {fileID: 1918560786896438, guid: 7eb498b942eb5de4ea21d806cbde4680,
+    type: 3}
+  explosionEffectPrefab: {fileID: 0}
+  layersToDamageByAOE:
+    serializedVersion: 2
+    m_Bits: 128
+  layersToExplodeOn:
+    serializedVersion: 2
+    m_Bits: 8
+  shieldImpactEffectPrefab: {fileID: 0}
+  defaultImpactEffectPrefab: {fileID: 1918560786896438, guid: 7eb498b942eb5de4ea21d806cbde4680,
+    type: 3}
+  maxLevel: 10
+  autoAimAtNearestEnemy: 1
+  autoAimRange: 360
+  orbitalPrefab: {fileID: 0}
+  baseOrbitalCount: 1
+  baseOrbitalSpeed: 90
+  baseOrbitalRadius: 3
+  baseDuration: 15
+  baseDotDamage: 0
+  baseDotDuration: 0
+  dotTickInterval: 0
+  deployerProjectilePrefab: {fileID: 0}
+  areaPrefab: {fileID: 0}
+  deployerFallSpeed: 25
+  deployerSpawnHeight: 40
+  baseAreaDuration: 5
+  baseAreaTickInterval: 0.5
+  baseAreaDamagePerTick: 4
+  auraVfxPrefab: {fileID: 0}
+  vfxBaseScaleMultiplier: 1
+  baseSlowPercentage: 0
+  baseSlowDuration: 0
+  summonPrefab: {fileID: 0}
+  summonCount: 1
+  summonDuration: 20
+  summonWeaponStats: {fileID: 0}
+  summonSpawnHeight: 2
+  beamVfxPrefab: {fileID: 0}
+  beamImpactVfxPrefab: {fileID: 0}
+  beamMaxDistance: 25
+  beamDamagePerSecond: 20
+  beamDamageTickRate: 5
+  beamDuration: 3
+  beamCooldown: 5
+  beamTurnSpeed: 5
+  scorchMarkPrefab: {fileID: 0}
+  scorchMarkInterval: 0.2
+  beamScorchMarkGroundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  minePrefab: {fileID: 0}
+  spawnRadius: 5
+  armingTime: 0.5
+  mineDuration: 10
+  slashEffectPrefab: {fileID: 0}
+  attackAngle: 90
+  hitEffectPrefab: {fileID: 0}
+  bladeEnergyPrefab: {fileID: 0}
+  bladeEnergyDamage: 10
+  bladeEnergySpeed: 15
+  bladeEnergyPierceCount: 1
+  maxDistance: 15
+  catchRadius: 2.5
+  rotationSpeed: 720
+  returnOvershootDistance: 15
+

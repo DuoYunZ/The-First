@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3547842e2acdbcb41a140618e7a6eca3, type: 3}
+  m_Name: Recipe_InfernoStorm
+  m_EditorClassIdentifier: 
+  weaponA: {fileID: 11400000, guid: d1b7a87edaa25cc43b34be180374fdee, type: 2}
+  weaponB: {fileID: 11400000, guid: 3bb8f058d033170439d4c957564cffef, type: 2}
+  resultWeapon: {fileID: 11400000, guid: a7f3058c96223cc48ace8419fd9e19fc, type: 2}
+  description: "\u70BC\u72F1\u98CE\u66B4 - \u8D85\u6B66"
+  fusionIcon: {fileID: 21300000, guid: 51062fc9e9c98064f85559e835d13eac, type: 3}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Engineer_Overclock_RotorArray
+  m_EditorClassIdentifier: 
+  nodeName: "\u8F6C\u5B50\u96C6\u7FA4"
+  description: "\u83B7\u5F97\u73AF\u7ED5\u88C5\u7F6E\uFF0C\u673A\u68B0\u5355\u4F4D\u6570\u91CF\u8FDB\u4E00\u6B65\u63D0\u5347\u3002"
+  nodeNameEN: Rotor Array
+  descriptionEN: Gain Orbit and increase mechanical unit count.
+  icon: {fileID: 21300000, guid: c3668b79de0e87b40a9acd0494b1d25c, type: 3}
+  layer: 3
+  cost: 150
+  prerequisites:
+  - {fileID: 11400000, guid: 025438d1918981c45a0a1a1d6146267e, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 10
+    value: 0.06
+  linkedUpgradeNode: {fileID: 11400000, guid: 9445d6cbe4482644f9073675ecb06543, type: 2}

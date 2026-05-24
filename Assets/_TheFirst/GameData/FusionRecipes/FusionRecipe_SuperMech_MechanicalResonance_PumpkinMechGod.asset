@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_SuperMech_MechanicalResonance_PumpkinMechGod
+  m_EditorClassIdentifier: 
+  recipeId: SuperMech_MechanicalResonance_PumpkinMechGod
+  recipeName: "\u5357\u74DC\u5DE8\u795E"
+  description: "\u5DE8\u578B\u673A\u5668\u4EBA Lv.5 + \u673A\u68B0\u5171\u9E23 Lv.3"
+  triggerWeapon: {fileID: 11400000, guid: b19b0a6d384a4f0d9bc1824f00cd65b2, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 1
+    requiredWeapon: {fileID: 0}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 11400000, guid: 895b870a4b194f9c85be172047b0076c,
+      type: 2}
+    requiredPassiveId: "\u673A\u68B0\u5171\u9E23"
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 2
+  resultWeapon: {fileID: 11400000, guid: 2c99be3c361c2aa44b16094208449e76, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 1c386e85bb32cb246ad049b2b8cd7276, type: 3}
+  cardColor: {r: 1, g: 0.75, b: 0.25, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

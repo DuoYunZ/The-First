@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3eeff29aaadd84681559c04f9ae437, type: 3}
+  m_Name: Recipe_Orbit_thunder
+  m_EditorClassIdentifier: 
+  baseWeapon: {fileID: 11400000, guid: ce97b0ea217bc284492368dd65efc455, type: 2}
+  requiredStoneType: 3
+  evolvedWeapon: {fileID: 11400000, guid: 21df6a334df1b8847af0c054fe3cf5df, type: 2}
+  evolutionName: "\u73AF\u7ED5\u96F7\u51FB"
+  description: "\u53EF\u4EE5\u89E6\u53D1\u611F\u7535\u6548\u679C\uFF0C\u589E\u5F3A\u96F7\u51FB\u6982\u7387"

@@ -66,6 +66,8 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
     private TextMeshProUGUI labelText;
     private Image fillImage;
     private RoleMechanicHudView hudView;
+    private Image[] fallbackStackPips;
+    private readonly List<Sprite> runtimeHudSprites = new List<Sprite>();
 
     private const string DefaultRoleHudPrefabPath = "Assets/_TheFirst/Prefabs/UI/RoleMechanicHUD.prefab";
 
@@ -113,6 +115,7 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
         {
             PlayerLevelManager.Instance.OnLevelUp -= HandleLevelUp;
         }
+        DestroyRuntimeHudSprites();
         if (Instance == this) Instance = null;
     }
 
@@ -497,17 +500,83 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        GameObject root = new GameObject("ResourceRoot", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+        GameObject root = new GameObject("ResourceRoot", typeof(RectTransform));
         root.transform.SetParent(canvasGo.transform, false);
         RectTransform rootRect = root.GetComponent<RectTransform>();
         rootRect.anchorMin = new Vector2(0.5f, 0f);
         rootRect.anchorMax = new Vector2(0.5f, 0f);
         rootRect.pivot = new Vector2(0.5f, 0f);
-        rootRect.anchoredPosition = new Vector2(0f, 34f);
-        rootRect.sizeDelta = new Vector2(430f, 42f);
-        root.GetComponent<Image>().color = new Color(0.06f, 0.04f, 0.025f, 0.72f);
+        rootRect.anchoredPosition = roleKind == RoleKind.Swordsman ? new Vector2(0f, 28f) : new Vector2(0f, 34f);
 
-        HorizontalLayoutGroup layout = root.GetComponent<HorizontalLayoutGroup>();
+        if (roleKind == RoleKind.Swordsman)
+        {
+            BuildRuntimeSwordHud(root.transform);
+        }
+        else
+        {
+            BuildRuntimeBarHud(root.transform);
+        }
+    }
+
+    private void BuildRuntimeSwordHud(Transform root)
+    {
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.sizeDelta = new Vector2(560f, 126f);
+
+        Sprite fillSprite = CreateRuntimeSwordGaugeSprite(false);
+        Sprite frameSprite = CreateRuntimeSwordGaugeSprite(true);
+        Sprite pipSprite = CreateRuntimeCircleSprite();
+
+        GameObject fill = new GameObject("SwordFill", typeof(RectTransform), typeof(Image));
+        fill.transform.SetParent(root, false);
+        RectTransform fillRect = fill.GetComponent<RectTransform>();
+        SetStretch(fillRect);
+        fillImage = fill.GetComponent<Image>();
+        fillImage.sprite = fillSprite;
+        fillImage.type = Image.Type.Filled;
+        fillImage.fillMethod = Image.FillMethod.Horizontal;
+        fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        fillImage.color = new Color(1f, 0.40f, 0.08f, 0.95f);
+        fillImage.raycastTarget = false;
+
+        GameObject frame = new GameObject("SwordFrame", typeof(RectTransform), typeof(Image));
+        frame.transform.SetParent(root, false);
+        RectTransform frameRect = frame.GetComponent<RectTransform>();
+        SetStretch(frameRect);
+        Image frameImage = frame.GetComponent<Image>();
+        frameImage.sprite = frameSprite;
+        frameImage.color = Color.white;
+        frameImage.raycastTarget = false;
+
+        fallbackStackPips = new Image[3];
+        for (int i = 0; i < fallbackStackPips.Length; i++)
+        {
+            GameObject pip = new GameObject($"SwordPip_{i + 1}", typeof(RectTransform), typeof(Image));
+            pip.transform.SetParent(root, false);
+            RectTransform pipRect = pip.GetComponent<RectTransform>();
+            pipRect.anchorMin = new Vector2(0.5f, 0.5f);
+            pipRect.anchorMax = new Vector2(0.5f, 0.5f);
+            pipRect.pivot = new Vector2(0.5f, 0.5f);
+            pipRect.anchoredPosition = new Vector2(142f + i * 36f, 2f);
+            pipRect.sizeDelta = new Vector2(26f, 26f);
+
+            Image pipImage = pip.GetComponent<Image>();
+            pipImage.sprite = pipSprite;
+            pipImage.color = new Color(0.08f, 0.03f, 0.015f, 0.82f);
+            pipImage.raycastTarget = false;
+            fallbackStackPips[i] = pipImage;
+        }
+    }
+
+    private void BuildRuntimeBarHud(Transform root)
+    {
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.sizeDelta = new Vector2(430f, 42f);
+
+        Image rootImage = root.gameObject.AddComponent<Image>();
+        rootImage.color = new Color(0.06f, 0.04f, 0.025f, 0.72f);
+
+        HorizontalLayoutGroup layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.padding = new RectOffset(12, 12, 7, 7);
         layout.spacing = 10f;
         layout.childAlignment = TextAnchor.MiddleCenter;
@@ -516,7 +585,7 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
         layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = true;
 
-        labelText = CreateHudText("Label", root.transform, 22f, TextAlignmentOptions.Left);
+        labelText = CreateHudText("Label", root, 22f, TextAlignmentOptions.Left);
         LayoutElement labelLayout = labelText.gameObject.AddComponent<LayoutElement>();
         labelLayout.preferredWidth = 160f;
 
@@ -537,6 +606,147 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
         fillImage.type = Image.Type.Filled;
         fillImage.fillMethod = Image.FillMethod.Horizontal;
         fillImage.color = GetRoleColor();
+    }
+
+    private Sprite CreateRuntimeSwordGaugeSprite(bool frameOnly)
+    {
+        const int width = 560;
+        const int height = 126;
+
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        Color clear = new Color(0f, 0f, 0f, 0f);
+        Color dark = new Color(0.17f, 0.035f, 0.005f, 0.96f);
+        Color outline = new Color(0.65f, 0.12f, 0.015f, 1f);
+        Color edge = new Color(1f, 0.34f, 0.04f, 1f);
+        Color fill = new Color(1f, 0.42f, 0.07f, 0.94f);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool blade = x >= 185 && x <= 520 && Mathf.Abs(y - 62) <= Mathf.Lerp(30f, 7f, Mathf.InverseLerp(185f, 520f, x));
+                bool point = x > 500 && x < 553 && Mathf.Abs(y - 62) <= (553 - x) * 0.42f;
+                bool handle = x >= 65 && x <= 205 && Mathf.Abs(y - 62) <= 17;
+                bool guard = x >= 145 && x <= 230 && Mathf.Abs(y - 62) <= 42 && Mathf.Abs(y - 62) + Mathf.Abs(x - 178) * 0.42f < 58;
+                bool pommel = Vector2.Distance(new Vector2(x, y), new Vector2(58f, 62f)) < 22f;
+                bool gem = Vector2.Distance(new Vector2(x, y), new Vector2(172f, 62f)) < 24f;
+                bool shape = blade || point || handle || guard || pommel || gem;
+
+                if (!shape)
+                {
+                    texture.SetPixel(x, y, clear);
+                    continue;
+                }
+
+                bool border = IsRuntimeSwordBorder(x, y, width, height);
+                Color pixel;
+                if (frameOnly)
+                {
+                    pixel = border || guard || pommel || gem ? (border ? outline : dark) : clear;
+                    if (gem && Vector2.Distance(new Vector2(x, y), new Vector2(172f, 62f)) < 15f)
+                    {
+                        pixel = edge;
+                    }
+                }
+                else
+                {
+                    pixel = border ? clear : fill;
+                    if (handle && !border) pixel = new Color(0.45f, 0.06f, 0.01f, 0.9f);
+                }
+
+                texture.SetPixel(x, y, pixel);
+            }
+        }
+
+        texture.Apply(false, false);
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), 100f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        runtimeHudSprites.Add(sprite);
+        return sprite;
+    }
+
+    private static bool IsRuntimeSwordBorder(int x, int y, int width, int height)
+    {
+        for (int oy = -2; oy <= 2; oy++)
+        {
+            for (int ox = -2; ox <= 2; ox++)
+            {
+                if (!IsRuntimeSwordShape(x + ox, y + oy, width, height)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsRuntimeSwordShape(int x, int y, int width, int height)
+    {
+        bool blade = x >= 185 && x <= 520 && Mathf.Abs(y - 62) <= Mathf.Lerp(30f, 7f, Mathf.InverseLerp(185f, 520f, x));
+        bool point = x > 500 && x < 553 && Mathf.Abs(y - 62) <= (553 - x) * 0.42f;
+        bool handle = x >= 65 && x <= 205 && Mathf.Abs(y - 62) <= 17;
+        bool guard = x >= 145 && x <= 230 && Mathf.Abs(y - 62) <= 42 && Mathf.Abs(y - 62) + Mathf.Abs(x - 178) * 0.42f < 58;
+        bool pommel = Vector2.Distance(new Vector2(x, y), new Vector2(58f, 62f)) < 22f;
+        bool gem = Vector2.Distance(new Vector2(x, y), new Vector2(172f, 62f)) < 24f;
+        return blade || point || handle || guard || pommel || gem;
+    }
+
+    private Sprite CreateRuntimeCircleSprite()
+    {
+        const int size = 64;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        Vector2 center = Vector2.one * ((size - 1) * 0.5f);
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center);
+                float alpha = Mathf.InverseLerp(size * 0.5f, size * 0.42f, distance);
+                texture.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(alpha)));
+            }
+        }
+
+        texture.Apply(false, false);
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        runtimeHudSprites.Add(sprite);
+        return sprite;
+    }
+
+    private static void SetStretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    private void DestroyRuntimeHudSprites()
+    {
+        foreach (Sprite sprite in runtimeHudSprites)
+        {
+            if (sprite == null) continue;
+
+            Texture2D texture = sprite.texture;
+            Destroy(sprite);
+            if (texture != null)
+            {
+                Destroy(texture);
+            }
+        }
+
+        runtimeHudSprites.Clear();
     }
 
     private TextMeshProUGUI CreateHudText(string objectName, Transform parent, float size, TextAlignmentOptions alignment)
@@ -604,6 +814,16 @@ public class PlayerRoleRuntimeMechanics : MonoBehaviour
 
         if (labelText != null) labelText.text = label;
         if (fillImage != null) fillImage.fillAmount = fillAmount;
+        if (fallbackStackPips != null && showSwordPips)
+        {
+            for (int i = 0; i < fallbackStackPips.Length; i++)
+            {
+                if (fallbackStackPips[i] == null) continue;
+                fallbackStackPips[i].color = i < swordFocusStacks
+                    ? new Color(1f, 0.78f, 0.22f, 1f)
+                    : new Color(0.08f, 0.03f, 0.015f, 0.82f);
+            }
+        }
     }
 
     private void RefreshHudLegacy()

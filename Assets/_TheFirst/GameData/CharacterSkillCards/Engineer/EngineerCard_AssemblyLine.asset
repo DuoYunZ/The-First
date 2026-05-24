@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: EngineerCard_AssemblyLine
+  m_EditorClassIdentifier: 
+  skillName: "\u81EA\u52A8\u5316\u4EA7\u7EBF"
+  skillIcon: {fileID: 21300000, guid: ba278b146196a854aa51cad85382078d, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u673A\u68B0\u6B66\u5668\u51B7\u5374\u8FDB\u4E00\u6B65\u7F29\u77ED\uFF0C\u90E8\u7F72\u8282\u594F\u660E\u663E\u52A0\u5FEB\u3002"
+    descriptionEN: Mechanical weapon cooldowns are further reduced for faster deployment
+      tempo.
+    rarity: 3
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: Engineer_Talent_AssemblyLine
+  graphPosition: {x: 0, y: 0}

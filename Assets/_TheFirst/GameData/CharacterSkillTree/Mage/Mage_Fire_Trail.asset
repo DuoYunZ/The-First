@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Mage_Fire_Trail
+  m_EditorClassIdentifier: 
+  nodeName: "\u70C8\u7130\u8F68\u8FF9"
+  description: "\u706B\u7403\u672F\u548C\u706B\u7CFB\u8FDB\u5316\u6B66\u5668\n\u66F4\u5BB9\u6613\u7559\u4E0B\u706B\u7130\u8F68\u8FF9"
+  nodeNameEN: Blazing Trail
+  descriptionEN: 'Fireball and fire evolutions
+
+    more easily leave flame trails on the ground'
+  icon: {fileID: 21300000, guid: 6d36ae36b95181441be64e3bb513a69f, type: 3}
+  layer: 3
+  cost: 150
+  prerequisites:
+  - {fileID: 11400000, guid: 88106ac8ee08e6949820ac8dd023a3d8, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 1
+    value: 0.08
+  linkedUpgradeNode: {fileID: 11400000, guid: c00e15730161acf439be9b041dbbb7f0, type: 2}

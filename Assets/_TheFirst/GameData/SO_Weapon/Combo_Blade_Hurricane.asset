@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1213de9aa4aa1f4e815d0e28264047d, type: 3}
+  m_Name: Combo_Blade_Hurricane
+  m_EditorClassIdentifier: 
+  weaponA: {fileID: 11400000, guid: d1b7a87edaa25cc43b34be180374fdee, type: 2}
+  weaponB: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  comboName: "\u98CE\u5203"
+  comboIcon: {fileID: 21300000, guid: 2e2bfdf42e54893439c98c306fade39a, type: 3}
+  comboDescription: "斩击形态变为风刃模式，10秒内移速+30%、攻速+100%"
+  comboDescriptionEN: "Blade shifts to Wind mode, +30% move speed and +100% attack speed for 10s"
+  comboEffectPrefab: {fileID: 0}
+  comboDamage: 50
+  comboRadius: 8

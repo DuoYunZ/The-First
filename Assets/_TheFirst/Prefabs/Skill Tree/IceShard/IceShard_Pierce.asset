@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: IceShard_Pierce
+  m_EditorClassIdentifier: 
+  skillName: "\u51B0\u9525\u8D2F\u7A7F"
+  skillIcon: {fileID: 21300000, guid: f7c0bf3b6c3591a4dbbdffee16cd5966, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: a2767de184ca07b4c84e55ed15aac63c, type: 2}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive:
+  - {fileID: 11400000, guid: 30571c7aaf8a011469bf2b91894a5096, type: 2}
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u4F24\u5BB3 +30%\uFF0C\u7A7F\u900F +2"
+    descriptionEN: DMG +30%, pierce +2
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 30
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 6
+      value: 2
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 50, y: 590}

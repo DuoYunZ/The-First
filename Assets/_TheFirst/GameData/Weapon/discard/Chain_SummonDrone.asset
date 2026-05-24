@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d4a919c62346c64b90d38fdab3aed5f, type: 3}
+  m_Name: Chain_SummonDrone
+  m_EditorClassIdentifier: 
+  weaponName: "\u65E0\u4EBA\u673A"
+  icon: {fileID: 21300000, guid: 20442c04a19c6c545b5639c5f3fdd1f4, type: 3}
+  targetWeapon: {fileID: 11400000, guid: e5f22fae980201d438176fd2f178b043, type: 2}
+  unlockOption:
+    description: "\u4E00\u67B6\u8FFD\u8E2A\u5F39\u65E0\u4EBA\u673A"
+    rarity: 0
+    effects:
+    - actionType: 1
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 0
+      weaponToUnlock: {fileID: 11400000, guid: e5f22fae980201d438176fd2f178b043, type: 2}
+      shieldToUnlock: {fileID: 0}
+  levels:
+  - options:
+    - description: 
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 0
+        value: 100
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: "\u65E0\u4EBA\u673A\u6570\u91CF+1"
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 8
+        value: 1
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: 
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 0
+        value: 50
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: 
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 0
+        value: 80
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: "\u65E0\u4EBA\u673A\u6570\u91CF+1"
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 8
+        value: 1
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: 
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 0
+        value: 100
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}
+  - options:
+    - description: "\u65E0\u4EBA\u673A\u6570\u91CF+1"
+      rarity: 0
+      effects:
+      - actionType: 0
+        passiveItemData: {fileID: 0}
+        statToModify: 8
+        value: 1
+        modType: 1
+        weaponToUnlock: {fileID: 0}
+        shieldToUnlock: {fileID: 0}

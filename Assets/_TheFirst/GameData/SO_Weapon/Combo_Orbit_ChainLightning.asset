@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1213de9aa4aa1f4e815d0e28264047d, type: 3}
+  m_Name: Combo_Orbit_ChainLightning
+  m_EditorClassIdentifier: 
+  weaponA: {fileID: 11400000, guid: ecd9652cc117abe45838cb6875f617cc, type: 2}
+  weaponB: {fileID: 11400000, guid: c19a4bddad24ebf48ae431e6272482d3, type: 2}
+  comboName: "\u96F7\u9706\u76FE"
+  comboIcon: {fileID: 0}
+  comboDescription: "环绕盾变为雷暴形态，旋转速度x3并释放闪电链"
+  comboDescriptionEN: "Orbitals become lightning form, 3x spin speed with chain lightning"
+  comboEffectPrefab: {fileID: 7856266253469466746, guid: 596670e40a4739941b0d3f4a1f4744fd,
+    type: 3}
+  comboDamage: 20
+  comboRadius: 8

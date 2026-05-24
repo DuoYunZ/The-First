@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e3487090613db4489fcca13aff7a491, type: 3}
+  m_Name: Boomerang_SkillTree
+  m_EditorClassIdentifier: 
+  associatedWeapon: {fileID: 11400000, guid: 0976920031236724da0af9235c9c7a97, type: 2}
+  isDefaultUnlocked: 1
+  unlockStatKey: 
+  unlockThreshold: 0
+  lockedDescription: 
+  allNodesInTree:
+  - {fileID: 11400000, guid: 330776156a2a4e9cbd4200c4dfb7b93e, type: 2}
+  - {fileID: 11400000, guid: d9eb5f6644c342a09f6be448ee2e40de, type: 2}
+  - {fileID: 11400000, guid: f4e1dd3890f842b1ab815e97720355b4, type: 2}
+  - {fileID: 11400000, guid: 600971fa65d147df8508136bc3405b4e, type: 2}
+  - {fileID: 11400000, guid: 4e8cfa42eb794a04b1c8c077878b40a9, type: 2}
+  - {fileID: 11400000, guid: c39ca9439b414ee9a0d9974d66360a53, type: 2}
+  - {fileID: 11400000, guid: edfa25f669834eb5a4a7e26358430ce3, type: 2}
+  - {fileID: 11400000, guid: 824c5f6880d841e5b4fd2cfae24e706b, type: 2}
+  - {fileID: 11400000, guid: 9833f136d80f45ec89eaeb0b0d2c48ff, type: 2}
+  - {fileID: 11400000, guid: 8014b2cf62164f30b738c7bbe5c49d67, type: 2}
+

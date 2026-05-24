@@ -1,0 +1,85 @@
+{
+    "achievements": [
+        {
+            "id": "ACH_FIRST_BLOOD",
+            "steamId": "ACH_FIRST_BLOOD",
+            "displayName": "First Blood",
+            "description": "Defeat your first enemy.",
+            "statKey": "Kill_Count",
+            "threshold": 1,
+            "enabled": true
+        },
+        {
+            "id": "ACH_100_KILLS",
+            "steamId": "ACH_100_KILLS",
+            "displayName": "Scrap Storm",
+            "description": "Defeat 100 enemies.",
+            "statKey": "Kill_Count",
+            "threshold": 100,
+            "enabled": true
+        },
+        {
+            "id": "ACH_FIRST_DASH",
+            "steamId": "ACH_FIRST_DASH",
+            "displayName": "Boost Online",
+            "description": "Dash once.",
+            "statKey": "Dash_Count",
+            "threshold": 1,
+            "enabled": true
+        },
+        {
+            "id": "ACH_100_DASHES",
+            "steamId": "ACH_100_DASHES",
+            "displayName": "Afterburner",
+            "description": "Dash 100 times.",
+            "statKey": "Dash_Count",
+            "threshold": 100,
+            "enabled": true
+        },
+        {
+            "id": "ACH_FIRST_CLEAR",
+            "steamId": "ACH_FIRST_CLEAR",
+            "displayName": "First Clear",
+            "description": "Win a run.",
+            "statKey": "Victory_Count",
+            "threshold": 1,
+            "enabled": true
+        },
+        {
+            "id": "ACH_FIRST_DEATH",
+            "steamId": "ACH_FIRST_DEATH",
+            "displayName": "Rebuilt",
+            "description": "Fall in battle once.",
+            "statKey": "Death_Count",
+            "threshold": 1,
+            "enabled": true
+        },
+        {
+            "id": "ACH_FIRST_IGNITE",
+            "steamId": "ACH_FIRST_IGNITE",
+            "displayName": "Spark",
+            "description": "Ignite an enemy.",
+            "statKey": "Ignite_Count",
+            "threshold": 1,
+            "enabled": true
+        },
+        {
+            "id": "ACH_1000_IGNITES",
+            "steamId": "ACH_1000_IGNITES",
+            "displayName": "Wildfire",
+            "description": "Ignite enemies 1000 times.",
+            "statKey": "Ignite_Count",
+            "threshold": 1000,
+            "enabled": true
+        },
+        {
+            "id": "ACH_LEVEL_10",
+            "steamId": "ACH_LEVEL_10",
+            "displayName": "Growing Core",
+            "description": "Reach level 10.",
+            "statKey": "Max_Level_Reached",
+            "threshold": 10,
+            "enabled": true
+        }
+    ]
+}

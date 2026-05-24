@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe2d1d265a34f6547afefe7ef4b242b0, type: 3}
+  m_Name: ThunderWill_Data
+  m_EditorClassIdentifier: 
+  itemName: "\u96F7\u9E23\u610F\u5FD7"
+  icon: {fileID: 21300000, guid: 70af8b5c536a4d5499700edd8a786e78, type: 3}
+  description: "\u51FB\u6740\u65F6\u6709\u6982\u7387\u89E6\u53D1\u96F7\u51FBAOE"
+  statType: 84
+  valuePerLevel: 1
+  maxLevel: 3
+  isTriggerPassive: 1
+  triggerVfxPrefab: {fileID: 6616563130517313227, guid: a17f192a5650af640b8d01e54b0a37f8,
+    type: 3}
+  requiredWeapon: {fileID: 0}
+  isDefaultUnlocked: 0
+  unlockStatKey: Lightning_Damage
+  unlockThreshold: 10000
+  lockedDescription: "\u96F7\u7CFB\u9020\u621010000\u70B9\u4F24\u5BB3\u4EE5\u89E3\u9501"

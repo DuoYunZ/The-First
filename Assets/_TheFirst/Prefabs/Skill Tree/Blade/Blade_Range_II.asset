@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: Blade_Range_II
+  m_EditorClassIdentifier: 
+  skillName: "\u6269\u5927\u8303\u56F4 II"
+  skillIcon: {fileID: 21300000, guid: f8e418d0716bf6f408bf94f9c3d32034, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: d1b7a87edaa25cc43b34be180374fdee, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 2c00ab69747f26b499ec32601c4c7d86, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u65A9\u51FB\u8303\u56F4 +20%"
+    descriptionEN: Slash Range +20%
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 2
+      value: 20
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 767, y: 230}

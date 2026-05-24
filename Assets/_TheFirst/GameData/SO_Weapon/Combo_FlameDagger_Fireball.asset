@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1213de9aa4aa1f4e815d0e28264047d, type: 3}
+  m_Name: Combo_FlameDagger_Fireball
+  m_EditorClassIdentifier: 
+  weaponA: {fileID: 11400000, guid: b31f70c23438cd64a835d18a0a6ba29b, type: 2}
+  weaponB: {fileID: 11400000, guid: 9289f47dd22aaf943ae743fbf57d2e95, type: 2}
+  comboName: "\u706B\u7130\u7075\u5203"
+  comboIcon: {fileID: 0}
+  comboDescription: "飞刃获得火焰强化，15秒内体积x2、伤害x2"
+  comboDescriptionEN: "Daggers gain flame power, 2x size and 2x damage for 15s"
+  comboEffectPrefab: {fileID: 5195029412513014088, guid: be457b958ea97254493e2621031e3cde,
+    type: 3}
+  comboDamage: 0
+  comboRadius: 8

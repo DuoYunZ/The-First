@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: LS_StormExpand
+  m_EditorClassIdentifier: 
+  skillName: "\u78C1\u66B4\u6269\u5F20"
+  skillIcon: {fileID: 21300000, guid: 7fbff217f1b7373418bd011cfa3cd096, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 07b327a6983c82d4aaea7a926a85d0b9, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 8f17fd17488ed4e4e987c0e56099079f, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u78C1\u66B4\u4F24\u5BB3\u4E0E\u8303\u56F4+75%"
+    descriptionEN: Storm DMG & range +75%
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 1
+      value: 75
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 2
+      value: 75
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 400, y: 590}

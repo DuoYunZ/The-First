@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: BM_TwinThrow
+  m_EditorClassIdentifier: 
+  skillName: "\u53CC\u91CD\u6295\u63B7"
+  skillIcon: {fileID: 21300000, guid: b603bee8d1235834e87b5365bdcffec0, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 0976920031236724da0af9235c9c7a97, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: d9eb5f6644c342a09f6be448ee2e40de, type: 2}
+  - {fileID: 11400000, guid: f4e1dd3890f842b1ab815e97720355b4, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u989D\u5916\u6295\u51FA 1 \u628A\u56DE\u65CB\u9556"
+    descriptionEN: Throw 1 extra boomerang
+    rarity: 1
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 5
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 410, y: 320}
+

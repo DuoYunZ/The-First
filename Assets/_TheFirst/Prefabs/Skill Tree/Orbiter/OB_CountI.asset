@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: OB_CountI
+  m_EditorClassIdentifier: 
+  skillName: "\u62A4\u76FE\u589E\u6B96 I"
+  skillIcon: {fileID: 21300000, guid: 29132454bfa67d741b05dea5d1056ca8, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: ecd9652cc117abe45838cb6875f617cc, type: 2}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u73AF\u7ED5\u6B66\u5668\u6570\u91CF+1"
+    descriptionEN: Orbiter count +1
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 8
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 50, y: 50}

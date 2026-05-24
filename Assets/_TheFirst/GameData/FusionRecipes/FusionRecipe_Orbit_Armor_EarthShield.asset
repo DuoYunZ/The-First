@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_Orbit_Armor_EarthShield
+  m_EditorClassIdentifier: 
+  recipeId: Orbit_Armor_EarthShield
+  recipeName: "\u5927\u5730\u5CA9\u76FE"
+  description: "\u73AF\u7ED5\u8702\u523A Lv.5 + \u897F\u74DC\u88C5\u7532 Lv.3"
+  triggerWeapon: {fileID: 11400000, guid: ecd9652cc117abe45838cb6875f617cc, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 1
+    requiredWeapon: {fileID: 0}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 11400000, guid: e7d95da9daa301244a27d4369fd3f334,
+      type: 2}
+    requiredPassiveId: "\u897F\u74DC\u88C5\u7532"
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 2
+  resultWeapon: {fileID: 11400000, guid: a6bc3203c68149b49bd2681d8d784b92, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 3243b316f36626d4990144dbdd019705, type: 3}
+  cardColor: {r: 1, g: 0.75, b: 0.25, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

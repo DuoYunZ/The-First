@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: SwordmasterSoul_Node
+  m_EditorClassIdentifier: 
+  skillName: "\u5251\u5723\u4E4B\u9B42"
+  skillIcon: {fileID: 21300000, guid: 02d95fdbf8b24ad9bbc3ebf05b06d83c, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 3
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u62E5\u6709\u65A9\u51FB\u65F6\uFF1A\u4F24\u5BB3+4%\uFF0C\u66B4\u51FB\u7387+3%\uFF1B\u65A9\u51FB\u6B66\u5668\u6BCF\u63D0\u53472\u7EA7\u989D\u5916+1\u5200\u5149"
+    descriptionEN: "With Blade: damage +4%, crit +3%; Blade gains +1 slash every 2 weapon levels"
+    rarity: 2
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 11400000, guid: 60a9a81395fe4842a00fbe8f9608a5fb, type: 2}
+      statToModify: 87
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 0, y: 0}

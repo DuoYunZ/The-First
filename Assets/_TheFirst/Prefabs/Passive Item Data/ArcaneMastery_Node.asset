@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: ArcaneMastery_Node
+  m_EditorClassIdentifier: 
+  skillName: "\u5965\u672F\u7CBE\u901A"
+  skillIcon: {fileID: 21300000, guid: 2be44257cc2f474bbd8f36032f5952da, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 3
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u653B\u51FB\u547D\u4E2D\u65F6+4%\u6982\u7387\u89E6\u53D1\u7D2B\u8272\u5965\u672F\u7206\u7834\u5708"
+    descriptionEN: "Hits gain +4% chance to trigger a small arcane blast"
+    rarity: 2
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 11400000, guid: 015d0d7f11ca4bcf9ec9ddf1262c6c43, type: 2}
+      statToModify: 88
+      value: 4
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 0, y: 0}

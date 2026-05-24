@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: MageCard_Blizzard
+  m_EditorClassIdentifier: 
+  skillName: "\u6C38\u51BB\u9886\u57DF"
+  skillIcon: {fileID: 21300000, guid: f7c0bf3b6c3591a4dbbdffee16cd5966, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites:
+  - {fileID: 11400000, guid: 2b83717ba7bb99a4eba5f8300cf587c7, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u6BCF20\u79D2\u81EA\u52A8\u751F\u6210\u6C38\u51BB\u9886\u57DF\n\u534A\u5F848\uFF0C\u6301\u7EED6\u79D2\n\u654C\u4EBA\u51CF\u901F70%\uFF0C\u6BCF\u79D2\u51B0\u51BB\u5224\u5B9A\n\u51B0\u9525\u7A7F\u900F\u4E0D\u6D88\u8017"
+    descriptionEN: 'Spawns Permafrost Domain every 20s
+
+      Radius 8, lasts 6s
+
+      Enemies slowed 70%, freeze check per second
+
+      Ice Shard pierces without consuming'
+    rarity: 3
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: Mage_Talent_Blizzard
+  graphPosition: {x: 0, y: 0}

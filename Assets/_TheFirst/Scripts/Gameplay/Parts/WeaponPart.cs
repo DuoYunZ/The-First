@@ -1853,9 +1853,7 @@ public class WeaponPart : MonoBehaviour
         else
         {
             // 计算冷却
-            float finalFireRateMultiplier = (PlayerStats.Instance.fireRateMultiplier - localFireRateBonus - GetEngineerMechanicalFireRateBonus()) * (1f + stoneFireRateMod);
-            if (finalFireRateMultiplier <= 0.1f) finalFireRateMultiplier = 0.1f;
-            fireCooldown = (1f / StatBlock.baseFireRate) * finalFireRateMultiplier;
+            fireCooldown = CalculateWeaponFireCooldown(stoneFireRateMod);
         }
 
         // 3-6. 视觉、音效、特殊类型检查 (保持不变)
@@ -2161,8 +2159,8 @@ public class WeaponPart : MonoBehaviour
             if (activeBoomerangCount > 0) return;
 
             isBoomerangOut = false;
-            float fireRateMultiplier = PlayerStats.Instance != null ? PlayerStats.Instance.fireRateMultiplier : 1f;
-            fireCooldown = (1f / StatBlock.baseFireRate) * fireRateMultiplier;
+            fireCooldown = CalculateWeaponFireCooldown();
+            if (cooldownMaterial != null) cooldownMaterial.StartCooldown(fireCooldown);
             // Debug.Log($"Boomerang '{StatBlock?.weaponName}' missed, starting cooldown: {fireCooldown}s.");
 
             // --- 【核心修改】重置 PlayerStats 中的叠加层数 ---
@@ -2176,11 +2174,30 @@ public class WeaponPart : MonoBehaviour
 
     public void ResetCooldown()
     {
-        fireCooldown = 0.01f; // Set a very small cooldown to allow immediate firing after catch
+        fireCooldown = CalculateWeaponFireCooldown();
+        if (cooldownMaterial != null) cooldownMaterial.StartCooldown(fireCooldown);
     }
     #endregion
 
     #region Private Helper Methods
+    private float CalculateWeaponFireCooldown(float? overrideStoneFireRateMod = null)
+    {
+        if (StatBlock == null) return 0f;
+
+        float fireRateMultiplier = 1f;
+        if (PlayerStats.Instance != null)
+        {
+            fireRateMultiplier = PlayerStats.Instance.fireRateMultiplier - localFireRateBonus - GetEngineerMechanicalFireRateBonus();
+        }
+
+        float stoneFireRateMod = overrideStoneFireRateMod ?? (currentStone != null ? currentStone.fireRateModifier : 0f);
+        fireRateMultiplier *= 1f + stoneFireRateMod;
+        fireRateMultiplier = Mathf.Max(0.1f, fireRateMultiplier);
+
+        float baseRate = Mathf.Max(0.01f, StatBlock.baseFireRate);
+        return Mathf.Max(0.08f, (1f / baseRate) * fireRateMultiplier);
+    }
+
     private void PlayFireSound()
     {
         // 优先从 SO 读取音效（进化/分支后自动跟随新数据）

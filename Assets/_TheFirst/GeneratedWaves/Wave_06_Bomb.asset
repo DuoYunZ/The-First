@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3d4d5e9d9876434586997b5cf3390d9, type: 3}
+  m_Name: Wave_06_Bomb
+  m_EditorClassIdentifier: 
+  waveName: Wave_06_Bomb
+  waveType: 0
+  enemyGroups:
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 46067032a92214b489a90c0acfa7a59d, type: 2}
+    count: 300
+    isElite: 0
+    delayAfterPreviousGroupStarts: 0
+    spawnIntervalWithinGroup: 3
+    directionHint: 0
+    overrideSpawnerBurstSettings: 1
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 60
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 4a29019b4a2b1344d860f14e503f2195, type: 2}
+    count: 10
+    isElite: 0
+    delayAfterPreviousGroupStarts: 0
+    spawnIntervalWithinGroup: 6
+    directionHint: 0
+    overrideSpawnerBurstSettings: 0
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 1.5
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 5
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 39db16ebac161c548a95a3273625e262, type: 2}
+    count: 1
+    isElite: 0
+    delayAfterPreviousGroupStarts: 0
+    spawnIntervalWithinGroup: 6
+    directionHint: 0
+    overrideSpawnerBurstSettings: 0
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 1.5
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 5
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  customTimeUntilNextWave: 0
+  maxWaveDuration: 60

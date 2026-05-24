@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3eeff29aaadd84681559c04f9ae437, type: 3}
+  m_Name: Recipe_Slash_Light
+  m_EditorClassIdentifier: 
+  baseWeapon: {fileID: 11400000, guid: d1b7a87edaa25cc43b34be180374fdee, type: 2}
+  requiredStoneType: 3
+  evolvedWeapon: {fileID: 11400000, guid: c10def09f3bf9094fa309cf5999ece70, type: 2}
+  evolutionName: "\u96F7\u9E23\u523A"
+  description: "\u5C06\u65A9\u51FB\u8FDB\u5316\u4E3A\u4E09\u8FDE\u523A"

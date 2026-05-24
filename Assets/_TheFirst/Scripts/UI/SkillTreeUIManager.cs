@@ -127,12 +127,17 @@ public class SkillTreeUIManager : MonoBehaviour
     [Header("Runtime Layout")]
     public bool useVampireStyleCodexLayout = true;
 
+    [Header("Editable Runtime Prefabs")]
+    [Tooltip("Editable prefab for the compact Codex book. If empty, Resources/UI/CodexBook is loaded.")]
+    public GameObject codexBookPrefab;
+
     [Header("Runtime Art Variant")]
     [Tooltip("Use the atlas-sliced codex UI art under Resources/UI/DemoCodexCutout. Keep disabled until the sliced book atlas preserves the reference aspect ratio.")]
     public bool useCutoutCodexArt = false;
 
     private const string DemoCodexSpritePath = "UI/DemoCodex/";
     private const string CutoutCodexSpritePath = "UI/DemoCodexCutout/";
+    private const string CodexBookPrefabResourcesPath = "UI/CodexBook";
     private const bool ForceProgrammaticCodexArt = true;
     private const string PopUIFontAssetGuid = "491b2d422301899469285199dbc67db4";
 
@@ -812,6 +817,12 @@ public class SkillTreeUIManager : MonoBehaviour
         backdropImage.color = new Color(0.035f, 0.025f, 0.02f, 0.70f);
         backdropImage.raycastTarget = true;
 
+        if (TryCreateVampireStyleCodexFromPrefab())
+        {
+            if (unlockedViewRoot != null) unlockedViewRoot.SetActive(false);
+            return;
+        }
+
         GameObject panel = CreatePanel("Runtime_CodexBook", transform, new Color(0.29f, 0.28f, 0.39f, 0.98f));
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -845,6 +856,169 @@ public class SkillTreeUIManager : MonoBehaviour
         CreateRuntimeCloseButton(panel.transform);
 
         if (unlockedViewRoot != null) unlockedViewRoot.SetActive(false);
+    }
+
+    private bool TryCreateVampireStyleCodexFromPrefab()
+    {
+        GameObject prefab = codexBookPrefab;
+        if (prefab == null)
+        {
+            prefab = Resources.Load<GameObject>(CodexBookPrefabResourcesPath);
+            codexBookPrefab = prefab;
+        }
+
+        if (prefab == null) return false;
+
+        GameObject panel = Instantiate(prefab, transform);
+        panel.name = "Runtime_CodexBook";
+        panel.SetActive(true);
+
+        if (!BindVampireStyleCodexPrefab(panel))
+        {
+            Debug.LogWarning("[SkillTreeUIManager] CodexBook prefab is missing required binding children. Keep names such as Runtime_CollectionText, Runtime_CodexScroll/Viewport/Content, Runtime_SidebarItemPrefab, Runtime_DetailRoot, and Runtime_CloseButton.");
+            Destroy(panel);
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool BindVampireStyleCodexPrefab(GameObject panel)
+    {
+        if (panel == null) return false;
+
+        RectTransform scrollRect = FindRectDeep(panel.transform, "Runtime_CodexScroll");
+        RectTransform viewport = FindRectDeep(panel.transform, "Viewport");
+        RectTransform content = FindRectDeep(panel.transform, "Content");
+        RectTransform detailRoot = FindRectDeep(panel.transform, "Runtime_DetailRoot");
+        RectTransform itemPrefabRect = FindRectDeep(panel.transform, "Runtime_SidebarItemPrefab");
+
+        if (scrollRect == null || viewport == null || content == null || detailRoot == null || itemPrefabRect == null)
+        {
+            return false;
+        }
+
+        ScrollRect scrollView = scrollRect.GetComponent<ScrollRect>();
+        if (scrollView == null) scrollView = scrollRect.gameObject.AddComponent<ScrollRect>();
+        scrollView.horizontal = false;
+        scrollView.vertical = true;
+        scrollView.movementType = ScrollRect.MovementType.Clamped;
+        scrollView.scrollSensitivity = Mathf.Max(1f, scrollView.scrollSensitivity);
+        scrollView.viewport = viewport;
+        scrollView.content = content;
+
+        Mask mask = viewport.GetComponent<Mask>();
+        if (mask == null) mask = viewport.gameObject.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+
+        Scrollbar scrollbar = FindComponentDeep<Scrollbar>(panel.transform, "Runtime_CodexScrollbar");
+        if (scrollbar != null)
+        {
+            scrollView.verticalScrollbar = scrollbar;
+            scrollView.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
+        }
+
+        sidebarContent = content;
+        runtimeSidebarItemPrefab = itemPrefabRect.gameObject;
+        sidebarItemPrefab = runtimeSidebarItemPrefab;
+        BindSidebarItemPrefab(runtimeSidebarItemPrefab);
+        runtimeSidebarItemPrefab.SetActive(false);
+
+        weaponStatsViewRoot = detailRoot.gameObject;
+        passiveDescViewRoot = detailRoot.gameObject;
+        weaponStatsIcon = FindImageDeep(detailRoot, "Runtime_DetailIcon");
+        passiveDescIcon = weaponStatsIcon;
+        weaponStatsName = FindTextDeep(detailRoot, "Runtime_DetailTitle");
+        passiveDescName = weaponStatsName;
+        codexDetailBodyText = FindTextDeep(detailRoot, "Runtime_DetailBody");
+        passiveDescText = codexDetailBodyText;
+        codexTagsText = FindTextDeep(detailRoot, "Runtime_DetailFooter");
+        codexHeroSummaryText = null;
+        weaponStatsContainer = null;
+        weaponStatItemPrefab = null;
+        runtimeStatItemPrefab = null;
+        codexRecommendationContainer = null;
+        codexRecommendedTitleText = null;
+
+        codexCollectionText = FindTextDeep(panel.transform, "Runtime_CollectionText");
+
+        Button button = FindComponentDeep<Button>(panel.transform, "Runtime_CloseButton");
+        if (button != null)
+        {
+            button.onClick.RemoveListener(ClosePanel);
+            button.onClick.AddListener(ClosePanel);
+            closeButton = button;
+        }
+
+        return weaponStatsIcon != null
+            && weaponStatsName != null
+            && codexDetailBodyText != null
+            && codexTagsText != null
+            && codexCollectionText != null
+            && closeButton != null;
+    }
+
+    private void BindSidebarItemPrefab(GameObject item)
+    {
+        if (item == null) return;
+
+        if (item.GetComponent<Button>() == null) item.AddComponent<Button>();
+        LayoutElement layout = item.GetComponent<LayoutElement>();
+        if (layout == null) layout = item.AddComponent<LayoutElement>();
+        if (layout.preferredWidth <= 0f) layout.preferredWidth = 72f;
+        if (layout.preferredHeight <= 0f) layout.preferredHeight = 72f;
+
+        SkillTreeSidebarItem sidebarItem = item.GetComponent<SkillTreeSidebarItem>();
+        if (sidebarItem == null) sidebarItem = item.AddComponent<SkillTreeSidebarItem>();
+
+        sidebarItem.iconImage = FindImageDeep(item.transform, "Icon");
+        sidebarItem.backgroundImage = FindImageDeep(item.transform, "CardBackground");
+        sidebarItem.highlightImage = FindImageDeep(item.transform, "Highlight");
+        Transform highlight = FindDeepChild(item.transform, "Highlight");
+        sidebarItem.selectionHighlight = highlight != null ? highlight.gameObject : null;
+        Transform lockOverlay = FindDeepChild(item.transform, "LockOverlay");
+        sidebarItem.lockOverlay = lockOverlay != null ? lockOverlay.gameObject : null;
+        sidebarItem.nameText = FindTextDeep(item.transform, "Name");
+        sidebarItem.statusText = FindTextDeep(item.transform, "Status");
+        sidebarItem.typeBadgeText = FindTextDeep(item.transform, "Badge");
+    }
+
+    private Transform FindDeepChild(Transform root, string childName)
+    {
+        if (root == null || string.IsNullOrEmpty(childName)) return null;
+        if (root.name == childName) return root;
+
+        foreach (Transform child in root)
+        {
+            Transform result = FindDeepChild(child, childName);
+            if (result != null) return result;
+        }
+
+        return null;
+    }
+
+    private RectTransform FindRectDeep(Transform root, string childName)
+    {
+        Transform found = FindDeepChild(root, childName);
+        return found != null ? found.GetComponent<RectTransform>() : null;
+    }
+
+    private Image FindImageDeep(Transform root, string childName)
+    {
+        Transform found = FindDeepChild(root, childName);
+        return found != null ? found.GetComponent<Image>() : null;
+    }
+
+    private TextMeshProUGUI FindTextDeep(Transform root, string childName)
+    {
+        Transform found = FindDeepChild(root, childName);
+        return found != null ? found.GetComponent<TextMeshProUGUI>() : null;
+    }
+
+    private T FindComponentDeep<T>(Transform root, string childName) where T : Component
+    {
+        Transform found = FindDeepChild(root, childName);
+        return found != null ? found.GetComponent<T>() : null;
     }
 
     private void CreateVampireStyleSidebar(Transform parent)

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: LS_StableField
+  m_EditorClassIdentifier: 
+  skillName: "\u7A33\u5B9A\u7535\u573A"
+  skillIcon: {fileID: 21300000, guid: 7fbff217f1b7373418bd011cfa3cd096, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 07b327a6983c82d4aaea7a926a85d0b9, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 12fdb39aa170e5c49b3ccca9c52a25f3, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u7535\u78C1\u573A\u4F24\u5BB3+400%\uFF0C\u6301\u7EED\u65F6\u95F4+2\u79D2"
+    descriptionEN: EM field DMG +400%, duration +2s
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 39
+      value: 400
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 40
+      value: 2
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 750, y: 739}

@@ -1,0 +1,174 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd6f95ded5e3db41ba212e830ec6714, type: 3}
+  m_Name: WSB_LightBlade
+  m_EditorClassIdentifier: 
+  weaponID: LightBlade
+  weaponName: "\u96F7\u5149\u523A"
+  weaponIcon: {fileID: 21300000, guid: c602ebcf50008fe43b99cd7603c75fab, type: 3}
+  weaponPartPrefab: {fileID: 8647411012811990275, guid: df71389325ca8ae4092d906db49995a5,
+    type: 3}
+  buildTags: 
+  weaponGlowColor: {r: 0.03297019, g: 0, b: 0.7490196, a: 2}
+  floatingModelPrefab: {fileID: 8392798603051113852, guid: 5f49ac9467842374abcd43ce7014eb0d,
+    type: 3}
+  isOneShot: 0
+  baseFireRate: 0.6
+  projectilePrefab: {fileID: 4040964385477513619, guid: f552f56ccb2128448b9eebad8cb754ef,
+    type: 3}
+  behavior: 11
+  baseLaunchForce: 10
+  launchAngle: 45
+  projectileCount: 1
+  spreadAngle: 0
+  baseCritRate: 0
+  baseCritDamage: 0
+  baseStunChance: 0.1
+  baseStunDuration: 1
+  baseProjectileLifetime: 5
+  baseDirectDamage: 10
+  baseAoeDamage: 10
+  baseAoeRadius: 1
+  baseKnockbackForce: 5
+  basePierceCount: 999
+  subHurricanePrefab: {fileID: 0}
+  baseChainCount: 0
+  chainRange: 10
+  nativeSmiteVfxPrefab: {fileID: 6616563130517313227, guid: a17f192a5650af640b8d01e54b0a37f8,
+    type: 3}
+  nativeChainVfxPrefab: {fileID: 1036500173462484141, guid: 67646af89473fb149ad1e14dc35c336c,
+    type: 3}
+  nativeChainImpactVfxPrefab: {fileID: 1141330259687333427, guid: 4abcfe526bcae86419dbe0a1a5c5b324,
+    type: 3}
+  groundHazardPrefab: {fileID: 0}
+  groundHazardDuration: 5
+  isBlackHole: 0
+  blackHoleForce: 15
+  subProjectilePrefab: {fileID: 0}
+  subProjectileCount: 6
+  subProjectileHitVfx: {fileID: 0}
+  muzzleFlashPrefab: {fileID: 0}
+  impactEffectPrefab: {fileID: 0}
+  explosionEffectPrefab: {fileID: 0}
+  layersToDamageByAOE:
+    serializedVersion: 2
+    m_Bits: 128
+  layersToExplodeOn:
+    serializedVersion: 2
+    m_Bits: 0
+  shieldImpactEffectPrefab: {fileID: 0}
+  defaultImpactEffectPrefab: {fileID: 0}
+  maxLevel: 10
+  evolutionTarget: {fileID: 0}
+  branchOptionA: {fileID: 0}
+  branchOptionB: {fileID: 0}
+  autoAimAtNearestEnemy: 1
+  autoAimRange: 360
+  orbitalPrefab: {fileID: 0}
+  baseOrbitalCount: 1
+  baseOrbitalSpeed: 90
+  baseOrbitalRadius: 3
+  baseDuration: 15
+  ignitionChance: 0
+  burnDamagePercent: 0.2
+  baseDotDamage: 0
+  baseDotDuration: 0
+  dotTickInterval: 0
+  deployerProjectilePrefab: {fileID: 0}
+  areaPrefab: {fileID: 0}
+  deployerFallSpeed: 25
+  deployerSpawnHeight: 40
+  baseAreaDuration: 5
+  baseAreaTickInterval: 0.5
+  baseAreaDamagePerTick: 4
+  auraVfxPrefab: {fileID: 0}
+  vfxBaseScaleMultiplier: 1
+  baseSlowPercentage: 0
+  baseSlowDuration: 0
+  baseFreezeChance: 0
+  summonPrefab: {fileID: 0}
+  summonCount: 1
+  summonDuration: 20
+  summonWeaponStats: {fileID: 0}
+  summonSpawnHeight: 2
+  beamVfxPrefab: {fileID: 0}
+  beamImpactVfxPrefab: {fileID: 0}
+  beamMaxDistance: 25
+  beamDamagePerSecond: 20
+  beamDamageTickRate: 5
+  beamDuration: 3
+  beamCooldown: 5
+  beamTurnSpeed: 5
+  scorchMarkPrefab: {fileID: 0}
+  scorchMarkInterval: 0.2
+  beamScorchMarkGroundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  minePrefab: {fileID: 0}
+  spawnRadius: 5
+  armingTime: 0.5
+  mineDuration: 10
+  blackHolePrefab: {fileID: 0}
+  napalmPrefab: {fileID: 0}
+  slashEffectPrefab: {fileID: 3881133743544509805, guid: af470b8267d027045959fb8eb10a351e,
+    type: 3}
+  multiHitCount: 3
+  multiHitInterval: 0.2
+  autoAimMelee: 1
+  attackAngle: 90
+  hitEffectPrefab: {fileID: 5583093682210430548, guid: 558c548145e53114192a7c756d0afd0c,
+    type: 3}
+  bladeEnergyPrefab: {fileID: 4040964385477513619, guid: f552f56ccb2128448b9eebad8cb754ef,
+    type: 3}
+  bladeEnergyDamage: 60
+  bladeEnergySpeed: 35
+  bladeEnergyPierceCount: 999
+  maxDistance: 15
+  catchRadius: 2.5
+  rotationSpeed: 720
+  returnOvershootDistance: 15
+  nativeBurn: 0
+  nativeKnockback: 0
+  nativeKnockbackForce: 10
+  synergyFireTrailPrefab: {fileID: 0}
+  fireTrailSpawnRate: 0
+  nativeLightningChance: 0
+  nativeElectrify: 0
+  nativeCorrode: 0
+  nativeCorrodeMultiplier: 0
+  nativeCorrodeColor: {r: 0.5, g: 1, b: 0.5, a: 1}
+  usesProficiency: 1
+  xpSource: 0
+  xpGainFactor: 1
+  xpRequirementCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  damageGrowthPerLevel: 0.1
+  cooldownGrowthPerLevel: 0.05
+  areaGrowthPerLevel: 0.1
+  usesEnergy: 1
+  maxEnergy: 100
+  energyGainPerDamage: 0.1
+  ultimateEffectPrefab: {fileID: 0}
+  ultimateDamage: 100
+  ultimateRadius: 5
+  ultimateDescription: 
+  ultimateDescriptionEN: 
+  ultimateIcon: {fileID: 0}
+  fireSounds: []
+  hitSound: {fileID: 0}
+  specialSound: {fileID: 0}
+  fireSoundVolume: 1
+

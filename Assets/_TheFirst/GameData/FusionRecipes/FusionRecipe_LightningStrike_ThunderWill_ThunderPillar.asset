@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_LightningStrike_ThunderWill_ThunderPillar
+  m_EditorClassIdentifier: 
+  recipeId: LightningStrike_ThunderWill_ThunderPillar
+  recipeName: "\u5929\u7F5A\u96F7\u67F1"
+  description: "\u96F7\u51FB Lv.5 + \u96F7\u9E23\u610F\u5FD7 Lv.3"
+  triggerWeapon: {fileID: 11400000, guid: 07b327a6983c82d4aaea7a926a85d0b9, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 1
+    requiredWeapon: {fileID: 0}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 11400000, guid: 07872aa014f2471cb78347590a63b7e3,
+      type: 2}
+    requiredPassiveId: "\u96F7\u9E23\u610F\u5FD7"
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 2
+  resultWeapon: {fileID: 11400000, guid: 7dd76f4131fc7fb4da8a3c1ceb6e54da, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 7fbff217f1b7373418bd011cfa3cd096, type: 3}
+  cardColor: {r: 0.65, g: 0.4, b: 1, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

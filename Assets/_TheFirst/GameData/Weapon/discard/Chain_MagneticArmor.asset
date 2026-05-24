@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d4a919c62346c64b90d38fdab3aed5f, type: 3}
+  m_Name: Chain_MagneticArmor
+  m_EditorClassIdentifier: 
+  weaponName: "\u78C1\u66B4\u88C5\u7532"
+  icon: {fileID: 21300000, guid: 0eaa8240ea26ed04c88a5baa06465b77, type: 3}
+  targetWeapon: {fileID: 11400000, guid: f2bfeefaee92db54d8f5423469ffa16c, type: 2}
+  unlockOption:
+    description: "\u78C1\u66B4\u88C5\u7532"
+    rarity: 0
+    effects:
+    - actionType: 3
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 0
+      weaponToUnlock: {fileID: 11400000, guid: f2bfeefaee92db54d8f5423469ffa16c, type: 2}
+      shieldToUnlock: {fileID: 0}
+  levels: []

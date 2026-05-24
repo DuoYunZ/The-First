@@ -1,7 +1,6 @@
 ﻿// 在 MechSaveData.cs (或类似的脚本) 中
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 [System.Serializable] // 使其可以在检视面板中查看，并且如果需要，可以被序列化器使用
 public class PartData // 零件数据

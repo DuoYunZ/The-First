@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_Hurricane_Speed_StormCorridor
+  m_EditorClassIdentifier: 
+  recipeId: Hurricane_Speed_StormCorridor
+  recipeName: "\u98CE\u66B4\u56DE\u5ECA"
+  description: "\u5C0F\u9F99\u5377 Lv.5 + \u53CC\u7B52\u8DD1\u978B Lv.3"
+  triggerWeapon: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 1
+    requiredWeapon: {fileID: 0}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 11400000, guid: ceeb0cb6f3657b8429187fd3aea6aa36,
+      type: 2}
+    requiredPassiveId: "\u53CC\u7B52\u8DD1\u978B"
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 2
+  resultWeapon: {fileID: 11400000, guid: 813921fb9a3d2d14e97ae0a9c7ebfa1f, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: ef6ac5be6fc6bbd4399067e9d8e464f6, type: 3}
+  cardColor: {r: 0.1, g: 0.9, b: 0.7, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

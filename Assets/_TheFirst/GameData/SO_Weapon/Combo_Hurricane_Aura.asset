@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1213de9aa4aa1f4e815d0e28264047d, type: 3}
+  m_Name: Combo_Hurricane_Aura
+  m_EditorClassIdentifier: 
+  weaponA: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  weaponB: {fileID: 11400000, guid: 337bd5ccb4c63d44b954157d5a4cde25, type: 2}
+  comboName: "\u98CE\u4E4B\u73AF"
+  comboIcon: {fileID: 0}
+  comboDescription: "光环获得推力效果，15秒内范围扩大并击杀回血"
+  comboDescriptionEN: "Aura gains push effect, expanded range and heal on kill for 15s"
+  comboEffectPrefab: {fileID: 0}
+  comboDamage: 20
+  comboRadius: 8

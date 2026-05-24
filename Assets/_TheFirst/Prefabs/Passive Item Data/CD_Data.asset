@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe2d1d265a34f6547afefe7ef4b242b0, type: 3}
+  m_Name: CD_Data
+  m_EditorClassIdentifier: 
+  itemName: "\u65F6\u5149\u66F2\u5947"
+  icon: {fileID: 21300000, guid: 5e91063e9b954c84a9fada54ced15205, type: 3}
+  description: "\u589E\u52A0\u653B\u901F"
+  statType: 3
+  valuePerLevel: 0.1
+  maxLevel: 3
+  isTriggerPassive: 0
+  triggerVfxPrefab: {fileID: 0}
+  requiredWeapon: {fileID: 0}
+  isDefaultUnlocked: 1
+  unlockStatKey: 
+  unlockThreshold: 0
+  lockedDescription: "\u5728\u6E38\u620F\u4E2D\u83B7\u53D6\u6B64\u9053\u5177\u4EE5\u89E3\u9501"

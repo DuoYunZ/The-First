@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_EarthShield_ChainLightning_MagneticArmor
+  m_EditorClassIdentifier: 
+  recipeId: EarthShield_ChainLightning_MagneticArmor
+  recipeName: "\u78C1\u66B4\u5CA9\u76FE"
+  description: "\u5927\u5730\u5CA9\u76FE Lv.5 + \u95EA\u7535\u94FE Lv.5"
+  triggerWeapon: {fileID: 11400000, guid: a6bc3203c68149b49bd2681d8d784b92, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 0
+    requiredWeapon: {fileID: 11400000, guid: c19a4bddad24ebf48ae431e6272482d3, type: 2}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 0}
+    requiredPassiveId: 
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 1
+  resultWeapon: {fileID: 11400000, guid: f2bfeefaee92db54d8f5423469ffa16c, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 0eaa8240ea26ed04c88a5baa06465b77, type: 3}
+  cardColor: {r: 0.65, g: 0.4, b: 1, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

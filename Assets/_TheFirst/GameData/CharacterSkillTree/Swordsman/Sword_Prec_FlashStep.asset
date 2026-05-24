@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Sword_Prec_FlashStep
+  m_EditorClassIdentifier: 
+  nodeName: "\u77AC\u8EAB\u65A9\u56DE"
+  description: "\u7CBE\u51C6\u65A9\u51FB\u547D\u4E2D\u540E\n\u83B7\u5F970.8\u79D2
+    +60%\u79FB\u901F\u7A81\u8FDB"
+  nodeNameEN: Flash Step
+  descriptionEN: 'After Precision Slash hits
+
+    gain 0.8s +60% Move Speed dash'
+  icon: {fileID: 21300000, guid: 64ccf833ec00b4a448eb4ed752bc0be7, type: 3}
+  layer: 3
+  cost: 150
+  prerequisites:
+  - {fileID: 11400000, guid: 6e429c212bab71e4188c14195eff1fbc, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 10
+    value: 0.06
+  linkedUpgradeNode: {fileID: 11400000, guid: a74aaa7bd80cc254faf84d4c6a83a9cd, type: 2}

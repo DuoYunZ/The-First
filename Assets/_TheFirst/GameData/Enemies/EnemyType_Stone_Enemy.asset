@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08e2392c12b33f8449e3a7f10aed03b7, type: 3}
+  m_Name: EnemyType_Stone_Enemy
+  m_EditorClassIdentifier: 
+  enemyName: Stone_Enemy
+  isBoss: 0
+  enemyPrefab: {fileID: 1406718105733833699, guid: 5d9ddc636bf030a4d84666f728bbc814,
+    type: 3}
+  deathVfxPrefab: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55,
+    type: 3}
+  aiType: 2
+  lifetime: 20
+  baseHealth: 20
+  baseDamage: 0
+  baseSpeed: 13
+  energyStoneDropChance: 1
+  firstAppearanceWave: 1
+  canBeElite: 0
+  eliteHealthMultiplier: 1.5
+  eliteDamageMultiplier: 1.2
+  eliteSpeedMultiplier: 1.1
+  eliteScale: {x: 1.2, y: 1.2, z: 1.2}
+  eliteColorTint: {r: 1, g: 0, b: 0, a: 1}
+  isSuicideBomber: 0
+  hasJumpAttack: 1
+  jumpTriggerRange: 8
+  jumpArcHeight: 3
+  jumpAirTime: 1.2
+  armingRange: 2.5
+  armingTime: 1.5
+  explosionRadius: 4
+  explosionDamage: 50
+  explosionVfxPrefab: {fileID: 0}
+  armingWarningPrefab: {fileID: 0}

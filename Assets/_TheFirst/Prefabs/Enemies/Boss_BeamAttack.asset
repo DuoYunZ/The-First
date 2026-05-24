@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd6f95ded5e3db41ba212e830ec6714, type: 3}
+  m_Name: Boss_BeamAttack
+  m_EditorClassIdentifier: 
+  weaponName: Boss Beam
+  weaponIcon: {fileID: 21300000, guid: c3668b79de0e87b40a9acd0494b1d25c, type: 3}
+  weaponPartPrefab: {fileID: 0}
+  isOneShot: 0
+  baseFireRate: 1
+  projectilePrefab: {fileID: 0}
+  behavior: 7
+  baseLaunchForce: 20
+  launchAngle: 45
+  baseProjectileLifetime: 5
+  baseDirectDamage: 0
+  baseAoeDamage: 10
+  baseAoeRadius: 3
+  basePierceCount: 1
+  baseChainCount: 0
+  chainRange: 10
+  muzzleFlashPrefab: {fileID: 0}
+  impactEffectPrefab: {fileID: 1141330259687333427, guid: 76ea67dc921dae241b1158229c02a815,
+    type: 3}
+  explosionEffectPrefab: {fileID: 0}
+  layersToDamageByAOE:
+    serializedVersion: 2
+    m_Bits: 0
+  layersToExplodeOn:
+    serializedVersion: 2
+    m_Bits: 4104
+  shieldImpactEffectPrefab: {fileID: 0}
+  defaultImpactEffectPrefab: {fileID: 0}
+  maxLevel: 8
+  autoAimAtNearestEnemy: 0
+  autoAimRange: 360
+  orbitalPrefab: {fileID: 0}
+  baseOrbitalCount: 1
+  baseOrbitalSpeed: 90
+  baseOrbitalRadius: 3
+  baseDuration: 15
+  baseDotDamage: 5
+  baseDotDuration: 3
+  dotTickInterval: 1
+  deployerProjectilePrefab: {fileID: 0}
+  areaPrefab: {fileID: 0}
+  deployerFallSpeed: 25
+  deployerSpawnHeight: 40
+  baseAreaDuration: 5
+  baseAreaTickInterval: 0.5
+  baseAreaDamagePerTick: 4
+  baseSlowPercentage: 0
+  baseSlowDuration: 0
+  summonPrefab: {fileID: 0}
+  summonCount: 1
+  summonDuration: 20
+  summonWeaponStats: {fileID: 0}
+  summonSpawnHeight: 2
+  beamVfxPrefab: {fileID: 1956923836789947626, guid: b8f6e4b432538f6458fab2c0d22e7aee,
+    type: 3}
+  beamImpactVfxPrefab: {fileID: 4369959406952646053, guid: f9852db35e5f09645a90b42e2505e815,
+    type: 3}
+  beamMaxDistance: 40
+  beamDamagePerSecond: 1
+  beamDamageTickRate: 5
+  beamDuration: 5
+  beamCooldown: 10
+  beamTurnSpeed: 10
+  scorchMarkPrefab: {fileID: 0}
+  scorchMarkInterval: 0.2
+  beamScorchMarkGroundLayer:
+    serializedVersion: 2
+    m_Bits: 4104
+  minePrefab: {fileID: 0}
+  spawnRadius: 5
+  armingTime: 0.5
+  mineDuration: 10

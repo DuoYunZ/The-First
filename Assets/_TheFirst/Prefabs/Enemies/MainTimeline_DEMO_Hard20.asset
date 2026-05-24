@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c09c8b3bc510645b3a4c658b2984d2, type: 3}
+  m_Name: MainTimeline_DEMO_Hard20
+  m_EditorClassIdentifier: 
+  totalGameDuration: 1200
+  timelineEvents:
+  - eventName: Hard_00_Open
+    waveToSpawn: {fileID: 11400000, guid: 35d35adaf57210947b6c501068cc8611, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 0
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_01_StampedeRead
+    waveToSpawn: {fileID: 11400000, guid: f0042097fb21ee6438f09f4d162aee91, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 40
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_02_MixedBasics
+    waveToSpawn: {fileID: 11400000, guid: b17006c6b761e084886e81f79ec5e38e, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 85
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_03_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 145
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_04_FirstElite
+    waveToSpawn: {fileID: 11400000, guid: 0a5971ce7e1efb24aaf076cba2123d74, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 210
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_05_FirstSwarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 260
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_06_BombPressure
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 330
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_07_MidPressure
+    waveToSpawn: {fileID: 11400000, guid: 47b5284fb3d4ba94a97f090d0ba7c557, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 410
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_08_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 500
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_09_MidBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 600
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_10_MidGame
+    waveToSpawn: {fileID: 11400000, guid: a514cca21f1513d4abe8fc09abdea900, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 660
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_11_HardMixA
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 735
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_12_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 825
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_13_HardMixB
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 915
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_14_HardMixC
+    waveToSpawn: {fileID: 11400000, guid: 35214faeea70cc543aaf9a9420f5baf0, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1020
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_15_InsaneFinalHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1120
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Hard_16_FinalBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1199
+    minTriggerTime: 0
+    maxTriggerTime: 0

@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08e2392c12b33f8449e3a7f10aed03b7, type: 3}
+  m_Name: Spider
+  m_EditorClassIdentifier: 
+  enemyName: Enemy
+  isBoss: 0
+  enemyPrefab: {fileID: 3888035679241756295, guid: b38a7ac11d0545e4398d8ebd81ad94d5,
+    type: 3}
+  deathVfxPrefab: {fileID: 4553287630450876385, guid: 40d8591c27695b1439bfd0e634f3e5c9,
+    type: 3}
+  aiType: 0
+  lifetime: 15
+  baseHealth: 20
+  baseDamage: 2
+  baseSpeed: 8
+  energyStoneDropChance: 0
+  firstAppearanceWave: 1
+  canBeElite: 0
+  eliteHealthMultiplier: 1.5
+  eliteDamageMultiplier: 1.2
+  eliteSpeedMultiplier: 1.1
+  eliteScale: {x: 1, y: 1, z: 1}
+  eliteColorTint: {r: 1, g: 0, b: 0, a: 1}
+  isSuicideBomber: 1
+  hasJumpAttack: 1
+  jumpTriggerRange: 3
+  jumpArcHeight: 3
+  jumpAirTime: 0.5
+  armingRange: 0.1
+  armingTime: 0
+  explosionRadius: 4
+  explosionDamage: 5
+  explosionVfxPrefab: {fileID: 4553287630450876385, guid: 40d8591c27695b1439bfd0e634f3e5c9,
+    type: 3}
+  armingWarningPrefab: {fileID: 0}
+  immuneToSlow: 0
+  immuneToFreeze: 0

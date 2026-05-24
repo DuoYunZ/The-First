@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe2d1d265a34f6547afefe7ef4b242b0, type: 3}
+  m_Name: Berserker_Data
+  m_EditorClassIdentifier: 
+  itemName: "\u72C2\u6218\u58EB\u4E4B\u5FC3"
+  icon: {fileID: 21300000, guid: 9809f2c3fde1ec549ab60f8d8e5dc96a, type: 3}
+  description: "\u751F\u547D\u503C\u4F4E\u4E8E50%\u65F6\u4F24\u5BB3\u63D0\u5347"
+  statType: 79
+  valuePerLevel: 0.05
+  maxLevel: 3
+  isTriggerPassive: 1
+  triggerVfxPrefab: {fileID: 0}
+  requiredWeapon: {fileID: 0}
+  isDefaultUnlocked: 0
+  unlockStatKey: HalfHP_Survive_Seconds
+  unlockThreshold: 300
+  lockedDescription: "\u534A\u8840\u4EE5\u4E0B\u5B58\u6D3B5\u5206\u949F\u4EE5\u89E3\u9501"

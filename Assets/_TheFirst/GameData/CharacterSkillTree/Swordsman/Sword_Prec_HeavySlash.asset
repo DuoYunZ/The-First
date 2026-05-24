@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Sword_Prec_HeavySlash
+  m_EditorClassIdentifier: 
+  nodeName: "\u84C4\u529B\u91CD\u65A9"
+  description: "\u653B\u51FB\u505C\u987F\u5EF6\u957F\u81F30.3\u79D2\n\u4F46\u65A9\u51FB\u8303\u56F4
+    +40%\uFF0C\u4F24\u5BB3 +20%"
+  nodeNameEN: Heavy Slash
+  descriptionEN: 'Attack pause extends to 0.3s
+
+    but Slash Range +40%, Damage +20%'
+  icon: {fileID: 21300000, guid: 64ccf833ec00b4a448eb4ed752bc0be7, type: 3}
+  layer: 3
+  cost: 150
+  prerequisites:
+  - {fileID: 11400000, guid: 6e429c212bab71e4188c14195eff1fbc, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 1
+    value: 0.2
+  linkedUpgradeNode: {fileID: 11400000, guid: f2588b2b1399c264294d385a93c24fd7, type: 2}

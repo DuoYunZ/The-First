@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_Orbit_LifeSteal_VampireWheel
+  m_EditorClassIdentifier: 
+  recipeId: Orbit_LifeSteal_VampireWheel
+  recipeName: "\u5438\u8840\u9B3C\u4E4B\u8F6E"
+  description: "\u73AF\u7ED5\u8702\u523A Lv.5 + \u5438\u8840\u4E4B\u7259 Lv.3"
+  triggerWeapon: {fileID: 11400000, guid: ecd9652cc117abe45838cb6875f617cc, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 1
+    requiredWeapon: {fileID: 0}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 11400000, guid: 6bb9e87212ce43b491d853308dca2fbd,
+      type: 2}
+    requiredPassiveId: "\u5438\u8840\u4E4B\u7259"
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 2
+  resultWeapon: {fileID: 11400000, guid: d06cd7773a9ce1049af829081347611e, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 3243b316f36626d4990144dbdd019705, type: 3}
+  cardColor: {r: 0.45, g: 1, b: 0.45, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

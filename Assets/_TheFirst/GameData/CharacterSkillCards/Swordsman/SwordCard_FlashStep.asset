@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: SwordCard_FlashStep
+  m_EditorClassIdentifier: 
+  skillName: "\u95EA\u6B65\u7A81\u88AD"
+  skillIcon: {fileID: 21300000, guid: f8e418d0716bf6f408bf94f9c3d32034, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u547D\u4E2D\u540E\u77ED\u6682\u79FB\u901F\u63D0\u5347\n\u66F4\u7075\u6D3B\u5730\u7A7F\u68AD\u6218\u573A"
+    descriptionEN: 'Brief speed boost after hitting
+
+      Navigate the battlefield more nimbly'
+    rarity: 3
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: Sword_Prec_FlashStep
+  graphPosition: {x: 0, y: 0}

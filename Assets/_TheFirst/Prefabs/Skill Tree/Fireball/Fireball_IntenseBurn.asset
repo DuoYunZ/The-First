@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: Fireball_IntenseBurn
+  m_EditorClassIdentifier: 
+  skillName: "\u731B\u70C8\u71C3\u70E7"
+  skillIcon: {fileID: 21300000, guid: 58fc291df1289f548858d2de9ba81dd4, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 9289f47dd22aaf943ae743fbf57d2e95, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 3af41b90c86cbcf498b46db00b709dd0, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u71C3\u70E7\u6BCF\u8DF3\u989D\u5916\u9020\u6210\u76EE\u6807 1%
+      \u6700\u5927\u751F\u547D\u503C\u7684\u4F24\u5BB3"
+    descriptionEN: Burn deals extra 1% max HP per tick
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 31
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 649, y: 197}

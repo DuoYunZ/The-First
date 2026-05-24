@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c937d928b74e6f43ad32d0b4df0aaa7, type: 3}
+  m_Name: Stone_Ice
+  m_EditorClassIdentifier: 
+  stoneName: "\u6781\u5BD2\u77F3"
+  description: "\u5149\u73AF\u83B7\u5F97\u5BD2\u51B7\u6548\u679C"
+  icon: {fileID: 21300000, guid: b673a2808c9f76247b44169b3b9419fd, type: 3}
+  pickupPrefab: {fileID: 5588638669803830553, guid: 8dbeadfc502f1cb45a63c2700ecb623a,
+    type: 3}
+  stoneGlowColor: {r: 0.126691, g: 0.3371378, b: 0.6886792, a: 1}
+  auraVfxOverride: {fileID: 2629178624561995106, guid: 900815509a24e0f4ca8b642106cb1f22,
+    type: 3}
+  overrideVfxScaleMultiplier: 0.7
+  stoneEffects: 01000000
+  applyBurn: 0
+  burnChance: 0.5
+  burnDamage: 2
+  burnDuration: 3
+  burnTickInterval: 1
+  applySlow: 0
+  slowPercentage: 0.514
+  slowDuration: 5
+  slowColor: {r: 0, g: 1, b: 1, a: 1}
+  freezeChance: 1
+  freezeDuration: 3
+  freezeVfxPrefab: {fileID: 3074849831840619963, guid: ce44a02c4c3458647be41596cd6c7fc3,
+    type: 3}
+  applyChain: 0
+  chainTargets: 2
+  chainRange: 5
+  chainDamageMultiplier: 0.5
+  chainVfxPrefab: {fileID: 0}
+  chainImpactVfxPrefab: {fileID: 0}
+  applySmite: 0
+  smiteDamage: 10
+  smiteVfxPrefab: {fileID: 0}
+  applyKnockback: 0
+  knockbackForce: 10
+  knockbackInterval: 1
+  knockbackForce_Stacked: 20
+  applyWeaken: 0
+  weakenPercentage: 0.2
+  weakenDuration: 1
+  applyCorrode: 0
+  corrodeMultiplier: 1.2
+  corrodeColor: {r: 0.5, g: 1, b: 0.5, a: 1}
+  corrodeMultiplier_Stacked: 1.5
+  applyStun: 0
+  stunChance: 0.25
+  stunDuration: 1
+  stunChance_Stacked: 0.5
+  applyMagnet: 0
+  magnetRadiusBonusPercent: 0.5
+  damageModifier: 0
+  fireRateModifier: 0
+  scaleModifier: 0
+  pierceModifier: 0

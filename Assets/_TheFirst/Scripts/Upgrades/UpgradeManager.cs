@@ -11,7 +11,8 @@ public class UpgradeManager : MonoBehaviour
     {
         WeaponLevels,
         Evolution,
-        Gold
+        Gold,
+        BaseAttack
     }
 
     public struct TreasureSlotReward
@@ -33,6 +34,9 @@ public class UpgradeManager : MonoBehaviour
         public int finalLevel;
         public int levelGain;
         public int goldReward;
+        public int baseAttackBonusCount;
+        public float baseAttackBonus;
+        public bool[] reelBaseAttackBonuses;
         public bool jackpot;
         public bool evolved;
         public bool tryEvolutionAfterLevels;
@@ -69,6 +73,8 @@ public class UpgradeManager : MonoBehaviour
     public int treasureRerollCostStep = 35;
     [Tooltip("Runtime tuning value.")]
     public float treasureRerollRewardChanceBoost = 0.35f;
+    [Tooltip("Base damage multiplier granted by each Nothing pumpkin reel when no stronger treasure reward is available.")]
+    public float treasurePumpkinBaseAttackBonus = 0.02f;
     [Tooltip("If enabled, normal level-up choices can offer evolution cards. Keep off for chest-driven evolution.")]
     public bool offerEvolutionCardsOnLevelUp = false;
 
@@ -1877,16 +1883,7 @@ public class UpgradeManager : MonoBehaviour
             return preservedEvolution;
         }
 
-        TreasureSlotReward reward = new TreasureSlotReward
-        {
-            kind = TreasureRewardKind.Gold,
-            goldReward = 0,
-            resultText = "No reward",
-            detailText = "No available treasure reward.",
-            reelDetails = BuildFallbackReelDetails(),
-            evolutionReelIndex = -1,
-            levelGain = 0
-        };
+        TreasureSlotReward reward = BuildTreasureBaseAttackReward(3);
 
         if (TryGetAvailableTreasureEvolution(out FusionRecipeSO legacyFusion, out WeaponFusionRecipeSO weaponFusion, out WeaponStatBlock evolutionResult))
         {
@@ -1896,9 +1893,7 @@ public class UpgradeManager : MonoBehaviour
 
         if (WeaponController.Instance == null)
         {
-            reward.resultText = "No reward";
-            reward.detailText = "No available treasure reward.";
-            reward.reelDetails = BuildFallbackReelDetails();
+            reward = BuildTreasureBaseAttackReward(3);
             return reward;
         }
 
@@ -1919,9 +1914,7 @@ public class UpgradeManager : MonoBehaviour
                 return reward;
             }
 
-            reward.resultText = "No reward";
-            reward.detailText = "No available treasure reward.";
-            reward.reelDetails = BuildFallbackReelDetails();
+            reward = BuildTreasureBaseAttackReward(3);
             return reward;
         }
 
@@ -1955,14 +1948,44 @@ public class UpgradeManager : MonoBehaviour
             : gain > appliedGain || WillReachTreasureEvolutionLevel(target, reward.finalLevel);
         reward.jackpot = gain >= 3 || reward.tryEvolutionAfterLevels;
         reward.goldReward = 0;
+        reward.reelBaseAttackBonuses = BuildBaseAttackReelFlags(appliedGain, reward.tryEvolutionAfterLevels ? 2 : -1);
+        reward.baseAttackBonusCount = CountBaseAttackReels(reward.reelBaseAttackBonuses);
+        reward.baseAttackBonus = GetTreasurePumpkinBaseAttackBonus() * reward.baseAttackBonusCount;
         string name = target.stats != null ? target.stats.weaponName : "Weapon";
         reward.resultText = appliedGain >= 2 ? $"{name} +{appliedGain}" : $"{name} +1";
         if (reward.finalLevel >= maxLevel) reward.resultText = $"{name} Max";
         reward.detailText = BuildWeaponLevelDetail(name, startLevel, reward.finalLevel, maxLevel, reward.tryEvolutionAfterLevels, awardedNodes);
-        reward.reelDetails = BuildWeaponLevelReelDetails(name, startLevel, appliedGain, reward.tryEvolutionAfterLevels, awardedNodes);
+        reward.reelDetails = BuildWeaponLevelReelDetails(name, startLevel, appliedGain, reward.tryEvolutionAfterLevels, awardedNodes, reward.reelBaseAttackBonuses);
         reward.reelIcons = BuildTreasureReelIcons(reward.icon, awardedNodes);
         reward.reelNames = BuildTreasureReelNames(name, awardedNodes);
         return reward;
+    }
+
+    private TreasureSlotReward BuildTreasureBaseAttackReward(int reelCount)
+    {
+        int count = Mathf.Clamp(reelCount, 1, 3);
+        bool[] pumpkinReels = new bool[3];
+        for (int i = 0; i < pumpkinReels.Length; i++)
+        {
+            pumpkinReels[i] = i < count;
+        }
+
+        float perReelBonus = GetTreasurePumpkinBaseAttackBonus();
+        float totalBonus = perReelBonus * count;
+        return new TreasureSlotReward
+        {
+            kind = TreasureRewardKind.BaseAttack,
+            resultText = $"{GetBaseAttackLabel()} +{FormatPercent(totalBonus)}",
+            detailText = BuildBaseAttackDetail(count, totalBonus),
+            reelDetails = BuildBaseAttackReelDetails(pumpkinReels),
+            reelBaseAttackBonuses = pumpkinReels,
+            baseAttackBonusCount = count,
+            baseAttackBonus = totalBonus,
+            evolutionReelIndex = -1,
+            levelGain = 0,
+            goldReward = 0,
+            jackpot = count >= 3
+        };
     }
 
     private int RollTreasureLevelGain(float luck, float rerollBoost)
@@ -2015,6 +2038,7 @@ public class UpgradeManager : MonoBehaviour
     {
         SkillTreeNodeData[] reelNodes = new SkillTreeNodeData[3];
         WeaponStatBlock[] reelLevelWeapons = new WeaponStatBlock[3];
+        bool[] baseAttackReels = new bool[3];
         int totalRewardSlots = RollTreasureLevelGain(luck, rerollBoost);
         int sideRewardSlots = Mathf.Clamp(totalRewardSlots - 1, 0, 2);
         HashSet<WeaponStatBlock> fusionSources = BuildFusionSourceSet(reward);
@@ -2064,9 +2088,20 @@ public class UpgradeManager : MonoBehaviour
             }
         }
 
+        for (int i = 0; i < baseAttackReels.Length; i++)
+        {
+            bool isEvolution = i == reward.evolutionReelIndex;
+            bool hasSideNode = reelNodes[i] != null;
+            bool hasRawLevel = reelLevelWeapons[i] != null;
+            baseAttackReels[i] = !isEvolution && !hasSideNode && !hasRawLevel;
+        }
+
         reward.awardedNodes = reelNodes;
         reward.reelLevelWeapons = reelLevelWeapons;
+        reward.reelBaseAttackBonuses = baseAttackReels;
         reward.levelGain = 1 + reelNodes.Count(node => node != null) + reelLevelWeapons.Count(weapon => weapon != null);
+        reward.baseAttackBonusCount = CountBaseAttackReels(baseAttackReels);
+        reward.baseAttackBonus = GetTreasurePumpkinBaseAttackBonus() * reward.baseAttackBonusCount;
         reward.jackpot = reward.levelGain >= 3 || reward.evolved;
         BuildEvolutionReels(ref reward, weaponName);
     }
@@ -2148,8 +2183,8 @@ public class UpgradeManager : MonoBehaviour
             else
             {
                 icons[i] = null;
-                names[i] = string.Empty;
-                details[i] = "Locked reel.";
+                names[i] = GetPumpkinBlessingLabel();
+                details[i] = BuildBaseAttackReelDetail();
             }
         }
 
@@ -2191,7 +2226,7 @@ public class UpgradeManager : MonoBehaviour
         return detail;
     }
 
-    private string[] BuildWeaponLevelReelDetails(string weaponName, int startLevel, int appliedGain, bool tryEvolutionAfterLevels, List<SkillTreeNodeData> awardedNodes)
+    private string[] BuildWeaponLevelReelDetails(string weaponName, int startLevel, int appliedGain, bool tryEvolutionAfterLevels, List<SkillTreeNodeData> awardedNodes, bool[] baseAttackReels)
     {
         string[] details = new string[3];
         for (int i = 0; i < details.Length; i++)
@@ -2210,6 +2245,10 @@ public class UpgradeManager : MonoBehaviour
             else if (tryEvolutionAfterLevels && i == details.Length - 1)
             {
                 details[i] = $"{weaponName}\nEvolution check.";
+            }
+            else if (baseAttackReels != null && i < baseAttackReels.Length && baseAttackReels[i])
+            {
+                details[i] = BuildBaseAttackReelDetail();
             }
             else
             {
@@ -2452,12 +2491,67 @@ public class UpgradeManager : MonoBehaviour
 
     private string[] BuildFallbackReelDetails()
     {
-        return new[]
+        return BuildBaseAttackReelDetails(new[] { true, true, true });
+    }
+
+    private bool[] BuildBaseAttackReelFlags(int rewardedSlots, int reservedSlot)
+    {
+        bool[] flags = new bool[3];
+        int safeRewardedSlots = Mathf.Clamp(rewardedSlots, 0, flags.Length);
+        for (int i = 0; i < flags.Length; i++)
         {
-            "No reward available.",
-            "No reward available.",
-            "No reward available."
-        };
+            flags[i] = i >= safeRewardedSlots && i != reservedSlot;
+        }
+
+        return flags;
+    }
+
+    private int CountBaseAttackReels(bool[] flags)
+    {
+        return flags != null ? flags.Count(flag => flag) : 0;
+    }
+
+    private string[] BuildBaseAttackReelDetails(bool[] flags)
+    {
+        string[] details = new string[3];
+        for (int i = 0; i < details.Length; i++)
+        {
+            details[i] = flags != null && i < flags.Length && flags[i]
+                ? BuildBaseAttackReelDetail()
+                : string.Empty;
+        }
+
+        return details;
+    }
+
+    private string BuildBaseAttackDetail(int count, float totalBonus)
+    {
+        return $"{GetPumpkinBlessingLabel()}\n{GetBaseAttackLabel()} +{FormatPercent(totalBonus)} ({count}x {FormatPercent(GetTreasurePumpkinBaseAttackBonus())})";
+    }
+
+    private string BuildBaseAttackReelDetail()
+    {
+        return $"{GetPumpkinBlessingLabel()}\n{GetBaseAttackLabel()} +{FormatPercent(GetTreasurePumpkinBaseAttackBonus())}";
+    }
+
+    private float GetTreasurePumpkinBaseAttackBonus()
+    {
+        return Mathf.Max(0f, treasurePumpkinBaseAttackBonus);
+    }
+
+    private string GetPumpkinBlessingLabel()
+    {
+        return "\u5357\u74dc\u795d\u798f";
+    }
+
+    private string GetBaseAttackLabel()
+    {
+        return "\u57fa\u7840\u653b\u51fb\u529b";
+    }
+
+    private string FormatPercent(float value)
+    {
+        return $"{Mathf.RoundToInt(value * 100f)}%";
     }
 
     private bool TryGetAvailableTreasureEvolution(out FusionRecipeSO legacyFusion, out WeaponFusionRecipeSO weaponFusion, out WeaponStatBlock resultWeapon)
@@ -2537,6 +2631,11 @@ public class UpgradeManager : MonoBehaviour
         {
             PlayerProgressManager.Instance.AddGold(reward.goldReward);
             BattleStatisticsManager.Instance?.AddGold(reward.goldReward);
+        }
+
+        if (reward.baseAttackBonus > 0f && PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.AddBaseDamageMultiplier(reward.baseAttackBonus);
         }
     }
 

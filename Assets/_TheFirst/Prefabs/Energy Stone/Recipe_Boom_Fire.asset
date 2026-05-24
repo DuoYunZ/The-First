@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3eeff29aaadd84681559c04f9ae437, type: 3}
+  m_Name: Recipe_Boom_Fire
+  m_EditorClassIdentifier: 
+  baseWeapon: {fileID: 11400000, guid: c4997b006ba145b43a68b3486d764da0, type: 2}
+  requiredStoneType: 0
+  evolvedWeapon: {fileID: 11400000, guid: 55161f65147029c48b14323139de1d77, type: 2}
+  evolutionName: "\u71C3\u70E7\u5F39"
+  description: "\u7206\u70B8\u540E\u70B9\u71C3\u5730\u9762"

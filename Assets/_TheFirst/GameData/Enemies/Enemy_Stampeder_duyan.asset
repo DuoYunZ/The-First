@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08e2392c12b33f8449e3a7f10aed03b7, type: 3}
+  m_Name: Enemy_Stampeder_duyan
+  m_EditorClassIdentifier: 
+  enemyName: Enemy
+  isBoss: 0
+  enemyPrefab: {fileID: 4321724686345995051, guid: 34eef5a2b9d57fe4eba8bab21640f637,
+    type: 3}
+  deathVfxPrefab: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55,
+    type: 3}
+  aiType: 1
+  lifetime: 15
+  baseHealth: 200
+  baseDamage: 10
+  baseSpeed: 12
+  energyStoneDropChance: 0
+  firstAppearanceWave: 1
+  canBeElite: 0
+  eliteHealthMultiplier: 1.5
+  eliteDamageMultiplier: 1.2
+  eliteSpeedMultiplier: 1.1
+  eliteScale: {x: 1, y: 1, z: 1}
+  eliteColorTint: {r: 1, g: 0, b: 0, a: 1}
+  isSuicideBomber: 0
+  hasJumpAttack: 0
+  jumpTriggerRange: 3
+  jumpArcHeight: 3
+  jumpAirTime: 0.5
+  armingRange: 0.1
+  armingTime: 0
+  explosionRadius: 3
+  explosionDamage: 2
+  explosionVfxPrefab: {fileID: 4553287630450876385, guid: 40d8591c27695b1439bfd0e634f3e5c9,
+    type: 3}
+  armingWarningPrefab: {fileID: 0}
+  immuneToSlow: 1
+  immuneToFreeze: 1

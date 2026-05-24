@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: XPGain_Node
+  m_EditorClassIdentifier: 
+  skillName: "\u7ECF\u9A8C\u78C1\u94C1"
+  skillIcon: {fileID: 21300000, guid: d8e4c07b13e121249b413f6d6c2bf2b3, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 3
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u7ECF\u9A8C\u83B7\u53D6\u7387+15%"
+    descriptionEN: 
+    rarity: 2
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 11400000, guid: aa2197470ad54e7ca443169f6aeec7a7,
+        type: 2}
+      statToModify: 22
+      value: 15
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 0, y: 0}

@@ -6,15 +6,25 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
+[InitializeOnLoad]
 public static class EditableRuntimeUIPrefabGenerator
 {
     private const string UiPrefabFolder = "Assets/_TheFirst/Prefabs/UI";
+    private const string ResourcesFolder = "Assets/_TheFirst/Resources";
+    private const string ResourcesUiFolder = ResourcesFolder + "/UI";
     private const string UiTextureFolder = "Assets/_TheFirst/Art/Textures/UI";
     private const string RoleHudPrefabPath = UiPrefabFolder + "/RoleMechanicHUD.prefab";
     private const string DifficultyPrefabPath = UiPrefabFolder + "/LevelDifficultySelector.prefab";
     private const string TreasureSlotMachinePrefabPath = UiPrefabFolder + "/TreasureSlotMachineUI.prefab";
+    private const string CodexBookPrefabPath = ResourcesUiFolder + "/CodexBook.prefab";
+    private const string CodexAutoGenerateSessionKey = "TheFirst.EditableRuntimeUIPrefabGenerator.CodexBookChecked";
     private const string SwordBodyPath = UiTextureFolder + "/SwordFocusGauge_Body.png";
     private const string SwordFramePath = UiTextureFolder + "/SwordFocusGauge_Frame.png";
+
+    static EditableRuntimeUIPrefabGenerator()
+    {
+        EditorApplication.delayCall += EnsureCodexBookPrefabExistsOnce;
+    }
 
     [MenuItem("Tools/TheFirst/Regenerate Editable Runtime UI Prefabs")]
     public static void GenerateAll()
@@ -24,6 +34,8 @@ public static class EditableRuntimeUIPrefabGenerator
         EnsureFolder("Assets/_TheFirst/Art/Textures", "UI");
         EnsureFolder("Assets/_TheFirst", "Prefabs");
         EnsureFolder("Assets/_TheFirst/Prefabs", "UI");
+        EnsureFolder("Assets/_TheFirst", "Resources");
+        EnsureFolder("Assets/_TheFirst/Resources", "UI");
 
         Sprite bodySprite = GenerateSwordSprite(SwordBodyPath, false);
         Sprite frameSprite = GenerateSwordSprite(SwordFramePath, true);
@@ -31,10 +43,32 @@ public static class EditableRuntimeUIPrefabGenerator
         GenerateRoleMechanicHudPrefab(bodySprite, frameSprite);
         GenerateDifficultySelectorPrefab();
         GenerateTreasureSlotMachinePrefab();
+        GenerateCodexBookPrefab();
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[EditableRuntimeUIPrefabGenerator] Generated editable runtime UI prefabs.");
+    }
+
+    [MenuItem("Tools/TheFirst/Regenerate CodexBook UI Prefab")]
+    public static void GenerateCodexBookPrefab()
+    {
+        EnsureFolder("Assets/_TheFirst", "Resources");
+        EnsureFolder("Assets/_TheFirst/Resources", "UI");
+
+        GameObject root = BuildCodexBookPrefab();
+        try
+        {
+            PrefabUtility.SaveAsPrefabAsset(root, CodexBookPrefabPath);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("[EditableRuntimeUIPrefabGenerator] Generated CodexBook UI prefab.");
     }
 
     [MenuItem("Tools/TheFirst/Regenerate Treasure Slot Machine UI Prefab")]
@@ -77,6 +111,251 @@ public static class EditableRuntimeUIPrefabGenerator
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[EditableRuntimeUIPrefabGenerator] Generated treasure slot-machine UI prefab.");
+    }
+
+    private static void EnsureCodexBookPrefabExistsOnce()
+    {
+        if (SessionState.GetBool(CodexAutoGenerateSessionKey, false)) return;
+        SessionState.SetBool(CodexAutoGenerateSessionKey, true);
+
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(CodexBookPrefabPath) != null) return;
+        GenerateCodexBookPrefab();
+    }
+
+    private static GameObject BuildCodexBookPrefab()
+    {
+        GameObject root = CreateUiObject("Runtime_CodexBook", null, typeof(Image), typeof(Outline), typeof(Shadow));
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.anchoredPosition = Vector2.zero;
+        rootRect.sizeDelta = new Vector2(880f, 820f);
+
+        Image rootImage = root.GetComponent<Image>();
+        rootImage.color = new Color(0.29f, 0.28f, 0.39f, 0.98f);
+
+        Outline outline = root.GetComponent<Outline>();
+        outline.effectColor = new Color(0.96f, 0.68f, 0.22f, 1f);
+        outline.effectDistance = new Vector2(3f, -3f);
+
+        Shadow shadow = root.GetComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.42f);
+        shadow.effectDistance = new Vector2(0f, -8f);
+
+        GameObject header = CreateUiObject("Runtime_CodexHeader", root.transform, typeof(Image));
+        RectTransform headerRect = header.GetComponent<RectTransform>();
+        headerRect.anchorMin = new Vector2(0f, 1f);
+        headerRect.anchorMax = new Vector2(1f, 1f);
+        headerRect.pivot = new Vector2(0.5f, 1f);
+        headerRect.anchoredPosition = Vector2.zero;
+        headerRect.sizeDelta = new Vector2(0f, 68f);
+        header.GetComponent<Image>().color = new Color(0.50f, 0.06f, 0.12f, 1f);
+
+        TextMeshProUGUI collectionText = AddText("Runtime_CollectionText", header.transform, 34f, TextAlignmentOptions.Center);
+        collectionText.text = "Collected: 0 of 0";
+        collectionText.color = new Color(0.94f, 0.91f, 0.86f, 1f);
+        Stretch(collectionText.rectTransform, 0f, 8f, 110f, 0f);
+
+        Button closeButton = CreateCloseButton(root.transform);
+        closeButton.onClick.RemoveAllListeners();
+
+        CreateCodexScroll(root.transform);
+        CreateCodexSidebarItemPrefab(root.transform);
+        CreateCodexDetailBar(root.transform);
+
+        root.SetActive(true);
+        return root;
+    }
+
+    private static void CreateCodexScroll(Transform parent)
+    {
+        GameObject scroll = CreateUiObject("Runtime_CodexScroll", parent, typeof(ScrollRect));
+        RectTransform scrollRect = scroll.GetComponent<RectTransform>();
+        scrollRect.anchorMin = new Vector2(0f, 0f);
+        scrollRect.anchorMax = new Vector2(1f, 1f);
+        scrollRect.offsetMin = new Vector2(30f, 174f);
+        scrollRect.offsetMax = new Vector2(-48f, -82f);
+
+        ScrollRect scrollView = scroll.GetComponent<ScrollRect>();
+        scrollView.horizontal = false;
+        scrollView.vertical = true;
+        scrollView.movementType = ScrollRect.MovementType.Clamped;
+        scrollView.scrollSensitivity = 36f;
+
+        GameObject viewport = CreateUiObject("Viewport", scroll.transform, typeof(Image), typeof(Mask));
+        Stretch(viewport.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
+        Image viewportImage = viewport.GetComponent<Image>();
+        viewportImage.color = new Color(0.12f, 0.11f, 0.17f, 0.58f);
+        viewportImage.raycastTarget = true;
+        viewport.GetComponent<Mask>().showMaskGraphic = false;
+        scrollView.viewport = viewport.GetComponent<RectTransform>();
+
+        GameObject content = CreateUiObject("Content", viewport.transform, typeof(GridLayoutGroup), typeof(ContentSizeFitter));
+        RectTransform contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, 560f);
+
+        GridLayoutGroup grid = content.GetComponent<GridLayoutGroup>();
+        grid.padding = new RectOffset(18, 18, 18, 18);
+        grid.cellSize = new Vector2(72f, 72f);
+        grid.spacing = new Vector2(18f, 16f);
+        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 8;
+
+        ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        scrollView.content = contentRect;
+
+        CreateCodexScrollbar(scroll.transform, scrollView);
+    }
+
+    private static void CreateCodexScrollbar(Transform parent, ScrollRect scrollView)
+    {
+        GameObject bar = CreateUiObject("Runtime_CodexScrollbar", parent, typeof(Image), typeof(Scrollbar));
+        RectTransform barRect = bar.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(1f, 0f);
+        barRect.anchorMax = new Vector2(1f, 1f);
+        barRect.pivot = new Vector2(1f, 0.5f);
+        barRect.anchoredPosition = new Vector2(22f, 0f);
+        barRect.sizeDelta = new Vector2(14f, 0f);
+        bar.GetComponent<Image>().color = new Color(0.18f, 0.16f, 0.24f, 0.95f);
+
+        GameObject slidingArea = CreateUiObject("Sliding Area", bar.transform);
+        Stretch(slidingArea.GetComponent<RectTransform>(), 2f, 2f, 4f, 4f);
+
+        GameObject handle = CreateUiObject("Handle", slidingArea.transform, typeof(Image));
+        Image handleImage = handle.GetComponent<Image>();
+        handleImage.color = new Color(0.96f, 0.70f, 0.24f, 1f);
+        RectTransform handleRect = handle.GetComponent<RectTransform>();
+        Stretch(handleRect, 0f, 0f, 0f, 0f);
+
+        Scrollbar scrollbar = bar.GetComponent<Scrollbar>();
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+        scrollbar.targetGraphic = handleImage;
+        scrollbar.handleRect = handleRect;
+        scrollView.verticalScrollbar = scrollbar;
+        scrollView.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
+    }
+
+    private static void CreateCodexSidebarItemPrefab(Transform parent)
+    {
+        GameObject item = CreateUiObject("Runtime_SidebarItemPrefab", parent, typeof(Image), typeof(LayoutElement), typeof(Button), typeof(SkillTreeSidebarItem));
+        item.SetActive(false);
+        RectTransform rect = item.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(72f, 72f);
+        Image itemImage = item.GetComponent<Image>();
+        itemImage.color = new Color(1f, 1f, 1f, 0f);
+
+        LayoutElement layout = item.GetComponent<LayoutElement>();
+        layout.preferredWidth = 72f;
+        layout.preferredHeight = 72f;
+
+        Button button = item.GetComponent<Button>();
+        button.targetGraphic = itemImage;
+
+        GameObject cardBg = CreateUiObject("CardBackground", item.transform, typeof(Image), typeof(Outline));
+        Image cardImage = cardBg.GetComponent<Image>();
+        cardImage.color = new Color(0.04f, 0.035f, 0.035f, 1f);
+        cardImage.raycastTarget = false;
+        Stretch(cardBg.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
+        Outline cardOutline = cardBg.GetComponent<Outline>();
+        cardOutline.effectColor = new Color(0.96f, 0.77f, 0.22f, 1f);
+        cardOutline.effectDistance = new Vector2(2f, -2f);
+
+        GameObject highlight = CreateUiObject("Highlight", item.transform, typeof(Image));
+        Image highlightImage = highlight.GetComponent<Image>();
+        highlightImage.color = new Color(1f, 0.78f, 0.18f, 0.34f);
+        highlightImage.raycastTarget = false;
+        Stretch(highlight.GetComponent<RectTransform>(), -4f, -4f, -4f, -4f);
+        highlight.SetActive(false);
+
+        Image icon = AddImage("Icon", item.transform, null, Color.white);
+        icon.preserveAspect = true;
+        Stretch(icon.rectTransform, 11f, 11f, 11f, 11f);
+
+        GameObject lockOverlay = CreateUiObject("LockOverlay", item.transform, typeof(Image));
+        Image lockImage = lockOverlay.GetComponent<Image>();
+        lockImage.color = new Color(0f, 0f, 0f, 0.26f);
+        lockImage.raycastTarget = false;
+        Stretch(lockOverlay.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
+        lockOverlay.SetActive(false);
+
+        SkillTreeSidebarItem sidebarItem = item.GetComponent<SkillTreeSidebarItem>();
+        sidebarItem.iconImage = icon;
+        sidebarItem.backgroundImage = cardImage;
+        sidebarItem.highlightImage = highlightImage;
+        sidebarItem.selectionHighlight = highlight;
+        sidebarItem.lockOverlay = lockOverlay;
+    }
+
+    private static void CreateCodexDetailBar(Transform parent)
+    {
+        GameObject detail = CreateUiObject("Runtime_DetailRoot", parent, typeof(Image), typeof(Outline));
+        RectTransform detailRect = detail.GetComponent<RectTransform>();
+        detailRect.anchorMin = new Vector2(0f, 0f);
+        detailRect.anchorMax = new Vector2(1f, 0f);
+        detailRect.pivot = new Vector2(0.5f, 0f);
+        detailRect.anchoredPosition = new Vector2(0f, 20f);
+        detailRect.sizeDelta = new Vector2(-36f, 136f);
+
+        detail.GetComponent<Image>().color = new Color(0.55f, 0.52f, 0.49f, 1f);
+        Outline outline = detail.GetComponent<Outline>();
+        outline.effectColor = new Color(0.96f, 0.67f, 0.20f, 1f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        GameObject iconFrame = CreateUiObject("Runtime_DetailIconFrame", detail.transform, typeof(Image), typeof(Outline));
+        RectTransform iconFrameRect = iconFrame.GetComponent<RectTransform>();
+        iconFrameRect.anchorMin = new Vector2(0f, 0.5f);
+        iconFrameRect.anchorMax = new Vector2(0f, 0.5f);
+        iconFrameRect.pivot = new Vector2(0.5f, 0.5f);
+        iconFrameRect.anchoredPosition = new Vector2(70f, 0f);
+        iconFrameRect.sizeDelta = new Vector2(78f, 78f);
+        iconFrame.GetComponent<Image>().color = new Color(0.04f, 0.035f, 0.035f, 1f);
+        Outline iconOutline = iconFrame.GetComponent<Outline>();
+        iconOutline.effectColor = new Color(0.96f, 0.78f, 0.22f, 1f);
+        iconOutline.effectDistance = new Vector2(2f, -2f);
+
+        Image icon = AddImage("Runtime_DetailIcon", iconFrame.transform, null, Color.white);
+        icon.preserveAspect = true;
+        Stretch(icon.rectTransform, 12f, 12f, 12f, 12f);
+
+        TextMeshProUGUI title = AddText("Runtime_DetailTitle", detail.transform, "\u5357\u74dc\u56fe\u9274", 24f, TextAlignmentOptions.Left);
+        title.color = new Color(1f, 0.83f, 0.28f, 1f);
+        SetRect(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(96f, -34f), new Vector2(-144f, 34f));
+
+        TextMeshProUGUI body = AddText("Runtime_DetailBody", detail.transform, "", 21f, TextAlignmentOptions.Left);
+        body.color = new Color(0.96f, 0.94f, 0.90f, 1f);
+        SetRect(body.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(96f, -70f), new Vector2(-144f, 42f));
+
+        TextMeshProUGUI footer = AddText("Runtime_DetailFooter", detail.transform, "", 18f, TextAlignmentOptions.Left);
+        footer.color = new Color(1f, 0.58f, 0.12f, 1f);
+        SetRect(footer.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(96f, 28f), new Vector2(-144f, 28f));
+    }
+
+    private static Button CreateCloseButton(Transform parent)
+    {
+        GameObject close = CreateUiObject("Runtime_CloseButton", parent, typeof(Image), typeof(Button));
+        RectTransform rect = close.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(-34f, -34f);
+        rect.sizeDelta = new Vector2(64f, 64f);
+
+        Image image = close.GetComponent<Image>();
+        image.color = new Color(0.78f, 0.16f, 0.12f, 1f);
+        Button button = close.GetComponent<Button>();
+        button.targetGraphic = image;
+
+        TextMeshProUGUI label = AddText("Label", close.transform, "X", 34f, TextAlignmentOptions.Center);
+        label.color = Color.white;
+        Stretch(label.rectTransform, 0f, 0f, 0f, 0f);
+        return button;
     }
 
     private static void GenerateRoleMechanicHudPrefab(Sprite bodySprite, Sprite frameSprite)
@@ -301,6 +580,13 @@ public static class EditableRuntimeUIPrefabGenerator
         return text;
     }
 
+    private static TextMeshProUGUI AddText(string name, Transform parent, string value, float fontSize, TextAlignmentOptions alignment)
+    {
+        TextMeshProUGUI text = AddText(name, parent, fontSize, alignment);
+        text.text = value;
+        return text;
+    }
+
     private static GameObject CreateUiObject(string name, Transform parent, params Type[] components)
     {
         Type[] finalComponents = new Type[components.Length + 1];
@@ -317,6 +603,14 @@ public static class EditableRuntimeUIPrefabGenerator
         rect.anchorMax = Vector2.one;
         rect.offsetMin = new Vector2(left, bottom);
         rect.offsetMax = new Vector2(-right, -top);
+    }
+
+    private static void SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 sizeDelta)
+    {
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = sizeDelta;
     }
 
     private static Sprite GenerateSwordSprite(string path, bool frameOnly)

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b80499b990ccd7743b432cd3794dd24f, type: 3}
+  m_Name: CombatArena01
+  m_EditorClassIdentifier: 
+  levelName: "\u5357\u74DC\u68EE\u6797"
+  levelNameEN: CombatArena01
+  sceneName: CombatArena01
+  levelIcon: {fileID: 21300000, guid: 2272be8837c379c489e6c5b38333d11d, type: 3}
+  description: 
+  descriptionEN: 
+  recommendedLevel: 0
+  isUnlockedByDefault: 1
+  requiredClearedLevelID: 

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: Duration_Node
+  m_EditorClassIdentifier: 
+  skillName: "\u6C38\u6052\u4E4B\u7403"
+  skillIcon: {fileID: 21300000, guid: d8f06a689acfaa948917ab7bf126e765, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 3
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u5168\u5C40\u6B66\u5668\u6301\u7EED\u65F6\u95F4+12%"
+    descriptionEN: 
+    rarity: 2
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 11400000, guid: 32049920c6424a1eb3b49ca6e738abe6,
+        type: 2}
+      statToModify: 10
+      value: 12
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 0, y: 0}

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: HC_Turbulence
+  m_EditorClassIdentifier: 
+  skillName: "\u4E71\u6D41"
+  skillIcon: {fileID: 21300000, guid: ef6ac5be6fc6bbd4399067e9d8e464f6, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u65CB\u98CE\u547D\u4E2D\u602A\u7269\u65F6\u751F\u62101\u4E2A\u7A7F\u900F\u6548\u679C\u548C\u4F24\u5BB3\u66F4\u4F4E\u7684\u5C0F\u65CB\u98CE"
+    descriptionEN: Hit spawns 1 mini tornado
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 46
+      value: 1
+      modType: 0
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 45, y: 749}

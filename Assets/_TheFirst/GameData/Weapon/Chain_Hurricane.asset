@@ -1,0 +1,31 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d4a919c62346c64b90d38fdab3aed5f, type: 3}
+  m_Name: Chain_Hurricane
+  m_EditorClassIdentifier: 
+  weaponName: "\u65CB\u98CE\u672F"
+  icon: {fileID: 21300000, guid: ef6ac5be6fc6bbd4399067e9d8e464f6, type: 3}
+  targetWeapon: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+  isDefaultUnlocked: 1
+  unlockOption:
+    description: "\u89E3\u9501\u53EF\u4EE5\u7A7F\u900F\u654C\u4EBA\u7684\u65CB\u98CE"
+    descriptionEN: Unlock Hurricane
+    rarity: 0
+    effects:
+    - actionType: 1
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 0
+      weaponToUnlock: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+      shieldToUnlock: {fileID: 0}
+  levels: []

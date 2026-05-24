@@ -1083,6 +1083,13 @@ public class TreasureSlotMachineUI : MonoBehaviour
         string rewardName = GetRewardName(reward, index);
         Sprite reelIcon = GetRewardIcon(reward, index);
 
+        if (IsBaseAttackReel(reward, index))
+        {
+            SetPumpkinBaseAttackReel(index, slot, reward);
+            SetReelDetail(index, GetDetailForReel(reward, index));
+            return;
+        }
+
         if (reward.kind == UpgradeManager.TreasureRewardKind.Evolution)
         {
             int evolutionIndex = reward.evolutionReelIndex >= 0 ? reward.evolutionReelIndex : 1;
@@ -1136,6 +1143,29 @@ public class TreasureSlotMachineUI : MonoBehaviour
 
         SetReelCard(index, slot, nothingSprite, "锁定", "", creamColor, "");
         SetReelDetail(index, GetDetailForReel(reward, index));
+    }
+
+    private bool IsBaseAttackReel(UpgradeManager.TreasureSlotReward reward, int index)
+    {
+        if (reward.kind == UpgradeManager.TreasureRewardKind.BaseAttack) return true;
+        return reward.reelBaseAttackBonuses != null
+            && index >= 0
+            && index < reward.reelBaseAttackBonuses.Length
+            && reward.reelBaseAttackBonuses[index];
+    }
+
+    private void SetPumpkinBaseAttackReel(int index, int slot, UpgradeManager.TreasureSlotReward reward)
+    {
+        SetReelCard(index, slot, nothingSprite, "\u653b\u51fb", "+" + FormatBaseAttackReelBonus(reward), goldHotColor, "+");
+    }
+
+    private string FormatBaseAttackReelBonus(UpgradeManager.TreasureSlotReward reward)
+    {
+        float perReel = reward.baseAttackBonusCount > 0
+            ? reward.baseAttackBonus / reward.baseAttackBonusCount
+            : reward.baseAttackBonus;
+        if (perReel <= 0f) perReel = 0.02f;
+        return Mathf.RoundToInt(perReel * 100f) + "%";
     }
 
     private string GetRewardName(UpgradeManager.TreasureSlotReward reward, int index)

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: MageCard_IceThunder
+  m_EditorClassIdentifier: 
+  skillName: "\u6BC1\u706D\u96F7\u51FB"
+  skillIcon: {fileID: 21300000, guid: f7c0bf3b6c3591a4dbbdffee16cd5966, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons:
+  - {fileID: 11400000, guid: a2767de184ca07b4c84e55ed15aac63c, type: 2}
+  - {fileID: 11400000, guid: 07b327a6983c82d4aaea7a926a85d0b9, type: 2}
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u7EC4\u5408\u6280\uFF1A\u51B0\u9525+\u843D\u96F7\n\u5BF9\u51B0\u51BB\u76EE\u6807\u653B\u51FB\u5FC5\u5B9A\u66B4\u51FB\n\u9700\u540C\u65F6\u88C5\u5907\u51B0\u9525\u548C\u843D\u96F7"
+    descriptionEN: 'Combo Skill: Ice Shard + Lightning
+
+      Guaranteed crit against frozen targets
+
+      Requires both Ice Shard and Lightning equipped'
+    rarity: 3
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: Mage_Ice_Thunder
+  graphPosition: {x: 0, y: 0}

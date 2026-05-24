@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0bab0c46e296ef4c87c0e3741400fb8, type: 3}
+  m_Name: Role02_Data
+  m_EditorClassIdentifier: 
+  characterName: "\u5357\u74DC\u6CD5\u5E08"
+  description: "\u4E00\u53EA\u5357\u74DC\u6CD5\u5E08\n"
+  characterIcon: {fileID: 21300000, guid: b20df0b64f68ff040b9611ad0e87fbab, type: 3}
+  characterPreviewPrefab: {fileID: 3724299551070277994, guid: 627767161afdf7f4d85d6a8deaaa45a3,
+    type: 3}
+  characterNameEN: Pumpkin Mage
+  descriptionEN: Pumpkin Mage
+  chassisPrefab: {fileID: 5246365308576503733, guid: aca974570ee67a441b01298c4499774b,
+    type: 3}
+  initialWeapons:
+  - {fileID: 11400000, guid: 9289f47dd22aaf943ae743fbf57d2e95, type: 2}
+  alternateStartWeapon: {fileID: 11400000, guid: a2767de184ca07b4c84e55ed15aac63c,
+    type: 2}
+  alternateStartMechanicID: IcePath
+  autoUnlockInitialUltimate: 1
+  characterID: Role02
+  isDefaultUnlocked: 0
+  unlockCost: 100
+  characterSkillNodes:
+  - {fileID: 11400000, guid: e3ca8da8294bf9d409c19c9666acd0d5, type: 2}
+  - {fileID: 11400000, guid: fbf1a0be6c4a3cd46a56e025e4a76e6c, type: 2}
+  - {fileID: 11400000, guid: b73c20c0c370f2d4f92d6897d3b99247, type: 2}
+  - {fileID: 11400000, guid: 88106ac8ee08e6949820ac8dd023a3d8, type: 2}
+  - {fileID: 11400000, guid: 50dbdfe8cb85f144cbbdef442ce389b1, type: 2}
+  - {fileID: 11400000, guid: f9673d2efcf81734a8bbc62fc5f7cda7, type: 2}
+  - {fileID: 11400000, guid: 1d34e8300ebe4e04883c01779dc50242, type: 2}
+  - {fileID: 11400000, guid: d2e05a928afd52945933dc9933eff98b, type: 2}
+  - {fileID: 11400000, guid: 653c9f87abf71ec45baa1cbfce48612c, type: 2}
+  - {fileID: 11400000, guid: cfdb561bd09c6f8439a13a3db9bf9e9d, type: 2}
+  - {fileID: 11400000, guid: ce1bc1063872cf643befe6e1f82c09b3, type: 2}
+  - {fileID: 11400000, guid: b6febc8f16208a04b88048e26463622f, type: 2}
+  - {fileID: 11400000, guid: 7af5f57a49357c04abb5d2d84c3c849d, type: 2}

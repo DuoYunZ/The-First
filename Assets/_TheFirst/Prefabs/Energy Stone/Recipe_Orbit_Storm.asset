@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3eeff29aaadd84681559c04f9ae437, type: 3}
+  m_Name: Recipe_Orbit_Storm
+  m_EditorClassIdentifier: 
+  baseWeapon: {fileID: 11400000, guid: ce97b0ea217bc284492368dd65efc455, type: 2}
+  requiredStoneType: 4
+  evolvedWeapon: {fileID: 11400000, guid: e0a7dfa91b90fa348a6c1f007c7a881f, type: 2}
+  evolutionName: "\u98CE\u4E4B\u5B88\u62A4"
+  description: "\u9AD8\u901F\u65CB\u8F6C\u91CA\u653E\u9F99\u5377\u98CE"

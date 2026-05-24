@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: Fireball_Mastery
+  m_EditorClassIdentifier: 
+  skillName: "\u706B\u7403\u672F\u7CBE\u901A"
+  skillIcon: {fileID: 21300000, guid: 58fc291df1289f548858d2de9ba81dd4, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 9289f47dd22aaf943ae743fbf57d2e95, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 9221d68407edfa542adaecf151906ca2, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u706B\u7403\u4F24\u5BB3 +20%\uFF0C\u51B7\u5374 -10%"
+    descriptionEN: Fireball DMG +20%, cooldown -10%
+    rarity: 0
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 20
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 3
+      value: 0.1
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 956, y: 381}

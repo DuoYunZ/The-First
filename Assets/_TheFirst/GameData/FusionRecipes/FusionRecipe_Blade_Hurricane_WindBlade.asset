@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5559e593429302b4d9a2a05fbd29e67e, type: 3}
+  m_Name: FusionRecipe_Blade_Hurricane_WindBlade
+  m_EditorClassIdentifier: 
+  recipeId: Blade_Hurricane_WindBlade
+  recipeName: "\u98CE\u5203"
+  description: "\u65A9\u51FB Lv.5 + \u5C0F\u9F99\u5377 Lv.5"
+  triggerWeapon: {fileID: 11400000, guid: d1b7a87edaa25cc43b34be180374fdee, type: 2}
+  requiredStage: 0
+  requiredWeaponLevel: 5
+  conditions:
+  - type: 0
+    requiredWeapon: {fileID: 11400000, guid: 6775031e6608cc24aacc4cdc4bda5013, type: 2}
+    requiredWeaponStage: 0
+    requiredWeaponLevel: 5
+    requiredPassiveItem: {fileID: 0}
+    requiredPassiveId: 
+    requiredPassiveLevel: 3
+    requiredTalentId: 
+  fusionType: 1
+  resultWeapon: {fileID: 11400000, guid: 3bb8f058d033170439d4c957564cffef, type: 2}
+  unlockToPool: []
+  cardIcon: {fileID: 21300000, guid: 20442c04a19c6c545b5639c5f3fdd1f4, type: 3}
+  cardColor: {r: 0.1, g: 0.9, b: 0.7, a: 1}
+  codexOnly: 0
+  codexRevealWeaponLevel: 5
+  hideResultUntilRevealed: 0

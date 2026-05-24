@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: MageCard_Inferno
+  m_EditorClassIdentifier: 
+  skillName: "\u70BC\u72F1\u4E4B\u7130"
+  skillIcon: {fileID: 21300000, guid: 58fc291df1289f548858d2de9ba81dd4, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites:
+  - {fileID: 11400000, guid: e89f91f789cd05a498f68c94f45bba63, type: 2}
+  - {fileID: 11400000, guid: c00e15730161acf439be9b041dbbb7f0, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u573A\u4E0A\u5B58\u57283\u5904\u4EE5\u4E0A\u706B\u6D77\u65F6\n\u81EA\u52A8\u89E6\u53D1\u70BC\u72F1\n\u5168\u573A\u706B\u6D77\u4F24\u5BB3+200%\n\u6301\u7EED5\u79D2\uFF0C\u51B7\u537425\u79D2"
+    descriptionEN: 'When 3+ fire seas exist on field
+
+      auto-triggers Inferno
+
+      All fire sea damage +200%
+
+      Lasts 5s, 25s cooldown'
+    rarity: 3
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: Mage_Talent_Inferno
+  graphPosition: {x: 0, y: 0}

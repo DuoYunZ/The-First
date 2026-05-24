@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3d4d5e9d9876434586997b5cf3390d9, type: 3}
+  m_Name: Wave_07_Pressure_2
+  m_EditorClassIdentifier: 
+  waveName: Wave_07_Pressure
+  waveType: 0
+  enemyGroups:
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: dd303959b951ef545836a2220b2c0d9d, type: 2}
+    count: 45
+    isElite: 0
+    delayAfterPreviousGroupStarts: 0
+    spawnIntervalWithinGroup: 2
+    directionHint: 0
+    overrideSpawnerBurstSettings: 1
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 60
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 81fa71e4e445d2843974427aab2e1034, type: 2}
+    count: 210
+    isElite: 0
+    delayAfterPreviousGroupStarts: 10
+    spawnIntervalWithinGroup: 1.5
+    directionHint: 0
+    overrideSpawnerBurstSettings: 1
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 80
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 46067032a92214b489a90c0acfa7a59d, type: 2}
+    count: 110
+    isElite: 0
+    delayAfterPreviousGroupStarts: 25
+    spawnIntervalWithinGroup: 1.5
+    directionHint: 0
+    overrideSpawnerBurstSettings: 1
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 70
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: fa1233fb280a3094f91ee9320b4cd1aa, type: 2}
+    count: 8
+    isElite: 0
+    delayAfterPreviousGroupStarts: 35
+    spawnIntervalWithinGroup: 6
+    directionHint: 0
+    overrideSpawnerBurstSettings: 0
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 60
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  - formation: 0
+    formationSpacing: 2
+    vShapeDepthFactor: 0.5
+    gridColumns: 5
+    formationOffset: 0
+    enemyType: {fileID: 11400000, guid: 845bfbb10dfd439479110fb276253b28, type: 2}
+    count: 1
+    isElite: 0
+    delayAfterPreviousGroupStarts: 50
+    spawnIntervalWithinGroup: 0
+    directionHint: 0
+    overrideSpawnerBurstSettings: 1
+    burstSpawnThreshold: 20
+    burstSpawnTotalDuration: 60
+    overrideStats: 0
+    statOverrides:
+      healthMultiplier: 1
+      damageMultiplier: 1
+      speedMultiplier: 1
+      scale: {x: 1, y: 1, z: 1}
+  customTimeUntilNextWave: 0
+  maxWaveDuration: 120

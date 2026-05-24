@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b29297365c4814048b74d690733ab704, type: 3}
+  m_Name: Engineer_Fortress_Minefield
+  m_EditorClassIdentifier: 
+  nodeName: "\u8FDE\u9501\u96F7\u533A"
+  description: "\u5730\u96F7\u989D\u5916\u90E8\u7F721\u9897\uFF0C\u5E76\u83B7\u5F97\u7275\u5F15\u4E0E\u7729\u6655\u8868\u73B0\u3002"
+  nodeNameEN: Chain Minefield
+  descriptionEN: Landmines deploy one extra mine and gain pull/stun behavior.
+  icon: {fileID: 21300000, guid: 9684ee3a442ac33408e9ffe94ffd43f3, type: 3}
+  layer: 3
+  cost: 150
+  prerequisites:
+  - {fileID: 11400000, guid: 03bf078aebf7f904a9c28476c87f00b3, type: 2}
+  mutuallyExclusiveNodes: []
+  isMechanicBranch: 0
+  mechanicID: 
+  effects:
+  - upgradeType: 1
+    value: 0.05
+  linkedUpgradeNode: {fileID: 11400000, guid: 06525af8ff2dd8b43aa037a8f8b676f2, type: 2}

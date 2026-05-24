@@ -1,0 +1,376 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c09c8b3bc510645b3a4c658b2984d2, type: 3}
+  m_Name: MainTimeline_DEMO_BuildTest60
+  m_EditorClassIdentifier: 
+  totalGameDuration: 3600
+  timelineEvents:
+  - eventName: Build60_01_00_Open
+    waveToSpawn: {fileID: 11400000, guid: 35d35adaf57210947b6c501068cc8611, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 0
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_01_FirstPack
+    waveToSpawn: {fileID: 11400000, guid: 35d35adaf57210947b6c501068cc8611, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 45
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_02_StampedeRead
+    waveToSpawn: {fileID: 11400000, guid: f0042097fb21ee6438f09f4d162aee91, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 95
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_03_MixedBasics
+    waveToSpawn: {fileID: 11400000, guid: b17006c6b761e084886e81f79ec5e38e, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 155
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_04_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 225
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_05_FirstElite
+    waveToSpawn: {fileID: 11400000, guid: 0a5971ce7e1efb24aaf076cba2123d74, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 300
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_06_SwarmCheck
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 380
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_07_BombPressure
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 465
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_08_FinalPressure
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 540
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_01_09_ChapterBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 599
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_00_Open
+    waveToSpawn: {fileID: 11400000, guid: b17006c6b761e084886e81f79ec5e38e, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 600
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_01_Stampede
+    waveToSpawn: {fileID: 11400000, guid: f0042097fb21ee6438f09f4d162aee91, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 645
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_02_Ranged
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 695
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_03_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 755
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_04_Swarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 825
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_05_Bomb
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 900
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_06_MidPressure
+    waveToSpawn: {fileID: 11400000, guid: 47b5284fb3d4ba94a97f090d0ba7c557, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 980
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_07_HardMix
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1065
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_08_FinalPressure
+    waveToSpawn: {fileID: 11400000, guid: 7ea388d2c9eacac43a38b42f27cad183, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1140
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_02_09_ChapterBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1199
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_00_Open
+    waveToSpawn: {fileID: 11400000, guid: a514cca21f1513d4abe8fc09abdea900, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1200
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_01_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1245
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_02_EliteCheck
+    waveToSpawn: {fileID: 11400000, guid: 0a5971ce7e1efb24aaf076cba2123d74, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1295
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_03_HardMixA
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1355
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_04_BombPressure
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1425
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_05_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1500
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_06_HardMixC
+    waveToSpawn: {fileID: 11400000, guid: 35214faeea70cc543aaf9a9420f5baf0, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1580
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_07_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1665
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_08_InsaneHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1740
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_03_09_ChapterBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1799
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_00_Open
+    waveToSpawn: {fileID: 11400000, guid: 47b5284fb3d4ba94a97f090d0ba7c557, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1800
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_01_Swarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1845
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_02_Bomb
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1895
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_03_HardMixA
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 1955
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_04_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2025
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_05_HardMixC
+    waveToSpawn: {fileID: 11400000, guid: 35214faeea70cc543aaf9a9420f5baf0, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2100
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_06_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2180
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_07_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2265
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_08_InsaneHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2340
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_04_09_ChapterBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2399
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_00_Open
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2400
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_01_Swarm
+    waveToSpawn: {fileID: 11400000, guid: a998244ccef3a6f419bc3f934bca2c92, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2445
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_02_HardMixC
+    waveToSpawn: {fileID: 11400000, guid: 35214faeea70cc543aaf9a9420f5baf0, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2495
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_03_Bomb
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2555
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_04_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2625
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_05_FinalPressureB
+    waveToSpawn: {fileID: 11400000, guid: 7ea388d2c9eacac43a38b42f27cad183, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2700
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_06_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2780
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_07_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2865
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_08_InsaneHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2940
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_05_09_ChapterBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 2999
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_00_Open
+    waveToSpawn: {fileID: 11400000, guid: 35214faeea70cc543aaf9a9420f5baf0, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3000
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_01_InsaneHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3045
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_02_HardMixA
+    waveToSpawn: {fileID: 11400000, guid: c808609c4972bb14ab2bc466cd4fb35b, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3095
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_03_FinalPressureA
+    waveToSpawn: {fileID: 11400000, guid: 0fcb3ddd664e90241994ae8b0695a28a, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3155
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_04_FinalPressureB
+    waveToSpawn: {fileID: 11400000, guid: 7ea388d2c9eacac43a38b42f27cad183, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3225
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_05_BombPressure
+    waveToSpawn: {fileID: 11400000, guid: a87aeccf3957aa245ab3648340b03a28, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3300
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_06_EliteKnights
+    waveToSpawn: {fileID: 11400000, guid: 6f6cc4af2db1fbc49869751eafc1e221, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3380
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_07_RangedPressure
+    waveToSpawn: {fileID: 11400000, guid: 3d306fe46b45b59408a5158a25ca2e51, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3465
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_08_FinalHorde
+    waveToSpawn: {fileID: 11400000, guid: d4d216c390f5aee45bf6d3df0bc96933, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3540
+    minTriggerTime: 0
+    maxTriggerTime: 0
+  - eventName: Build60_06_09_FinalBoss
+    waveToSpawn: {fileID: 11400000, guid: 298aa688fe3d67a499b595f058ea3991, type: 2}
+    useRandomTimeRange: 0
+    fixedTriggerTime: 3599
+    minTriggerTime: 0
+    maxTriggerTime: 0

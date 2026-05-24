@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0bab0c46e296ef4c87c0e3741400fb8, type: 3}
+  m_Name: Role03_Data
+  m_EditorClassIdentifier: 
+  characterName: "\u5357\u74DC\u5DE5\u7A0B\u5E08"
+  description: "\u673A\u68B0\u6D41\u6D3E\u89D2\u8272\u3002\u4EE5\u5730\u96F7\u3001\u55B7\u706B\u5854\u3001\u956D\u5C04\u6838\u5FC3\u548C\u5DE8\u578B\u673A\u5668\u4EBA\u6784\u5EFA\u9635\u5730\u578B
+    Build\u3002"
+  characterIcon: {fileID: 21300000, guid: 9684ee3a442ac33408e9ffe94ffd43f3, type: 3}
+  characterPreviewPrefab: {fileID: 5311803630307611416, guid: ce4c240afcfe86b46b8bc746db19e7c6,
+    type: 3}
+  characterNameEN: Pumpkin Engineer
+  descriptionEN: Mechanical build character using landmines, flame turrets, laser
+    cores, and giant robot setups.
+  chassisPrefab: {fileID: 5311803630307611416, guid: 89b800489c5628e4d8b7dabb23e39fe2,
+    type: 3}
+  initialWeapons:
+  - {fileID: 11400000, guid: 12addc9095c5de74daaff54bda508e41, type: 2}
+  alternateStartWeapon: {fileID: 0}
+  alternateStartMechanicID: 
+  autoUnlockInitialUltimate: 0
+  characterID: Role03
+  isDefaultUnlocked: 0
+  unlockCost: 300
+  characterSkillNodes:
+  - {fileID: 11400000, guid: 2153aa6e6b5cd4d4498ec978ad254d3d, type: 2}
+  - {fileID: 11400000, guid: 7bb7acc07d6930b40ae7ea6c94bd32e6, type: 2}
+  - {fileID: 11400000, guid: 67da445b127f0e24d93100696980cae4, type: 2}
+  - {fileID: 11400000, guid: 03bf078aebf7f904a9c28476c87f00b3, type: 2}
+  - {fileID: 11400000, guid: 025438d1918981c45a0a1a1d6146267e, type: 2}
+  - {fileID: 11400000, guid: f5aac4cecab25ba42b2a6fa65774f124, type: 2}
+  - {fileID: 11400000, guid: cddd32cceae6306489c96c3fe8f97e1a, type: 2}
+  - {fileID: 11400000, guid: 4ed24f3f8e5119f45b42c87d35e0b299, type: 2}
+  - {fileID: 11400000, guid: db7110dc48e2dee4faf3e11e9e432eb4, type: 2}
+  - {fileID: 11400000, guid: 54f7fb8b10398f74aaeef2eb85a8eb7b, type: 2}
+  - {fileID: 11400000, guid: a5703e7f5f38fea4f906049489c39db9, type: 2}
+  - {fileID: 11400000, guid: 618543adada04e44bb9e9b94a4a293b8, type: 2}
+  - {fileID: 11400000, guid: 41e1e31d482dec04183359c275ad53c2, type: 2}

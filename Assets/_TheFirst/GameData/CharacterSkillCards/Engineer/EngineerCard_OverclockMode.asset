@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: EngineerCard_OverclockMode
+  m_EditorClassIdentifier: 
+  skillName: "\u8D85\u9891\u5DE5\u7A0B"
+  skillIcon: {fileID: 21300000, guid: c3668b79de0e87b40a9acd0494b1d25c, type: 3}
+  associatedWeapon: {fileID: 0}
+  prerequisites: []
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 0
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "\u83B7\u5F97\u956D\u5C04\u6838\u5FC3\u3002\u673A\u68B0\u6B66\u5668\u66F4\u504F\u5411\u9AD8\u9891\u8F93\u51FA\u3002"
+    descriptionEN: Gain Laser Core. Mechanical weapons lean into high-frequency output.
+    rarity: 2
+    effects:
+    - actionType: 5
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: EngineerOverclock
+    - actionType: 1
+      passiveItemData: {fileID: 0}
+      statToModify: 0
+      value: 0
+      modType: 1
+      weaponToUnlock: {fileID: 11400000, guid: c72e552a0187b144d88edfcc3be64814, type: 2}
+      shieldToUnlock: {fileID: 0}
+      skillIdentifier: 
+  graphPosition: {x: 0, y: 0}

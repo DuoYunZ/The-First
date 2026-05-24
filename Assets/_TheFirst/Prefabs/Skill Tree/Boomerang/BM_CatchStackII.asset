@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d199c32ffcd6f4429fa83b6514e5713, type: 3}
+  m_Name: BM_CatchStackII
+  m_EditorClassIdentifier: 
+  skillName: "穿梭震荡"
+  skillIcon: {fileID: 21300000, guid: b603bee8d1235834e87b5365bdcffec0, type: 3}
+  associatedWeapon: {fileID: 11400000, guid: 0976920031236724da0af9235c9c7a97, type: 2}
+  prerequisites:
+  - {fileID: 11400000, guid: 824c5f6880d841e5b4fd2cfae24e706b, type: 2}
+  requiredWeapons: []
+  mutuallyExclusive: []
+  maxLevel: 1
+  isWeaponSkillTreeNode: 1
+  isOneTimeOnly: 1
+  possibleOptions:
+  - description: "返程每命中 4 个敌人，在命中点爆发一次小范围震荡。"
+    descriptionEN: Every 4 inbound hits trigger a small pulse at the hit position.
+    rarity: 2
+    effects:
+    - actionType: 0
+      passiveItemData: {fileID: 0}
+      statToModify: 95
+      value: 45
+      modType: 1
+      weaponToUnlock: {fileID: 0}
+      shieldToUnlock: {fileID: 0}
+  graphPosition: {x: 1080, y: 520}
