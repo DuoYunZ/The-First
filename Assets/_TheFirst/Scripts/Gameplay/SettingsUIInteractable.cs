@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Selectable))]
-public class SettingsUIInteractable : MonoBehaviour, IPointerEnterHandler, ISelectHandler
+public class SettingsUIInteractable : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
 {
     [Header("音效设置")]
     [Tooltip("悬停音效")]

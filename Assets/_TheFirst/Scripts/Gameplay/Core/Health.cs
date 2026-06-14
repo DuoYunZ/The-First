@@ -505,7 +505,7 @@ public class Health : MonoBehaviour
                     StatusEffectReceiver freezeReceiver = GetComponent<StatusEffectReceiver>();
                     if (freezeReceiver != null && !freezeReceiver.IsFrozen)
                     {
-                        freezeReceiver.ApplyFreeze(1.5f); // 冰冻1.5秒
+                        freezeReceiver.ApplyFreeze(1.5f, null, PlayerStats.Instance.frozenMaxHealthDamageCapstone); // 冰冻1.5秒
                     }
                 }
             }
@@ -521,6 +521,14 @@ public class Health : MonoBehaviour
                     transform.position,
                     attacker != null ? attacker : gameObject,
                     sourceWeaponName);
+                if (isCritical)
+                {
+                    PlayerStats.Instance.TryTriggerThunderCritChain(
+                        this,
+                        transform.position,
+                        attacker != null ? attacker : gameObject,
+                        sourceWeaponName);
+                }
             }
 
             // 受击音效：优先使用攻击来源武器SO的hitSound，回退到Health自身的impactSounds
@@ -798,19 +806,16 @@ public class Health : MonoBehaviour
         if (IsDead) return;
 
         // --- 【被动道具】不死鸟的羽毛：复活检查 ---
-        if (isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.revivalCount > 0)
+        if (isPlayerHealth && PlayerStats.Instance != null && PlayerStats.Instance.TryUsePhoenixRevive(maxHealth, out int reviveHealth))
         {
-            // 消耗一次复活
-            PlayerStats.Instance.revivalCount--;
-
-            // 恢复50%血量
-            currentHealth = Mathf.Max(1, maxHealth / 2);
+            currentHealth = Mathf.Clamp(reviveHealth, 1, maxHealth);
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
+            PlayerStats.Instance.OnPlayerHealthChanged();
 
             // 触发短暂无敌
             StartCoroutine(InvincibilitySequence());
 
-            Debug.Log($"<color=green>[不死鸟的羽毛] 复活触发！剩余复活次数={PlayerStats.Instance.revivalCount}，恢复血量至{currentHealth}/{maxHealth}</color>");
+            Debug.Log($"<color=green>[不死鸟的羽毛] 复活触发！恢复血量至{currentHealth}/{maxHealth}，冷却={PlayerStats.Instance.phoenixReviveCooldownRemaining:F1}s</color>");
             return; // 不执行死亡逻辑
         }
 
@@ -844,17 +849,43 @@ public class Health : MonoBehaviour
 
         // 检查是否是 Boss 死亡
         BossUnit bossUnit = GetComponent<BossUnit>();
+        if (bossUnit == null) bossUnit = GetComponentInParent<BossUnit>();
+        if (bossUnit == null) bossUnit = GetComponentInChildren<BossUnit>();
         bool isBossDeath = (bossUnit != null);
+        GameObject bossCeremonyObject = isBossDeath ? GetBossCeremonyObject(bossUnit) : null;
 
-        if (gameObject.CompareTag("Enemy"))
+        if (isBossDeath)
+        {
+            StopBossCombatOnDeath(bossCeremonyObject);
+        }
+
+        bool shouldCountAsEnemyDeath = gameObject.CompareTag("Enemy") || isBossDeath;
+
+        if (shouldCountAsEnemyDeath)
         {
             // 如果是 Boss，先把信息注册到 GameTimelineManager，供死亡表演使用
-            if (isBossDeath && GameTimelineManager.Instance != null)
+            if (isBossDeath)
             {
-                GameTimelineManager.Instance.RegisterBossDeath(transform.position, gameObject);
-            }
+                Vector3 bossDeathPosition = bossCeremonyObject != null ? bossCeremonyObject.transform.position : transform.position;
+                GameObject bossDeathObject = bossCeremonyObject != null ? bossCeremonyObject : gameObject;
 
-            GameTimelineManager.Instance?.EnemyDefeated();
+                if (GameTimelineManager.Instance != null)
+                {
+                    GameTimelineManager.Instance.BossDefeated(bossDeathPosition, bossDeathObject);
+                }
+                else if (BossDeathCeremony.Instance != null)
+                {
+                    BossDeathCeremony.Instance.StartCeremony(bossDeathPosition, bossDeathObject);
+                }
+            }
+            else if (GetComponent<PressureSpawnedEnemy>() != null)
+            {
+                GameTimelineManager.Instance?.PressureEnemyDefeated();
+            }
+            else
+            {
+                GameTimelineManager.Instance?.EnemyDefeated();
+            }
         }
 
         // Boss 不执行普通掉落和立即销毁（由 BossDeathCeremony 接管）
@@ -875,7 +906,7 @@ public class Health : MonoBehaviour
             }
         }
 
-        if (gameObject.CompareTag("Enemy"))
+        if (shouldCountAsEnemyDeath)
         {
             if (BattleStatisticsManager.Instance != null)
                 BattleStatisticsManager.Instance.AddKill(); // [新增]
@@ -884,6 +915,72 @@ public class Health : MonoBehaviour
                 PlayerProgressManager.Instance.AddStat("Kill_Count", 1);
         }
     }
+
+    private GameObject GetBossCeremonyObject(BossUnit bossUnit)
+    {
+        if (bossUnit == null) return gameObject;
+
+        if (bossUnit.GetComponent<Health>() != null)
+        {
+            return bossUnit.gameObject;
+        }
+
+        if (GetComponentInParent<BossUnit>() == bossUnit)
+        {
+            return bossUnit.gameObject;
+        }
+
+        return gameObject;
+    }
+
+    private void StopBossCombatOnDeath(GameObject bossRoot)
+    {
+        GameObject targetRoot = bossRoot != null ? bossRoot : gameObject;
+
+        foreach (BehaviorTree behaviorTree in targetRoot.GetComponentsInChildren<BehaviorTree>(true))
+        {
+            behaviorTree.enabled = false;
+        }
+
+        foreach (EnemyAI ai in targetRoot.GetComponentsInChildren<EnemyAI>(true))
+        {
+            ai.enabled = false;
+        }
+
+        foreach (UnityEngine.AI.NavMeshAgent agent in targetRoot.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>(true))
+        {
+            if (!agent.enabled) continue;
+
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            agent.enabled = false;
+        }
+
+        foreach (BossBeamController beam in targetRoot.GetComponentsInChildren<BossBeamController>(true))
+        {
+            if (beam != null)
+            {
+                Destroy(beam.gameObject);
+            }
+        }
+
+        foreach (Collider col in targetRoot.GetComponentsInChildren<Collider>(true))
+        {
+            col.enabled = false;
+        }
+
+        foreach (Rigidbody body in targetRoot.GetComponentsInChildren<Rigidbody>(true))
+        {
+            if (!body.isKinematic)
+            {
+                body.velocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+
+            body.Sleep();
+        }
+    }
+
     private void HandleDrops()
     {
         // 1. (保持不变) 掉落经验

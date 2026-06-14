@@ -132,6 +132,12 @@ public class EnemyAI : MonoBehaviour
 
     public void SetStunned(bool stunned)
     {
+        if (stunned)
+        {
+            StatusEffectReceiver receiver = GetComponentInParent<StatusEffectReceiver>();
+            if ((receiver != null && receiver.IsImmuneToStun()) || GetComponentInParent<EnemyEncirclementController>() != null) return;
+        }
+
         isStunned = stunned;
 
         // 被眩晕时，立即中断正在进行的攻击
@@ -171,6 +177,8 @@ public class EnemyAI : MonoBehaviour
 
     public void ApplyKnockback(Vector3 forceDirection, float forceAmount, float duration = 0.3f)
     {
+        if (StatusEffectReceiver.IsKnockbackImmune(transform)) return;
+
         // Boss 免疫击退检查
         if (bossUnit != null && bossUnit.immuneToKnockback) return;
 
@@ -204,9 +212,13 @@ public class EnemyAI : MonoBehaviour
         yield return new WaitForSeconds(duration);        
 
         // 4. 恢复 Rigidbody 和 NavMeshAgent
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         rb.isKinematic = true;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
         agent.enabled = true;
 
         // 5. 将 Agent 传送到物理模拟结束的新位置
@@ -345,9 +357,13 @@ public class EnemyAI : MonoBehaviour
         }
 
         rb.useGravity = false;
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         rb.isKinematic = true;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
         rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
@@ -392,9 +408,13 @@ public class EnemyAI : MonoBehaviour
         }
 
         transform.position = endPoint;
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         rb.isKinematic = true;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
         agent.enabled = originalAgentState;
 
         // 【关键】将Agent同步到新位置

@@ -17,6 +17,8 @@ public class GameTimelineManager : MonoBehaviour
     public GameTimelineConfig demoHardTimelineConfig;
     public bool useBuildTest60Timeline = false;
     public GameTimelineConfig demoBuildTest60TimelineConfig;
+    public bool useDebugTimelineOverride = false;
+    public GameTimelineConfig debugTimelineOverrideConfig;
     public float demoIntroExperienceMultiplier = 1f;
     public float demoHardExperienceMultiplier = 2f;
     public float demoBuildTest60ExperienceMultiplier = 1.35f;
@@ -54,11 +56,32 @@ public class GameTimelineManager : MonoBehaviour
     public float lateHealthMultiplierPerMinute = 0.3f;
     public float lateHealthMultiplierMax = 2.4f;
 
+    [Header("Post 3 Minute Enemy Count Ramp")]
+    public bool enablePostThreeMinuteCountRamp = true;
+    public float countRampStartTime = 180f;
+    public float countRampBaseMultiplier = 1.35f;
+    public float countRampMultiplierPerMinute = 0.12f;
+    public float countRampMaxMultiplier = 2f;
+
+    [Header("Continuous Pressure Spawning")]
+    public bool enableContinuousPressure = true;
+    public float pressureStartTime = 12f;
+    public float pressureCheckInterval = 1.25f;
+    public int pressureBaseTargetAlive = 10;
+    public int pressureTargetAliveIncreasePerMinute = 3;
+    public int pressureTargetAliveMax = 45;
+    [Range(0.1f, 1f)] public float pressureRefillThreshold = 0.55f;
+    [Range(1f, 2f)] public float pressureHardCapMultiplier = 1.25f;
+    public int pressureMaxBatchSize = 4;
+    public float pressureSpawnIntervalWithinBatch = 0.18f;
+    public float pressureEnemyUnlockLookAhead = 20f;
+    public bool pressureDebugLogs = false;
+
     [Header("波次提前完成设置")]
     [Tooltip("勾选此项，当前波敌人全部被消灭后立即进入下一波")]
     public bool advanceWaveOnClear = true;
     [Tooltip("提前进入下一波前的短暂延迟（秒），给玩家喘息时间")]
-    public float advanceDelay = 1.0f;
+    public float advanceDelay = 0.25f;
 
     [Header("调试显示")]
     [Tooltip("勾选此项在左上角显示当前波次调试信息")]
@@ -71,12 +94,24 @@ public class GameTimelineManager : MonoBehaviour
         public float triggerTime;
         public WaveConfig waveConfig;
     }
+
+    private class PressureSpawnSource
+    {
+        public float triggerTime;
+        public EnemySpawnGroup group;
+    }
+
     private List<PendingEvent> pendingEvents = new List<PendingEvent>();
+    private readonly List<PressureSpawnSource> pressureSpawnSources = new List<PressureSpawnSource>();
     private bool gameFinished = false;
     private int removedWithoutKillCount = 0;
     private float nextDemoSurpriseTime = -1f;
     private int demoSurpriseEventsTriggered = 0;
     private WaveConfig lastDemoSurpriseWave;
+    private float pressureCheckTimer = 0f;
+    private int pressureAliveEnemyCount = 0;
+    private int pressureSpawnedTotal = 0;
+    private float lastMajorWaveTriggerTime = -999f;
 
     // --- 波次追踪 ---
     private int currentWaveIndex = 0;    // 当前已触发的波次编号（从1开始）
@@ -109,6 +144,18 @@ public class GameTimelineManager : MonoBehaviour
 
     private void SelectDemoTimelineIfNeeded()
     {
+        if (useDebugTimelineOverride)
+        {
+            if (debugTimelineOverrideConfig != null)
+            {
+                timelineConfig = debugTimelineOverrideConfig;
+                Debug.Log($"<color=cyan>[Timeline] Debug timeline override selected: {timelineConfig.name}</color>");
+                return;
+            }
+
+            Debug.LogWarning("[Timeline] useDebugTimelineOverride is enabled, but debugTimelineOverrideConfig is not assigned.");
+        }
+
         if (!autoSelectDemoTimeline || !DemoContentGate.DemoModeEnabled) return;
         if (!DemoContentGate.IsSceneAllowed(SceneManager.GetActiveScene().name)) return;
 
@@ -120,10 +167,17 @@ public class GameTimelineManager : MonoBehaviour
             return;
         }
 
-        bool hardUnlocked = PlayerProgressManager.Instance != null
+        if (!DemoContentGate.EnableHardModeInDemo && DataManager.Instance != null)
+        {
+            DataManager.Instance.selectedDemoDifficulty = DemoDifficultySelection.Normal;
+        }
+
+        bool hardUnlocked = DemoContentGate.EnableHardModeInDemo
+            && PlayerProgressManager.Instance != null
             && PlayerProgressManager.Instance.IsItemUnlocked(DemoContentGate.HardUnlockItemId);
 
-        bool hardSelected = DataManager.Instance != null
+        bool hardSelected = DemoContentGate.EnableHardModeInDemo
+            && DataManager.Instance != null
             && DataManager.Instance.selectedDemoDifficulty == DemoDifficultySelection.Hard;
 
         GameTimelineConfig selected = hardUnlocked && hardSelected ? demoHardTimelineConfig : demoIntroTimelineConfig;
@@ -247,12 +301,12 @@ public class GameTimelineManager : MonoBehaviour
 
     private void FireDemoSurpriseWave(WaveConfig wave)
     {
-        int spawned = wave.GetTotalEnemiesInWave();
-        aliveEnemyCount += spawned;
-
         float elapsedTime = gameTimer != null ? gameTimer.GetElapsedTime() : 0f;
         int effectiveWaveNumber = 1 + (int)(elapsedTime / 60f);
         float healthScaleMultiplier = GetLateHealthMultiplier(elapsedTime);
+        float countMultiplier = GetSpawnCountMultiplier(elapsedTime);
+        int spawned = wave.GetTotalEnemiesInWave(countMultiplier);
+        aliveEnemyCount += spawned;
         Debug.Log($"<color=magenta>[Timeline] Demo surprise {demoSurpriseEventsTriggered + 1}/{demoSurpriseMaxEvents}: '{wave.waveName}' | extraSpawned={spawned} | alive={aliveEnemyCount}</color>");
 
         enemySpawner.InstructToSpawnWaveConfig(
@@ -261,7 +315,8 @@ public class GameTimelineManager : MonoBehaviour
             healthGrowthFactorPerMinute,
             damageGrowthFactorPerMinute,
             speedGrowthFactorPerMinute,
-            healthScaleMultiplier
+            healthScaleMultiplier,
+            countMultiplier
         );
     }
 
@@ -285,6 +340,10 @@ public class GameTimelineManager : MonoBehaviour
         pendingEvents.Clear();
         totalKills = 0;
         aliveEnemyCount = 0;
+        pressureAliveEnemyCount = 0;
+        pressureSpawnedTotal = 0;
+        pressureCheckTimer = Mathf.Max(0.1f, pressureCheckInterval);
+        lastMajorWaveTriggerTime = -999f;
         currentWaveIndex = 0;
         gameFinished = false;
         removedWithoutKillCount = 0;
@@ -313,12 +372,55 @@ public class GameTimelineManager : MonoBehaviour
         // 【关键】按触发时间对列表进行排序
         pendingEvents = pendingEvents.OrderBy(e => e.triggerTime).ToList();
         totalWaveCount = pendingEvents.Count;
+        BuildContinuousPressureSources();
 
         // 设置 GameTimer 的倒计时总时长
         if (gameTimer != null)
         {
             gameTimer.SetTotalDuration(timelineConfig.totalGameDuration);
         }
+    }
+
+    private void BuildContinuousPressureSources()
+    {
+        pressureSpawnSources.Clear();
+
+        for (int eventIndex = 0; eventIndex < pendingEvents.Count; eventIndex++)
+        {
+            PendingEvent pending = pendingEvents[eventIndex];
+            if (pending == null || pending.waveConfig == null || pending.waveConfig.enemyGroups == null) continue;
+
+            for (int groupIndex = 0; groupIndex < pending.waveConfig.enemyGroups.Count; groupIndex++)
+            {
+                EnemySpawnGroup group = pending.waveConfig.enemyGroups[groupIndex];
+                if (!IsEligiblePressureSpawnGroup(group)) continue;
+
+                pressureSpawnSources.Add(new PressureSpawnSource
+                {
+                    triggerTime = pending.triggerTime,
+                    group = group
+                });
+            }
+        }
+
+        if (pressureDebugLogs)
+        {
+            Debug.Log($"<color=cyan>[Timeline] Continuous pressure sources: {pressureSpawnSources.Count}</color>");
+        }
+    }
+
+    private bool IsEligiblePressureSpawnGroup(EnemySpawnGroup group)
+    {
+        if (group == null || group.count <= 0) return false;
+        if (group.enemyType == null || group.enemyType.enemyPrefab == null) return false;
+        if (group.enemyType.isBoss) return false;
+        if (group.enemyType.aiType != AIType.Chasing) return false;
+        if (group.enemyType.isSuicideBomber) return false;
+        if (group.isElite || group.overrideStats) return false;
+        if (group.formation != EnemySpawnGroup.FormationType.None) return false;
+        if (group.specialBehavior != EnemySpecialBehavior.None) return false;
+
+        return true;
     }
 
     void Update()
@@ -341,6 +443,7 @@ public class GameTimelineManager : MonoBehaviour
         }
 
         TryFireDemoSurpriseEvent(elapsedTime);
+        UpdateContinuousPressure(elapsedTime);
     }
 
     void FireEvent(PendingEvent evt)
@@ -349,7 +452,10 @@ public class GameTimelineManager : MonoBehaviour
 
         currentWaveIndex++;
         currentWaveName = evt.waveConfig.waveName;
-        waveSpawnedTotal = evt.waveConfig.GetTotalEnemiesInWave();
+        float currentElapsedTime = gameTimer != null ? gameTimer.GetElapsedTime() : 0f;
+        lastMajorWaveTriggerTime = currentElapsedTime;
+        float countMultiplier = GetSpawnCountMultiplier(currentElapsedTime);
+        waveSpawnedTotal = evt.waveConfig.GetTotalEnemiesInWave(countMultiplier);
         aliveEnemyCount += waveSpawnedTotal; // 累加（可能上一波还没打完）
 
         Debug.Log($"<color=orange>[Timeline] 触发波次 {currentWaveIndex}/{totalWaveCount}: '{currentWaveName}' | 本波生成={waveSpawnedTotal} | 当前存活={aliveEnemyCount} | 剩余波次={pendingEvents.Count - 1}</color>");
@@ -366,7 +472,8 @@ public class GameTimelineManager : MonoBehaviour
             healthGrowthFactorPerMinute,
             damageGrowthFactorPerMinute,
             speedGrowthFactorPerMinute,
-            healthScaleMultiplier
+            healthScaleMultiplier,
+            countMultiplier
         );
     }
 
@@ -380,6 +487,135 @@ public class GameTimelineManager : MonoBehaviour
         float minutesAfterStart = Mathf.Max(0f, elapsedTime - Mathf.Max(0f, lateHealthRampStartTime)) / 60f;
         float multiplier = 1f + minutesAfterStart * lateHealthMultiplierPerMinute;
         return Mathf.Clamp(multiplier, 1f, lateHealthMultiplierMax);
+    }
+
+    private float GetSpawnCountMultiplier(float elapsedTime)
+    {
+        if (!enablePostThreeMinuteCountRamp || countRampMaxMultiplier <= 1f)
+        {
+            return 1f;
+        }
+
+        float rampStart = Mathf.Max(0f, countRampStartTime);
+        if (elapsedTime < rampStart)
+        {
+            return 1f;
+        }
+
+        float minutesAfterStart = Mathf.Max(0f, elapsedTime - rampStart) / 60f;
+        float multiplier = Mathf.Max(1f, countRampBaseMultiplier)
+            + minutesAfterStart * Mathf.Max(0f, countRampMultiplierPerMinute);
+        return Mathf.Clamp(multiplier, 1f, Mathf.Max(1f, countRampMaxMultiplier));
+    }
+
+    private void UpdateContinuousPressure(float elapsedTime)
+    {
+        if (!enableContinuousPressure || enemySpawner == null) return;
+        if (allWavesFired || pendingEvents.Count == 0) return;
+        if (isAdvancing) return;
+        if (pressureSpawnSources.Count == 0) return;
+        if (elapsedTime < Mathf.Max(0f, pressureStartTime)) return;
+        if (elapsedTime - lastMajorWaveTriggerTime < Mathf.Max(0.1f, pressureCheckInterval)) return;
+
+        pressureCheckTimer -= Time.deltaTime;
+        if (pressureCheckTimer > 0f) return;
+
+        pressureCheckTimer = Mathf.Max(0.1f, pressureCheckInterval);
+
+        int targetAlive = GetContinuousPressureTargetAlive(elapsedTime);
+        int totalCombatEnemies = Mathf.Max(0, aliveEnemyCount) + Mathf.Max(0, pressureAliveEnemyCount);
+        int refillAt = Mathf.Max(1, Mathf.FloorToInt(targetAlive * Mathf.Clamp01(pressureRefillThreshold)));
+        if (totalCombatEnemies > refillAt) return;
+
+        int hardCap = Mathf.Max(refillAt + 1, Mathf.CeilToInt(targetAlive * Mathf.Max(1f, pressureHardCapMultiplier)));
+        int room = hardCap - totalCombatEnemies;
+        if (room <= 0) return;
+
+        PressureSpawnSource source = PickPressureSpawnSource(elapsedTime);
+        if (source == null || source.group == null) return;
+
+        int desired = Mathf.Max(1, targetAlive - totalCombatEnemies);
+        int count = Mathf.Clamp(desired, 1, Mathf.Max(1, pressureMaxBatchSize));
+        count = Mathf.Min(count, room);
+
+        FirePressureSpawn(source.group, count, elapsedTime);
+    }
+
+    private int GetContinuousPressureTargetAlive(float elapsedTime)
+    {
+        float minutes = Mathf.Max(0f, elapsedTime) / 60f;
+        int target = pressureBaseTargetAlive + Mathf.FloorToInt(minutes * Mathf.Max(0, pressureTargetAliveIncreasePerMinute));
+        return Mathf.Clamp(target, 1, Mathf.Max(1, pressureTargetAliveMax));
+    }
+
+    private PressureSpawnSource PickPressureSpawnSource(float elapsedTime)
+    {
+        float unlockTime = elapsedTime + Mathf.Max(0f, pressureEnemyUnlockLookAhead);
+        List<PressureSpawnSource> candidates = pressureSpawnSources
+            .Where(source => source != null && source.group != null && source.triggerTime <= unlockTime)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            candidates = pressureSpawnSources
+                .Where(source => source != null && source.group != null)
+                .ToList();
+        }
+
+        if (candidates.Count == 0) return null;
+        return candidates[Random.Range(0, candidates.Count)];
+    }
+
+    private void FirePressureSpawn(EnemySpawnGroup sourceGroup, int count, float elapsedTime)
+    {
+        if (sourceGroup == null || count <= 0) return;
+
+        WaveConfig pressureWave = ScriptableObject.CreateInstance<WaveConfig>();
+        pressureWave.name = "Runtime_ContinuousPressure";
+        pressureWave.hideFlags = HideFlags.DontSave;
+        pressureWave.waveName = "Continuous Pressure";
+        pressureWave.waveType = WaveType.Normal;
+        pressureWave.enemyGroups = new List<EnemySpawnGroup>
+        {
+            CreatePressureSpawnGroup(sourceGroup, count)
+        };
+
+        pressureAliveEnemyCount += count;
+        pressureSpawnedTotal += count;
+
+        int effectiveWaveNumber = 1 + (int)(elapsedTime / 60f);
+        enemySpawner.InstructToSpawnWaveConfig(
+            pressureWave,
+            effectiveWaveNumber,
+            healthGrowthFactorPerMinute,
+            damageGrowthFactorPerMinute,
+            speedGrowthFactorPerMinute,
+            GetLateHealthMultiplier(elapsedTime),
+            1f
+        );
+
+        if (pressureDebugLogs)
+        {
+            string enemyName = sourceGroup.enemyType != null ? sourceGroup.enemyType.name : "Unknown";
+            Debug.Log($"<color=cyan>[Timeline] Pressure spawn +{count} {enemyName} | main={aliveEnemyCount} pressure={pressureAliveEnemyCount}</color>");
+        }
+    }
+
+    private EnemySpawnGroup CreatePressureSpawnGroup(EnemySpawnGroup sourceGroup, int count)
+    {
+        return new EnemySpawnGroup
+        {
+            enemyType = sourceGroup.enemyType,
+            count = Mathf.Max(1, count),
+            formation = EnemySpawnGroup.FormationType.None,
+            spawnIntervalWithinGroup = Mathf.Max(0.05f, pressureSpawnIntervalWithinBatch),
+            delayAfterPreviousGroupStarts = 0f,
+            directionHint = SpawnDirectionHint.Random,
+            overrideSpawnerBurstSettings = true,
+            burstSpawnThreshold = 9999,
+            burstSpawnTotalDuration = Mathf.Max(0.05f, pressureSpawnIntervalWithinBatch * Mathf.Max(1, count)),
+            isPressureSpawn = true
+        };
     }
 
     /// <summary>
@@ -416,6 +652,8 @@ public class GameTimelineManager : MonoBehaviour
 
     void GameWin()
     {
+        if (gameFinished) return;
+
         gameFinished = true;
         GameManager.Instance?.BeginVictoryPending();
         // 停止所有刷怪
@@ -439,6 +677,21 @@ public class GameTimelineManager : MonoBehaviour
 
     // --- 公共方法，用于替换 WaveManager 的功能 ---
 
+    private bool TryCompleteGameIfReady(string reason)
+    {
+        if (!allWavesFired || gameFinished) return false;
+
+        if (pressureAliveEnemyCount > 0)
+        {
+            pressureAliveEnemyCount = CountAlivePressureEnemyHealthObjects();
+        }
+        if (aliveEnemyCount > 0 || pressureAliveEnemyCount > 0) return false;
+
+        Debug.Log($"<color=gold>[Timeline] Victory condition met ({reason}). kills={totalKills}, pressureSpawned={pressureSpawnedTotal}</color>");
+        GameWin();
+        return true;
+    }
+
     public void EnemyDefeated()
     {
         totalKills++;
@@ -456,10 +709,8 @@ public class GameTimelineManager : MonoBehaviour
         }
 
         // 胜利判定：所有波次已触发 + 场上敌人全部被消灭 = 胜利
-        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        if (TryCompleteGameIfReady("enemy-kill"))
         {
-            Debug.Log($"<color=gold>[Timeline] ★ 胜利条件达成！总击杀={totalKills}</color>");
-            GameWin();
             return;
         }
 
@@ -480,6 +731,18 @@ public class GameTimelineManager : MonoBehaviour
         Debug.Log($"<color=orange>[Timeline] Boss 死亡信息已注册: pos={position}</color>");
     }
 
+    public void BossDefeated(Vector3 position, GameObject bossGO)
+    {
+        if (gameFinished) return;
+
+        RegisterBossDeath(position, bossGO);
+        totalKills++;
+        aliveEnemyCount = Mathf.Max(0, aliveEnemyCount - 1);
+
+        Debug.Log($"<color=gold>[Timeline] Boss defeated; completing game immediately. trackedAlive={aliveEnemyCount}</color>");
+        GameWin();
+    }
+
     public void AnEnemyFailedToSpawn()
     {
         EnemiesFailedToSpawn(1);
@@ -497,10 +760,40 @@ public class GameTimelineManager : MonoBehaviour
             ReconcileAliveEnemyCount("spawn-failed");
         }
 
-        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        if (TryCompleteGameIfReady("spawn-failed"))
         {
-            GameWin();
+            return;
         }
+    }
+
+    public void PressureEnemyDefeated()
+    {
+        pressureAliveEnemyCount = Mathf.Max(0, pressureAliveEnemyCount - 1);
+
+        if (pressureDebugLogs && (pressureAliveEnemyCount <= 5 || pressureAliveEnemyCount % 10 == 0))
+        {
+            Debug.Log($"<color=cyan>[Timeline] Pressure enemy defeated. pressure={pressureAliveEnemyCount}, main={aliveEnemyCount}</color>");
+        }
+
+        TryCompleteGameIfReady("pressure-kill");
+    }
+
+    public void PressureEnemyFailedToSpawn()
+    {
+        PressureEnemiesFailedToSpawn(1);
+    }
+
+    public void PressureEnemiesFailedToSpawn(int count)
+    {
+        if (count <= 0) return;
+
+        pressureAliveEnemyCount = Mathf.Max(0, pressureAliveEnemyCount - count);
+        if (pressureDebugLogs)
+        {
+            Debug.LogWarning($"[GameTimelineManager] {count} pressure enemies failed to spawn. pressure={pressureAliveEnemyCount}");
+        }
+
+        TryCompleteGameIfReady("pressure-spawn-failed");
     }
 
     public void EnemyRemovedWithoutKill(string reason = "despawn")
@@ -514,9 +807,8 @@ public class GameTimelineManager : MonoBehaviour
             Debug.Log($"<color=yellow>[Timeline] Enemy removed without kill ({reason}) #{removedWithoutKillCount}. alive={aliveEnemyCount}</color>");
         }
 
-        if (allWavesFired && aliveEnemyCount <= 0 && !gameFinished)
+        if (TryCompleteGameIfReady(reason))
         {
-            GameWin();
             return;
         }
 
@@ -545,6 +837,7 @@ public class GameTimelineManager : MonoBehaviour
             Health health = healthObjects[i];
             if (health != null && !health.IsDead && health.gameObject.CompareTag("Enemy"))
             {
+                if (health.GetComponent<PressureSpawnedEnemy>() != null) continue;
                 count++;
             }
         }
@@ -552,6 +845,24 @@ public class GameTimelineManager : MonoBehaviour
     }
 
     // --- 调试 UI ---
+    private int CountAlivePressureEnemyHealthObjects()
+    {
+        int count = 0;
+        Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
+        for (int i = 0; i < healthObjects.Length; i++)
+        {
+            Health health = healthObjects[i];
+            if (health != null
+                && !health.IsDead
+                && health.gameObject.CompareTag("Enemy")
+                && health.GetComponent<PressureSpawnedEnemy>() != null)
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
     void OnGUI()
     {
         if (!AllowOnGuiDebug || !showDebugUI || gameFinished) return;

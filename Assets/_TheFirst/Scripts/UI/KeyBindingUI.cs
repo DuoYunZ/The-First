@@ -1,146 +1,254 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using TMPro;
 
-/// <summary>
-/// 键位设置 UI 面板
-/// 点击按键文本直接进入改键模式
-/// </summary>
 public class KeyBindingUI : MonoBehaviour
 {
-    [Header("UI 模板")]
-    [Tooltip("键位绑定行的预制件模板（包含：ActionNameText、KeyDisplayText）")]
+    [Header("UI Template")]
     public GameObject bindingRowPrefab;
 
-    [Header("UI 容器")]
-    [Tooltip("放置所有键位绑定行的父容器")]
+    [Header("UI Container")]
     public Transform bindingRowContainer;
 
-    [Header("按钮引用")]
-    [Tooltip("恢复默认按钮")]
+    [Header("Buttons")]
     public Button resetDefaultsButton;
 
-    [Header("样式设置")]
-    [Tooltip("改键等待时的文字")]
-    public string waitingForKeyText = "...";
-    [Tooltip("改键等待时按键文本的颜色")]
+    [Header("Style")]
+    public string waitingForKeyText = "\u8bf7\u6309\u4e0b\u65b0\u6309\u952e...";
     public Color waitingColor = Color.yellow;
-    [Tooltip("正常状态按键文本的颜色")]
     public Color normalColor = Color.white;
 
-    // 缓存已生成的行 UI 引用
-    private List<BindingRowUI> bindingRows = new List<BindingRowUI>();
-
-    // 当前正在改键的行索引
+    private readonly List<BindingRowUI> bindingRows = new List<BindingRowUI>();
+    private KeyBindingManager.BindingDevice displayDevice = KeyBindingManager.BindingDevice.KeyboardMouse;
     private int currentRebindingRow = -1;
+    private bool rowsGenerated;
+    private ScrollRect scrollRect;
+    private GameObject lastSelectedObject;
 
     private class BindingRowUI
     {
+        public GameObject rowObject;
         public TextMeshProUGUI actionNameText;
         public TextMeshProUGUI keyDisplayText;
-        public Button keyButton;           // 按键文本上的 Button 组件（可点击）
+        public Button keyButton;
         public string actionName;
         public int bindingIndex;
     }
 
-    void OnEnable()
+    private void Awake()
     {
-        // 每次显示面板时刷新
-        RefreshAllBindingDisplay();
+        scrollRect = bindingRowContainer != null ? bindingRowContainer.GetComponentInParent<ScrollRect>() : null;
 
-        if (KeyBindingManager.Instance != null)
-            KeyBindingManager.Instance.OnBindingChanged += OnBindingChanged;
+        if (resetDefaultsButton != null)
+        {
+            resetDefaultsButton.onClick.AddListener(OnResetDefaultsClicked);
+        }
     }
 
-    void OnDisable()
+    private void OnEnable()
     {
+        KeyBindingManager.OnActiveDeviceChanged += OnActiveDeviceChanged;
+
+        if (KeyBindingManager.Instance != null)
+        {
+            KeyBindingManager.Instance.OnBindingChanged += OnBindingChanged;
+        }
+
+        SetDisplayDevice(KeyBindingManager.ActiveBindingDevice, false);
+        RefreshAllBindingDisplay();
+    }
+
+    private void OnDisable()
+    {
+        KeyBindingManager.OnActiveDeviceChanged -= OnActiveDeviceChanged;
+
         if (KeyBindingManager.Instance != null)
         {
             if (KeyBindingManager.Instance.IsRebinding)
+            {
                 KeyBindingManager.Instance.CancelCurrentRebind();
+            }
+
             KeyBindingManager.Instance.OnBindingChanged -= OnBindingChanged;
         }
+
         currentRebindingRow = -1;
     }
 
-    void Start()
+    private void Update()
     {
-        GenerateBindingRows();
+        if (KeyBindingManager.Instance != null
+            && KeyBindingManager.Instance.IsRebinding
+            && Gamepad.current != null
+            && Gamepad.current.startButton.wasPressedThisFrame)
+        {
+            KeyBindingManager.Instance.CancelCurrentRebind();
+        }
+        else
+        {
+            KeyBindingManager.UpdateActiveDeviceFromCurrentInput();
+        }
 
-        if (resetDefaultsButton != null)
-            resetDefaultsButton.onClick.AddListener(OnResetDefaultsClicked);
-
-        RefreshAllBindingDisplay();
+        UpdateScrollToSelection();
     }
 
-    /// <summary>
-    /// 动态生成键位绑定行
-    /// </summary>
-    private void GenerateBindingRows()
+    public Selectable GetFirstSelectable()
     {
-        if (bindingRowPrefab == null || bindingRowContainer == null)
+        EnsureRowsGenerated();
+
+        foreach (BindingRowUI row in bindingRows)
         {
-            Debug.LogError("[KeyBindingUI] bindingRowPrefab 或 bindingRowContainer 未赋值！");
+            if (row.keyButton != null && row.keyButton.gameObject.activeInHierarchy && row.keyButton.IsInteractable())
+            {
+                return row.keyButton;
+            }
+        }
+
+        return resetDefaultsButton != null && resetDefaultsButton.gameObject.activeInHierarchy && resetDefaultsButton.IsInteractable()
+            ? resetDefaultsButton
+            : null;
+    }
+
+    public void SelectFirstBinding()
+    {
+        Selectable selectable = GetFirstSelectable();
+        if (selectable == null || EventSystem.current == null)
+        {
             return;
         }
 
-        var actions = KeyBindingManager.GetBindableActions();
+        EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+        selectable.Select();
+    }
 
-        // 临时实例用于读取默认绑定
-        var tempControls = new PlayerControls();
+    public void RefreshAllBindingDisplay()
+    {
+        if (KeyBindingManager.Instance == null) return;
+
+        foreach (BindingRowUI row in bindingRows)
+        {
+            if (row.keyDisplayText == null) continue;
+
+            row.keyDisplayText.text = KeyBindingManager.Instance.GetBindingDisplayString(
+                row.actionName,
+                row.bindingIndex);
+            row.keyDisplayText.color = normalColor;
+        }
+    }
+
+    private void SetDisplayDevice(KeyBindingManager.BindingDevice device, bool selectFirst)
+    {
+        if (rowsGenerated && displayDevice == device)
+        {
+            return;
+        }
+
+        displayDevice = device;
+        RebuildBindingRows();
+        RefreshAllBindingDisplay();
+
+        if (selectFirst && gameObject.activeInHierarchy)
+        {
+            SelectFirstBinding();
+        }
+    }
+
+    private void EnsureRowsGenerated()
+    {
+        if (!rowsGenerated)
+        {
+            SetDisplayDevice(KeyBindingManager.ActiveBindingDevice, false);
+        }
+    }
+
+    private void RebuildBindingRows()
+    {
+        ClearBindingRows();
+        GenerateBindingRows();
+    }
+
+    private void ClearBindingRows()
+    {
+        foreach (BindingRowUI row in bindingRows)
+        {
+            if (row.rowObject != null)
+            {
+                Destroy(row.rowObject);
+            }
+        }
+
+        bindingRows.Clear();
+        rowsGenerated = false;
+        currentRebindingRow = -1;
+        lastSelectedObject = null;
+    }
+
+    private void GenerateBindingRows()
+    {
+        if (rowsGenerated) return;
+        rowsGenerated = true;
+
+        if (bindingRowPrefab == null || bindingRowContainer == null)
+        {
+            Debug.LogError("[KeyBindingUI] Binding row prefab or container is missing.");
+            return;
+        }
+
+        IReadOnlyList<KeyBindingManager.BindableAction> actions = KeyBindingManager.GetBindableActions(displayDevice);
+        PlayerControls tempControls = new PlayerControls();
         KeyBindingManager.ApplyOverrides(tempControls);
 
         for (int i = 0; i < actions.Count; i++)
         {
-            var bindable = actions[i];
+            KeyBindingManager.BindableAction bindable = actions[i];
+            GameObject rowObject = Instantiate(bindingRowPrefab, bindingRowContainer);
+            rowObject.SetActive(true);
+            rowObject.name = $"BindingRow_{bindable.actionName}_{bindable.bindingIndex}";
 
-            GameObject rowGO = Instantiate(bindingRowPrefab, bindingRowContainer);
-            rowGO.SetActive(true);
-            rowGO.name = $"BindingRow_{bindable.actionName}_{bindable.bindingIndex}";
-
-            var row = new BindingRowUI();
-            row.actionName = bindable.actionName;
-            row.bindingIndex = bindable.bindingIndex;
-
-            row.actionNameText = rowGO.transform.Find("ActionNameText")?.GetComponent<TextMeshProUGUI>();
-            row.keyDisplayText = rowGO.transform.Find("KeyDisplayText")?.GetComponent<TextMeshProUGUI>();
-
-            // 获取 KeyDisplayText 上的 Button 组件（如果没有则自动添加）
-            var keyDisplayGO = rowGO.transform.Find("KeyDisplayText");
-            if (keyDisplayGO != null)
+            BindingRowUI row = new BindingRowUI
             {
-                row.keyButton = keyDisplayGO.GetComponent<Button>();
-                if (row.keyButton == null)
-                {
-                    row.keyButton = keyDisplayGO.gameObject.AddComponent<Button>();
-                    // 设置为透明按钮（不需要额外图片）
-                    row.keyButton.transition = Selectable.Transition.None;
-                }
+                rowObject = rowObject,
+                actionName = bindable.actionName,
+                bindingIndex = bindable.bindingIndex,
+                actionNameText = rowObject.transform.Find("ActionNameText")?.GetComponent<TextMeshProUGUI>(),
+                keyDisplayText = rowObject.transform.Find("KeyDisplayText")?.GetComponent<TextMeshProUGUI>()
+            };
+
+            if (row.actionNameText != null)
+            {
+                row.actionNameText.text = bindable.displayName;
             }
 
-            // 设置操作名称
-            if (row.actionNameText != null)
-                row.actionNameText.text = bindable.displayName;
+            Transform keyDisplay = rowObject.transform.Find("KeyDisplayText");
+            if (keyDisplay != null)
+            {
+                row.keyButton = keyDisplay.GetComponent<Button>();
+                if (row.keyButton == null)
+                {
+                    row.keyButton = keyDisplay.gameObject.AddComponent<Button>();
+                }
 
-            // 设置当前按键显示
+                row.keyButton.transition = Selectable.Transition.None;
+                Navigation navigation = row.keyButton.navigation;
+                navigation.mode = Navigation.Mode.Automatic;
+                row.keyButton.navigation = navigation;
+
+                int rowIndex = i;
+                row.keyButton.onClick.AddListener(() => OnKeyDisplayClicked(rowIndex));
+            }
+
             if (row.keyDisplayText != null)
             {
-                var action = tempControls.asset.FindAction(bindable.actionName);
+                UnityEngine.InputSystem.InputAction action = tempControls.asset.FindAction(bindable.actionName);
                 if (action != null && bindable.bindingIndex < action.bindings.Count)
                 {
                     row.keyDisplayText.text = action.GetBindingDisplayString(
                         bindable.bindingIndex,
-                        InputBinding.DisplayStringOptions.DontUseShortDisplayNames);
+                        UnityEngine.InputSystem.InputBinding.DisplayStringOptions.DontUseShortDisplayNames);
                 }
-            }
-
-            // 点击按键文本直接进入改键
-            if (row.keyButton != null)
-            {
-                int rowIndex = i;
-                row.keyButton.onClick.AddListener(() => OnKeyDisplayClicked(rowIndex));
             }
 
             bindingRows.Add(row);
@@ -150,94 +258,154 @@ public class KeyBindingUI : MonoBehaviour
         bindingRowPrefab.SetActive(false);
     }
 
-    /// <summary>
-    /// 点击按键文本，直接进入改键模式
-    /// </summary>
     private void OnKeyDisplayClicked(int rowIndex)
     {
         if (KeyBindingManager.Instance == null)
         {
-            Debug.LogError("[KeyBindingUI] KeyBindingManager.Instance 为 null！");
+            Debug.LogError("[KeyBindingUI] KeyBindingManager.Instance is null.");
             return;
         }
 
-        // 如果已在改键，先取消
+        if (rowIndex < 0 || rowIndex >= bindingRows.Count)
+        {
+            return;
+        }
+
         if (KeyBindingManager.Instance.IsRebinding)
+        {
             KeyBindingManager.Instance.CancelCurrentRebind();
+        }
 
         currentRebindingRow = rowIndex;
-        var row = bindingRows[rowIndex];
+        BindingRowUI row = bindingRows[rowIndex];
 
-        // 显示等待状态
         if (row.keyDisplayText != null)
         {
             row.keyDisplayText.text = waitingForKeyText;
             row.keyDisplayText.color = waitingColor;
         }
 
-        // 禁用所有按钮
         SetAllButtonsInteractable(false);
 
-        // 开始交互式改键
         KeyBindingManager.Instance.StartInteractiveRebind(
             row.actionName,
             row.bindingIndex,
-            onComplete: () =>
+            onComplete: () => FinishRebind(rowIndex),
+            onCancel: () => FinishRebind(rowIndex));
+    }
+
+    private void FinishRebind(int rowIndex)
+    {
+        currentRebindingRow = -1;
+        RefreshAllBindingDisplay();
+        SetAllButtonsInteractable(true);
+        SelectRowButton(rowIndex);
+    }
+
+    private void SelectRowButton(int rowIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= bindingRows.Count || EventSystem.current == null)
+        {
+            return;
+        }
+
+        Button button = bindingRows[rowIndex].keyButton;
+        if (button == null || !button.gameObject.activeInHierarchy || !button.IsInteractable())
+        {
+            return;
+        }
+
+        EventSystem.current.SetSelectedGameObject(button.gameObject);
+        button.Select();
+        ScrollToBindingRow(rowIndex);
+    }
+
+    private void ScrollToBindingRow(int rowIndex)
+    {
+        if (scrollRect == null
+            || scrollRect.content == null
+            || scrollRect.viewport == null
+            || bindingRows.Count <= 1)
+        {
+            return;
+        }
+
+        if (scrollRect.content.rect.height <= scrollRect.viewport.rect.height)
+        {
+            return;
+        }
+
+        float normalized = 1f - Mathf.Clamp01(rowIndex / (float)(bindingRows.Count - 1));
+        scrollRect.verticalNormalizedPosition = normalized;
+    }
+
+    private void UpdateScrollToSelection()
+    {
+        if (scrollRect == null || EventSystem.current == null)
+        {
+            return;
+        }
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+        if (selectedObject == null || selectedObject == lastSelectedObject)
+        {
+            return;
+        }
+
+        lastSelectedObject = selectedObject;
+
+        for (int i = 0; i < bindingRows.Count; i++)
+        {
+            if (bindingRows[i].keyButton != null && bindingRows[i].keyButton.gameObject == selectedObject)
             {
-                currentRebindingRow = -1;
-                RefreshAllBindingDisplay();
-                SetAllButtonsInteractable(true);
-            },
-            onCancel: () =>
-            {
-                currentRebindingRow = -1;
-                RefreshAllBindingDisplay();
-                SetAllButtonsInteractable(true);
+                ScrollToBindingRow(i);
+                return;
             }
-        );
+        }
+
+        if (resetDefaultsButton != null && resetDefaultsButton.gameObject == selectedObject)
+        {
+            scrollRect.verticalNormalizedPosition = 0f;
+        }
     }
 
     private void OnResetDefaultsClicked()
     {
-        if (KeyBindingManager.Instance != null)
-        {
-            KeyBindingManager.Instance.ResetAllBindings();
-            RefreshAllBindingDisplay();
-        }
-    }
-
-    /// <summary>
-    /// 刷新所有行的按键显示
-    /// </summary>
-    public void RefreshAllBindingDisplay()
-    {
         if (KeyBindingManager.Instance == null) return;
 
-        for (int i = 0; i < bindingRows.Count; i++)
+        KeyBindingManager.Instance.ResetAllBindings();
+        RefreshAllBindingDisplay();
+
+        if (resetDefaultsButton != null && EventSystem.current != null)
         {
-            var row = bindingRows[i];
-            if (row.keyDisplayText != null)
-            {
-                row.keyDisplayText.text = KeyBindingManager.Instance.GetBindingDisplayString(
-                    row.actionName, row.bindingIndex);
-                row.keyDisplayText.color = normalColor;
-            }
+            EventSystem.current.SetSelectedGameObject(resetDefaultsButton.gameObject);
+            resetDefaultsButton.Select();
         }
     }
 
     private void SetAllButtonsInteractable(bool interactable)
     {
-        foreach (var row in bindingRows)
+        foreach (BindingRowUI row in bindingRows)
         {
             if (row.keyButton != null)
+            {
                 row.keyButton.interactable = interactable;
+            }
         }
+
         if (resetDefaultsButton != null)
+        {
             resetDefaultsButton.interactable = interactable;
+        }
     }
 
     private void OnBindingChanged(string actionName, int bindingIndex)
     {
         RefreshAllBindingDisplay();
+    }
+
+    private void OnActiveDeviceChanged(KeyBindingManager.BindingDevice device)
+    {
+        SetDisplayDevice(device, true);
     }
 }

@@ -1,76 +1,158 @@
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Audio;
-using TMPro;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using TMPro;
+using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class SettingsMenu : MonoBehaviour
 {
-    [Header("组件引用")]
-    [Tooltip("游戏的主音频混合器")]
+    [Header("Components")]
     public AudioMixer mainMixer;
 
-    [Header("Tab 页切换")]
-    [Tooltip("常规设置面板（音量、分辨率、语言）")]
+    [Header("Tabs")]
     public GameObject generalSettingsPanel;
-    [Tooltip("键位设置面板")]
     public GameObject keyBindingPanel;
-    [Tooltip("常规设置 Tab 按钮")]
     public Button generalTabButton;
-    [Tooltip("键位设置 Tab 按钮")]
     public Button keyBindingTabButton;
 
-    [Header("Tab 按钮样式")]
-    [Tooltip("选中状态的 Tab 按钮颜色")]
+    [Header("Tab Style")]
     public Color tabActiveColor = new Color(1f, 1f, 1f, 1f);
-    [Tooltip("未选中状态的 Tab 按钮颜色")]
     public Color tabInactiveColor = new Color(0.6f, 0.6f, 0.6f, 0.5f);
 
-    [Header("UI元素引用")]
+    [Header("Audio")]
     public Slider masterVolumeSlider;
     public Slider bgmVolumeSlider;
     public Slider sfxVolumeSlider;
 
-    [Header("显示设置")]
+    [Header("Display")]
     public TMP_Dropdown resolutionDropdown;
     public Toggle fullscreenToggle;
 
-    [Header("语言设置")]
-    [Tooltip("语言选择下拉框")]
+    [Header("Language")]
     public TMP_Dropdown languageDropdown;
 
-    private Resolution[] resolutions;
+    [Header("Controller Navigation")]
+    public Button backButton;
+    public bool enableGamepadTabShortcuts = true;
 
-    // PlayerPrefs 保存的键名
     private const string MASTER_VOL_KEY = "MasterVolume";
     private const string BGM_VOL_KEY = "BGMVolume";
     private const string SFX_VOL_KEY = "SFXVolume";
 
-    void Start()
+    private Resolution[] resolutions;
+    private InputAction previousTabAction;
+    private InputAction nextTabAction;
+    private InputAction cancelAction;
+    private int currentTabIndex;
+    private bool initialized;
+
+    private void Awake()
     {
-        // 游戏启动时，加载已保存的设置
-        LoadVolumeSettings();
-
-        // 为每个滑块添加监听器，当值改变时调用对应的方法
-        masterVolumeSlider.onValueChanged.AddListener(SetMasterVolume);
-        bgmVolumeSlider.onValueChanged.AddListener(SetBGMVolume);
-        sfxVolumeSlider.onValueChanged.AddListener(SetSFXVolume);
-
-        // 初始化分辨率设置
-        InitResolutionSettings();
-
-        // 初始化语言设置
-        InitLanguageSettings();
-
-        // 初始化 Tab 页切换
-        InitTabButtons();
-
-        // 默认显示常规设置 Tab
-        SwitchToTab(0);
+        CreateInputActions();
+        FindBackButtonIfNeeded();
     }
 
-    // ===== Tab 页切换 =====
+    private void OnEnable()
+    {
+        EnableInputActions();
+
+        if (initialized)
+        {
+            StartCoroutine(SelectDefaultControlNextFrame());
+        }
+    }
+
+    private void OnDisable()
+    {
+        DisableInputActions();
+        PlayerPrefs.Save();
+    }
+
+    private void OnDestroy()
+    {
+        previousTabAction?.Dispose();
+        nextTabAction?.Dispose();
+        cancelAction?.Dispose();
+    }
+
+    private void Start()
+    {
+        LoadVolumeSettings();
+
+        if (masterVolumeSlider != null)
+            masterVolumeSlider.onValueChanged.AddListener(SetMasterVolume);
+        if (bgmVolumeSlider != null)
+            bgmVolumeSlider.onValueChanged.AddListener(SetBGMVolume);
+        if (sfxVolumeSlider != null)
+            sfxVolumeSlider.onValueChanged.AddListener(SetSFXVolume);
+
+        InitResolutionSettings();
+        InitLanguageSettings();
+        InitTabButtons();
+
+        initialized = true;
+        SwitchToTab(0, false);
+        StartCoroutine(SelectDefaultControlNextFrame());
+    }
+
+    private void Update()
+    {
+        if (!initialized
+            || KeyBindingManager.Instance != null
+            && (KeyBindingManager.Instance.IsRebinding || KeyBindingManager.Instance.RebindEndedThisFrame))
+        {
+            return;
+        }
+
+        KeyBindingManager.UpdateActiveDeviceFromCurrentInput();
+
+        if (enableGamepadTabShortcuts)
+        {
+            if (previousTabAction.WasPressedThisFrame())
+            {
+                SwitchToTab(currentTabIndex == 0 ? 1 : currentTabIndex - 1);
+            }
+            else if (nextTabAction.WasPressedThisFrame())
+            {
+                SwitchToTab(currentTabIndex == 1 ? 0 : currentTabIndex + 1);
+            }
+        }
+
+        if (cancelAction.WasPressedThisFrame())
+        {
+            InvokeBack();
+        }
+    }
+
+    private void CreateInputActions()
+    {
+        previousTabAction = new InputAction("SettingsPreviousTab", InputActionType.Button);
+        previousTabAction.AddBinding("<Gamepad>/leftShoulder");
+
+        nextTabAction = new InputAction("SettingsNextTab", InputActionType.Button);
+        nextTabAction.AddBinding("<Gamepad>/rightShoulder");
+
+        cancelAction = new InputAction("SettingsCancel", InputActionType.Button);
+        cancelAction.AddBinding("<Keyboard>/escape");
+        cancelAction.AddBinding("<Gamepad>/buttonEast");
+    }
+
+    private void EnableInputActions()
+    {
+        previousTabAction?.Enable();
+        nextTabAction?.Enable();
+        cancelAction?.Enable();
+    }
+
+    private void DisableInputActions()
+    {
+        previousTabAction?.Disable();
+        nextTabAction?.Disable();
+        cancelAction?.Disable();
+    }
 
     private void InitTabButtons()
     {
@@ -78,54 +160,175 @@ public class SettingsMenu : MonoBehaviour
         {
             generalTabButton.onClick.AddListener(() => SwitchToTab(0));
         }
+
         if (keyBindingTabButton != null)
         {
             keyBindingTabButton.onClick.AddListener(() => SwitchToTab(1));
         }
     }
 
-    /// <summary>
-    /// 切换到指定 Tab 页
-    /// </summary>
-    /// <param name="tabIndex">0=常规设置, 1=键位设置</param>
     public void SwitchToTab(int tabIndex)
     {
-        // 切换面板显示
-        if (generalSettingsPanel != null)
-            generalSettingsPanel.SetActive(tabIndex == 0);
-        if (keyBindingPanel != null)
-            keyBindingPanel.SetActive(tabIndex == 1);
-
-        // 更新 Tab 按钮样式
-        UpdateTabButtonStyle(generalTabButton, tabIndex == 0);
-        UpdateTabButtonStyle(keyBindingTabButton, tabIndex == 1);
+        SwitchToTab(tabIndex, true);
     }
 
-    /// <summary>
-    /// 更新 Tab 按钮的视觉样式
-    /// </summary>
+    private void SwitchToTab(int tabIndex, bool selectDefault)
+    {
+        currentTabIndex = Mathf.Clamp(tabIndex, 0, 1);
+
+        if (generalSettingsPanel != null)
+            generalSettingsPanel.SetActive(currentTabIndex == 0);
+        if (keyBindingPanel != null)
+            keyBindingPanel.SetActive(currentTabIndex == 1);
+
+        UpdateTabButtonStyle(generalTabButton, currentTabIndex == 0);
+        UpdateTabButtonStyle(keyBindingTabButton, currentTabIndex == 1);
+
+        if (selectDefault)
+        {
+            StartCoroutine(SelectDefaultControlNextFrame());
+        }
+    }
+
     private void UpdateTabButtonStyle(Button button, bool isActive)
     {
         if (button == null) return;
 
-        // 更新按钮文字颜色
-        var text = button.GetComponentInChildren<TextMeshProUGUI>();
+        TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
         if (text != null)
         {
             text.color = isActive ? tabActiveColor : tabInactiveColor;
         }
 
-        // 更新按钮图片透明度
-        var image = button.GetComponent<Image>();
+        Image image = button.GetComponent<Image>();
         if (image != null)
         {
-            Color c = image.color;
-            c.a = isActive ? 1f : 0.3f;
-            image.color = c;
+            Color color = image.color;
+            color.a = isActive ? 1f : 0.3f;
+            image.color = color;
         }
     }
 
-    // ===== 分辨率设置 =====
+    public void SelectDefaultControl()
+    {
+        Selectable selectable = GetDefaultSelectable();
+        if (selectable == null || EventSystem.current == null)
+        {
+            return;
+        }
+
+        EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+        selectable.Select();
+    }
+
+    private IEnumerator SelectDefaultControlNextFrame()
+    {
+        yield return null;
+        SelectDefaultControl();
+    }
+
+    private Selectable GetDefaultSelectable()
+    {
+        if (currentTabIndex == 1 && keyBindingPanel != null)
+        {
+            KeyBindingUI keyBindingUI = keyBindingPanel.GetComponent<KeyBindingUI>();
+            Selectable keyBindingSelectable = keyBindingUI != null ? keyBindingUI.GetFirstSelectable() : null;
+            if (IsUsableSelectable(keyBindingSelectable))
+            {
+                return keyBindingSelectable;
+            }
+        }
+
+        GameObject activePanel = currentTabIndex == 1 ? keyBindingPanel : generalSettingsPanel;
+        if (activePanel != null)
+        {
+            foreach (Selectable selectable in activePanel.GetComponentsInChildren<Selectable>(false))
+            {
+                if (IsUsableSelectable(selectable))
+                {
+                    return selectable;
+                }
+            }
+        }
+
+        if (IsUsableSelectable(currentTabIndex == 1 ? keyBindingTabButton : generalTabButton))
+        {
+            return currentTabIndex == 1 ? keyBindingTabButton : generalTabButton;
+        }
+
+        foreach (Selectable selectable in GetComponentsInChildren<Selectable>(false))
+        {
+            if (IsUsableSelectable(selectable))
+            {
+                return selectable;
+            }
+        }
+
+        return null;
+    }
+
+    private bool IsUsableSelectable(Selectable selectable)
+    {
+        return selectable != null
+            && selectable.gameObject.activeInHierarchy
+            && selectable.IsInteractable()
+            && !(selectable is Scrollbar);
+    }
+
+    private void FindBackButtonIfNeeded()
+    {
+        if (backButton != null) return;
+
+        foreach (Button button in GetComponentsInChildren<Button>(true))
+        {
+            LocalizedText localizedText = button.GetComponentInChildren<LocalizedText>(true);
+            if (localizedText != null && localizedText.localizationKey == "ui.back")
+            {
+                backButton = button;
+                return;
+            }
+        }
+
+        foreach (Button button in GetComponentsInChildren<Button>(true))
+        {
+            string buttonName = button.gameObject.name;
+            if (buttonName.Contains("Back") || buttonName.Contains("Return") || buttonName.Contains("Close"))
+            {
+                backButton = button;
+                return;
+            }
+        }
+    }
+
+    private void InvokeBack()
+    {
+        FindBackButtonIfNeeded();
+
+        if (backButton != null && backButton.gameObject.activeInHierarchy && backButton.IsInteractable())
+        {
+            backButton.onClick.Invoke();
+            if (!gameObject.activeInHierarchy)
+            {
+                return;
+            }
+        }
+
+        CombatUIManager combatUI = Object.FindFirstObjectByType<CombatUIManager>();
+        if (combatUI != null && combatUI.settingsPanel == gameObject)
+        {
+            combatUI.CloseSettings();
+            return;
+        }
+
+        MainMenuManager mainMenu = Object.FindFirstObjectByType<MainMenuManager>();
+        if (mainMenu != null && mainMenu.settingsPanel == gameObject)
+        {
+            mainMenu.OnBackFromSettingsClicked();
+            return;
+        }
+
+        gameObject.SetActive(false);
+    }
 
     private void InitResolutionSettings()
     {
@@ -153,11 +356,8 @@ public class SettingsMenu : MonoBehaviour
         resolutionDropdown.AddOptions(options);
         resolutionDropdown.value = currentResolutionIndex;
         resolutionDropdown.RefreshShownValue();
-
-        // 添加监听器
         resolutionDropdown.onValueChanged.AddListener(SetResolution);
 
-        // 初始化全屏 Toggle
         if (fullscreenToggle != null)
         {
             fullscreenToggle.isOn = Screen.fullScreen;
@@ -167,6 +367,11 @@ public class SettingsMenu : MonoBehaviour
 
     public void SetResolution(int resolutionIndex)
     {
+        if (resolutions == null || resolutionIndex < 0 || resolutionIndex >= resolutions.Length)
+        {
+            return;
+        }
+
         Resolution resolution = resolutions[resolutionIndex];
         Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
     }
@@ -176,77 +381,58 @@ public class SettingsMenu : MonoBehaviour
         Screen.fullScreen = isFullscreen;
     }
 
-    // ===== 音量设置 =====
-
     public void SetMasterVolume(float value)
     {
-        // UI滑块的值是线性的 (0-1)，而Mixer的音量是对数的 (dB)
-        float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
-        mainMixer.SetFloat("MasterVolume", volumeInDb);
+        SetMixerVolume("MasterVolume", value);
         PlayerPrefs.SetFloat(MASTER_VOL_KEY, value);
     }
 
     public void SetBGMVolume(float value)
     {
-        float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
-        mainMixer.SetFloat("BGMVolume", volumeInDb);
+        SetMixerVolume("BGMVolume", value);
         PlayerPrefs.SetFloat(BGM_VOL_KEY, value);
     }
 
     public void SetSFXVolume(float value)
     {
-        float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
-        mainMixer.SetFloat("SFXVolume", volumeInDb);
+        SetMixerVolume("SFXVolume", value);
         PlayerPrefs.SetFloat(SFX_VOL_KEY, value);
+    }
+
+    private void SetMixerVolume(string parameterName, float value)
+    {
+        if (mainMixer == null) return;
+
+        float volumeInDb = Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20;
+        mainMixer.SetFloat(parameterName, volumeInDb);
     }
 
     private void LoadVolumeSettings()
     {
-        // 从 PlayerPrefs 加载值，如果不存在则默认为1 (满音量)
         float masterValue = PlayerPrefs.GetFloat(MASTER_VOL_KEY, 1f);
         float bgmValue = PlayerPrefs.GetFloat(BGM_VOL_KEY, 1f);
         float sfxValue = PlayerPrefs.GetFloat(SFX_VOL_KEY, 1f);
 
-        // 将加载的值应用到UI滑块上
-        masterVolumeSlider.value = masterValue;
-        bgmVolumeSlider.value = bgmValue;
-        sfxVolumeSlider.value = sfxValue;
+        if (masterVolumeSlider != null) masterVolumeSlider.value = masterValue;
+        if (bgmVolumeSlider != null) bgmVolumeSlider.value = bgmValue;
+        if (sfxVolumeSlider != null) sfxVolumeSlider.value = sfxValue;
 
-        // 同时，立即将这些值应用到Audio Mixer
         SetMasterVolume(masterValue);
         SetBGMVolume(bgmValue);
         SetSFXVolume(sfxValue);
     }
-
-    // 当脚本被销毁时，确保所有设置都被保存
-    private void OnDisable()
-    {
-        PlayerPrefs.Save();
-    }
-
-    // ===== 语言设置 =====
 
     private void InitLanguageSettings()
     {
         if (languageDropdown == null) return;
 
         languageDropdown.ClearOptions();
-
-        // 使用各语言的原生名称作为显示文本
-        var options = new List<string> { "中文", "English" };
-        languageDropdown.AddOptions(options);
-
-        // 设置为当前语言
+        languageDropdown.AddOptions(new List<string> { "中文", "English" });
         languageDropdown.value = LocalizationManager.GetCurrentLanguageIndex();
         languageDropdown.RefreshShownValue();
-
-        // 添加监听器
         languageDropdown.onValueChanged.AddListener(SetLanguage);
     }
 
-    /// <summary>
-    /// 语言下拉框值改变时调用
-    /// </summary>
     public void SetLanguage(int index)
     {
         LocalizationManager.SetLanguageByIndex(index);
